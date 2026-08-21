@@ -54,5 +54,6 @@ test-suite nl2proof-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          Spec.hs
+    other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, nl2proof

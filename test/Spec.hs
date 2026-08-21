@@ -1,10 +1,5 @@
 -- | Stage 1 test suite.
 --
--- Dependency-free by design: the toolchain here is a bare GHC bindist with no
--- package manager, and Stage 1 needs nothing beyond @base@ and @containers@.
--- Adding a test framework would be the project's first external dependency and
--- would buy very little over a few hundred lines of asserts.
---
 -- The suite asserts more than "the derived form matches the expected form". It
 -- also checks the properties Stage 1 is supposed to /guarantee/, because those
 -- are what later stages will silently rely on:
@@ -16,11 +11,10 @@
 -- * the fragment is unambiguous — exactly one derivation per sentence
 module Main (main) where
 
-import Control.Monad (unless)
 import Data.Char (toLower)
 import Data.List (isInfixOf, nub, sort)
-import System.Exit (exitFailure, exitSuccess)
 
+import Harness
 import NL2Proof.Collapse.Class
 import NL2Proof.DRT.Build
 import NL2Proof.DRT.Canonical
@@ -34,31 +28,6 @@ import NL2Proof.Syntax.Category
 import NL2Proof.Syntax.Lexicon
 import NL2Proof.Syntax.Tokenize
 import NL2Proof.Trace
-
---------------------------------------------------------------------------------
--- Harness
---------------------------------------------------------------------------------
-
-data Check = Check
-  { chkName :: String
-  , chkOk   :: Bool
-  , chkNote :: String
-  }
-
-ok :: String -> Check
-ok n = Check n True ""
-
-bad :: String -> String -> Check
-bad n why = Check n False why
-
-expect :: String -> Bool -> Check
-expect n True  = ok n
-expect n False = bad n "expected True"
-
-expectEq :: (Eq a, Show a) => String -> a -> a -> Check
-expectEq n want got
-  | want == got = ok n
-  | otherwise   = bad n ("expected " ++ show want ++ ", got " ++ show got)
 
 --------------------------------------------------------------------------------
 -- Fixtures
@@ -506,18 +475,4 @@ allChecks =
     ]
 
 main :: IO ()
-main = do
-  mapM_ report allChecks
-  let failures = [c | c <- allChecks, not (chkOk c)]
-      total = length allChecks
-  putStrLn ""
-  putStrLn
-    ( show (total - length failures) ++ "/" ++ show total ++ " checks passed"
-        ++ (if null failures then "" else ", " ++ show (length failures) ++ " FAILED")
-    )
-  unless (null failures) exitFailure
-  exitSuccess
-  where
-    report c
-      | chkOk c   = putStrLn ("ok   " ++ chkName c)
-      | otherwise = putStrLn ("FAIL " ++ chkName c ++ "\n       " ++ chkNote c)
+main = runChecks "stage 1 core" allChecks
