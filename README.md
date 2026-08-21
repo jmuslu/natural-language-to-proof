@@ -17,7 +17,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design. The short version:
 ## Status
 
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
-probability anywhere. 340 checks passing.
+probability anywhere. 348 checks passing.
 
 | Stage | What | State |
 |---|---|---|
@@ -61,7 +61,7 @@ implementation lives there.
 ## Building
 
 The project depends only on `base` and `containers`, both of which ship inside a
-GHC bindist. **No cabal or stack required.**
+GHC bindist. **No cabal or stack required** — a bare unpacked GHC is enough.
 
 ```bash
 export GHC_BIN="$LOCALAPPDATA/ghc/ghc-9.12.4-x86_64-unknown-mingw32/bin"
@@ -75,11 +75,22 @@ $env:GHC_BIN = "$env:LOCALAPPDATA\ghc\ghc-9.12.4-x86_64-unknown-mingw32\bin"
 .\scripts\build.ps1
 ```
 
-Add `demo` to either to build and run the demo instead of the tests. If `ghc` is
-already on your PATH, `GHC_BIN` can be skipped. A `nl2proof.cabal` is included
-for when you do have cabal, but it is not needed.
+Both scripts typecheck everything with `-Wall` and then run the suite. Pass
+`demo` to run the demo instead, or `compile` to also produce native binaries. If
+`ghc` is already on your PATH, `GHC_BIN` can be skipped. `nl2proof.cabal` is
+included for when you do have cabal, but nothing here needs it.
 
 Built and tested with GHC 9.12.4 on Windows.
+
+**Why the default path interprets rather than compiles.** The scripts run the
+suite through `runghc`, so no new executable is produced. Windows
+application-control policies (Smart App Control, WDAC, Device Guard) routinely
+refuse to execute freshly built unsigned binaries, which makes a
+compile-then-run script fail with `Permission denied` for reasons that have
+nothing to do with the code. Interpreting avoids that without weakening any
+policy. Use `compile` if your machine permits it and you want the faster
+runtime. Build artifacts also default to a temp directory rather than the
+working tree, so an OneDrive-synced checkout does not upload object files.
 
 ## What Stage 1 does
 
@@ -191,11 +202,12 @@ src/NL2Proof/
   Syntax/CCG.hs        signs, combinators, CKY parser
   DRT/Types.hs         DRS boxes, conditions, accessibility, rendering
   DRT/Build.hs         term -> DRS, anaphora resolution, discourse threading
+  DRT/Canonical.hs     provenance-free view, shared by both collapse modes
   Collapse/Class.hs    the seam: Selection and CollapseStrategy
   Fragment.hs          the fixed evaluation set
   Pipeline.hs          text -> DRS, wiring it together
 app/Main.hs            demo
-test/Spec.hs           340 checks, no test framework dependency
+test/Spec.hs           348 checks, no test framework dependency
 ```
 
 ## Next

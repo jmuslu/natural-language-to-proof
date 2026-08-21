@@ -23,6 +23,7 @@ import System.Exit (exitFailure, exitSuccess)
 
 import NL2Proof.Collapse.Class
 import NL2Proof.DRT.Build
+import NL2Proof.DRT.Canonical
 import NL2Proof.DRT.Types
 import NL2Proof.Fragment
 import NL2Proof.Pipeline
@@ -435,6 +436,54 @@ couplingChecks = case caseById "coupling" of
          ]
 
 --------------------------------------------------------------------------------
+-- 13. Canonical view (shared by both collapse modes)
+--------------------------------------------------------------------------------
+
+-- | The shared provenance-free view must be blind to provenance and to variable
+-- naming, and must __not__ compress. Compression is truth-mode's job; if it
+-- happened here, provenance-mode could not be built on top of this module.
+canonicalChecks :: [Check]
+canonicalChecks =
+  [ expectEq
+      "canonical: blind to provenance (same text, different sources)"
+      (canonOf (SourceId "A") "John loves Mary.")
+      (canonOf (SourceId "B") "John loves Mary.")
+  , expectEq
+      "canonical: blind to referent naming"
+      (canonicalize (DRS [(Ref "x", pv)] [CPred "student" [DRef (Ref "x")] pv]))
+      (canonicalize (DRS [(Ref "zzz", pv)] [CPred "student" [DRef (Ref "zzz")] pv]))
+  , expect
+      "canonical: distinguishes genuinely different content"
+      (canonOf testSource "John loves Mary." /= canonOf testSource "Mary smiles.")
+  , -- The load-bearing one: two assertions of the same proposition stay two
+    -- conditions here. truth-mode collapses them; this module must not.
+    expectEq
+      "canonical: does NOT deduplicate repeated claims"
+      2
+      (canonConditionCount (canonOf testSource "John loves Mary. John loves Mary."))
+  , expectEq
+      "canonical: preserves condition order"
+      [CanPred "student" [CRefT (CRef 0)], CanPred "arrive" [CRefT (CRef 0)]]
+      (canonConds (canonOf testSource "A student arrived."))
+  , expectEq
+      "canonical: allRefsIn finds referents that only appear as arguments"
+      [Ref "q"]
+      (allRefsIn (DRS [] [CPred "smile" [DRef (Ref "q")] pv]))
+  , expectEq
+      "canonical: universe survives canonicalization"
+      [CRef 0]
+      (canonUniverse (canonOf testSource "A student arrived."))
+  , expect
+      "canonical: nested boxes are canonicalized too"
+      (case canonConds (canonOf testSource "No student sleeps.") of
+         [CanNot inner] -> canonUniverse inner == [CRef 0]
+         _              -> False)
+  ]
+  where
+    pv = ProvLex testSource (Span 0 1) "w"
+    canonOf s t = canonicalize (dscDRS (prDiscourse (runFragment s t)))
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
@@ -453,6 +502,7 @@ allChecks =
     , concatMap collapseChecks fragmentCases
     , lambdaChecks
     , couplingChecks
+    , canonicalChecks
     ]
 
 main :: IO ()

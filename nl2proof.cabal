@@ -35,6 +35,7 @@ library
                       NL2Proof.Syntax.CCG
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
+                      NL2Proof.DRT.Canonical
                       NL2Proof.Collapse.Class
                       NL2Proof.Fragment
                       NL2Proof.Pipeline

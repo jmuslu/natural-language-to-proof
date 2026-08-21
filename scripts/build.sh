@@ -1,16 +1,27 @@
 #!/usr/bin/env bash
-# Build and test with a bare GHC bindist -- no cabal, no stack.
+# Typecheck and test with a bare GHC bindist -- no cabal, no stack.
 #
 # Stage 1 depends only on `base` and `containers`, both of which ship inside a
-# GHC bindist, so `ghc --make` is sufficient. Set GHC_BIN if ghc is not on PATH.
+# GHC bindist, so plain ghc is sufficient. Set GHC_BIN if ghc is not on PATH.
 #
-#   ./scripts/build.sh            # build + run tests
-#   ./scripts/build.sh demo       # build + run the demo
+#   ./scripts/build.sh            # typecheck with -Wall, then run the tests
+#   ./scripts/build.sh demo       # typecheck, then run the demo
+#   ./scripts/build.sh compile    # also produce native binaries (see note)
 #
+# The default path runs through `runghc`, GHC's interpreter, and produces no new
+# executable. That is deliberate: Windows application-control policies (Smart App
+# Control, WDAC, Device Guard) routinely refuse to execute freshly built unsigned
+# binaries, which makes a compile-then-run script fail with "Permission denied"
+# for reasons that have nothing to do with the code. Interpreting sidesteps that
+# entirely without weakening any policy. Use `compile` if your machine permits
+# it and you want the ~20x faster runtime.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD="$ROOT/build"
+
+# Build artifacts go outside the working tree: if the repo lives under OneDrive,
+# in-tree object files get cloud-synced. Override with NL2PROOF_BUILD.
+BUILD="${NL2PROOF_BUILD:-/tmp/nl2proof-build}"
 
 if [ -n "${GHC_BIN:-}" ]; then
   export PATH="$GHC_BIN:$PATH"
@@ -27,16 +38,42 @@ mkdir -p "$BUILD"
 
 # Extra source dirs let the mode branches drop in a Collapse backend and its
 # spec without this script changing.
-SRC_DIRS="-i$ROOT/src -i$ROOT/test -i$ROOT/app"
+SRC_DIRS=(-i"$ROOT/src" -i"$ROOT/test" -i"$ROOT/app")
 
-echo "== building test suite"
-ghc $SRC_DIRS -outputdir "$BUILD/test" -o "$BUILD/spec" -Wall "$ROOT/test/Spec.hs"
+TARGET="${1:-test}"
 
-if [ "${1:-test}" = "demo" ]; then
-  echo "== building demo"
-  ghc $SRC_DIRS -outputdir "$BUILD/demo" -o "$BUILD/demo-exe" -Wall "$ROOT/app/Main.hs"
-  exec "$BUILD/demo-exe"
-fi
+# Every .hs under src/, so an unreferenced module still gets checked.
+mapfile -t SOURCES < <(find "$ROOT/src" -name '*.hs')
 
-echo "== running test suite"
-exec "$BUILD/spec"
+# Spec.hs and Main.hs both declare `module Main`, so they cannot be checked in
+# the same invocation.
+echo "== typechecking library (-Wall)"
+ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-lib" -fno-code -Wall "${SOURCES[@]}"
+
+echo "== typechecking test suite (-Wall)"
+ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-test" -fno-code -Wall "$ROOT/test/Spec.hs"
+
+echo "== typechecking demo (-Wall)"
+ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-demo" -fno-code -Wall "$ROOT/app/Main.hs"
+
+case "$TARGET" in
+  compile)
+    echo "== compiling native binaries into $BUILD"
+    ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/test" -o "$BUILD/spec" -Wall "$ROOT/test/Spec.hs"
+    ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/demo" -o "$BUILD/demo" -Wall "$ROOT/app/Main.hs"
+    echo "== running test suite"
+    if [ -x "$BUILD/spec.exe" ]; then exec "$BUILD/spec.exe"; else exec "$BUILD/spec"; fi
+    ;;
+  demo)
+    echo "== running demo"
+    exec runghc "${SRC_DIRS[@]}" "$ROOT/app/Main.hs"
+    ;;
+  test)
+    echo "== running test suite"
+    exec runghc "${SRC_DIRS[@]}" "$ROOT/test/Spec.hs"
+    ;;
+  *)
+    echo "usage: $0 [test|demo|compile]" >&2
+    exit 2
+    ;;
+esac
