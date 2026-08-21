@@ -1,0 +1,247 @@
+-- | Building DRSs from lambda terms, and threading them through a discourse.
+--
+-- Two things happen here that are worth separating in your head:
+--
+-- 1. 'toDRS' is a /translation/. A normalized first-order term maps onto box
+--    notation mechanically; there is no choice being made and nothing is logged.
+--
+-- 2. 'resolveAnaphora' is a /decision/. It picks one antecedent out of several
+--    accessible candidates, and it emits a 'Decision' recording what it chose,
+--    what it rejected, and which heuristic broke the tie.
+--
+-- Keeping those two apart, even at Stage 1 where the decision procedure is a
+-- one-line heuristic, is the whole point. When Stage 2 replaces the heuristic
+-- with RSA-weighted candidate ranking, only 'resolveAnaphora' changes.
+--
+-- Discourse state is threaded explicitly through 'extendDiscourse' rather than
+-- via a @State@ monad. The structure is the same; the explicit version makes the
+-- provenance and trace plumbing visible at each step, which is what this stage
+-- is for.
+module NL2Proof.DRT.Build
+  ( -- * Word-level provenance
+    ProvIndex
+  , buildProvIndex
+  , lookupProv
+    -- * Translation
+  , toDRS
+  , predicatesOn
+    -- * Anaphora resolution
+  , resolveAnaphora
+    -- * Discourse
+  , Discourse(..)
+  , emptyDiscourse
+  , extendDiscourse
+  , runDiscourse
+  ) where
+
+import Data.List (nub)
+import qualified Data.Map as M
+import Data.Maybe (fromMaybe, mapMaybe)
+
+import NL2Proof.DRT.Types
+import NL2Proof.Provenance
+import NL2Proof.Semantics.Lambda
+import NL2Proof.Syntax.Lexicon
+import NL2Proof.Syntax.Tokenize
+import NL2Proof.Trace
+
+--------------------------------------------------------------------------------
+-- Word-level provenance
+--------------------------------------------------------------------------------
+
+-- | Maps a constant name (a predicate symbol, an entity name, an anaphor
+-- placeholder) to the lexical provenance of the word that introduced it.
+--
+-- This is how conditions get __word-level__ provenance rather than merely
+-- sentence-level, without threading provenance through the lambda calculus
+-- itself. The lexicon is the only place a constant can enter a derivation, so
+-- indexing the lexical items of a sentence is sufficient — and it keeps
+-- "NL2Proof.Semantics.Lambda" ignorant of provenance, which is the right
+-- separation.
+type ProvIndex = M.Map String Prov
+
+buildProvIndex :: Lexicon -> SourceId -> [Token] -> ProvIndex
+buildProvIndex lexicon src toks =
+  M.fromList
+    [ (c, ProvLex src (tokSpan t) (tokText t))
+    | t <- toks
+    , e <- lookupWord lexicon (tokText t)
+    , c <- constNames (entrySem e)
+    ]
+
+lookupProv :: ProvIndex -> String -> Maybe Prov
+lookupProv = flip M.lookup
+
+--------------------------------------------------------------------------------
+-- Translation
+--------------------------------------------------------------------------------
+
+-- | Translate a normalized, closed, type-@t@ term into a DRS.
+--
+-- @fallback@ is the sentence's full CCG derivation, used for any node whose
+-- provenance cannot be pinned to specific words.
+toDRS :: ProvIndex -> Prov -> Term -> DRS
+toDRS idx fallback = go
+  where
+    go term = case term of
+      -- An existential introduces a referent into the universe.
+      TExists v _ body ->
+        addRef (Ref v) (refProv v body) (go body)
+
+      TAnd a b -> mergeDRS (go a) (go b)
+
+      -- A universal over an implication is the classic duplex condition, with
+      -- the bound referent living in the antecedent box.
+      TForall v _ (TImp a b) ->
+        DRS [] [CImp (addRef (Ref v) (refProv v a) (go a)) (go b) fallback]
+
+      TForall v _ body ->
+        DRS [] [CImp (DRS [(Ref v, refProv v body)] []) (go body) fallback]
+
+      TImp a b -> DRS [] [CImp (go a) (go b) fallback]
+      TOr a b  -> DRS [] [COr (go a) (go b) fallback]
+      TNot a   -> DRS [] [CNot (go a) fallback]
+
+      TEq a b  -> DRS [] [CEq (dterm a) (dterm b) (condProvFor [a, b] [])]
+
+      App{} -> case spine term of
+        (Con c _, args) -> DRS [] [CPred c (map dterm args) (condProvFor args [c])]
+        _               -> unsupported term
+
+      Con c _ -> DRS [] [CPred c [] (condProvFor [] [c])]
+
+      _ -> unsupported term
+
+    -- Anything the fragment cannot express is recorded as an opaque condition
+    -- rather than dropped, so it stays visible in the output.
+    unsupported t = DRS [] [CPred ("UNSUPPORTED[" ++ pretty t ++ "]") [] fallback]
+
+    dterm t = case t of
+      Var v   -> DRef (Ref v)
+      Con c _ -> DConst c
+      _       -> DConst (pretty t)
+
+    -- Provenance for a condition: the words behind its predicate symbol and
+    -- behind each of its constant arguments.
+    condProvFor args extra =
+      let names = extra ++ [c | Con c _ <- args]
+      in case mapMaybe (lookupProv idx) (nub names) of
+           [] -> fallback
+           ps -> provRule "cond" ps
+
+    -- Provenance for a referent: the words behind the predicates that apply to
+    -- it, which for @exists x. student(x) & ...@ is the noun @student@.
+    refProv v body =
+      case mapMaybe (lookupProv idx) (predicatesOn v body) of
+        [] -> fallback
+        ps -> provRule "ref" ps
+
+-- | Names of predicates applied to exactly the variable @v@ and nothing else.
+--
+-- Used to attribute a referent to the noun that introduced it.
+predicatesOn :: Var -> Term -> [String]
+predicatesOn v = nub . go
+  where
+    go term = case term of
+      App{} -> case spine term of
+        (Con c _, [Var v']) | v' == v -> [c]
+        (_, args)                     -> concatMap go args
+      Lam _ _ b     -> go b
+      TForall _ _ b -> go b
+      TExists _ _ b -> go b
+      TNot a        -> go a
+      TAnd a b      -> go a ++ go b
+      TOr a b       -> go a ++ go b
+      TImp a b      -> go a ++ go b
+      TEq a b       -> go a ++ go b
+      Var{}         -> []
+      Con{}         -> []
+
+--------------------------------------------------------------------------------
+-- Anaphora resolution
+--------------------------------------------------------------------------------
+
+-- | Resolve unresolved anaphors in @new@ against the referents accessible in
+-- @context@.
+--
+-- __The heuristic, stated explicitly:__ pick the most recently introduced
+-- accessible referent. Nothing else — no gender agreement, no number agreement,
+-- no salience weighting, no world knowledge.
+--
+-- It is stated here rather than left implicit because an un-stated heuristic
+-- isn't reusable on the next batch of examples. It is deliberately weak, and
+-- every application of it is logged with the alternatives it passed over, so the
+-- disagreements it produces are visible instead of silent. That log is the input
+-- Stage 2 needs in order to do better.
+resolveAnaphora :: DRS -> DRS -> Prov -> (DRS, Trace)
+resolveAnaphora context new sentProv = foldl step (new, mempty) (anaphorConstants new)
+  where
+    -- 'accessibleRefs' yields source order (within a sentence 'toDRS' conses
+    -- outermost-first, and across sentences 'mergeDRS' appends), so the most
+    -- recently introduced referent is the *last* one. Reverse to put it first.
+    candidates = reverse (accessibleRefs context)
+
+    step (drs, tr) name = case candidates of
+      [] ->
+        ( drs
+        , tr
+            <> flag
+              Diagnostic
+                { diagKind = UnresolvedAnaphor
+                , diagMsg =
+                    "no accessible antecedent for " ++ name
+                      ++ " (note: referents inside negated or implicational"
+                      ++ " boxes are correctly inaccessible)"
+                , diagProv = provFor name
+                }
+        )
+      (chosen : rejected) ->
+        ( substConstDRS name (DRef chosen) drs
+        , tr
+            <> note
+              Decision
+                { decKind = "anaphora"
+                , decChoice = show chosen
+                , decAlternatives = map show rejected
+                , decWhy = "most recently introduced accessible referent"
+                , decProv = provFor name
+                }
+        )
+
+    provFor name = fromMaybe sentProv (findAnaphorProv name)
+
+    -- The anaphor's own lexical provenance, recovered from the new DRS.
+    findAnaphorProv name =
+      case [ condProv c | c <- drsConds new, mentions name c ] of
+        (p : _) -> Just p
+        []      -> Nothing
+
+    mentions name (CPred _ as _) = DConst name `elem` as
+    mentions name (CEq a b _)    = DConst name `elem` [a, b]
+    mentions _ _                 = False
+
+--------------------------------------------------------------------------------
+-- Discourse
+--------------------------------------------------------------------------------
+
+-- | Accumulated discourse state: one DRS for everything so far, plus the trace
+-- of every decision and diagnostic that produced it.
+data Discourse = Discourse
+  { dscDRS   :: DRS
+  , dscTrace :: Trace
+  }
+  deriving (Eq, Show)
+
+emptyDiscourse :: Discourse
+emptyDiscourse = Discourse emptyDRS mempty
+
+-- | Add one sentence's DRS to the discourse, resolving its anaphors against what
+-- came before.
+extendDiscourse :: Discourse -> DRS -> Prov -> Discourse
+extendDiscourse (Discourse ctx tr) new sentProv =
+  let (resolved, tr') = resolveAnaphora ctx new sentProv
+  in Discourse (mergeDRS ctx resolved) (tr <> tr')
+
+-- | Fold a sequence of sentence DRSs into one discourse, left to right.
+runDiscourse :: [(DRS, Prov)] -> Discourse
+runDiscourse = foldl (\d (drs, p) -> extendDiscourse d drs p) emptyDiscourse

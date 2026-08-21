@@ -1,0 +1,23 @@
+# GHC / build artifacts
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o
+*.p_hi
+*.p_o
+dist/
+dist-newstyle/
+build/
+.stack-work/
+*.exe
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# HLS
+.hie/
+hie.yaml
