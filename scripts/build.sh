@@ -56,6 +56,15 @@ ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-test" -fno-code -Wall "$ROOT/test/
 echo "== typechecking demo (-Wall)"
 ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-demo" -fno-code -Wall "$ROOT/app/Main.hs"
 
+# Extension point for the mode branches. A branch adds test/ModeSpec.hs and its
+# Collapse backend as *new files only*, so merging main down into it never
+# touches a shared file and never conflicts.
+MODE_SPEC="$ROOT/test/ModeSpec.hs"
+if [ -f "$MODE_SPEC" ]; then
+  echo "== typechecking mode spec (-Wall)"
+  ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-mode" -fno-code -Wall "$MODE_SPEC"
+fi
+
 case "$TARGET" in
   compile)
     echo "== compiling native binaries into $BUILD"
@@ -70,7 +79,12 @@ case "$TARGET" in
     ;;
   test)
     echo "== running test suite"
-    exec runghc "${SRC_DIRS[@]}" "$ROOT/test/Spec.hs"
+    runghc "${SRC_DIRS[@]}" "$ROOT/test/Spec.hs"
+    if [ -f "$MODE_SPEC" ]; then
+      echo
+      echo "== running mode-specific suite"
+      runghc "${SRC_DIRS[@]}" "$MODE_SPEC"
+    fi
     ;;
   *)
     echo "usage: $0 [test|demo|compile]" >&2

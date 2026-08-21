@@ -71,6 +71,16 @@ Write-Output '== typechecking demo (-Wall)'
 & ghc @srcDirs -outputdir "$build\check-demo" -fno-code -Wall "$root\app\Main.hs"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+# Extension point for the mode branches. A branch adds test\ModeSpec.hs and its
+# Collapse backend as *new files only*, so merging main down into it never
+# touches a shared file and never conflicts.
+$modeSpec = Join-Path $root 'test\ModeSpec.hs'
+if (Test-Path $modeSpec) {
+    Write-Output '== typechecking mode spec (-Wall)'
+    & ghc @srcDirs -outputdir "$build\check-mode" -fno-code -Wall $modeSpec
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
 switch ($Target) {
     'compile' {
         Write-Output "== compiling native binaries into $build"
@@ -88,6 +98,12 @@ switch ($Target) {
     'test' {
         Write-Output '== running test suite'
         & runghc @srcDirs "$root\test\Spec.hs"
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        if (Test-Path $modeSpec) {
+            Write-Output ''
+            Write-Output '== running mode-specific suite'
+            & runghc @srcDirs $modeSpec
+        }
     }
 }
 
