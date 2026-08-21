@@ -33,10 +33,10 @@ not require edits to it.
 
 ```
 main ──┬── shared core: Provenance, Syntax (CCG), Semantics (lambda), DRT,
-       │                Collapse.Class, Fragment, Pipeline
-       │
-       ├── truth-mode      → NL2Proof.Collapse.Truth      + its spec
-       └── provenance-mode → NL2Proof.Collapse.Provenance  + its spec
+       │                DRT.Canonical, Collapse.Class, Fragment, Pipeline
+       │                                                   348 checks
+       ├── truth-mode      → NL2Proof.Collapse.Truth       + 23 checks
+       └── provenance-mode → NL2Proof.Collapse.Provenance  + 38 checks
 
 merge direction: main ──> both branches (never sideways)
 ```
@@ -44,6 +44,11 @@ merge direction: main ──> both branches (never sideways)
 The augmentation and derivation stages are **identical** for both modes. Only
 the collapse step differs, so only the collapse step is branched. Shared fixes
 land on `main` and merge down; nothing merges between the two mode branches.
+
+Each branch adds **only new files** — its backend, its `test/ModeSpec.hs`, and a
+`MODE.md`. Nothing shared is edited, so `git merge main` into either branch is
+always clean. `main`'s build scripts pick up `test/ModeSpec.hs` automatically
+when it exists, which is what makes that possible.
 
 | | `truth-mode` | `provenance-mode` |
 |---|---|---|
