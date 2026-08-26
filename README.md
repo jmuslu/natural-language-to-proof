@@ -24,7 +24,7 @@ probability anywhere. 348 checks passing.
 | 1 | Montague lambda calculus + CCG + DRT, provenance-tagged | **done** |
 | 2 | SDRT / RSA / DisCoCat augmentation | not started |
 | 3 | Attribute grammars, speculative commit + rollback, diagnostics | not started |
-| 4 | Epistemic graph layer (separate track) | out of scope |
+| 4 | Epistemic graph layer (separate formalism, sits on the epistemic track) | out of scope |
 
 Stage 1 is meant to stop changing. Later stages consume its output; they should
 not require edits to it.
@@ -35,22 +35,29 @@ not require edits to it.
 main ──┬── shared core: Provenance, Syntax (CCG), Semantics (lambda), DRT,
        │                DRT.Canonical, Collapse.Class, Fragment, Pipeline
        │                                                   348 checks
-       ├── truth-mode      → NL2Proof.Collapse.Truth       + 23 checks
-       └── provenance-mode → NL2Proof.Collapse.Provenance  + 38 checks
+       ├── truth-mode      = epistemic → NL2Proof.Collapse.Truth      + 23 checks
+       ├── provenance-mode = letra     → NL2Proof.Collapse.Provenance + 38 checks
+       └── conversational              → docs only, no backend yet
 
-merge direction: main ──> both branches (never sideways)
+merge direction: main ──> every track branch (never sideways)
 ```
 
-The augmentation and derivation stages are **identical** for both modes. Only
-the collapse step differs, so only the collapse step is branched. Shared fixes
-land on `main` and merge down; nothing merges between the two mode branches.
+**`truth-mode` is the epistemic track and `provenance-mode` is letra** — the same
+things under two naming schemes, not modes that feed tracks. The branch names
+came first and are what you check out; the track names name them better. See
+[ARCHITECTURE.md](ARCHITECTURE.md) for the third track, **conversational**, which
+sits between the two on how firm its oracle is.
+
+The augmentation and derivation stages are **identical** across tracks. Only the
+collapse step differs, so only the collapse step is branched. Shared fixes land
+on `main` and merge down; nothing merges between track branches.
 
 Each branch adds **only new files** — its backend, its `test/ModeSpec.hs`, and a
-`MODE.md`. Nothing shared is edited, so `git merge main` into either branch is
+`MODE.md`. Nothing shared is edited, so `git merge main` into any branch is
 always clean. `main`'s build scripts pick up `test/ModeSpec.hs` automatically
 when it exists, which is what makes that possible.
 
-| | `truth-mode` | `provenance-mode` |
+| | `truth-mode` = epistemic | `provenance-mode` = letra |
 |---|---|---|
 | Keeps | final logical content | the derivation path |
 | Same proposition, two sources | merged into one canonical form | two independently traceable facts |
@@ -163,7 +170,7 @@ in the library, not the test file, because Stage 2 has to import them.
   collapsing the candidate set is a separate, logged step. A parser that
   silently returns its first parse has already made that decision and destroyed
   the record of it.
-- **`Prov` is a tree, not a flat tag.** That is what makes the two modes two
+- **`Prov` is a tree, not a flat tag.** That is what makes the two tracks two
   folds over one data model instead of two data models.
 - **Composition is type-*checked*, not just performed.** `catTy` states the
   semantic type each category demands, and the suite verifies every lexical
@@ -221,5 +228,5 @@ Stage 2, per ARCHITECTURE.md: SDRT, RSA, and DisCoCat evaluated **in parallel
 against the same nine cases**, not in isolation. SDRT anchors directly onto the
 existing DRS boxes, so no translation layer is needed.
 
-Before that, the two collapse backends on the mode branches should be filled in
+Before that, the two collapse backends on the track branches should be filled in
 against the Stage 1 output that now exists.
