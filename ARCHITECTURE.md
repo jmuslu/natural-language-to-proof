@@ -342,7 +342,7 @@ not the same set, and the tier column above is the authority on which is which.
 
 **Decided.** The tracks stay as branches in this repo. No module restructure
 for now; `truth-mode` and `provenance-mode` keep their names. The tracks are
-built on and extended separately. The conversational track is defined here but
+built on and extended separately. The conversational track is defined here and
 has a branch, `conversational`, but no code yet — deliberately, see the prior-art
 section above.
 
