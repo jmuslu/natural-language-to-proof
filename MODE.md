@@ -1,9 +1,13 @@
-# Branch: `provenance-mode`
+# Branch: `provenance-mode` — the **letra** track
 
 Derivation-preserving. The derivation path matters, not just the resulting
 proposition.
 
-This file exists on the mode branches only. `main` has no `MODE.md`, so merging
+> `provenance-mode` **is** letra — the same thing under two names, not a mode
+> that feeds a track. The branch name came first; `letra` names it better. See
+> ARCHITECTURE.md.
+
+This file exists on the track branches only. `main` has no `MODE.md`, so merging
 `main` down never touches it.
 
 ## What this branch adds
