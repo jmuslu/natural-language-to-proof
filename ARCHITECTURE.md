@@ -9,10 +9,15 @@ Convert natural language text into discrete, checkable logical / proof-theoretic
 representations, with an explicit, *separated* layer for handling ambiguity and
 pragmatics probabilistically before collapsing to a final form.
 
-Two output modes from the same underlying augmentation stage:
+Two tracks off the same underlying augmentation stage. Each has two names, used
+interchangeably throughout this document:
 
-- **truth-mode** — lossy canonical compression
-- **provenance-mode** — derivation-preserving
+| Track | Also called | Character |
+|---|---|---|
+| **epistemic** | **truth-mode** | lossy canonical compression |
+| **letra** | **provenance-mode** | derivation-preserving |
+
+A third track, **conversational**, is described below. It has no second name.
 
 Primary language: Haskell (syntax + semantics + DRT core).
 Secondary target: Agda/Coq/Lean for proof-checking, once a proposition has been
@@ -40,12 +45,15 @@ how many candidates were in play, the rationale, and the provenance. A decision
 with no record of the alternatives it discarded is indistinguishable from a
 derivation, which is exactly the conflation this design forbids.
 
-## truth-mode vs. provenance-mode
+## epistemic (truth-mode) vs. letra (provenance-mode)
 
-> Further defined by [Three tracks](#three-tracks-epistemic-conversational-letra)
-> below. These two names describe *output modes*; that section names the two
-> *tracks* they are the entry points of. It sharpens this distinction rather than
-> replacing it — the split described here is unchanged.
+> `truth-mode` **is** the epistemic track and `provenance-mode` **is** letra —
+> the same two things under two sets of names, not modes feeding tracks. The
+> branch names came first; the track names name them better. Both are kept
+> because the branch names are what is checked out and pushed.
+>
+> Extended by [Three tracks](#three-tracks-epistemic-conversational-letra) below,
+> which adds the third track and the axes all three differ on.
 
 | | truth-mode | provenance-mode |
 |---|---|---|
@@ -63,7 +71,7 @@ source is later retracted or found unreliable.
 
 ### Implication for implementation
 
-The augmentation/generation stage is **identical** for both modes. Only the
+The augmentation/generation stage is **identical** for both tracks. Only the
 compression/collapse step differs.
 
 To avoid re-architecting later, every DRS box, discourse referent, and semantic
@@ -85,21 +93,22 @@ that carries real weight — you cannot max two paths on one tower. You can take
 the low tiers of a second path, but not both top tiers. A tower has exactly
 three paths, which is how many tracks there are.
 
-- **epistemic** (*firm domain oracle*) — has a domain verifier. Closed-world,
-  mechanical. Must collapse to a single proposition to hand to the checker.
+- **epistemic**, a.k.a. **truth-mode** (*firm domain oracle*) — has a domain
+  verifier. Closed-world, mechanical. Must collapse to a single proposition to
+  hand to the checker.
 - **conversational** (*probabilistic domain oracle*) — live cross-lingual
   interpretation. Propagates pragmatics probabilistically, steered by direct
   source-language-to-target-language input. Session-scoped: it lasts as long as
   one conversation and no longer. Sits between the other two.
-- **letra** (*provenance, no oracle*) — preserves **genealogy and provenance**
-  as it retains from individual graphs and nodes. Not necessarily any domain
-  verifier. Does not start from nothing: it retrieves from stored state and
-  builds progressively.
+- **letra**, a.k.a. **provenance-mode** (*provenance, no oracle*) — preserves
+  **genealogy and provenance** as it retains from individual graphs and nodes.
+  Not necessarily any domain verifier. Does not start from nothing: it retrieves
+  from stored state and builds progressively.
 
 The ordering is not arbitrary. The tracks differ by **how firm their warrant
 is**, and conversational is literally in between:
 
-| | epistemic | conversational | letra |
+| | epistemic<br>(truth-mode) | conversational | letra<br>(provenance-mode) |
 |---|---|---|---|
 | Oracle | firm, binary | **probabilistic, graded** | none |
 | Collapse | must, then verify | **provisional, revisable** | must not |
@@ -110,10 +119,10 @@ is**, and conversational is literally in between:
 | Needs Stage 2 | optional | **essential** | maybe |
 | Needs Stage 3 | nice to have | **essential** | open |
 
-Stage 4 (epistemic graphs) sits on the epistemic track. `truth-mode` and
-`provenance-mode` are the tier-3 entry points of the epistemic and letra tracks
-respectively — their names describe outputs, not tracks. The conversational
-track has a branch, `conversational`, but no code yet.
+Stage 4 (epistemic graphs) sits on the epistemic track. The branch `truth-mode`
+**is** the epistemic track and the branch `provenance-mode` **is** letra — same
+things, two naming schemes, not modes that feed tracks. The conversational track
+has a branch, `conversational`, but no code yet.
 
 ### Provenance and genealogy are two axes, not one
 
@@ -321,11 +330,11 @@ rather than a note in a design document, and it should not be discovered late.
 
 ### Tier map as of today
 
-| Tier | Shared base | epistemic | conversational | letra |
+| Tier | Shared base | epistemic<br>(truth-mode) | conversational | letra<br>(provenance-mode) |
 |---|---|---|---|---|
 | 0–2 | `Provenance`, `Trace`, `DRT.Canonical`, `DRT.Types`, `Collapse.Class`, `DRT.Build.Discourse` | | | |
 | 3 | | `Syntax/*`, `Semantics.Lambda`, `typeOf` as gate | Stage 2 RSA as soft oracle | genealogy DAG, node identity |
-| 4 | | `truth-mode` canonical form | Stage 3 speculative commit + rollback | per-individual graphs, retrieval |
+| 4 | | canonical compression, `Collapse.Truth` | Stage 3 speculative commit + rollback | per-individual graphs, retrieval |
 | 5 | | Agda/Coq/Lean; Stage 4 Kripke/DEL/AGM | incremental interpretation under a latency budget | supersession, lineage reachability |
 
 Low-tier borrows, in BTD6 terms: the conversational track takes **tier-2 letra**
@@ -341,7 +350,8 @@ not the same set, and the tier column above is the authority on which is which.
 ### Decisions and open questions
 
 **Decided.** The tracks stay as branches in this repo. No module restructure
-for now; `truth-mode` and `provenance-mode` keep their names. The tracks are
+for now. The branches keep the names `truth-mode` and `provenance-mode`, which
+are aliases for epistemic and letra rather than modes of them. The tracks are
 built on and extended separately. The conversational track is defined here and
 has a branch, `conversational`, but no code yet — deliberately, see the prior-art
 section above.
@@ -375,19 +385,20 @@ section above.
 
 ## Repository layout
 
-`main` holds everything shared. The two mode branches only ever touch their own
+`main` holds everything shared. The track branches only ever touch their own
 collapse backend and its tests.
 
 ```
 main ──┬── Provenance, Syntax (CCG), Semantics (lambda), DRT, Collapse.Class
        │
-       ├── truth-mode      → NL2Proof/Collapse/Truth.hs      + tests
-       └── provenance-mode → NL2Proof/Collapse/Provenance.hs + tests
+       ├── truth-mode      = epistemic → NL2Proof/Collapse/Truth.hs      + tests
+       ├── provenance-mode = letra     → NL2Proof/Collapse/Provenance.hs + tests
+       └── conversational              → docs only, no backend yet
 
-merge direction: main ──> both branches (never sideways)
+merge direction: main ──> every track branch (never sideways)
 ```
 
-Shared fixes land on `main` and merge down. Nothing merges between the two mode
+Shared fixes land on `main` and merge down. Nothing merges between the track
 branches.
 
 ## Stage plan
@@ -439,7 +450,7 @@ Test all three against the same fixed evaluation set, not in isolation.
   structures with attached confidence/ambiguity annotations rather than halting
   on first ambiguity.
 
-### Stage 4 — Epistemic graph layer (later, separate track)
+### Stage 4 — Epistemic graph layer (later, separate formalism)
 
 Explicitly **not** a natural continuation of Stages 1–3. A separate formalism
 that consumes Stage 1–3 output as input nodes. Needs its own literature:
