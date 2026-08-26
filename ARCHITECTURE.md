@@ -42,6 +42,11 @@ derivation, which is exactly the conflation this design forbids.
 
 ## truth-mode vs. provenance-mode
 
+> Further defined by [Two tracks: epistemic and letra](#two-tracks-epistemic-and-letra)
+> below. These two names describe *output modes*; that section names the two
+> *tracks* they are the entry points of. It sharpens this distinction rather than
+> replacing it — the split described here is unchanged.
+
 | | truth-mode | provenance-mode |
 |---|---|---|
 | What matters | final logical content only | the derivation path |
@@ -69,6 +74,137 @@ including it now is cheap.
 This is why `Prov` is a *tree* (`ProvRule` nodes over `ProvLex` leaves) rather
 than a flat source tag: truth-mode and provenance-mode are then two different
 folds over one shared structure, not two different data models.
+
+## Two tracks: epistemic and letra
+
+A lot of the middle is shared; the outer paths diverge.
+
+The working analogy is a Bloons TD6 tower. **The base upgrades are the same. The
+special powers and the specialization diverge.** And — the part of the analogy
+that carries real weight — you cannot max two paths on one tower. You can take
+the low tiers of a second path, but not both top tiers.
+
+Two tracks:
+
+- **epistemic** (*domain oracle*) — has a domain verifier. Closed-world,
+  mechanical. Must collapse to a single proposition to hand to the checker.
+- **letra** (*provenance*) — preserves **genealogy and provenance** as it
+  retains from individual graphs and nodes. Not necessarily any domain verifier.
+  Does not start from nothing: it retrieves from stored state and builds
+  progressively.
+
+Stage 4 (epistemic graphs) sits on the epistemic track. `truth-mode` and
+`provenance-mode` are the tier-3 entry points of the two tracks respectively —
+their names describe outputs, not tracks.
+
+### Provenance and genealogy are two axes, not one
+
+The shared vocabulary hides a real distinction:
+
+| | Provenance | Genealogy |
+|---|---|---|
+| Question | how was this node's *content* derived | what does this node *descend from* |
+| Shape | derivation tree | ancestry DAG (revisions, forks, merges) |
+| Time | none — immutable, within one run | the whole point |
+| Implemented | yes, `NL2Proof.Provenance` | **no** |
+
+Letra needs both. The current code has only the first.
+
+### What the current `Prov` cannot do
+
+```haskell
+data Prov = ProvLex SourceId Span String   -- leaves are text spans
+          | ProvRule RuleName [Prov]        -- a TREE
+```
+
+1. **The leaves are wrong for letra.** Its leaves are nodes in an individual's
+   graph, not spans in a document — and those nodes have their own lineage, so
+   provenance becomes **transitive across retrieval**, bottoming out late or
+   never. In this pipeline `provLeaves` always terminates at a `ProvLex`.
+2. **A tree cannot express a merge.** Genealogy with two parents is a DAG. A
+   tree duplicates shared ancestry instead of sharing it, which over many
+   revisions is exponential, not merely inelegant. Letra needs **addressable
+   node identity**, which `Prov` deliberately does not have.
+3. **Genealogy is a third fold class.** `how` (derivation tree) and `why`
+   (source set) both exist. Lineage — "descends from X via Y" — is *paths*, and
+   is neither.
+4. **Retraction is not supersession.** `retractSource` on the provenance-mode
+   branch *drops* every fact touching a source. Letra needs "this belief about
+   individual X was updated at T", where the prior fact is not wrong-and-deleted
+   but historical. Only the first is implemented.
+
+So `NL2Proof.Provenance` transfers to letra **as a design, not as a type**.
+`Trace` (Decision/Diagnostic) and `DRT.Canonical` (claim identity across
+retrievals) transfer much closer to as-is.
+
+### Where the two tracks genuinely conflict
+
+`NL2Proof.Collapse.Class.Selection`.
+
+The epistemic track *must* collapse — a verifier demands one proposition. Letra
+must *not* — the retained branch space is the product, and "the wider space of
+what everything could have looked like" **is** genealogy: abandoned branches kept
+as first-class nodes. `truth-mode` destroys exactly that.
+
+This is the "cannot max both paths" constraint in concrete form. A track can
+borrow the other's low tiers — letra using a type check for strict-basis
+admission, the epistemic track carrying provenance tags for traceability — but
+not both tier-5s.
+
+### Different warrant, therefore different core invariant
+
+With no domain verifier, letra substitutes **verification by lineage for
+verification by proof**. The epistemic track asks "is this well-typed"; letra
+asks "can I trace where this came from". Credibility is reconstructed from
+descent rather than checked mechanically.
+
+That inverts the failure mode, and so the tests:
+
+- epistemic track fails by **admitting an ill-typed thing** → assert
+  well-typedness (what the current 348 checks do)
+- letra fails by **losing lineage** → assert **reachability**: every node traces
+  to its roots, no orphans, no severed edges
+
+Lineage reachability is testable without any verifier.
+
+### Tier map as of today
+
+| Tier | Shared base | epistemic | letra |
+|---|---|---|---|
+| 0–2 | `Provenance`, `Trace`, `DRT.Canonical`, `DRT.Types`, `Collapse.Class` | | |
+| 3 | | `Syntax/*`, `Semantics.Lambda`, `typeOf` as gate | genealogy DAG, node identity |
+| 4 | | `truth-mode` canonical form | per-individual graphs, retrieval |
+| 5 | | Agda/Coq/Lean; Stage 4 Kripke/DEL/AGM | supersession, lineage reachability |
+
+One boundary worth being aware of: **`Syntax/*` and `Fragment.hs` sit on `main`
+but are used only by the epistemic path.** Composition from a closed lexicon is
+not something letra needs. That is fine as it stands — `main` is the shared
+repository, not a minimal core — but it means "on `main`" and "shared base" are
+not the same set, and the tier column above is the authority on which is which.
+
+### Decisions and open questions
+
+**Decided.** Both tracks stay as branches in this repo. No module restructure
+for now; `truth-mode` and `provenance-mode` keep their names. The two tracks are
+built on and extended separately.
+
+**Open — do not resolve these by assumption.**
+
+1. When letra says *individual* graphs: individual **people** (per-person
+   profiles) or individual **entities/nodes** in one graph? Determines whether
+   genealogy crosses graph boundaries — one DAG, or many with foreign
+   references.
+2. Does letra ingest natural language, or already-structured nodes? If
+   structured, `Syntax/*` and `Semantics.Lambda` do not transfer and the shared
+   surface is only `Provenance`, `Trace`, and `Canonical`.
+3. Does letra ultimately live in this repo or its own? One practical
+   constraint on the current dev machine: there is no cabal/stack/ghcup, so
+   there is **no way to share a Haskell library across two repos** short of a
+   submodule or a vendored copy. That argues for one repo, against the fact that
+   this repo's *name* is epistemic-path-specific.
+4. Whether to eventually hoist the divergence into `NL2Proof.Core.*` vs
+   path-specific modules, with a test asserting the base never imports a path.
+   That would make the shared base a checked invariant rather than a convention.
 
 ## Repository layout
 
