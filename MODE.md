@@ -1,8 +1,12 @@
-# Branch: `truth-mode`
+# Branch: `truth-mode` — the **epistemic** track
 
 Lossy canonical compression. Only the final logical content matters.
 
-This file exists on the mode branches only. `main` has no `MODE.md`, so merging
+> `truth-mode` **is** the epistemic track — the same thing under two names, not a
+> mode that feeds a track. The branch name came first; `epistemic` names it
+> better. See ARCHITECTURE.md.
+
+This file exists on the track branches only. `main` has no `MODE.md`, so merging
 `main` down never touches it.
 
 ## What this branch adds
