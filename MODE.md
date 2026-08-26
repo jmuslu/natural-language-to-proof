@@ -1,14 +1,18 @@
-# Branch: `conversational`
+# Branch: `conversational` — the **conversational** track
 
 Live cross-lingual interpretation. Probabilistic domain oracle, session-scoped.
+
+> Unlike the other two, this track has only one name. `truth-mode` **is** the
+> epistemic track and `provenance-mode` **is** letra; this branch is just
+> `conversational`.
 
 This file exists on the track branches only. `main` has no `MODE.md`, so merging
 `main` down never touches it.
 
 ## Status: no code, deliberately
 
-Unlike `truth-mode` and `provenance-mode`, this branch carries **no backend and
-no `ModeSpec.hs`**. That is a decision, not a gap.
+Unlike `truth-mode` (epistemic) and `provenance-mode` (letra), this branch
+carries **no backend and no `ModeSpec.hs`**. That is a decision, not a gap.
 
 `ARCHITECTURE.md` → *Prior art, and the reinvention tension* concludes that most
 of this track's mechanism already exists — source-side clarification aimed at a
@@ -92,5 +96,6 @@ git merge main
 ```
 
 Merge direction is **`main` → branch only**. Nothing merges between the three
-track branches. If a change here needs an edit to anything upstream of
+track branches — `truth-mode` (epistemic), `provenance-mode` (letra), and this
+one. If a change here needs an edit to anything upstream of
 `NL2Proof.Collapse.Class`, that change belongs on `main`.
