@@ -113,7 +113,7 @@ is**, and conversational is literally in between:
 Stage 4 (epistemic graphs) sits on the epistemic track. `truth-mode` and
 `provenance-mode` are the tier-3 entry points of the epistemic and letra tracks
 respectively — their names describe outputs, not tracks. The conversational
-track has no branch yet.
+track has a branch, `conversational`, but no code yet.
 
 ### Provenance and genealogy are two axes, not one
 
@@ -343,7 +343,8 @@ not the same set, and the tier column above is the authority on which is which.
 **Decided.** The tracks stay as branches in this repo. No module restructure
 for now; `truth-mode` and `provenance-mode` keep their names. The tracks are
 built on and extended separately. The conversational track is defined here but
-has no code and no branch yet.
+has a branch, `conversational`, but no code yet — deliberately, see the prior-art
+section above.
 
 **Open — do not resolve these by assumption.**
 
