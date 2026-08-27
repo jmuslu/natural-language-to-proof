@@ -575,6 +575,58 @@ ambiguity resolution in interactive translation. That is a freedom-to-operate
 question for a product rather than for research, it needs actual legal advice
 rather than a note in a design document, and it should not be discovered late.
 
+##### Internal resolution vs. escalation to a human
+
+An earlier version of this section used the CSLT patent lineage to argue that
+this track's novelty was narrow. **That was a misuse of the evidence.**
+
+CSLT's internal machinery — confidence scoring, hypothesis plausibility, language
+context — exists to decide **when to ask a human**. The resolution itself is
+always external. The human is the oracle, which is precisely why it works. This
+track uses the same internal signals to **resolve without asking**.
+
+Same signal, opposite use, and the difference is not one of degree: removing the
+human changes what the system has to do, because there is no longer an oracle to
+defer to. The patents claim clarification-dialogue methods. A live path with no
+clarifying question is a different mechanism, not a variant of theirs.
+
+Practical consequence, and explicitly not legal advice: keeping clarification off
+the live path both differentiates the design technically *and* reduces patent
+exposure, since claims directed at clarification methods are much less likely to
+read on a system that never clarifies. A real freedom-to-operate opinion is still
+needed before shipping.
+
+##### Stating the novelty claim so it survives contact
+
+Stated broadly, "internal probabilistic steering" describes what every NMT
+decoder already does — pick a reading silently under uncertainty. Checked against
+the literature, each component has prior art:
+
+| Component | Prior art |
+|---|---|
+| internal probabilistic ambiguity resolution | universal in NMT / LLM translation |
+| probabilistic pragmatic reasoning across turns | RSA / CRSA |
+| incremental belief propagation over a graph | ReDST's bipartite belief propagator; dialogue state tracking generally |
+| dependency-tracked invalidation of dependents | **Truth Maintenance Systems**, dependency-directed backtracking, incremental tabling, incremental chart parsing |
+| monolingual source-side clarification | CSLT — patented, and the path this track deliberately does *not* take |
+
+So the broad claim will not survive a reviewer: they will say "that is a language
+model with a belief tracker." The narrow claim should survive, and it is the one
+worth defending:
+
+> **Probabilistic — not boolean — dependency-directed belief revision over
+> pragmatic readings, used to resolve internally rather than to trigger
+> escalation, in live cross-lingual conversation.**
+
+The load-bearing word is *probabilistic*. Classical TMS justifications are
+boolean: an assumption is in or out, and retraction is exact. Pragmatic readings
+are graded, so retraction becomes **reweight-and-propagate** rather than
+remove-and-recompute. Combining graded belief with dependency-directed revision
+is the genuinely underexplored part — and it is exactly where both lineages are
+lossy: probabilistic pragmatics without addressable state, symbolic revision
+without gradedness. The gap is between two mature fields rather than inside
+either one.
+
 ### Tier map as of today
 
 | Tier | Shared base | epistemic<br>(truth-mode) | conversational | letra<br>(provenance-mode) |
@@ -650,14 +702,25 @@ section above.
     review — ReacTOD and CorrectionLM correct a single slot; neither traces
     dependents.
 
-    Pointer worth following: this is structurally the **incremental
-    recomputation** problem — given a changed input, find the transitive
-    dependents that must be invalidated and recompute the minimum. That is a
-    solved *shape* in another field: self-adjusting computation, Adapton, Salsa,
-    and the demand-driven incremental engines behind modern compilers and build
-    systems. Stage 3 already reaches for compiler analogies (attribute grammars,
-    JIT deopt); this is the precise formalism. Treat edit-to-scope as a **port**,
-    not an invention, and look there rather than in the MT literature.
+    Pointer, revised. The closest formalism is a **Truth Maintenance System**,
+    specifically an **assumption-based TMS (ATMS)** — which maintains several
+    mutually consistent contexts at once, with labels recording which
+    assumptions support each. That is a close fit for retaining candidate
+    readings alongside their supporting assumptions in-session, which is what
+    `selRejected` is for. **Dependency-directed backtracking** is the retraction
+    mechanism.
+
+    Secondary: the incremental-computation frameworks (self-adjusting
+    computation, Adapton, Salsa, demand-driven build systems) are the same shape
+    optimized for exactness and speed rather than for belief — useful for the
+    mechanics, less aligned on semantics. Incremental NLP already applies the
+    idea in chart parsing: track which parts of the input an output rests on, and
+    recompute only the affected region under a non-monotonic change.
+
+    The port is not free. **TMS is boolean; this is graded.** Retraction has to
+    become reweight-and-propagate rather than remove-and-recompute, which is the
+    novelty claim above and the reason this is a port with real work in it rather
+    than a lift.
    That would make the shared base a checked invariant rather than a convention.
 
 ## Repository layout
