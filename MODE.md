@@ -22,16 +22,25 @@ the interactive conversational spoken language translation lineage. RSA over
 multi-turn dialogue is active current work. Structured dialogue state with user
 corrections is well covered by dialogue state tracking.
 
+What is *not* prior art is this track's actual mechanism: CSLT's internal
+machinery decides **when to ask a human**, and the human is the oracle. This
+track uses the same signals to **resolve without asking**. Same signal, opposite
+use. See `ARCHITECTURE.md` → *Prior art, and where this track actually differs*.
+
 So the next step is **not** an implementation. It is a wizard-of-oz test:
 
 > Two conversations — (a) a plain MT engine, (b) the same engine plus a human
-> simulating the steering loop. Measure **repair turns** ("no, I meant…") and
-> time-to-mutual-understanding. Not BLEU, not COMET.
+> acting as an **oracle for the internal mechanism**, performing the pragmatic
+> resolution the system will eventually do itself. Measure **repair turns**
+> ("no, I meant…") and time-to-mutual-understanding. Not BLEU, not COMET.
 
-If repair turns do not drop, the premise is wrong and there is nothing for the
-machinery to sit on. Writing a backend before that test would be building on an
-unvalidated assumption, which is the thing this project's methodology notes exist
-to prevent.
+The human in that test stands in for the internal resolver, **not** for a
+steering UI. What is under test is whether correct pragmatic resolution reduces
+repair turns *at all*, independent of who performs it. If repair turns do not
+drop even with a perfect human oracle in the loop, the premise is wrong and no
+amount of internal machinery will rescue it. Writing a backend before that test
+would be building on an unvalidated assumption, which is what this project's
+methodology notes exist to prevent.
 
 The branch exists now so the track has a home, and so that whatever gets built
 lands somewhere with the right merge relationship to `main` from the start.
@@ -95,12 +104,16 @@ what changed, because two of these reverse earlier plans:
 
 ### Two things that block or bend this
 
-- **Who performs the edit is unresolved**, and it blocks mechanically specifying
-  the live loop. IMTLab's model assumes a bilingual translator editing target
-  text; neither participant is that — L1 cannot read L2, and L2 does not know
-  what L1 meant. Candidates: edit the back-translation, edit the source, or
-  recipient-side editing (well motivated, since other-initiated repair dominates
-  real conversation). Decide before building.
+- **Who performs the edit is unresolved.** IMTLab's model assumes a bilingual
+  translator editing target text; neither participant is that — L1 cannot read
+  L2, and L2 does not know what L1 meant. Candidates: edit the
+  back-translation, edit the source, or recipient-side editing (well motivated,
+  since other-initiated repair dominates real conversation).
+
+  Priority: this gates the **correction path**, not the core loop. Steering is
+  primarily internal, so the live loop is specified by the internal propagation
+  regardless of how this resolves. It was previously recorded as blocking; that
+  was wrong.
 - **Silence is not confirmation.** A non-edit may mean the human did not notice
   or did not care. Treating default-accept as positive evidence will drift the
   calibration invariant optimistically — the belief update should read *not
@@ -115,17 +128,35 @@ from. Same argument as provenance tagging from day one.
 ### The load-bearing unbuilt piece
 
 **Edit-to-scope inference**: given an inline edit, how far downstream to
-invalidate. Nothing in the prior-art review claims it. But it is structurally the
-**incremental recomputation** problem — self-adjusting computation, Adapton,
-Salsa, and demand-driven build systems already solve that shape. Treat it as a
-port, not an invention, and look there rather than in the MT literature.
+invalidate.
+
+The closest formalism is a **Truth Maintenance System**, specifically an
+**assumption-based TMS (ATMS)** — which maintains several mutually consistent
+contexts at once, with labels recording which assumptions support each. That maps
+directly onto retaining candidate readings alongside their supporting assumptions
+in-session, which is what `selRejected` is for. **Dependency-directed
+backtracking** is the retraction mechanism.
+
+Secondary: self-adjusting computation, Adapton, Salsa, and demand-driven build
+systems are the same shape optimized for exactness and speed rather than for
+belief — useful for the mechanics, less aligned on semantics.
+
+**The port is not free: TMS is boolean, and this is graded.** Retraction has to
+become reweight-and-propagate rather than remove-and-recompute. That gap is the
+track's defensible novelty claim, not an implementation detail — see
+`ARCHITECTURE.md` → *Stating the novelty claim so it survives contact*.
 
 ## Hard constraints, already settled
 
-- **Wrap, don't rebuild.** An MT engine is a candidate generator, which is all
-  `ARCHITECTURE.md`'s non-goals permit an LLM to be trusted as. Do not rebuild
-  lexically constrained decoding or a wait-*k* policy. Use an existing engine and
-  IMTLab for harnessing.
+- **Wrap the decoder; build the pragmatic layer.** Not a flat "wrap, don't
+  rebuild" — stated that way it contradicts the point of the track. Wrap surface
+  generation, constrained decoding, and incremental output policies: mature, and
+  duplicating them buys nothing. **Build** the pragmatic layer, because that is
+  where existing systems are lossy and the lossiness is architectural — an
+  opaque engine exposes no inference chain, so there is nothing to attach
+  dependency edges to and nothing to invalidate. You cannot add
+  dependency-tracked retraction over a black box. The engine is a candidate
+  generator; the DRS plus `Prov` is the addressable state.
 - **Latency is a first-class constraint**, uniquely to this track. Full RSA is
   nested recursion over a candidate set and may not fit a conversational budget.
   That number caps how much of Stage 2 can run live.
