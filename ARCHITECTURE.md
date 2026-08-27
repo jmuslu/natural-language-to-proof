@@ -488,131 +488,62 @@ agreements.
 resolution `default-accepted` vs `corrected` as it happens. Cheap to add now,
 expensive to retrofit — the same argument as provenance tagging from day one.
 
-#### Prior art, and the reinvention tension
+#### Prior art, and where this track actually differs
 
-Checked against the literature in August 2026 rather than assumed. **Most of this
-track's mechanism already exists, and the novelty is narrower than the initial
-framing suggested.** Recording that here so it does not get re-litigated
-optimistically later.
+Checked against the literature in August 2026 rather than assumed. Two findings,
+pointing in opposite directions. Both are recorded, because taking either one
+alone gets the design wrong.
 
-Already built, published, and in places patented — do not rebuild:
+##### One: the component mechanisms are mature
+
+Do not rebuild these.
+
+| Mechanism | Prior art |
+|---|---|
+| Term-pair constraints | lexically constrained decoding: grid beam search, dynamic beam allocation |
+| Incremental output | simultaneous MT: wait-*k* policies, re-translation with stability/latency tradeoffs |
+| RSA over multi-turn dialogue | Collaborative RSA (2026); RSA already applied to translation, captioning, dialogue |
+| Incremental belief propagation over a graph | ReDST's bipartite belief propagator; dialogue state tracking generally |
+| Structured dialogue state plus user corrections | MultiWOZ 2.2/2.3, CorrectionLM, ReacTOD's symbolic validator |
+| Dependency-tracked invalidation of dependents | Truth Maintenance Systems, dependency-directed backtracking, incremental tabling, incremental chart parsing |
+| Harness for building / evaluating / diagnosing IMT systems | IMTLab, open source |
+| Monolingual vs bilingual context for dialogue MT disambiguation | BSD-corpus work on speech dialogue translation |
+
+Separately, the **external** steering path — which this track deliberately does
+*not* take, and which is the most heavily protected area:
 
 | Mechanism | Prior art |
 |---|---|
 | Source-side clarification to a monolingual speaker (*"did you mean nail as in 'they used nails to fix the door', or 'she painted her nails red'"*) | interactive conversational spoken language translation (CSLT), *Machine Translation* journal 2015 |
 | Ambiguity detection from ASR confidence + hypothesis plausibility + language context | same lineage; US 8214197, and the "Device for extracting information from a dialog" patent family |
 | Steering that reweights the model — the selected sense raises that word's translation probability | same |
-| Term-pair constraints | lexically constrained decoding: grid beam search, dynamic beam allocation |
-| Incremental output | simultaneous MT: wait-*k* policies, re-translation with stability/latency tradeoffs |
-| RSA over multi-turn dialogue | Collaborative RSA (2026); RSA already applied to translation, captioning, dialogue |
-| Structured dialogue state plus user corrections | dialogue state tracking: MultiWOZ 2.2/2.3, CorrectionLM, ReacTOD's symbolic validator |
-| Harness for building/evaluating/diagnosing IMT systems | IMTLab, open source |
-| Monolingual vs bilingual context for dialogue MT disambiguation | BSD-corpus work on speech dialogue translation between speakers of different languages |
 
-So "propagate pragmatics probabilistically and let the speaker steer it" is
-solved enough that it shipped and was patented. That the premise is not
-speculative is the useful part.
-
-**How to read that table.** It bounds what is already handled *at the decoder and
-interaction level*. It does not bound what is worth doing. Every row in it is
-lossy at the pragmatic layer, and that lossiness is not incidental — it is the
-gap this track exists to fill. Prior art tells you where the current ceiling is;
-the points where it leaks are the targets, not reasons to defer. An earlier
-version of this section drew the opposite conclusion and leaned too far toward
-deference; that was a mistake in reasoning, not just in emphasis.
-
-##### Where the "wrap, don't rebuild" boundary actually falls
-
-- **Wrap the decoder.** Surface generation, lexically constrained decoding,
-  incremental output policies. Mature, and duplicating them buys nothing.
-- **Build the pragmatic layer.** This is exactly where existing systems are
-  lossy, and the lossiness follows from their architecture: an opaque engine does
-  not expose an inference chain, so there is nothing to attach dependency edges
-  to and nothing to invalidate. **You cannot add dependency-tracked retraction
-  over a black box.**
-
-So "wrap, don't rebuild" and "fix the lossy pragmatic layer" are in direct
-tension if "wrap" is read as covering everything. The resolution is the split
-this repository already has: the engine is a **candidate generator**, and the DRS
-plus `Prov` is the **addressable state** that reasoning and invalidation run
-over. The engine informs that state; it does not own it. That is the same
-non-goal about LLMs as candidate generators, applied with the boundary drawn in
-the right place.
-
-**What did not turn up — where this track's contribution has to live:**
-
-1. **Dependency-tracked retraction of pragmatic inference chains.** DST
-   corrections fix *slot values*; ReacTOD enforces coreference consistency on
-   state update. Neither locates and unwinds *every downstream inference that
-   rested on a corrected reading*. That is the `Prov`-as-dependency-edges job,
-   and it is the piece existing systems structurally do not do.
-2. **Repair rate as the evaluation target.** Dialogue repair is well studied as a
-   *phenomenon*, and conversational-AI metrics exist, but repair rate and
-   time-to-mutual-understanding do not appear to be used as the objective for a
-   steered bilingual conversation system. MT metrics score a text; the claim here
-   is about a conversation *converging*, which is a different quantity.
-3. **A symbolic discourse representation (DRT plus provenance) as the pragmatic
-   state**, rather than context-window conditioning or slot filling. Inspectable
-   and surgically correctable, not an opaque activation.
-
-**Two constraints that follow. Do not re-litigate these.**
-
-- **Wrap the decoder; build the pragmatic layer.** See the boundary note below —
-  the flat version of this constraint was too broad. An MT engine is a candidate
-  generator — which the
-  non-goals below already say is all an LLM may be trusted as. Building
-  constrained decoding or a wait-*k* policy from scratch would be precisely the
-  "expand the representational space" versus "avoid information loss" conflation
-  those guardrails warn against. Use an existing engine; use IMTLab for
-  harnessing.
-- **Measure repair, not BLEU.** Test the premise with a wizard-of-oz comparison
-  — plain engine versus engine plus a human simulating the steering loop —
-  *before* building anything. If repair turns do not drop, the premise is wrong,
-  and that is worth learning in a week rather than a year.
-
-**Non-engineering risk.** There are granted patents covering source-side
-ambiguity resolution in interactive translation. That is a freedom-to-operate
-question for a product rather than for research, it needs actual legal advice
-rather than a note in a design document, and it should not be discovered late.
-
-##### Internal resolution vs. escalation to a human
-
-An earlier version of this section used the CSLT patent lineage to argue that
-this track's novelty was narrow. **That was a misuse of the evidence.**
+##### Two: none of that is this track's mechanism
 
 CSLT's internal machinery — confidence scoring, hypothesis plausibility, language
 context — exists to decide **when to ask a human**. The resolution itself is
-always external. The human is the oracle, which is precisely why it works. This
-track uses the same internal signals to **resolve without asking**.
+always external. The human is the oracle, which is precisely why it works.
 
-Same signal, opposite use, and the difference is not one of degree: removing the
-human changes what the system has to do, because there is no longer an oracle to
-defer to. The patents claim clarification-dialogue methods. A live path with no
+**This track uses the same internal signals to resolve *without* asking.** Same
+signal, opposite use, and the difference is not one of degree: removing the human
+changes what the system has to do, because there is no longer an oracle to defer
+to. The patents claim clarification-dialogue methods. A live path with no
 clarifying question is a different mechanism, not a variant of theirs.
 
-Practical consequence, and explicitly not legal advice: keeping clarification off
-the live path both differentiates the design technically *and* reduces patent
-exposure, since claims directed at clarification methods are much less likely to
-read on a system that never clarifies. A real freedom-to-operate opinion is still
-needed before shipping.
+**How to read the first table.** It bounds what is already handled *at the decoder
+and interaction level*. It does not bound what is worth doing. Every row in it is
+lossy at the pragmatic layer, and that lossiness is not incidental — it is the gap
+this track exists to fill. Prior art tells you where the current ceiling is; the
+points where it leaks are the targets, not reasons to defer.
 
 ##### Stating the novelty claim so it survives contact
 
-Stated broadly, "internal probabilistic steering" describes what every NMT
-decoder already does — pick a reading silently under uncertainty. Checked against
-the literature, each component has prior art:
+Stated broadly, "internal probabilistic steering" describes what every NMT decoder
+already does — pick a reading silently under uncertainty. Every component above has
+prior art, so the broad claim invites the obvious dismissal: *"that is a language
+model with a belief tracker."*
 
-| Component | Prior art |
-|---|---|
-| internal probabilistic ambiguity resolution | universal in NMT / LLM translation |
-| probabilistic pragmatic reasoning across turns | RSA / CRSA |
-| incremental belief propagation over a graph | ReDST's bipartite belief propagator; dialogue state tracking generally |
-| dependency-tracked invalidation of dependents | **Truth Maintenance Systems**, dependency-directed backtracking, incremental tabling, incremental chart parsing |
-| monolingual source-side clarification | CSLT — patented, and the path this track deliberately does *not* take |
-
-So the broad claim will not survive a reviewer: they will say "that is a language
-model with a belief tracker." The narrow claim should survive, and it is the one
-worth defending:
+The narrow claim does not, and it is the one worth defending:
 
 > **Probabilistic — not boolean — dependency-directed belief revision over
 > pragmatic readings, used to resolve internally rather than to trigger
@@ -621,11 +552,74 @@ worth defending:
 The load-bearing word is *probabilistic*. Classical TMS justifications are
 boolean: an assumption is in or out, and retraction is exact. Pragmatic readings
 are graded, so retraction becomes **reweight-and-propagate** rather than
-remove-and-recompute. Combining graded belief with dependency-directed revision
-is the genuinely underexplored part — and it is exactly where both lineages are
-lossy: probabilistic pragmatics without addressable state, symbolic revision
-without gradedness. The gap is between two mature fields rather than inside
-either one.
+remove-and-recompute.
+
+That combination is the underexplored part, and note *where* it is
+underexplored — between two mature fields rather than inside either one:
+probabilistic pragmatics without addressable state, symbolic revision without
+gradedness. The seam is the opportunity.
+
+##### Where the "wrap, don't rebuild" boundary falls
+
+- **Wrap the decoder.** Surface generation, lexically constrained decoding,
+  incremental output policies. Mature; duplicating them buys nothing.
+- **Build the pragmatic layer.** This is exactly where existing systems are
+  lossy, and the lossiness follows from their architecture: an opaque engine does
+  not expose an inference chain, so there is nothing to attach dependency edges
+  to and nothing to invalidate. **You cannot add dependency-tracked retraction
+  over a black box.**
+
+Stated flat, "wrap, don't rebuild" contradicts the point of the track. The
+resolution is the split this repository already has: the engine is a **candidate
+generator**, and the DRS plus `Prov` is the **addressable state** that reasoning
+and invalidation run over. The engine informs that state; it does not own it.
+Same non-goal about LLMs as candidate generators, with the boundary drawn in the
+right place.
+
+##### What did not turn up
+
+1. **Dependency-tracked retraction of pragmatic inference chains.** DST
+   corrections fix *slot values*; ReacTOD enforces coreference consistency on
+   state update. Neither locates and unwinds *every downstream inference that
+   rested on a corrected reading*. That is the `Prov`-as-dependency-edges job.
+   TMS does do this — boolean-only, which is the port cost noted above.
+2. **Repair rate as the evaluation target.** Dialogue repair is well studied as a
+   *phenomenon*, and conversational-AI metrics exist, but repair rate and
+   time-to-mutual-understanding do not appear to be used as the objective for a
+   cross-lingual conversation system. MT metrics score a text; the claim here is
+   about a conversation *converging*, which is a different quantity.
+3. **A symbolic discourse representation (DRT plus provenance) as the pragmatic
+   state**, rather than context-window conditioning or slot filling. Inspectable
+   and surgically correctable, not an opaque activation.
+
+##### Constraints that follow
+
+- **Wrap the decoder; build the pragmatic layer.** Per the boundary note above.
+  Do not rebuild constrained decoding or a wait-*k* policy. Use an existing
+  engine, and IMTLab or equivalent for the edit-operation harness.
+- **Measure repair, not BLEU.** Test the premise with a wizard-of-oz comparison
+  before building anything.
+
+  One correction to how that test should be set up: the human in the
+  wizard-of-oz stands in for the **internal mechanism**, not for a steering UI.
+  They act as an oracle performing the pragmatic resolution the system will
+  eventually do itself. What is being tested is whether *correct pragmatic
+  resolution reduces repair turns at all*, independent of who performs it. If
+  repair turns do not drop even with a perfect human oracle in the loop, the
+  premise is wrong and no amount of internal machinery will rescue it. That is
+  worth learning in a week rather than a year.
+
+##### Non-engineering risk
+
+There are granted patents covering source-side ambiguity resolution in
+interactive translation. A freedom-to-operate question for a product rather than
+for research; it needs real legal advice rather than a note in a design document,
+and it should not be discovered late.
+
+One consequence in this design's favour, and explicitly not legal advice: keeping
+clarification off the live path both differentiates the mechanism technically
+*and* reduces exposure, since claims directed at clarification methods are much
+less likely to read on a system that never clarifies.
 
 ### Tier map as of today
 
