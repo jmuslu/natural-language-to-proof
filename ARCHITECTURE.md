@@ -97,9 +97,10 @@ three paths, which is how many tracks there are.
   verifier. Closed-world, mechanical. Must collapse to a single proposition to
   hand to the checker.
 - **conversational** (*probabilistic domain oracle*) — live cross-lingual
-  interpretation. Propagates pragmatics probabilistically, steered by direct
-  source-language-to-target-language input. Session-scoped: it lasts as long as
-  one conversation and no longer. Sits between the other two.
+  interpretation. Propagates pragmatics probabilistically, steered by inline
+  edits to a streamed best-effort translation. Session-scoped in the strong
+  sense: nothing machine-readable survives the conversation. Sits between the
+  other two.
 - **letra**, a.k.a. **provenance-mode** (*provenance, no oracle*) — preserves
   **genealogy and provenance** as it retains from individual graphs and nodes.
   Not necessarily any domain verifier. Does not start from nothing: it retrieves
@@ -228,11 +229,11 @@ document:
 2. **The steering function is Stage 3's rollback trigger.** Stage 3 already
    specifies "commit to the highest-confidence reading, proceed, but keep a path
    to unwind and re-derive if later context contradicts an earlier pragmatic
-   inference." A steering input — a direct source-to-target pairing supplied
-   mid-conversation — *is* a later-context contradiction. In RSA terms it is a
-   prior update: the human pins part of the mapping and the posterior over every
-   downstream reading is reweighted. Propagation falls out of that; it does not
-   need separate machinery.
+   inference." A steering input — an inline edit to the streamed translation,
+   supplied mid-conversation — *is* a later-context contradiction. In RSA terms
+   it is a prior update: the human pins part of the mapping and the posterior
+   over every downstream reading is reweighted. Propagation falls out of that;
+   it does not need separate machinery.
 
 3. **`Prov` acquires a third job: dependency tracking for invalidation.** Not
    span traceability (epistemic) and not lineage (letra), but the edges needed
@@ -263,11 +264,195 @@ document:
   round-trip is the only available signal; calibration needs an offline set of
   transcripts with annotated intended readings.
 - **Steering inputs will conflict with each other.** Two corrections can
-  contradict, so later must supersede earlier. That is a session-scoped,
-  degenerate form of letra's temporal axis — needed *without* needing genealogy.
+  contradict, so later must win. Note this is *within* the live joint thread
+  only — see the state model below, which removed the persistent substrate that
+  would have made this letra's supersession problem.
 - **The two speakers are not symmetric.** Pragmatic expectations differ per
-  participant, so per-speaker state within the session is likely required: a
-  session-scoped version of letra's per-individual profiles.
+  participant. Note that the state-model decision below removed per-speaker
+  *persistent* profiles; whether asymmetry needs representing *within* a session
+  is open.
+
+#### Turn cycle
+
+Two-party, L1 ↔ L2:
+
+```
+L1E (utterance) → L2S (translate 1→2) → L2E (reply)
+→ L1S (translate reply back) → L1E (responds) → L2S → ...
+```
+
+Every human turn (`E`) is followed by a system translation turn (`S`) targeting
+the other party. Standard interpreter-mediated shape — no open questions here.
+
+#### State model: fully session-scoped, no persistence
+
+**This supersedes any earlier description of this track borrowing persistent
+per-speaker state.**
+
+An earlier plan had three graph scopes — an L1 profile, an L2 profile, and a
+joint thread — with entrainment edges promoting session content into persistent
+per-speaker profiles at teardown. **That is reversed.**
+
+Rationale: the system's purpose is to help people build their own pragmatic
+competence, not to get quietly better at not needing them to. A persistent
+profile graph that auto-resolves recurring ambiguity is a permanent crutch — the
+better it works, the less the human ever needs to learn.
+
+- No L1 profile graph, no L2 profile graph. Nothing persists as
+  **machine-readable** state across sessions.
+- Only the joint thread exists, and it lives and dies with one conversation, in
+  full. No deferred-commit step, no entrainment promotion, nothing carried
+  forward.
+- Each new session starts from the same graph-free footing as the first one ever
+  run for that pair. Intentional, not a limitation to fix later.
+
+Two consequences, both of which supersede the tier map below:
+
+1. This track **no longer borrows letra's tier 2** in the way that map
+   originally described. With no persistent substrate there is nothing to borrow
+   retrieval semantics from, so the two tracks are more cleanly separated than
+   implied.
+2. Because nothing crosses into persistent state, this track **never needs
+   letra's not-yet-built supersession mechanism** ("belief updated at T, prior
+   not deleted"). Rollback only ever touches the live joint thread, which is
+   discarded at teardown anyway. That gap stays real *for letra*; conversational
+   no longer supplies a second reason to build it.
+
+**Three things to hold onto about the rationale** — concerns, not decisions:
+
+- **`machine-readable` is load-bearing.** Read literally, "nothing persists"
+  would forbid the post-session artifact, which is the feature that actually
+  serves the pedagogical goal — spaced repetition works by persisting what you
+  got wrong. Human-readable persistence is not excluded and should not later be
+  read as excluded.
+- **No-persistence does not by itself remove the crutch.** The wrapped MT engine
+  is an enormous persistent store of pragmatic defaults. The session starts
+  graph-free; the *system* starts heavily pre-loaded. "Each session starts from
+  the same footing as the first" is true of this track's own state and false of
+  the system as a whole. Worth stating accurately so the pedagogical claim is not
+  over-trusted.
+- **L1 and L2 need not both be learners.** Blanket no-persistence treats them
+  symmetrically, but a language learner and a shopkeeper are not in the same
+  position. Open.
+
+#### Interaction posture: autocomplete, not clarification
+
+The actual differentiator. It **resolves** the earlier open question of whether a
+steering input binds a term-pair or a full reading — by not requiring the human
+to state a correction in the abstract at all.
+
+- The system streams its best-effort translation inline, ghost-text style, rather
+  than pausing to ask a disambiguating question.
+- The human either keeps talking (implicit accept — the majority case, zero
+  interaction cost) or makes a small inline edit (implicit correction).
+- **The steering signal is the diff** between proposed and human-retained text,
+  not a separately elicited statement. Term / sense / reading scope is *inferred
+  from the diff* rather than declared.
+- This is the **IMTLab** interaction model — keep / insert / replace / delete /
+  blank-fill, plus prefix-constrained decoding — **not** the CSLT
+  clarification-dialogue model.
+- **Do not build a clarifying-question flow on the live path.** It costs a
+  conversational turn and works directly against the fluidity goal. CSLT-style
+  clarification, if wanted at all, belongs in the post-session path.
+- Do not rebuild the MT engine or the constrained decoding. Wrap an existing
+  engine; wrap IMTLab or an equivalent for the edit-operation harness. Already in
+  the non-goals, and it binds harder now that the interaction model is pinned to
+  edit-diffs specifically.
+
+##### Unresolved and load-bearing: who performs the edit?
+
+IMTLab's edit model assumes a **bilingual translator** editing target text.
+Neither participant here is that. For the `L2S` turn:
+
+- L1 produced the utterance but cannot read L2, so cannot judge the proposal.
+- L2 can read the proposal but does not know what L1 meant.
+
+Three candidate resolutions, none costless:
+
+1. **Edit the back-translation.** Show L1 a round-trip into L1 and let them edit
+   that; the diff steers the forward translation. Keeps operation monolingual and
+   reuses the round-trip machinery already specified as the evaluation method.
+   Cost: back-translation is lossy, so an edit to the round-trip does not
+   uniquely determine the intended change to the forward text — you are steering
+   through a noisy channel.
+2. **Edit the source.** L1 sees their own transcribed utterance with ambiguity
+   marked, and rephrases. Monolingually safe, but this is *not* the IMTLab
+   target-edit model: the diff is in L1 and the constrained-decoding hook is a
+   different one.
+3. **Recipient-side edit.** L2 edits the L2 text, signalling "this did not parse
+   / I think you meant X." Monolingually coherent, and well motivated by
+   conversation analysis — *other*-initiated repair is the dominant repair type
+   in real conversation, and the recipient is the party actually positioned to
+   notice the failure.
+
+This needs deciding before the live loop can be mechanically specified, because
+it determines where the diff lives and therefore what edit-to-scope inference
+operates on.
+
+#### Rollback scope
+
+- **No edit** → commit stands, belief terms update, nothing surfaces.
+- **Small edit** → reweighting and invalidation of only what that edit implicates
+  downstream, not a full session stop.
+
+This keeps Stage 3's commit-then-unwind design intact. The addition is that
+**unwind scope is sized to the edit**, not to the whole thread — otherwise the
+correction becomes the fluidity cost it was meant to avoid.
+
+One correction to the no-edit case: **silence is not confirmation.** A non-edit
+may mean the human did not notice, did not care, or accepted a wrong reading. If
+default-accept is treated as positive evidence, the calibration invariant this
+track inherits will drift optimistically. The belief update should read *not
+disconfirmed*, not *confirmed*. This is also part of why the
+`default-accepted` / `corrected` tag below is worth having.
+
+#### Where CRSA fits
+
+CRSA's belief terms (`B_L,t`, `B_S,t` — each agent's running belief about the
+other's private meaning, built from utterance history) are the right shape for
+propagating an edit's effect automatically, once the edit is treated as an
+observed utterance. Three mismatches to design around rather than assume away:
+
+- **Fixed prior vs. lexicon mutation.** CRSA assumes a fixed prior over private
+  meanings and task target for the whole conversation — it models converging
+  beliefs about a *static* truth, not renegotiating the truth itself. An edit
+  saying "this word maps to that word from here on" is closer to mutating the
+  lexicon function than to updating a belief. CRSA does not test this case;
+  expect to hand-engineer the lexicon-mutation path the way the paper's own
+  `CRSA-W_t` variant hand-encoded one narrow structural rule, rather than finding
+  a general mechanism to reuse.
+
+  Sharper: a mid-conversation lexicon mutation also breaks CRSA's **common-ground**
+  assumption, not only its prior. If L1 steers a term, that mutation is common
+  ground only if L2 knows it happened — and in an interpreter-mediated setting it
+  is invisible to L2. The two belief terms then diverge in a way CRSA does not
+  model.
+- **Unproven at this scale.** CRSA's real-dialogue (LLM-driven) results showed
+  the multi-turn belief-sharpening effect barely beating classic single-turn RSA;
+  the clean win was only in the closed synthetic reference game. Treat CRSA as
+  the right theoretical skeleton, unproven for open-vocabulary live dialogue.
+- **Per-turn cost** is `O(K · |M_A| · |M_B| · |Y| · |U_t|)`. That is the number
+  to plug into the still-open latency budget once utterance and meaning space
+  sizes are bounded for a concrete use case — a coffee order has a small
+  effective `|U_t|`; open conversation does not.
+
+  Mitigation worth testing before optimizing anything: cap `K` at 1 (plain
+  single-turn RSA) by default and escalate to full CRSA only when the candidate
+  set is genuinely contested. That pairs with the surfaced-ambiguity behaviour
+  this track already wants, and keeps the expensive path rare.
+
+#### Post-session artifact
+
+Open, and deliberately deprioritized — mechanical correctness of the live loop
+comes first.
+
+If built, weight it toward corrected points over accepted-by-default points, per
+this document's own principle that disagreements are more valuable than
+agreements.
+
+**Required now, even though nothing consumes it yet:** Stage 3 must tag each
+resolution `default-accepted` vs `corrected` as it happens. Cheap to add now,
+expensive to retrofit — the same argument as provenance tagging from day one.
 
 #### Prior art, and the reinvention tension
 
@@ -337,9 +522,13 @@ rather than a note in a design document, and it should not be discovered late.
 | 4 | | canonical compression, `Collapse.Truth` | Stage 3 speculative commit + rollback | per-individual graphs, retrieval |
 | 5 | | Agda/Coq/Lean; Stage 4 Kripke/DEL/AGM | incremental interpretation under a latency budget | supersession, lineage reachability |
 
-Low-tier borrows, in BTD6 terms: the conversational track takes **tier-2 letra**
-— session-scoped supersession and per-speaker state — without the persistence or
-the lineage DAG. It does not take letra's tier 5, and letra does not take its.
+Low-tier borrows, in BTD6 terms: **superseded.** This map originally had the
+conversational track taking tier-2 letra — session-scoped supersession and
+per-speaker state. The state-model decision above removed the persistent
+substrate that borrow depended on, so conversational and letra are more cleanly
+separated than this map implies: conversational borrows letra's *shape* for
+nothing, and needs no part of its supersession machinery. It still shares the
+tier 0–2 base with both other tracks.
 
 One boundary worth being aware of: **`Syntax/*` and `Fragment.hs` sit on `main`
 but are used only by the epistemic path.** Composition from a closed lexicon is
@@ -375,12 +564,37 @@ section above.
 5. Conversational: what is the latency budget per utterance? That number, more
    than any design preference, decides how much RSA can run live and whether
    incremental interpretation is required from the start or can be deferred.
-6. Conversational: does a steering input bind a *term pair* (this word maps to
-   that word) or a *reading* (this utterance meant that)? Term pairs are cheap
-   and local; readings are what actually propagate, and are much harder to
-   elicit from a user mid-conversation.
-7. Conversational: two-party only, or N-party? Per-speaker state and pairwise
-   language mapping both change shape at N > 2.
+6. ~~Conversational: term pair or reading?~~ **Resolved** by the autocomplete
+   posture: neither is declared. The steering signal is the edit diff, and scope
+   is inferred from it.
+7. Conversational: two-party only, or N-party? Everything designed so far — turn
+   cycle, belief terms, joint thread — assumes exactly two parties. N > 2 changes
+   the shape of the joint thread and the belief-term factorization, not just the
+   turn-cycle diagram. It also breaks the ghost-text edit model, since there is
+   no longer a single target text to edit.
+8. Conversational: **who performs the edit?** See "who performs the edit"
+   above — back-translation, source-side, or recipient-side. Blocks mechanical
+   specification of the live loop.
+9. Conversational: what exactly counts as a **session boundary**? Needs a
+   concrete definition (e.g. one conversation-instance identifier) before
+   "session-scoped, discarded at teardown" is implementable rather than a stated
+   policy. Note the awkward case: a dropped connection resuming 30 seconds later
+   should probably not reset to graph-free, which means either a resumption
+   window or accepting the reset.
+10. Conversational: **edit-to-scope inference.** Given a human's inline edit,
+    determine how far downstream to invalidate. The single most load-bearing
+    unbuilt piece of the live loop, and unclaimed by anything in the prior-art
+    review — ReacTOD and CorrectionLM correct a single slot; neither traces
+    dependents.
+
+    Pointer worth following: this is structurally the **incremental
+    recomputation** problem — given a changed input, find the transitive
+    dependents that must be invalidated and recompute the minimum. That is a
+    solved *shape* in another field: self-adjusting computation, Adapton, Salsa,
+    and the demand-driven incremental engines behind modern compilers and build
+    systems. Stage 3 already reaches for compiler analogies (attribute grammars,
+    JIT deopt); this is the precise formalism. Treat edit-to-scope as a **port**,
+    not an invention, and look there rather than in the MT literature.
    That would make the shared base a checked invariant rather than a convention.
 
 ## Repository layout
