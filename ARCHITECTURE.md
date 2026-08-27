@@ -218,6 +218,16 @@ for correction — buys a degree of fluidity that is otherwise unavailable.
 **Not** about genealogy or provenance inherently. Provenance appears only in
 service of *the expectation of understanding context*.
 
+The language-to-formal-representation theme is the **same** as the other tracks'.
+This is another implementation of that theme for a specific use case where it is
+genuinely useful — not a different project wearing the same vocabulary.
+
+**Read this section as a scaffold, not a closed design.** Tensions are recorded
+where they are still tensions, on the expectation that building will make the
+resolutions obvious and they get filled in then. A tension written down and left
+open is more useful here than one closed prematurely by deferring to whatever the
+literature happens to do — see the note on how to read the prior-art table below.
+
 Four things follow, and three of them are already specified elsewhere in this
 document:
 
@@ -335,6 +345,27 @@ Two consequences, both of which supersede the tier map below:
   symmetrically, but a language learner and a shopkeeper are not in the same
   position. Open.
 
+#### Steering is internal, probabilistic, and under the hood
+
+**The primary mechanism is the system steering itself** — propagating pragmatic
+constraints through its own state, probabilistically, without a human
+intervening. External steering (the inline edit described next) is a *corrective
+channel*, not the control path. Getting the internal propagation right is the
+goal; the edit path exists because the internal mechanism will sometimes be
+wrong.
+
+One unifying consequence, worth stating because it collapses a lot of apparent
+complexity: **an edit and an ordinary following utterance are the same kind of
+thing to the machinery** — an observation that updates the distribution over
+readings. They differ in confidence, not in kind. CRSA's belief terms already
+work this way: `B_L,t` and `B_S,t` update from utterance history with no human in
+the loop. An edit is simply a high-confidence observation entering the same
+update.
+
+That reframing demotes several questions that look blocking if you treat the
+human edit as the control path — including "who performs the edit" below. It does
+not eliminate them; it puts them in the right place.
+
 #### Interaction posture: autocomplete, not clarification
 
 The actual differentiator. It **resolves** the earlier open question of whether a
@@ -359,7 +390,7 @@ to state a correction in the abstract at all.
   the non-goals, and it binds harder now that the interaction model is pinned to
   edit-diffs specifically.
 
-##### Unresolved and load-bearing: who performs the edit?
+##### Open, and secondary: who performs the edit?
 
 IMTLab's edit model assumes a **bilingual translator** editing target text.
 Neither participant here is that. For the `L2S` turn:
@@ -385,9 +416,12 @@ Three candidate resolutions, none costless:
    in real conversation, and the recipient is the party actually positioned to
    notice the failure.
 
-This needs deciding before the live loop can be mechanically specified, because
-it determines where the diff lives and therefore what edit-to-scope inference
-operates on.
+Priority note: this was previously recorded as blocking mechanical
+specification of the live loop. It is not, given that steering is primarily
+internal — the loop is specified by the internal propagation, and the edit path
+is a corrective channel layered on it. It still has to be answered before the
+*correction* path ships, because it determines where the diff lives and therefore
+what edit-to-scope inference operates on. But it does not gate the core.
 
 #### Rollback scope
 
@@ -476,8 +510,34 @@ Already built, published, and in places patented — do not rebuild:
 | Monolingual vs bilingual context for dialogue MT disambiguation | BSD-corpus work on speech dialogue translation between speakers of different languages |
 
 So "propagate pragmatics probabilistically and let the speaker steer it" is
-solved enough that it shipped and was patented. That is bad news (not novel) and
-good news (the premise is not speculative) at the same time.
+solved enough that it shipped and was patented. That the premise is not
+speculative is the useful part.
+
+**How to read that table.** It bounds what is already handled *at the decoder and
+interaction level*. It does not bound what is worth doing. Every row in it is
+lossy at the pragmatic layer, and that lossiness is not incidental — it is the
+gap this track exists to fill. Prior art tells you where the current ceiling is;
+the points where it leaks are the targets, not reasons to defer. An earlier
+version of this section drew the opposite conclusion and leaned too far toward
+deference; that was a mistake in reasoning, not just in emphasis.
+
+##### Where the "wrap, don't rebuild" boundary actually falls
+
+- **Wrap the decoder.** Surface generation, lexically constrained decoding,
+  incremental output policies. Mature, and duplicating them buys nothing.
+- **Build the pragmatic layer.** This is exactly where existing systems are
+  lossy, and the lossiness follows from their architecture: an opaque engine does
+  not expose an inference chain, so there is nothing to attach dependency edges
+  to and nothing to invalidate. **You cannot add dependency-tracked retraction
+  over a black box.**
+
+So "wrap, don't rebuild" and "fix the lossy pragmatic layer" are in direct
+tension if "wrap" is read as covering everything. The resolution is the split
+this repository already has: the engine is a **candidate generator**, and the DRS
+plus `Prov` is the **addressable state** that reasoning and invalidation run
+over. The engine informs that state; it does not own it. That is the same
+non-goal about LLMs as candidate generators, applied with the boundary drawn in
+the right place.
 
 **What did not turn up — where this track's contribution has to live:**
 
@@ -497,7 +557,9 @@ good news (the premise is not speculative) at the same time.
 
 **Two constraints that follow. Do not re-litigate these.**
 
-- **Wrap, don't rebuild.** An MT engine is a candidate generator — which the
+- **Wrap the decoder; build the pragmatic layer.** See the boundary note below —
+  the flat version of this constraint was too broad. An MT engine is a candidate
+  generator — which the
   non-goals below already say is all an LLM may be trusted as. Building
   constrained decoding or a wait-*k* policy from scratch would be precisely the
   "expand the representational space" versus "avoid information loss" conflation
@@ -572,9 +634,10 @@ section above.
    the shape of the joint thread and the belief-term factorization, not just the
    turn-cycle diagram. It also breaks the ghost-text edit model, since there is
    no longer a single target text to edit.
-8. Conversational: **who performs the edit?** See "who performs the edit"
-   above — back-translation, source-side, or recipient-side. Blocks mechanical
-   specification of the live loop.
+8. Conversational: **who performs the edit?** Back-translation, source-side, or
+   recipient-side — see the subsection above. Gates the *correction* path, not
+   the core loop: steering is primarily internal, so the live loop is specified
+   by the internal propagation regardless of how this resolves.
 9. Conversational: what exactly counts as a **session boundary**? Needs a
    concrete definition (e.g. one conversation-instance identifier) before
    "session-scoped, discarded at teardown" is implementable rather than a stated
