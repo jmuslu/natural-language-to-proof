@@ -65,6 +65,61 @@ discarded), and `DRT.Canonical` (claim identity).
 readings to re-derive from, and is dropped when the conversation ends — neither
 the epistemic track's collapse-then-verify nor letra's refusal to collapse.
 
+## Design addendum, decided in session
+
+Full detail in `ARCHITECTURE.md` under *The conversational track*. Summary of
+what changed, because two of these reverse earlier plans:
+
+- **Turn cycle** is two-party L1↔L2, each human turn followed by a system
+  translation turn aimed at the other party. Settled.
+- **No persistence, at all.** The earlier three-scope plan (L1 profile, L2
+  profile, joint thread, with entrainment promoting session content into
+  persistent profiles at teardown) is **reversed**. Only the joint thread
+  exists, and nothing machine-readable survives the conversation. The rationale
+  is pedagogical: a persistent profile that auto-resolves recurring ambiguity is
+  a permanent crutch, and the better it works the less the human ever learns.
+- **Therefore this branch borrows nothing from letra.** With no persistent
+  substrate there is nothing to borrow retrieval semantics from, and letra's
+  unbuilt supersession mechanism is not needed here — rollback only touches a
+  thread that gets discarded anyway. That gap stays real for letra alone.
+- **Interaction posture: autocomplete, not clarification.** Ghost-text streaming;
+  continuing to talk is implicit accept, an inline edit is implicit correction,
+  and the steering signal is the **diff** — scope inferred, not declared. This
+  resolves the old term-pair-vs-reading question by never asking the human to
+  state a correction in the abstract. IMTLab's edit-operation model, **not**
+  CSLT's clarification dialogue. No clarifying-question flow on the live path:
+  it costs a turn and fights the fluidity goal.
+- **Rollback scope is sized to the edit**, not the thread.
+- **CRSA** is the right skeleton, unproven at this scale, with a fixed-prior /
+  lexicon-mutation mismatch and per-turn cost `O(K · |M_A| · |M_B| · |Y| · |U_t|)`.
+
+### Two things that block or bend this
+
+- **Who performs the edit is unresolved**, and it blocks mechanically specifying
+  the live loop. IMTLab's model assumes a bilingual translator editing target
+  text; neither participant is that — L1 cannot read L2, and L2 does not know
+  what L1 meant. Candidates: edit the back-translation, edit the source, or
+  recipient-side editing (well motivated, since other-initiated repair dominates
+  real conversation). Decide before building.
+- **Silence is not confirmation.** A non-edit may mean the human did not notice
+  or did not care. Treating default-accept as positive evidence will drift the
+  calibration invariant optimistically — the belief update should read *not
+  disconfirmed*.
+
+### Required now, though nothing consumes it yet
+
+Tag each resolution `default-accepted` vs `corrected` as it happens. Cheap now,
+expensive to retrofit, and it is what any post-session artifact would be built
+from. Same argument as provenance tagging from day one.
+
+### The load-bearing unbuilt piece
+
+**Edit-to-scope inference**: given an inline edit, how far downstream to
+invalidate. Nothing in the prior-art review claims it. But it is structurally the
+**incremental recomputation** problem — self-adjusting computation, Adapton,
+Salsa, and demand-driven build systems already solve that shape. Treat it as a
+port, not an invention, and look there rather than in the MT literature.
+
 ## Hard constraints, already settled
 
 - **Wrap, don't rebuild.** An MT engine is a candidate generator, which is all
