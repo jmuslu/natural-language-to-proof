@@ -52,10 +52,12 @@ The augmentation and derivation stages are **identical** across tracks. Only the
 collapse step differs, so only the collapse step is branched. Shared fixes land
 on `main` and merge down; nothing merges between track branches.
 
-Each branch adds **only new files** — its backend, its `test/ModeSpec.hs`, and a
-`MODE.md`. Nothing shared is edited, so `git merge main` into any branch is
-always clean. `main`'s build scripts pick up `test/ModeSpec.hs` automatically
-when it exists, which is what makes that possible.
+Each branch adds its backend, its `test/ModeSpec.hs`, and a `MODE.md` — all new
+files — plus a few additive lines in `nl2proof.cabal` to register them with
+cabal. `main` never touches that region, so `git merge main` into any branch
+stays clean. The build scripts additionally pick up `test/ModeSpec.hs`
+automatically when it exists, so the no-package-manager path needs no branch
+edits at all.
 
 | | `truth-mode` = epistemic | `provenance-mode` = letra |
 |---|---|---|
@@ -72,8 +74,46 @@ implementation lives there.
 
 ## Building
 
+Two supported paths. **cabal is the primary one**; the scripts exist for
+machines with no package manager.
+
+### With cabal
+
+```bash
+cabal build all
+cabal test all
+cabal run nl2proof-demo
+```
+
+`cabal.project` sets `active-repositories: none`, because the project uses only
+`base` and `containers` — both bundled with GHC — so no package index is ever
+needed. That makes the build work offline, and makes the dependency-free
+constraint enforceable rather than merely stated: adding a Hackage dependency
+fails the build instead of silently succeeding.
+
+On a mode branch, `cabal test all` runs the shared core suite **and** that
+branch's own suite.
+
+<details>
+<summary>If cabal complains about <code>root.json</code> signatures</summary>
+
+Ubuntu 24.04's cabal 3.8.1 ships stale Hackage TUF root keys, so it errors with
+`<repo>/root.json does not have enough signatures signed with the appropriate
+keys` even when no index is needed. One-time fix — comment out the
+`repository hackage.haskell.org` stanza in `~/.cabal/config`:
+
+```bash
+sed -i '/^repository hackage.haskell.org/,/^$/ s/^/-- /' ~/.cabal/config
+```
+
+Safe here precisely because nothing is fetched from Hackage. Undo by
+uncommenting, or install a newer cabal via ghcup.
+</details>
+
+### Without cabal
+
 The project depends only on `base` and `containers`, both of which ship inside a
-GHC bindist. **No cabal or stack required** — a bare unpacked GHC is enough.
+GHC bindist, so **a bare unpacked GHC is enough**.
 
 ```bash
 export GHC_BIN="$LOCALAPPDATA/ghc/ghc-9.12.4-x86_64-unknown-mingw32/bin"
@@ -88,11 +128,11 @@ $env:GHC_BIN = "$env:LOCALAPPDATA\ghc\ghc-9.12.4-x86_64-unknown-mingw32\bin"
 ```
 
 Both scripts typecheck everything with `-Wall` and then run the suite. Pass
-`demo` to run the demo instead, or `compile` to also produce native binaries. If
-`ghc` is already on your PATH, `GHC_BIN` can be skipped. `nl2proof.cabal` is
-included for when you do have cabal, but nothing here needs it.
+`demo` to run the demo instead, or `compile` to build and run native binaries.
+If `ghc` is already on your PATH, `GHC_BIN` can be skipped.
 
-Built and tested with GHC 9.12.4 on Windows.
+Built and tested on **GHC 9.4.7 / Ubuntu 24.04** (compiled) and **GHC 9.12.4 /
+Windows** (interpreted).
 
 **Why the default path interprets rather than compiles.** The scripts run the
 suite through `runghc`, so no new executable is produced. Windows
