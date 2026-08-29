@@ -81,10 +81,14 @@ fi
 case "$TARGET" in
   compile)
     echo "== compiling native binaries into $BUILD"
-    ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/test" -o "$BUILD/spec" -Wall "$ROOT/test/Spec.hs"
-    ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/demo" -o "$BUILD/demo" -Wall "$ROOT/app/Main.hs"
+    # Object dirs are prefixed obj- so they cannot collide with the binary
+    # names. On Windows the binary gets .exe appended and a collision is
+    # invisible; on Unix `-outputdir X -o X` makes the linker try to write over
+    # its own object directory.
+    ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/obj-spec" -o "$BUILD/spec" -Wall "$ROOT/test/Spec.hs"
+    ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/obj-demo" -o "$BUILD/demo" -Wall "$ROOT/app/Main.hs"
     if [ -f "$MODE_SPEC" ]; then
-      ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/mode" -o "$BUILD/modespec" -Wall "$MODE_SPEC"
+      ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/obj-mode" -o "$BUILD/modespec" -Wall "$MODE_SPEC"
     fi
 
     echo "== running test suite"
