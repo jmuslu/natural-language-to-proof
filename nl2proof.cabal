@@ -37,6 +37,7 @@ library
                       NL2Proof.DRT.Build
                       NL2Proof.DRT.Canonical
                       NL2Proof.Collapse.Class
+                      NL2Proof.Collapse.Provenance
                       NL2Proof.Fragment
                       NL2Proof.Pipeline
     build-depends:    base       >=4.14 && <5
@@ -54,6 +55,17 @@ test-suite nl2proof-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          Spec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, nl2proof
+
+test-suite nl2proof-mode-test
+    -- This branch's own collapse-backend checks. Kept a separate stanza rather
+    -- than merged into nl2proof-test so `main` never has to know it exists.
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ModeSpec.hs
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, nl2proof
