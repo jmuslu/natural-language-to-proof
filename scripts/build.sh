@@ -36,6 +36,19 @@ fi
 
 mkdir -p "$BUILD"
 
+# GHC appends .exe on Windows and nothing on Unix, so resolve at run time.
+# Deliberately not `exec`: the compile target runs two suites in sequence.
+run_exe() {
+  if [ -x "$1.exe" ]; then
+    "$1.exe"
+  elif [ -x "$1" ]; then
+    "$1"
+  else
+    echo "error: built no executable at $1" >&2
+    exit 1
+  fi
+}
+
 # Extra source dirs let the mode branches drop in a Collapse backend and its
 # spec without this script changing.
 SRC_DIRS=(-i"$ROOT/src" -i"$ROOT/test" -i"$ROOT/app")
@@ -70,8 +83,17 @@ case "$TARGET" in
     echo "== compiling native binaries into $BUILD"
     ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/test" -o "$BUILD/spec" -Wall "$ROOT/test/Spec.hs"
     ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/demo" -o "$BUILD/demo" -Wall "$ROOT/app/Main.hs"
+    if [ -f "$MODE_SPEC" ]; then
+      ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/mode" -o "$BUILD/modespec" -Wall "$MODE_SPEC"
+    fi
+
     echo "== running test suite"
-    if [ -x "$BUILD/spec.exe" ]; then exec "$BUILD/spec.exe"; else exec "$BUILD/spec"; fi
+    run_exe "$BUILD/spec"
+    if [ -f "$MODE_SPEC" ]; then
+      echo
+      echo "== running mode-specific suite"
+      run_exe "$BUILD/modespec"
+    fi
     ;;
   demo)
     echo "== running demo"
