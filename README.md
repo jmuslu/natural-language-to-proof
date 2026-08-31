@@ -80,11 +80,20 @@ collapse step differs, so only the collapse step is branched. Shared fixes land
 on `main` and merge down; nothing merges between track branches.
 
 Each branch adds its backend, its `test/ModeSpec.hs`, and a `MODE.md` — all new
-files — plus a few additive lines in `nl2proof.cabal` to register them with
-cabal. `main` never touches that region, so `git merge main` into any branch
-stays clean. The build scripts additionally pick up `test/ModeSpec.hs`
-automatically when it exists, so the no-package-manager path needs no branch
-edits at all.
+files — plus a few additive lines in `nl2proof.cabal` to register them with cabal.
+
+**`nl2proof.cabal` is a genuine shared-edit point and will occasionally
+conflict.** Adding Stage 2 to `main` appended a `test-suite` stanza at
+end-of-file, and both mode branches had appended theirs there too, so merging
+produced a conflict on all three. It is trivial to resolve — keep both stanzas —
+but it is real, and an earlier version of this README wrongly promised that
+merges would always be clean.
+
+The build scripts have no such problem: they discover `test/*Spec.hs` by glob, so
+the no-package-manager path needs no branch edits at all. If the cabal conflicts
+become annoying, the durable fix is to move each branch's suite into its own
+package under `cabal.project`'s `optional-packages`, which would remove the
+shared edit entirely.
 
 | | `truth-mode` = epistemic | `provenance-mode` = letra |
 |---|---|---|
