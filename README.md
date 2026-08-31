@@ -4,7 +4,9 @@ Converting natural language into discrete, checkable logical forms, with an
 explicit and separated layer for handling ambiguity probabilistically **before**
 collapsing to a final form.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design. The short version:
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and
+[MATH-TRACE.md](MATH-TRACE.md) for one sentence traced through every layer with
+the mathematical object named at each step. The short version:
 
 > **Search** (parsing, readings, discourse relations, similarity) is
 > probabilistic, open-world, and never finished.
