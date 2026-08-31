@@ -12,7 +12,7 @@
 --    'NL2Proof.Collapse.Class.selectBy'. Stage 2 does __not__ collapse; it
 --    scores. Collapsing stays a logged decision in the collapse backend.
 --
--- == Measured: RSA amplifies the prior, it does not add evidence
+-- == Retracted: "RSA amplifies the prior"
 --
 -- What the implementation actually does on this fragment, from a bias sweep
 -- rather than from expectation:
@@ -29,21 +29,58 @@
 -- prior's asymmetry propagating through the speaker model. __At @bias = 1.0@ the
 -- sharpening is exactly zero.__
 --
--- The general statement: __RSA cannot break a symmetry the prior does not already
--- break.__ That has a direct consequence for the coupling case, where every
--- reading shares a quantifier signature and the surface prior therefore treats
--- them identically — sharpening there is exactly @0@ and RSA contributes
--- nothing at all. That is where the fingerprint kernel has to do the work
--- instead: 'NL2Proof.Stage2.Fingerprint.contentSimilarity' separates the fused
--- readings at @0.575@ where the scope prior cannot separate them at all.
+-- __That generalisation was wrong, and this model is the reason why.__ The
+-- sweep above only shows that /in this setup/ the prior is the sole asymmetry.
+-- It is, because the lexicon here is symmetric by construction: the ambiguous
+-- form is compatible with every reading at weight 1, and each paraphrase pins
+-- exactly one, at equal cost. With nothing else to differentiate readings, only
+-- the prior can. That is a property of the construction, not of RSA.
 --
--- Two mechanisms, two jobs, neither sufficient alone. Worth having measured
--- rather than assumed — an earlier version of this note asserted the
--- sharpening was zero across the board, and the sweep disproved it.
+-- The reference-game test disproves the general claim on its own: there the
+-- implicature appears under a __uniform__ prior, driven entirely by an
+-- asymmetric lexicon.
 --
--- The reference-game test in @Stage2Spec@ pins the recursion against the known
--- published implicature, so these numbers describe the setup rather than the
--- correctness of the implementation.
+-- == What was actually missing: informativity
+--
+-- RSA's engine is informativity, and this pipeline gave the recursion no way to
+-- measure it. 'NL2Proof.Stage2.Model' supplies it, and with real semantics the
+-- asymmetry is __derived__:
+--
+-- @
+-- reading                      truth set   informativity
+-- forall x exists y (surface)   137\/256      0.902 bits
+-- exists y forall x (inverse)   119\/256      1.105 bits
+-- @
+--
+-- The inverse reading __entails__ the surface reading and not conversely, checked
+-- over all 256 models rather than assumed. A world-based RSA over that then
+-- produces a genuine scalar implicature with a uniform prior:
+--
+-- @
+-- paraphraseCost   L0(inverse)   L1(inverse)
+--            0.0         0.869         0.808
+--            1.0         0.869         0.835
+--            2.0         0.869         0.853
+-- @
+--
+-- Hearing the ambiguous form lowers the probability that the __stronger__ reading
+-- was meant, because a speaker who meant it could have said so unambiguously.
+-- The implicature weakens as the paraphrase gets more expensive, which is the
+-- right direction and a useful sanity check.
+--
+-- Note the structural consequence of the entailment: since inverse @|=@ surface,
+-- the ambiguous sentence is logically __equivalent__ to the surface reading, so
+-- @P(surface | ambiguous) = 1@ necessarily. The live question is only whether the
+-- strengthened reading also holds. Scope "ambiguity" of this shape is therefore
+-- scalar strengthening, not a choice between exclusive alternatives — which is
+-- why the mutually-exclusive framing this module started with could not have
+-- worked.
+--
+-- What survives from the original note: for the __coupling__ case all readings
+-- share a quantifier signature and the surface prior treats them identically, so
+-- sharpening there is exactly @0@ and the fingerprint kernel does the work
+-- instead ('NL2Proof.Stage2.Fingerprint.contentSimilarity' separates them at
+-- @0.575@). Two mechanisms, two jobs.
 module NL2Proof.Stage2.Pipeline
   ( -- * Readings
     Reading(..)
