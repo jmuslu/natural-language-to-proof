@@ -117,13 +117,36 @@ is**, and conversational is literally in between:
 | `Prov` used for | traceability to spans | **dependency tracking for rollback** | genealogy / lineage |
 | Rejected candidates | dropped after verify | **retained in-session, then dropped** | retained indefinitely |
 | Core invariant | well-typedness | **calibration + revisability** | lineage reachability |
-| Needs Stage 2 | optional | **essential** | maybe |
-| Needs Stage 3 | nice to have | **essential** | open |
+| Uses Stage 2 | yes | yes, and cannot work without it | yes |
+| Uses Stage 3 | when rollback is wanted | cannot work without it | open |
 
 Stage 4 (epistemic graphs) sits on the epistemic track. The branch `truth-mode`
 **is** the epistemic track and the branch `provenance-mode` **is** letra — same
 things, two naming schemes, not modes that feed tracks. The conversational track
 has a branch, `conversational`, but no code yet.
+
+### Augmentation is general, not a per-track option
+
+An earlier version of the table above marked Stage 2 as "optional / essential /
+maybe" across the tracks. That was wrong, and the error mattered.
+
+**Augmentation is useful in every case.** It is always worth understanding a
+statement from every angle before collapsing, because the additional angles
+*derive additional insight* — and because the augmentation layer's real job is to
+make sure the signals are not lost before anything commits. A track that collapses
+straight off Stage 1 has thrown away information it never looked at.
+
+What differs between tracks is **what each does with the augmented candidate
+set**, not whether it wants one:
+
+| Track | What it does with the candidate set |
+|---|---|
+| epistemic | collapses it canonically, then verifies the survivor |
+| conversational | keeps it live and reweights it as the conversation proceeds |
+| letra | retains it, with each candidate's lineage intact |
+
+All three need the set generated and scored first. Only the disposition differs.
+This is the same shape as the collapse seam: shared machinery, divergent use.
 
 ### Provenance and genealogy are two axes, not one
 
@@ -770,6 +793,59 @@ DRT-based test set:
   Reference implementation: DisCoPy.
 
 Test all three against the same fixed evaluation set, not in isolation.
+
+#### On the absence of a data source
+
+`NL2Proof.Stage2.Fingerprint` currently computes *structural* fingerprints rather
+than composing distributional word vectors, and the hand table in
+`NL2Proof.Stage2.Modifier` classifies the fragment's five adjectives by hand.
+
+**Both are unwired dependencies, not architectural limits.** Nothing in the design
+assumes the absence of a corpus or a lexical resource; the data simply has not been
+connected yet. The swap points are named and single:
+
+| What is stubbed | What replaces it | Callers affected |
+|---|---|---|
+| structural fingerprints | real vectors composed along the CCG derivation, DisCoCat-style | none — `similarity` is the only interface |
+| hand modifier table | WordNet-style class data, plus corpus statistics for the layer-2 conventionalization judgement | none — `fragmentModifierClasses` is the only table |
+
+Where the code says something is "not distributional semantics", read that as a
+statement about the current wiring, not a claim about what the architecture can
+support. The honest version is: this is a placeholder with a named replacement,
+and the results it produces should be read as lower bounds.
+
+### Stratification: not all modifiers or relations are one kind of thing
+
+A cross-cutting constraint on Stage 2, learned while building it.
+
+Stage 1 gives every adjective one entry — intersective conjunction — and the first
+version of the candidate generator treated every `N/N` word as an equally good
+fusion candidate. Both are the same flattening error. **Modifiers differ in how
+hard they are to resolve, and treating them uniformly either over-generates
+garbage or gets truth conditions wrong.**
+
+`NL2Proof.Stage2.Modifier` stratifies them by resolution layer:
+
+| Layer | Class | Example | Why that layer |
+|---|---|---|---|
+| 1 | intersective | `red`, `ancient` | conjunction is faithful; decidable from structure alone |
+| 2 | classificatory | `chinese`, `nuclear` | may name a lexicalized subkind; needs the head plus a graded conventionalization judgement |
+| 3 | subsective | `skilled`, `large` | property is relative to the head; needs a lexical resource |
+| 3 | privative | `fake`, `former`, `alleged` | head predicate does **not** hold — a representation error in Stage 1, not an ambiguity to rank |
+
+Concretely, this cut the coupling case from four generated readings to two:
+restricting fusion to classificatory modifiers stopped `ancient_chinese` and
+`chinese_red` being proposed as English subkinds. A generator that ignores the
+distinction spends the ranking layer's evidence rejecting its own noise.
+
+**The same stratification applies to SDRT's discourse relations**, and for the
+same reason. Some are structurally cued — Narration largely follows from tense
+sequence — while others need abstract inference, like Explanation. Those belong at
+different layers too.
+
+They should **not** share the modifier type. The stratification *principle* is
+common; the classes are not, and collapsing them into one enumeration would repeat
+the error at a larger scale.
 
 ### Stage 3 — Compiler-theory tooling for error handling / tracing
 
