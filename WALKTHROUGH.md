@@ -1,0 +1,447 @@
+# Traceable walkthrough: state and propositions
+
+One sentence carried through every layer. At each step:
+
+- **State** — the object, written out explicitly enough to read off the page.
+- **Propositions** — claims about that state, each with a status and a way to
+  falsify it.
+
+The propositions are the point. They are meant to be argued with: a wrong one
+should be visible as wrong without running anything.
+
+Status tags: **[proved]** a theorem of the underlying calculus · **[checked]**
+asserted in the test suite · **[measured]** came out of a run · **[conjectured]**
+believed, unverified · **[stipulated]** chosen, not derived.
+
+Companion to [MATH-TRACE.md](MATH-TRACE.md), which names the object at each layer.
+This one exhibits the objects and what holds of them.
+
+**Input:** `Every student reads a book.`
+
+---
+
+## S0 — Source
+
+```
+offset  0         1         2
+        0123456789012345678901234567
+source  Every student reads a book.
+```
+
+State: an element of Σ\*, plus the interval `[0,27)`.
+
+> **P0.1 [checked]** For every token `t`, lower-casing the source restricted to
+> `span(t)` yields `text(t)`.
+> *Falsify:* find a token whose span slices to something else. Every provenance
+> claim downstream rests on this, so it is the one to attack first.
+
+---
+
+## S1 — Tokens
+
+```
+0  every    [0,5)
+1  student  [6,13)
+2  reads    [14,19)
+3  a        [20,21)
+4  book     [22,26)
+```
+
+The period at `[26,27)` contributes no token.
+
+> **P1.1 [checked]** Token spans are pairwise disjoint and ordered.
+>
+> **P1.2 [proved]** Spans form a lattice under inclusion; `spanUnion` is its
+> **join**, not set union. Intervals are not closed under union, so the result may
+> cover characters that contributed nothing.
+> *Consequence:* a provenance span is an over-approximation. Anyone reading a span
+> as "exactly the characters responsible" is reading it wrong.
+>
+> **P1.3 [structural gap]** Meet is never computed. "What do two derivations share
+> textually" is therefore not expressible. The conversational track's
+> edit-to-scope problem needs it.
+
+---
+
+## S2 — Lexicon
+
+| # | token | category | meaning |
+|---|---|---|---|
+| 0 | `every` | `NP/N` | `λP. λQ. ∀x. P(x) → Q(x)` |
+| 1 | `student` | `N` | `student` |
+| 2 | `reads` | `(S\NP)/NP` | `λO. λS. S(λx. O(λy. read(x,y)))` |
+| 3 | `a` | `NP/N` | `λP. λQ. ∃x. P(x) ∧ Q(x)` |
+| 4 | `book` | `N` | `book` |
+
+> **P2.1 [checked]** For every entry, `typeOf(meaning) = catTy(category)`.
+> This is the syntax–semantics coherence condition, and it holds for all 40-odd
+> entries, not just these five.
+> *Falsify:* exhibit an entry whose term does not inhabit its category's type.
+>
+> **P2.2 [proved]** `catTy` is a homomorphism from the residuated (Lambek)
+> structure to function types, and it is **not injective**:
+> `catTy(X/Y) = catTy(X\Y)`.
+> *Consequence:* directionality is precisely the kernel. `S/NP` and `S\NP` are
+> distinct syntactically, identical semantically. This is the exact sense in which
+> syntax carries more information than semantics.
+>
+> **P2.3 [stipulated]** Every NP has type `(e→t)→t`, including proper names. Not
+> forced by anything; chosen so one verb entry serves all subjects.
+> *Cost of the choice:* proper names get a continuation type they do not need.
+> *Benefit:* no type-raising rule is required.
+
+---
+
+## S3 — Derivation
+
+Chart cells, by increasing length. Only application is enabled.
+
+```
+(0,2)  NP      every student      λQ. ∀x. student(x) → Q(x)
+(3,2)  NP      a book             λQ. ∃z. book(z) ∧ Q(z)
+(2,3)  S\NP    reads a book       λS. S(λx. ∃z. book(z) ∧ read(x,z))
+(0,5)  S       whole sentence     ∀x. student(x) → (∃z. book(z) ∧ read(x,z))
+```
+
+> **P3.1 [proved]** Forward and backward application are the two residuation laws
+> `(X/Y)·Y ⊢ X` and `Y·(Y\X) ⊢ X`. They are not stipulated inference rules; they
+> are the adjunction `(−·Y) ⊣ (−/Y)`.
+>
+> **P3.2 [proved]** Each application step preserves (a) closedness and (b) the
+> typing invariant `typeOf(sem) = catTy(cat)`. By induction, the root sign
+> satisfies both.
+> *Consequence:* the root is a closed term of type `t`, i.e. a morphism `1 → t` in
+> the free CCC. No separate well-formedness pass is needed.
+>
+> **P3.3 [proved]** The normal form is unique. STLC is confluent (Church–Rosser)
+> and strongly normalizing, so "the" β-normal form is well-defined and
+> `normalize` is total without a fuel parameter.
+> *Falsify:* impossible for STLC. If it ever appeared to fail, the calculus has
+> been extended beyond STLC — which would be the actual finding.
+>
+> **P3.4 [checked]** This sentence has exactly **one** derivation to `S`.
+> *Falsify:* enable composition or type-raising and it will not stay one. That is
+> why the default rule set is application-only, and the restriction is deliberate
+> rather than accidental.
+>
+> **P3.5 [proved]** The λ-apparatus is absent from the normal form: it is
+> first-order. Quantifiers survive, abstraction does not.
+> *Why it matters:* every downstream layer can assume a first-order formula and
+> none of them need to handle `Lam`.
+
+---
+
+## S4 — Provenance
+
+The tree is isomorphic to the derivation:
+
+```
+<
+├── > ── {lex every [0,5)  ·  lex student [6,13)}
+└── > ── {lex reads [14,19)  ·  > ── {lex a [20,21) · lex book [22,26)}}
+```
+
+Folds, read off the same tree:
+
+| fold | value |
+|---|---|
+| `provSources` | `{demo}` |
+| `provSpan` | `[0,26)` |
+| `provDepth` | 4 |
+| `provSize` | 8 |
+
+> **P4.1 [proved]** `Prov` is the initial algebra of
+> `F X = (SourceId × Span × String) + (RuleName × List X)`. Every fold is an
+> F-algebra: a carrier plus a structure map.
+>
+> **P4.2 [proved]** `provSources` is a **monoid homomorphism** into
+> `(P(SourceId), ∪, ∅)`, which is commutative and **idempotent**.
+> *Consequence — and this is the crux of the two tracks:* idempotence destroys
+> multiplicity. `{A} ∪ {A} = {A}` is literally why truth-mode cannot distinguish
+> two assertions of a proposition from one.
+>
+> **P4.3 [proved]** `provSize` and `provDepth` are **not** monoid homomorphisms —
+> the `1 +` at each node makes them F-algebras only.
+> *Why state it:* "fold" is not one thing. The homomorphism folds are the ones
+> that can be computed incrementally under merge; the others cannot.
+>
+> **P4.4 [proved]** `provSize > provDepth` here (8 > 4), and in general no single
+> numeric fold recovers the tree.
+> *Consequence:* provenance-mode retains strictly more than any summary of it.
+> That is not a design preference, it is a counting fact.
+>
+> **P4.5 [structural]** Genealogy is **not** obtainable as a fold of this object.
+> Lineage is "is there a path from node A to node B", a question about morphisms in
+> the free category on a graph. An initial algebra of a tree functor has no node
+> identity and no sharing, so the question cannot even be posed.
+> *Consequence:* letra is a rewrite, not an extension. The leaf type is a red
+> herring; the object class is the problem.
+
+---
+
+## S5 — DRS
+
+```
+┌────────────────────────┐
+│  (universe empty)      │
+├────────────────────────┤
+│  ┌───────────┐         │
+│  │ x         │         │
+│  ├───────────┤    ⇒    │
+│  │ student(x)│         │
+│  └───────────┘         │
+│                        │
+│  ┌────────────┐        │
+│  │ z          │        │
+│  ├────────────┤        │
+│  │ book(z)    │        │
+│  │ read(x,z)  │        │
+│  └────────────┘        │
+└────────────────────────┘
+```
+
+> **P5.1 [proved]** `(DRS, mergeDRS, emptyDRS)` is a monoid. It is **neither
+> commutative nor idempotent** — merge concatenates lists.
+>
+> **P5.2 [proved]** truth-mode is exactly the canonical projection onto the
+> **commutative idempotent quotient** of that monoid, i.e. finite sets of
+> conditions. letra is the refusal to take that quotient.
+> *Consequence:* the entire truth/provenance distinction is one quotient. Not two
+> data models, not two pipelines — one projection, taken or not.
+>
+> **P5.3 [checked]** Accessibility is the **top** universe only. Here it is empty.
+> *Consequence:* `"Every student reads a book. She smiles."` cannot resolve `she`;
+> both referents are trapped in subordinate boxes. Same mechanism that blocks
+> `"No student sleeps. She smiles."`, and it is the correct DRT result rather than
+> a limitation.
+>
+> **P5.4 [structural gap]** `canonicalize` quotients provenance and referent names
+> but **not** order or multiplicity, so it is not a normal form. Two DRSs equal as
+> multisets compare unequal.
+> *Open:* is a multiset quotient wanted — commutative but not idempotent — for a
+> "same claim" test independent of truth-mode? Nothing currently constructs one.
+
+---
+
+## S6 — Scope-neutral form
+
+```
+prefix   [ (∀, x, student(x)) , (∃, z, book(z)) ]
+core     read(x,z)
+```
+
+> **P6.1 [checked]** `unscope` and `relinearize` are mutually inverse on the
+> original prefix order.
+> *Falsify:* find a term where the round trip is not α-equal to the input.
+>
+> **P6.2 [proved]** The admissible orders are exactly the **linear extensions** of
+> the dependency poset, where `qᵢ < qⱼ` iff `qⱼ`'s restrictor mentions `qᵢ`'s
+> variable. Reordering across a dependency would leave a variable unbound.
+> *Here:* neither restrictor mentions the other's variable, so the poset is
+> discrete, and both of the 2 linear extensions are admissible.
+>
+> **P6.3 [proved]** For `"Every student who reads a book smiles"` the inner
+> existential lies inside the universal's restrictor and is never lifted, so the
+> prefix has one element and there is exactly one reading.
+> *Why it matters:* no special case in the code. It falls out of where the
+> quantifier sits.
+>
+> **P6.4 [structural, algorithmic]** The implementation enumerates all `n!`
+> permutations and filters by `validOrder`. Counting linear extensions directly
+> would be the right algorithm, and the count is also the right thing to report as
+> the size of the scope space.
+>
+> **P6.5 [checked]** Every generated reading is closed and well-typed.
+
+Two readings:
+
+```
+surface   ∀x. student(x) → ∃z. book(z) ∧ read(x,z)
+inverse   ∃z. book(z) ∧ ∀x. student(x) → read(x,z)
+```
+
+---
+
+## S7 — Model space, and the result that changed the design
+
+Domain `{0}`. Symbols: `student ⊆ {0}`, `book ⊆ {0}`, `read ⊆ {(0,0)}`.
+**8 models.** At a one-element domain both quantifiers collapse:
+
+```
+surface ≡ student(0) → (book(0) ∧ read(0,0))
+inverse ≡ book(0) ∧ (student(0) → read(0,0))
+```
+
+| # | student | book | read | surface | inverse |
+|---|---|---|---|---|---|
+| 1 | F | F | F | T | F |
+| 2 | F | F | T | T | F |
+| 3 | F | T | F | T | T |
+| 4 | F | T | T | T | T |
+| 5 | T | F | F | F | F |
+| 6 | T | F | T | F | F |
+| 7 | T | T | F | F | F |
+| 8 | T | T | T | T | T |
+
+This table is small enough to be the reviewable object: 8 rows, both columns
+derivable by inspection.
+
+> **P7.1 [proved]** `truthSet` is a **Boolean algebra homomorphism** from the
+> Lindenbaum algebra of formulas into `(P(Mod), ∩, ∪, ᶜ)`. Entailment is `⊆`;
+> logical equivalence is equality in the Lindenbaum algebra.
+>
+> **P7.2 [measured]** `truthSet(inverse) = {3,4,8} ⊊ {1,2,3,4,8} = truthSet(surface)`.
+> Counts at larger domains: 3/5 at n=1, 119/137 at n=2, 15465/17303 at n=3.
+> *Falsify:* exhibit a model satisfying inverse but not surface. Model 1 falsifies
+> the converse, which is what makes the inclusion strict.
+>
+> **P7.3 [proved from P7.2]** The two readings form a **chain**, not an antichain:
+> `inverse ≤ surface` in the entailment order.
+> *Consequence:* they are not alternatives to choose between.
+>
+> **P7.4 [proved from P7.3]** The ambiguous sentence, true when either reading is,
+> is true in `truthSet(surface) ∪ truthSet(inverse) = truthSet(surface)` — the join
+> of a chain is its top. Hence
+>
+> > `P(surface | sentence) = 1`
+>
+> as a **lattice fact**, not an empirical finding. The only live question is
+> whether the strengthened reading also holds.
+> *Consequence:* scope ambiguity of this shape is **scalar strengthening**. Any
+> model treating the readings as a partition is mis-specified — mine was, and this
+> is the proposition that showed it.
+>
+> **P7.5 [conjectured — the top open question]** Coupling readings form an
+> **antichain**: `chinese_dragon(x)` neither entails nor is entailed by
+> `chinese(x) ∧ dragon(x)`, since `chinese_dragon` is an uninterpreted predicate
+> with no relation to either conjunct.
+> *If true:* scope and coupling are different order-theoretic situations and need
+> structurally different probabilistic treatments. The current single pipeline
+> would be mis-specified for one of them.
+> *How to settle:* `entails` on both pairs. Probe committed as
+> `docs/chain-antichain-probe.hs`, unrun — the build server went offline.
+>
+> **P7.6 [proved]** `entails` over a finite model set is sound for
+> counterexamples and **not** complete for entailment. A counterexample found is
+> real; none found is evidence at that domain size, not a proof.
+> *Consequence:* this sits on the search side of the search/verification split,
+> not the verification side.
+
+---
+
+## S8 — Ranking
+
+> **P8.1 [proved]** `Dist a` is a point of the simplex `Δ(A)`. `mapDist` is the
+> **pushforward measure** (functor action), `reweight` is unnormalized Bayes,
+> `filterDist` is conditioning, `softmax α` is a Gibbs measure at inverse
+> temperature α.
+>
+> **P8.2 [checked]** `softmax 0` is the maximum-entropy (uniform) measure;
+> `softmax α → argmax` as `α → ∞`. Both limits asserted.
+>
+> **P8.3 [structural gap]** `Dist` is the **finite distribution monad** but has no
+> `join`/`>>=`. Probabilistic steps therefore cannot compose.
+> *Consequence:* RSA's recursion *is* Kleisli composition, and writing it without
+> `>>=` is why `listenerTable` had to be hand-hoisted for performance. Stage 3's
+> rollback is a probabilistic state transformer and will need the monad.
+>
+> **P8.4 [proved]** The RSA operator is a continuous self-map of the compact convex
+> set `Δ(M)^U`, so by Brouwer a **fixed point exists**.
+>
+> **P8.5 [conjectured]** Whether the iteration *converges* to it. Nothing checks.
+> *If it is a contraction:* depth `k` gets a principled stopping rule instead of
+> being a latency knob, which directly answers the conversational track's open
+> question about affordable depth.
+>
+> **P8.6 [measured]** With a uniform world prior, `P(inverse | sentence)` falls
+> from `0.869` (literal) to `0.808` (pragmatic) at n = 2, weakening to `0.835` and
+> `0.853` as the paraphrase cost rises.
+> *Reading:* hearing the ambiguous form **lowers** belief in the stronger reading,
+> because a speaker meaning it had an unambiguous alternative. A scalar
+> implicature, from a uniform prior — nothing about scope preference stipulated.
+> The weakening with cost is the sanity check: not-using an expensive alternative
+> is weaker evidence.
+>
+> **P8.7 [measured]** For the coupling case, sharpening is **exactly 0**: all
+> readings share a quantifier signature, so the scope prior cannot distinguish
+> them and RSA has no asymmetry to exploit.
+> *Consequence:* RSA and fingerprints are not redundant. Each handles what the
+> other cannot.
+>
+> **P8.8 [retracted]** *"RSA cannot break a symmetry the prior does not already
+> break."* False. The reference-game test produces the implicature under a uniform
+> prior from an asymmetric **lexicon**. The true statement is about the earlier
+> setup only: it had no informativity measure, so the prior was its sole
+> asymmetry — a property of the construction, not of RSA.
+
+---
+
+## S9 — Fingerprints
+
+| | surface | inverse |
+|---|---|---|
+| predicates | `student:1, book:1, read:1` | identical |
+| arities | `1:2, 2:1` | identical |
+| quantifier prefix | `[∀, ∃]` | `[∃, ∀]` |
+
+> **P9.1 [proved]** Weighted Jaccard `Σmin/Σmax` on multisets is symmetric,
+> bounded in `[0,1]`, and equals 1 exactly on equal multisets. `1 − J` is a metric.
+>
+> **P9.2 [checked]** Scope readings: content similarity `= 1.0` exactly,
+> structural `< 1` (prefixes compared as **sequences**, agreeing in 0 of 2
+> positions).
+> *Reading:* same subject matter, different quantification.
+>
+> **P9.3 [measured]** Coupling readings: content `0.575`, structural `0.917` — the
+> mirror image.
+> *Consequence:* scope differs structurally with identical content; coupling
+> differs in content with identical structure. Neither measure alone separates
+> both, which is why the fingerprint is split in half.
+>
+> **P9.4 [stipulated]** The weights `0.65 · content + 0.35 · structure`, and
+> `0.75/0.25` and `0.5/0.2/0.2/0.1` within the halves. A convex combination of
+> kernels is a kernel, so the object is well-formed — but the numbers encode
+> nothing but a guess.
+>
+> **P9.5 [structural]** Whether to collapse the two halves into one scalar **at
+> all**. They measure incomparable things, and averaging discards precisely the
+> asymmetry that made separating them worthwhile. This would still be a question
+> with perfectly fitted weights.
+
+---
+
+## S10 — Collapse
+
+> **P10.1 [proved]** Collapse is quotient-then-section: a quotient map
+> `q : Readings → Readings/∼` and a choice of representative.
+>
+> **P10.2 [proved]** `selRejected` is the **fiber** `q⁻¹(c)`. A function
+> `[DRS] → DRS` cannot represent a fiber, which is the type-level statement of why
+> that signature was rejected in favour of `Selection`.
+>
+> **P10.3 [proved]** The three tracks are three dispositions toward one quotient:
+>
+> | track | action |
+> |---|---|
+> | epistemic | take the quotient, keep a representative, verify it |
+> | conversational | keep the fibers during the session, quotient at teardown |
+> | letra | never quotient; keep the fibers indefinitely |
+
+---
+
+## Reviewing this document
+
+The propositions most worth attacking, in order:
+
+1. **P7.5** — is coupling an antichain? Unsettled, decidable today, and it
+   determines whether one probabilistic pipeline can serve both ambiguity types.
+2. **P8.5** — is the RSA operator a contraction? Converts a latency knob into a
+   stopping rule.
+3. **P4.5** — genealogy needs a free category. If this is right, letra is a
+   rewrite; if there is a fold-based encoding I have missed, it is not.
+4. **P9.5** — should content and structure ever be averaged?
+5. **P5.4** — is a multiset quotient of DRS wanted?
+
+Everything tagged **[stipulated]** is scaffolding: replaced when data arrives, not
+a design question. Everything tagged **[structural]** or **[conjectured]** would
+still be open with unlimited data and compute.

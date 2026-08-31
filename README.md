@@ -4,9 +4,13 @@ Converting natural language into discrete, checkable logical forms, with an
 explicit and separated layer for handling ambiguity probabilistically **before**
 collapsing to a final form.
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and
-[MATH-TRACE.md](MATH-TRACE.md) for one sentence traced through every layer with
-the mathematical object named at each step. The short version:
+| Document | What it is for |
+|---|---|
+| [ARCHITECTURE.md](ARCHITECTURE.md) | the design, the three tracks, standing principles |
+| [MATH-TRACE.md](MATH-TRACE.md) | the mathematical object at each layer, and where it is wrong |
+| [WALKTHROUGH.md](WALKTHROUGH.md) | one sentence as explicit state plus checkable propositions |
+
+The short version of the design:
 
 > **Search** (parsing, readings, discourse relations, similarity) is
 > probabilistic, open-world, and never finished.
@@ -22,10 +26,15 @@ the mathematical object named at each step. The short version:
 probability anywhere. 348 shared checks, plus 23 on `truth-mode` and 38 on
 `provenance-mode`.
 
-**Stage 2 started: probabilistic augmentation.** 117 checks. Generates the
-readings Stage 1 declined to produce (scope permutation, modifier-noun fusion),
-fingerprints them structurally, and ranks them with RSA. Kept in its own suite so
-Stage 1's number stays a stable signal. **526 checks total.**
+**Stage 2 in progress: probabilistic augmentation.** 136 checks, in its own suite
+so Stage 1's number stays a stable signal. **545 checks total** on a track branch.
+
+| Built | Not built |
+|---|---|
+| candidate generation: scope permutation, modifier-noun fusion | **SDRT** and discourse relations |
+| structural fingerprints + similarity kernel | distributional vectors (no data wired in) |
+| RSA: literal/pragmatic listener, speaker, depth-parametric | learned priors or costs |
+| finite model enumeration, entailment, informativity | domain sizes much above 3 |
 
 Stage 1 is meant to stop changing. Later stages consume its output; they should
 not require edits to it.
@@ -39,7 +48,8 @@ table exists to prevent.
 | Stage | epistemic<br>(truth-mode) | conversational | letra<br>(provenance-mode) |
 |---|---|---|---|
 | **1** — Montague + CCG + DRT, provenance-tagged | **done**, shared | **done**, shared | **done**, shared |
-| **2** — probabilistic augmentation: RSA, fingerprints, alternatives | **in progress**, shared | **in progress**, shared | **in progress**, shared |
+| **2** — augmentation: alternatives, fingerprints, RSA, models | **in progress**, shared | **in progress**, shared | **in progress**, shared |
+| **2b** — SDRT and discourse relations | not started | not started | not started |
 | **3** — attribute grammars, speculative commit + rollback | when rollback is wanted | **cannot work without it** | open |
 | **4** — epistemic graph layer: Kripke, DEL, AGM | epistemic **only** | n/a | n/a |
 
@@ -84,18 +94,33 @@ on `main` and merge down; nothing merges between track branches.
 Each branch adds its backend, its `test/ModeSpec.hs`, and a `MODE.md` — all new
 files — plus a few additive lines in `nl2proof.cabal` to register them with cabal.
 
-**`nl2proof.cabal` is a genuine shared-edit point and will occasionally
-conflict.** Adding Stage 2 to `main` appended a `test-suite` stanza at
-end-of-file, and both mode branches had appended theirs there too, so merging
-produced a conflict on all three. It is trivial to resolve — keep both stanzas —
-but it is real, and an earlier version of this README wrongly promised that
-merges would always be clean.
+### Why branches rather than modules
 
-The build scripts have no such problem: they discover `test/*Spec.hs` by glob, so
-the no-package-manager path needs no branch edits at all. If the cabal conflicts
-become annoying, the durable fix is to move each branch's suite into its own
-package under `cabal.project`'s `optional-packages`, which would remove the
-shared edit entirely.
+The branch layout is **deliberate, and it is about separability.** A branch is a
+complete tree, so porting a track to its own repository is
+`git push newremote truth-mode:main` — and a cross-track import is
+*physically impossible* rather than merely discouraged. Modules plus a lint test
+would be a weaker guarantee: a test can be deleted, a branch boundary cannot be
+accidentally crossed. The goal is to stay separable by construction rather than
+becoming inseparable by default.
+
+Note what branches do **not** provide: access control. Anyone who can clone the
+repository can check out any branch. Isolation happens at port time, not at
+repository-access time.
+
+**One real cost.** `nl2proof.cabal` is a shared edit point and does conflict.
+Adding Stage 2 to `main` appended a `test-suite` stanza at end-of-file, and both
+mode branches had appended theirs in the same place, so all three merges
+conflicted. Trivial to resolve — keep both stanzas — but real, and
+an earlier version of this README wrongly promised merges would always be clean.
+
+**Specced, not yet done.** Give each branch its own package directory registered
+through `cabal.project`'s `optional-packages`, which is ignored when the directory
+is absent. A branch would then add *only new files* and never edit a shared one,
+removing the conflict without weakening separability.
+
+The build scripts already have no such problem: they discover `test/*Spec.hs` by
+glob, so the no-package-manager path needs no branch edits at all.
 
 | | `truth-mode` = epistemic | `provenance-mode` = letra |
 |---|---|---|
@@ -298,8 +323,19 @@ src/NL2Proof/
   Collapse/Class.hs    the seam: Selection and CollapseStrategy
   Fragment.hs          the fixed evaluation set
   Pipeline.hs          text -> DRS, wiring it together
+  Stage2/
+    Distribution.hs    finite distributions on the simplex
+    Modifier.hs        modifier classes by resolution layer
+    Alternatives.hs    generates the readings Stage 1 declined to
+    Fingerprint.hs     structural fingerprints + similarity kernel
+    Model.hs           finite models, entailment, informativity
+    RSA.hs             literal/pragmatic listener, speaker
+    Pipeline.hs        Stage 2 end to end
 app/Main.hs            demo
-test/Spec.hs           348 checks, no test framework dependency
+test/Harness.hs        shared assert scaffolding, no framework dependency
+test/Spec.hs           348 Stage 1 checks
+test/Stage2Spec.hs     136 Stage 2 checks
+docs/                  standalone probes, not wired into a suite
 ```
 
 ## Next
