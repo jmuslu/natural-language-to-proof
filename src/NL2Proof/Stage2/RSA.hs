@@ -36,6 +36,8 @@ module NL2Proof.Stage2.RSA
     -- * The recursion
   , literalListener
   , speaker
+  , speakerFrom
+  , listenerTable
   , pragmaticListener
     -- * Priors and costs
   , surfaceScopePrior
@@ -45,6 +47,8 @@ module NL2Proof.Stage2.RSA
     -- * Diagnostics
   , sharpening
   ) where
+
+import qualified Data.Map.Strict as M
 
 import NL2Proof.Semantics.Lambda (Term)
 import NL2Proof.Stage2.Alternatives (scopeSignature)
@@ -106,13 +110,30 @@ literalListener model u =
 -- Utterances the level-below listener assigns zero probability to are dropped
 -- rather than given @log 0 = -inf@, which keeps the softmax finite.
 speaker :: (Ord u, Ord m) => Int -> RSAModel u m -> m -> Maybe (Dist u)
-speaker k model m = softmax (rsaAlpha model) scored
+speaker k model = speakerFrom model (listenerTable (k - 1) model)
+
+-- | The lower-level listener, one entry per utterance, with each distribution
+-- pre-converted to a 'M.Map' for @O(log n)@ lookup.
+--
+-- Hoisting this out of 'speaker' is a real fix, not tidying. 'pragmaticListener'
+-- calls 'speaker' once per meaning, and the naive version rebuilt the entire
+-- lower-level listener inside every one of those calls, giving
+-- @O(|M|^2 |U|)@ listener evaluations with a further linear 'prob' scan inside.
+-- At 256 models that was slow enough to hang an interpreted run. Computed once,
+-- it is @O(|M| |U|)@ with @log|M|@ lookups — which also matters directly for the
+-- conversational track's latency budget.
+listenerTable :: (Ord u, Ord m) => Int -> RSAModel u m -> [(u, M.Map m Double)]
+listenerTable k model =
+  [ (u, toMap d) | u <- rsaUtterances model, Just d <- [listenerAt k model u] ]
+
+speakerFrom
+  :: (Ord u, Ord m) => RSAModel u m -> [(u, M.Map m Double)] -> m -> Maybe (Dist u)
+speakerFrom model table m = softmax (rsaAlpha model) scored
   where
     scored =
       [ (u, log p - rsaCost model u)
-      | u <- rsaUtterances model
-      , Just d <- [listenerAt (k - 1) model u]
-      , let p = prob d m
+      | (u, tbl) <- table
+      , Just p <- [M.lookup m tbl]
       , p > 0
       ]
 
@@ -125,10 +146,13 @@ pragmaticListener k model u
       fromWeights
         [ (m, rsaPrior model m * pu)
         | m <- rsaMeanings model
-        , Just sd <- [speaker k model m]
+        , Just sd <- [speakerFrom model table m]
         , let pu = prob sd u
         , pu > 0
         ]
+  where
+    -- Built once for the whole comprehension, not once per meaning.
+    table = listenerTable (k - 1) model
 
 -- | Internal dispatch so 'speaker' and 'pragmaticListener' can recurse through
 -- each other without duplicating the base case.

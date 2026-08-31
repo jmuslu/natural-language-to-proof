@@ -21,6 +21,7 @@ module NL2Proof.Stage2.Distribution
   , softmax
     -- * Inspection
   , toPairs
+  , toMap
   , support
   , prob
   , total
@@ -115,6 +116,15 @@ support = map fst . toPairs
 
 prob :: Eq a => Dist a -> a -> Double
 prob d x = sum [p | (k, p) <- toPairs d, k == x]
+
+-- | Map view, for @O(log n)@ lookup instead of 'prob''s linear scan.
+--
+-- Needed in practice, not hypothetically: RSA's recursion queries the
+-- lower-level listener once per (utterance, meaning) pair, so a linear 'prob'
+-- makes the depth-1 listener @O(|M|^2 |U|)@ in list steps. With 256 models that
+-- was slow enough to matter.
+toMap :: Ord a => Dist a -> M.Map a Double
+toMap = M.fromList . toPairs
 
 total :: Dist a -> Double
 total = sum . map snd . toPairs

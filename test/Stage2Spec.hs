@@ -20,6 +20,7 @@ import NL2Proof.Semantics.Lambda
 import NL2Proof.Stage2.Alternatives
 import NL2Proof.Stage2.Distribution
 import NL2Proof.Stage2.Fingerprint
+import NL2Proof.Stage2.Model
 import NL2Proof.Stage2.Modifier
 import NL2Proof.Stage2.Pipeline
 import NL2Proof.Stage2.RSA
@@ -179,33 +180,50 @@ modifierChecks =
 -- 4. Coupling alternatives
 --------------------------------------------------------------------------------
 
+-- | The space is built, then narrowed. These assert both halves: every fusion is
+-- generated, and the licensing evidence needed to narrow them is attached rather
+-- than applied.
 couplingChecks :: [Check]
 couplingChecks =
-  [ expectEq "coupling: one fused candidate, from the one classificatory modifier"
-      2 (length couplings)
-  , expect "coupling: the surface reading is retained"
-      (case couplings of
-         (t : _) -> alphaEq t (caseTerm "coupling")
+  [ expectEq "coupling: surface plus one candidate per modifier, none suppressed"
+      4 (length cands)
+  , expect "coupling: the surface reading comes first and is unfused"
+      (case cands of
+         (c : _) -> alphaEq (ccTerm c) (caseTerm "coupling")
+                      && ccModifier c == Nothing && ccLayer c == 0
          []      -> False)
-  , expect "coupling: the fused reading introduces chinese_dragon"
+  , expect "coupling: chinese_dragon is generated"
       (any (\t -> "chinese_dragon" `elem` constNames t) couplings)
-  , -- The over-generation this stratification was introduced to stop.
-    expect "coupling: no implausible modifier-modifier fusion is generated"
-      (not (any (\t -> any (`elem` constNames t)
-                           ["ancient_chinese", "chinese_red", "ancient_red"])
-                couplings))
-  , expect "coupling: the intersective modifiers survive the fusion"
-      (all (\t -> all (`elem` constNames t) ["ancient", "red"]) couplings)
-  , expect "coupling: the fused reading drops the separate chinese conjunct"
+  , -- No preemptive pruning: implausible fusions are generated too, so they can
+    -- be down-weighted explicitly rather than silently never existing.
+    expect "coupling: implausible fusions ARE generated, not suppressed"
+      (all (\q -> any (\t -> q `elem` constNames t) couplings)
+           ["ancient_dragon", "red_dragon"])
+  , expect "coupling: exactly one candidate is licensed by its modifier class"
+      (length [c | c <- cands, ccModifier c /= Nothing, ccLicensed c] == 1)
+  , expect "coupling: and it is the classificatory one"
+      (case [c | c <- cands, ccModifier c /= Nothing, ccLicensed c] of
+         [c] -> ccModifier c == Just "chinese" && ccClass c == Just Classificatory
+         _   -> False)
+  , expect "coupling: unlicensed candidates still carry their class as evidence"
+      (all (\c -> ccClass c == Just Intersective && not (ccLicensed c))
+           [c | c <- cands, ccModifier c `elem` [Just "ancient", Just "red"]])
+  , expect "coupling: every fused candidate records its head"
+      (all (\c -> ccHead c == Just "dragon") [c | c <- cands, ccModifier c /= Nothing])
+  , expect "coupling: the licensed candidate sits at layer 2"
+      (all (\c -> ccLayer c == 2)
+           [c | c <- cands, ccLicensed c, ccModifier c /= Nothing])
+  , expect "coupling: the fused reading drops the separate conjunct"
       (case filter (\t -> "chinese_dragon" `elem` constNames t) couplings of
          (t : _) -> "chinese" `notElem` constNames t
          []      -> False)
-  , expect "coupling: all fused readings stay closed and well-typed"
+  , expect "coupling: all candidates stay closed and well-typed"
       (all (\t -> null (freeVars t) && wellTyped t) couplings)
   , expectEq "coupling: a sentence with no modifier stack yields itself" 1
       (length (couplingAlternatives (const True) (caseTerm "transitive")))
   ]
   where
+    cands = couplingCandidates (const True) (caseTerm "coupling")
     couplings = couplingAlternatives (const True) (caseTerm "coupling")
 
 --------------------------------------------------------------------------------
@@ -385,7 +403,7 @@ pipelineChecks =
     ]
     ++ [ expectEq "pipeline: quantified yields exactly 2 readings" 2
            (length (s2Readings (runStage2 pv (caseTerm "quantified"))))
-       , expectEq "pipeline: coupling yields exactly 2 readings" 2
+       , expectEq "pipeline: coupling yields 4 readings, none pruned away" 4
            (length (s2Readings (runStage2 pv (caseTerm "coupling"))))
        , expectEq "pipeline: unambiguous sentences yield 1 reading" 1
            (length (s2Readings (runStage2 pv (caseTerm "transitive"))))
@@ -414,6 +432,63 @@ pipelineChecks =
        ]
 
 --------------------------------------------------------------------------------
+-- 9. Finite models: derived informativity and entailment
+--------------------------------------------------------------------------------
+
+-- | The fix for the improper RSA setup. Informativity is RSA's engine and it
+-- needs semantics; these checks assert the asymmetry is *derived* rather than
+-- stipulated.
+modelChecks :: [Check]
+modelChecks =
+  [ expectEq "model: signature is read off the term"
+      (Signature ["student", "book"] ["read"] []) sig
+  , expectEq "model: enumeration matches the predicted count"
+      (toInteger (length models)) (modelCount 2 sig)
+  , expectEq "model: 256 models at domain size 2" 256 (length models)
+  , expect "model: a tautology is true in every model"
+      (length (truthSet models (TOr p (TNot p))) == length models)
+  , expect "model: a contradiction is true in none"
+      (null (truthSet models (TAnd p (TNot p))))
+  , expect "model: a contradiction has no finite informativity"
+      (informativity models (TAnd p (TNot p)) == Nothing)
+  , expect "model: a tautology carries zero information"
+      (maybe False (near 0) (informativity models (TOr p (TNot p))))
+  , -- The derived asymmetry. This is the whole point of the module.
+    expect "model: the inverse reading entails the surface reading"
+      (entails models inverse surface)
+  , expect "model: the surface reading does NOT entail the inverse"
+      (not (entails models surface inverse))
+  , expect "model: so the inverse reading is strictly stronger"
+      (strictlyStronger models inverse surface)
+  , expect "model: the stronger reading is true in strictly fewer models"
+      (length (truthSet models inverse) < length (truthSet models surface))
+  , expect "model: and is therefore strictly more informative"
+      (case (informativity models surface, informativity models inverse) of
+         (Just a, Just b) -> b > a
+         _                -> False)
+  , expect "model: a reading is equivalent to itself"
+      (equivalent models surface surface)
+  , expect "model: entailment is reflexive but not symmetric here"
+      (entails models surface surface && not (equivalent models surface inverse))
+  , -- Consequence of the entailment: the ambiguous form adds nothing over the
+    -- weaker reading, so scope ambiguity of this shape is scalar strengthening
+    -- rather than a choice between exclusive alternatives.
+    expect "model: the ambiguous form is equivalent to the weaker reading"
+      (equivalent models (TOr surface inverse) surface)
+  ]
+  where
+    surface = caseTerm "quantified"
+    inverse = case scopeAlternatives surface of
+      (_ : x : _) -> x
+      _           -> error "expected two scope readings"
+    sig = signatureOf surface
+    models = enumerateModels 2 sig
+    -- Quantified, so it needs no constant: the signature derived from the
+    -- reading has none, and a term mentioning an uninterpreted constant
+    -- correctly evaluates to Nothing rather than to a truth value.
+    p = TForall "z" TyE (App (pred1 "student") (Var "z"))
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
@@ -430,4 +505,5 @@ main =
        , referenceGameChecks
        , scopeRankingChecks
        , pipelineChecks
+       , modelChecks
        ])

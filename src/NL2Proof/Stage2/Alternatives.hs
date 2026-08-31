@@ -35,6 +35,8 @@ module NL2Proof.Stage2.Alternatives
     -- * Generation
   , scopeAlternatives
   , couplingAlternatives
+  , couplingCandidates
+  , CouplingCandidate(..)
   , alternatives
     -- * Inspection
   , scopeSignature
@@ -192,17 +194,64 @@ modifierChains isModifier t =
 -- the choice to the ranking layer, per the architecture's insistence that
 -- localizing an ambiguity and resolving it are different jobs.
 couplingAlternatives :: (String -> Bool) -> Term -> [Term]
-couplingAlternatives isModifier t =
-  nubAlpha (t : concatMap fuseChain (modifierChains isModifier t))
+couplingAlternatives isModifier =
+  nubAlpha . map ccTerm . couplingCandidates isModifier
+
+-- | One fusion candidate, with the evidence about how plausible it is.
+data CouplingCandidate = CouplingCandidate
+  { ccTerm     :: Term
+  , ccModifier :: Maybe String
+    -- ^ Which modifier was fused, or 'Nothing' for the unfused surface reading.
+  , ccHead     :: Maybe String
+  , ccClass    :: Maybe ModifierClass
+    -- ^ The fused modifier's class.
+  , ccLicensed :: Bool
+    -- ^ Does that class license fusion at all? 'False' candidates are still
+    -- generated and returned.
+  , ccLayer    :: Int
+    -- ^ Resolution layer needed to settle this candidate. @0@ for the surface
+    -- reading, which needs nothing settled.
+  }
+
+-- | __Every__ fusion the chain admits, annotated rather than filtered.
+--
+-- An earlier version suppressed fusions whose modifier was not
+-- 'Classificatory', which meant @ancient_chinese@ and @chinese_red@ were never
+-- generated for @"ancient Chinese red dragon"@. That was preemptive pruning, and
+-- it is the wrong shape for this architecture: __build the space first, narrow it
+-- with an explicit mechanism afterwards.__ A candidate that never exists cannot
+-- be collapsed, cannot be logged as rejected, and cannot be recovered when the
+-- classification turns out to be wrong.
+--
+-- So the stratification is preserved as __evidence on the candidate__
+-- ('ccClass', 'ccLicensed', 'ccLayer') rather than as a filter. The ranking layer
+-- can down-weight unlicensed fusions to near zero, and the record of having done
+-- so survives — which is exactly the difference between a decision and a
+-- silent omission.
+--
+-- 'couplingAlternatives' keeps the plain-term interface for callers that only
+-- want readings.
+couplingCandidates :: (String -> Bool) -> Term -> [CouplingCandidate]
+couplingCandidates isModifier t = surface : concatMap fuseChain (modifierChains isModifier t)
   where
+    surface = CouplingCandidate t Nothing Nothing Nothing True 0
+
     -- The head is the last predicate in the chain; the rest are modifiers.
     fuseChain (v, preds) = case reverse preds of
       [] -> []
       (headNoun : revMods) ->
         let mods = reverse revMods
-        in [ rewriteChain v (dropAt i mods ++ [mods !! i ++ "_" ++ headNoun]) t
+        in [ CouplingCandidate
+               { ccTerm = rewriteChain v (dropAt i mods ++ [m ++ "_" ++ headNoun]) t
+               , ccModifier = Just m
+               , ccHead = Just headNoun
+               , ccClass = Just cls
+               , ccLicensed = mayFuseWithHead cls
+               , ccLayer = modifierLayer cls
+               }
            | i <- [0 .. length mods - 1]
-           , mayFuseWithHead (classifyModifier (mods !! i))
+           , let m = mods !! i
+           , let cls = classifyModifier m
            ]
 
     dropAt i xs = take i xs ++ drop (i + 1) xs
