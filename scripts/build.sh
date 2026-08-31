@@ -58,25 +58,22 @@ TARGET="${1:-test}"
 # Every .hs under src/, so an unreferenced module still gets checked.
 mapfile -t SOURCES < <(find "$ROOT/src" -name '*.hs')
 
-# Spec.hs and Main.hs both declare `module Main`, so they cannot be checked in
-# the same invocation.
+# Every spec is its own `module Main`, so each needs a separate invocation.
+# Discovering them by glob means a branch can add test/ModeSpec.hs, or a stage
+# can add test/Stage2Spec.hs, without this script changing.
+mapfile -t SPECS < <(find "$ROOT/test" -maxdepth 1 -name '*Spec.hs' | sort)
+
 echo "== typechecking library (-Wall)"
 ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-lib" -fno-code -Wall "${SOURCES[@]}"
 
-echo "== typechecking test suite (-Wall)"
-ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-test" -fno-code -Wall "$ROOT/test/Spec.hs"
+for spec in "${SPECS[@]}"; do
+  name="$(basename "$spec" .hs)"
+  echo "== typechecking $name (-Wall)"
+  ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-$name" -fno-code -Wall "$spec"
+done
 
 echo "== typechecking demo (-Wall)"
 ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-demo" -fno-code -Wall "$ROOT/app/Main.hs"
-
-# Extension point for the mode branches. A branch adds test/ModeSpec.hs and its
-# Collapse backend as *new files only*, so merging main down into it never
-# touches a shared file and never conflicts.
-MODE_SPEC="$ROOT/test/ModeSpec.hs"
-if [ -f "$MODE_SPEC" ]; then
-  echo "== typechecking mode spec (-Wall)"
-  ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-mode" -fno-code -Wall "$MODE_SPEC"
-fi
 
 case "$TARGET" in
   compile)
@@ -85,32 +82,30 @@ case "$TARGET" in
     # names. On Windows the binary gets .exe appended and a collision is
     # invisible; on Unix `-outputdir X -o X` makes the linker try to write over
     # its own object directory.
-    ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/obj-spec" -o "$BUILD/spec" -Wall "$ROOT/test/Spec.hs"
+    for spec in "${SPECS[@]}"; do
+      name="$(basename "$spec" .hs)"
+      ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/obj-$name" -o "$BUILD/$name" -Wall "$spec"
+    done
     ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/obj-demo" -o "$BUILD/demo" -Wall "$ROOT/app/Main.hs"
-    if [ -f "$MODE_SPEC" ]; then
-      ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/obj-mode" -o "$BUILD/modespec" -Wall "$MODE_SPEC"
-    fi
 
-    echo "== running test suite"
-    run_exe "$BUILD/spec"
-    if [ -f "$MODE_SPEC" ]; then
+    for spec in "${SPECS[@]}"; do
+      name="$(basename "$spec" .hs)"
       echo
-      echo "== running mode-specific suite"
-      run_exe "$BUILD/modespec"
-    fi
+      echo "== running $name"
+      run_exe "$BUILD/$name"
+    done
     ;;
   demo)
     echo "== running demo"
     exec runghc "${SRC_DIRS[@]}" "$ROOT/app/Main.hs"
     ;;
   test)
-    echo "== running test suite"
-    runghc "${SRC_DIRS[@]}" "$ROOT/test/Spec.hs"
-    if [ -f "$MODE_SPEC" ]; then
+    for spec in "${SPECS[@]}"; do
+      name="$(basename "$spec" .hs)"
       echo
-      echo "== running mode-specific suite"
-      runghc "${SRC_DIRS[@]}" "$MODE_SPEC"
-    fi
+      echo "== running $name"
+      runghc "${SRC_DIRS[@]}" "$spec"
+    done
     ;;
   *)
     echo "usage: $0 [test|demo|compile]" >&2

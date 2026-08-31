@@ -17,8 +17,13 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design. The short version:
 ## Status
 
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
-probability anywhere. **409 checks** — 348 shared, plus 23 on `truth-mode` and 38
-on `provenance-mode`.
+probability anywhere. 348 shared checks, plus 23 on `truth-mode` and 38 on
+`provenance-mode`.
+
+**Stage 2 started: probabilistic augmentation.** 117 checks. Generates the
+readings Stage 1 declined to produce (scope permutation, modifier-noun fusion),
+fingerprints them structurally, and ranks them with RSA. Kept in its own suite so
+Stage 1's number stays a stable signal. **526 checks total.**
 
 Stage 1 is meant to stop changing. Later stages consume its output; they should
 not require edits to it.
@@ -32,9 +37,16 @@ table exists to prevent.
 | Stage | epistemic<br>(truth-mode) | conversational | letra<br>(provenance-mode) |
 |---|---|---|---|
 | **1** — Montague + CCG + DRT, provenance-tagged | **done**, shared | **done**, shared | **done**, shared |
-| **2** — probabilistic augmentation: SDRT, RSA, fingerprints | optional | **essential** | maybe |
-| **3** — attribute grammars, speculative commit + rollback | nice to have | **essential** | open |
+| **2** — probabilistic augmentation: RSA, fingerprints, alternatives | **in progress**, shared | **in progress**, shared | **in progress**, shared |
+| **3** — attribute grammars, speculative commit + rollback | when rollback is wanted | **cannot work without it** | open |
 | **4** — epistemic graph layer: Kripke, DEL, AGM | epistemic **only** | n/a | n/a |
+
+**Augmentation is shared, and general.** Stage 2 is not a per-track option. It is
+always worth understanding a statement from every angle before collapsing —
+the extra angles derive additional insight, and the layer's job is to keep signals
+from being lost before anything commits. What differs is what each track *does*
+with the candidate set: epistemic collapses it, conversational reweights it live,
+letra retains it with lineage. All three need it built first.
 
 **On the name collision.** Stage 4 is called the "epistemic graph layer" and it
 does sit on the epistemic track — but *Stage 4 is not what makes that track
