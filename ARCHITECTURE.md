@@ -877,6 +877,96 @@ that consumes Stage 1–3 output as input nodes. Needs its own literature:
 
 Do not start until Stages 1–3 have a stable, tested output format to consume.
 
+## Standing principles
+
+Constraints that came out of building Stage 2, applying to everything after it.
+
+### Build the space; do not preemptively prune it
+
+Half the problem is narrowing the candidate space — but the space has to exist
+first, or there is nothing to collapse. **Narrowing is a separate, explicit,
+logged mechanism, never a filter applied at generation time.**
+
+A candidate that is never generated cannot be collapsed, cannot be recorded as
+rejected, and cannot be recovered when the judgement that excluded it turns out to
+be wrong. That is the same failure as a parser returning only its first parse.
+
+Worked example, from getting it wrong: `Stage2.Alternatives` originally
+*suppressed* modifier fusions whose modifier was not classificatory, so
+`ancient_dragon` and `red_dragon` were never generated for
+`"ancient Chinese red dragon"`. The stratification was right; applying it as a
+filter was wrong. It is now attached to each candidate as evidence
+(`ccClass`, `ccLicensed`, `ccLayer`) and the ranking layer down-weights, rather
+than the generator omitting. The space went from 2 candidates back to 4, with the
+licensing information still present.
+
+### Spend computation freely
+
+Combinatorial cost is not a reason to narrow a design. If a mechanism needs more
+computation, that is rational spending, and the space being large is partly the
+point.
+
+Model enumeration scales as `2^(n|unary|) * 2^(n^2|binary|)`. Measured on the
+build server:
+
+| domain size | models | surface true in | inverse true in | inverse ⊨ surface |
+|---|---|---|---|---|
+| 1 | 8 | 5 | 3 | yes |
+| 2 | 256 | 137 | 119 | yes |
+| 3 | 32,768 | 17,303 | 15,465 | yes |
+
+5.5s and 27 MB for all three, and the entailment is stable across domain sizes
+rather than an artifact of a conveniently small one. Go bigger when a question
+needs it.
+
+Haskell's laziness makes this cheap to express: `enumerateModels` defines the
+whole space and consumers take what they need, so "build the space" costs nothing
+until something looks at it.
+
+### What *is* provisional: the corpus, not the compute
+
+The nine-case fragment and the hand-built scenarios are a stand-in for production
+data, forced by what is available in this environment — **not** a statement that
+toy data is sufficient. Two consequences:
+
+- Results measured on the fragment are **lower bounds and existence proofs**, not
+  performance claims. "The entailment holds over all 32,768 models at n=3" is a
+  real fact; "scope readings behave like this in English" is not something this
+  evaluation set can establish.
+- The fixed evaluation set should **grow toward real data**, including chunked
+  real corpus text, rather than staying a closed toy set. The methodology note
+  below about fixing the set before comparing variants still holds — fix it, then
+  extend it deliberately, and re-run the comparisons.
+
+Same shape as the missing distributional resource: an unwired dependency, not an
+architectural limit.
+
+### Haskell is the scaffold, not an implementation detail
+
+The type system and functional style **are** the organizing template for the
+semantics and the graphs. Designing a discrete formalism on paper and then coding
+it separately is redundant: written directly as types, the code *is* the design.
+
+What the language is actually doing here:
+
+- **ADTs are the grammar of the representation.** `Term`, `Cat`, `DRS`, `Prov`,
+  `CanonCond`, `ModifierClass` are each a closed statement of what can exist.
+- **Exhaustive pattern matching checks the formalism for completeness.** Adding a
+  case to `Term` turns every traversal that fails to handle it into a compile
+  error. That is coverage checking of the *formalism*, not just the code.
+- **The type/category correspondence is machine-checked.** `catTy` states which
+  semantic type each syntactic category demands, and the suite verifies every
+  lexical entry inhabits it — Curry–Howard at the smallest available scale.
+- **Laziness lets an unbounded candidate space be defined and consumed
+  incrementally**, which is what makes the no-preemptive-pruning principle cheap.
+- **Purity makes provenance honest.** A derivation cannot acquire a dependency
+  that is not in its arguments, so a `Prov` tree cannot silently omit a source.
+
+Reaching for another language for a specific job is fine where it is genuinely the
+right tool — heavy numeric work on real distributional vectors being the obvious
+candidate. The interface stays in Haskell, and the representation of generated
+information stays here.
+
 ## Methodology discipline
 
 Applies throughout, especially Stages 2–3.

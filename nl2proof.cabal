@@ -41,6 +41,7 @@ library
                       NL2Proof.Pipeline
                       NL2Proof.Stage2.Distribution
                       NL2Proof.Stage2.Modifier
+                      NL2Proof.Stage2.Model
                       NL2Proof.Stage2.Alternatives
                       NL2Proof.Stage2.Fingerprint
                       NL2Proof.Stage2.RSA
