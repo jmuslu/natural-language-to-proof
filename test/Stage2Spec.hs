@@ -489,6 +489,59 @@ modelChecks =
     p = TForall "z" TyE (App (pred1 "student") (Var "z"))
 
 --------------------------------------------------------------------------------
+-- 10. Order theory: chain vs antichain
+--------------------------------------------------------------------------------
+
+-- | Scope and coupling ambiguity are different order-theoretic situations, and
+-- the difference decides how each can be ranked.
+--
+-- Measured over 524,288 models at domain size 2 for coupling and 256 for scope;
+-- these checks use domain size 1 to stay fast, where the same relations hold.
+orderChecks :: [Check]
+orderChecks =
+  [ -- Scope: a CHAIN. The stronger reading entails the weaker.
+    expect "order: scope readings are comparable (a chain)"
+      (let ms = modelsFor scopeRs
+       in comparableIn ms (scopeRs !! 0) (scopeRs !! 1))
+  , expect "order: and strictly so, in one direction only"
+      (let ms = modelsFor scopeRs
+       in strictlyStronger ms (scopeRs !! 1) (scopeRs !! 0))
+
+  , -- Coupling: an ANTICHAIN. Every pair incomparable.
+    expect "order: coupling readings are pairwise INCOMPARABLE (an antichain)"
+      (let ms = modelsFor coupRs
+       in and [ not (comparableIn ms (coupRs !! i) (coupRs !! j))
+              | i <- idxC, j <- idxC, i < j ])
+
+  , -- Incomparable is not the same as disjoint, and conflating them would
+    -- mis-model the ranking problem.
+    expect "order: but their truth sets OVERLAP, so it is not a partition"
+      (let ms = modelsFor coupRs
+           sizes = sum [length (truthSet ms r) | r <- coupRs]
+           union = length [m | m <- ms, any (\r -> holds m r) coupRs]
+       in sizes > union)
+
+  , -- Informativity differs, which is what gives RSA something to exploit.
+    expect "order: coupling readings differ in informativity"
+      (let ms = modelsFor coupRs
+           infos = [informativity ms r | r <- coupRs]
+       in length (nubOn infos) > 1)
+  , expect "order: the fully intersective reading is the most informative"
+      (let ms = modelsFor coupRs
+           n0 = length (truthSet ms (coupRs !! 0))
+       in all (\i -> n0 <= length (truthSet ms (coupRs !! i))) idxC)
+  ]
+  where
+    scopeRs = scopeAlternatives (caseTerm "quantified")
+    coupRs = couplingAlternatives (const True) (caseTerm "coupling")
+    idxC = [0 .. length coupRs - 1]
+
+    modelsFor rs = enumerateModels 1 (signatureOf (foldr1 TAnd rs))
+    holds m r = evalTerm m M.empty r == Just True
+    comparableIn ms a b = entails ms a b || entails ms b a
+    nubOn = foldr (\x acc -> if x `elem` acc then acc else x : acc) []
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
@@ -506,4 +559,5 @@ main =
        , scopeRankingChecks
        , pipelineChecks
        , modelChecks
+       , orderChecks
        ])
