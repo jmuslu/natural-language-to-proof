@@ -374,37 +374,46 @@ rejected.
 Ordered by how much a good answer changes the design. These are the ones where
 your judgement would actually redirect the work.
 
-1. **Are coupling readings an antichain while scope readings are a chain?**
-   Scope readings are provably comparable (`inverse ⊆ surface`), so they are a
-   chain and the ambiguity is scalar strengthening. If coupling readings are
-   genuinely incomparable, the two ambiguity types need structurally different
-   probabilistic treatments and the current single pipeline is mis-specified.
-   Testable today with `entails`. (Layer 9)
-2. **Is the RSA operator a contraction?** Would replace a latency knob with a
+1. **Is the RSA operator a contraction?** Would replace a latency knob with a
    convergence criterion, and answers the conversational track's open question
    about affordable depth directly. (Layer 8)
-3. **`Dist` should be the finite distribution monad.** No `join`/`>>=`, so
+2. **`Dist` should be the finite distribution monad.** No `join`/`>>=`, so
    probabilistic steps cannot compose. RSA's recursion *is* Kleisli composition,
    and Stage 3 rollback is a probabilistic state transformer that will need it.
    (Layer 7)
-4. **Genealogy is a free category, not an initial algebra.** A fold cannot answer
+3. **Genealogy is a free category, not an initial algebra.** A fold cannot answer
    "is there a path from A to B". This is the real reason `Prov` cannot serve
    letra — not its leaf type — and it makes letra a rewrite rather than an
    extension. (Layer 3)
-5. **Should content and structure similarity stay separate coordinates** rather
+4. **Should content and structure similarity stay separate coordinates** rather
    than being averaged into one scalar? (Layer 6)
-6. **Is a multiset quotient of DRS wanted** — commutative but not idempotent —
+5. **Is a multiset quotient of DRS wanted** — commutative but not idempotent —
    for a "same claim" test independent of truth-mode? Nothing currently
    constructs it. (Layer 4)
-7. **Count linear extensions** rather than filtering `n!` permutations. The
+6. **Count linear extensions** rather than filtering `n!` permutations. The
    number of linear extensions is also the right thing to report as the size of
    the scope space. (Layer 5)
-8. **Span meet is missing**, so "what do two derivations share textually" is
+7. **Span meet is missing**, so "what do two derivations share textually" is
    uncomputable — needed by the conversational track's edit-to-scope problem.
    (Layer 0)
-9. **Only application is enabled** from the Lambek calculus. A deliberate
+8. **Only application is enabled** from the Lambek calculus. A deliberate
    restriction to a strictly smaller sub-calculus; worth naming as such rather
    than leaving it to look accidental. (Layer 1)
+
+### Resolved this session
+
+- **Coupling readings form an antichain; scope readings form a chain.** Measured
+  over 524,288 models at domain size 2: all six coupling pairs incomparable,
+  scope strictly ordered. The two ambiguity types are genuinely different
+  order-theoretic situations, which was the top open question. (Layer 9)
+- **An antichain is not a partition.** The four coupling truth sets overlap —
+  individually 8 + 16 + 16 + 16 = 56 models, union strictly smaller — so
+  marginals over readings do not sum to 1. A third situation, distinct from both
+  a chain and a partition, and both mis-modellings are available.
+- **RSA does rank coupling readings**, once given informativity from the model
+  layer instead of a scope-signature prior. The earlier "sharpening exactly 0"
+  was an artifact of a prior blind to coupling, not a fact about coupling.
+  Corrected in place rather than only in git history. (Layer 8)
 
 ### Scaffolding — environment artifacts, not design questions
 
