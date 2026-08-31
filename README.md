@@ -17,17 +17,32 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the full design. The short version:
 ## Status
 
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
-probability anywhere. 348 checks passing.
-
-| Stage | What | State |
-|---|---|---|
-| 1 | Montague lambda calculus + CCG + DRT, provenance-tagged | **done** |
-| 2 | SDRT / RSA / DisCoCat augmentation | not started |
-| 3 | Attribute grammars, speculative commit + rollback, diagnostics | not started |
-| 4 | Epistemic graph layer (separate formalism, sits on the epistemic track) | out of scope |
+probability anywhere. **409 checks** — 348 shared, plus 23 on `truth-mode` and 38
+on `provenance-mode`.
 
 Stage 1 is meant to stop changing. Later stages consume its output; they should
 not require edits to it.
+
+### Stages are per-track, not a global roadmap
+
+There is no single linear plan. The three tracks share Stage 1 and then need
+different things — reading the stage numbers as one sequence is the mistake this
+table exists to prevent.
+
+| Stage | epistemic<br>(truth-mode) | conversational | letra<br>(provenance-mode) |
+|---|---|---|---|
+| **1** — Montague + CCG + DRT, provenance-tagged | **done**, shared | **done**, shared | **done**, shared |
+| **2** — probabilistic augmentation: SDRT, RSA, fingerprints | optional | **essential** | maybe |
+| **3** — attribute grammars, speculative commit + rollback | nice to have | **essential** | open |
+| **4** — epistemic graph layer: Kripke, DEL, AGM | epistemic **only** | n/a | n/a |
+
+**On the name collision.** Stage 4 is called the "epistemic graph layer" and it
+does sit on the epistemic track — but *Stage 4 is not what makes that track
+epistemic*. The track is epistemic because it has a **firm domain verifier**;
+Stage 4 is one later formalism built on it, and the track is fully usable without
+it. Likewise letra is not "epistemic minus Stage 4" — it has no verifier at all.
+
+Each track's own trajectory lives on its branch in `MODE.md`.
 
 ## Branches
 
@@ -131,8 +146,10 @@ Both scripts typecheck everything with `-Wall` and then run the suite. Pass
 `demo` to run the demo instead, or `compile` to build and run native binaries.
 If `ghc` is already on your PATH, `GHC_BIN` can be skipped.
 
-Built and tested on **GHC 9.4.7 / Ubuntu 24.04** (compiled) and **GHC 9.12.4 /
-Windows** (interpreted).
+Built and tested on **GHC 9.4.7 / Ubuntu 24.04** (compiled, all four branches)
+and **GHC 9.12.4 / Windows** (interpreted). Compiled runs are roughly 90x faster
+than `runghc` — 0.05s versus 4.56s for the core suite — so compiling is worth it
+wherever the platform allows it.
 
 **Why the default path interprets rather than compiles.** The scripts run the
 suite through `runghc`, so no new executable is produced. Windows
