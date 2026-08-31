@@ -311,15 +311,19 @@ derivable by inspection.
 > model treating the readings as a partition is mis-specified — mine was, and this
 > is the proposition that showed it.
 >
-> **P7.5 [conjectured — the top open question]** Coupling readings form an
-> **antichain**: `chinese_dragon(x)` neither entails nor is entailed by
-> `chinese(x) ∧ dragon(x)`, since `chinese_dragon` is an uninterpreted predicate
-> with no relation to either conjunct.
-> *If true:* scope and coupling are different order-theoretic situations and need
-> structurally different probabilistic treatments. The current single pipeline
-> would be mis-specified for one of them.
-> *How to settle:* `entails` on both pairs. Probe committed as
-> `docs/chain-antichain-probe.hs`, unrun — the build server went offline.
+> **P7.5 [measured — RESOLVED]** Coupling readings form an **antichain**. All
+> six pairs are incomparable, over 524,288 models at domain size 2.
+> `chinese_dragon` is an uninterpreted predicate with no relation to
+> `chinese(x) ∧ dragon(x)`, so neither direction entails.
+> *Confirmed:* scope and coupling are genuinely different order-theoretic
+> situations — a chain and an antichain respectively.
+>
+> **P7.7 [measured]** Incomparable is **not** disjoint. The four coupling truth
+> sets overlap: individually 8 + 16 + 16 + 16 = 56 models, whose union is
+> strictly smaller. So coupling is neither a chain nor a partition — a third
+> situation, and marginal probabilities over readings do not sum to 1.
+> *Consequence:* any model that treats an antichain as a partition is as wrong as
+> one treating a chain as a partition. Both errors are available.
 >
 > **P7.6 [proved]** `entails` over a finite model set is sound for
 > counterexamples and **not** complete for entailment. A counterexample found is
@@ -362,11 +366,26 @@ derivable by inspection.
 > The weakening with cost is the sanity check: not-using an expensive alternative
 > is weaker evidence.
 >
-> **P8.7 [measured]** For the coupling case, sharpening is **exactly 0**: all
-> readings share a quantifier signature, so the scope prior cannot distinguish
-> them and RSA has no asymmetry to exploit.
-> *Consequence:* RSA and fingerprints are not redundant. Each handles what the
-> other cannot.
+> **P8.7 [measured — CORRECTED]** An earlier version recorded coupling
+> sharpening as exactly 0 and concluded RSA cannot rank coupling readings. That
+> was an artifact of the prior, not a fact about coupling: `surfaceScopePrior` is
+> blind to coupling differences because all four readings share a quantifier
+> signature.
+>
+> Given real informativity from the model layer, RSA **does** rank them:
+>
+> | reading | true in | informativity | L0 | L1 |
+> |---|---|---|---|---|
+> | fully intersective (4 conjuncts) | 8 | 5.0 bits | 0.205 | **0.114** |
+> | each fused variant (3 conjuncts) | 16 | 4.0 bits | 0.410 | 0.376 |
+>
+> Sharpening `0.0575` bits. And the direction is the same scalar pattern as scope:
+> the *more* informative reading is **down**-weighted, because a speaker who meant
+> it had a more explicit option available.
+> *Corrected consequence:* RSA handles both ambiguity types once it has
+> informativity. The fingerprint kernel is not a substitute for it — it
+> measures a different thing (structural similarity), not a fallback for where RSA
+> fails.
 >
 > **P8.8 [retracted]** *"RSA cannot break a symmetry the prior does not already
 > break."* False. The reference-game test produces the implicature under a uniform
@@ -433,14 +452,19 @@ derivable by inspection.
 
 The propositions most worth attacking, in order:
 
-1. **P7.5** — is coupling an antichain? Unsettled, decidable today, and it
-   determines whether one probabilistic pipeline can serve both ambiguity types.
-2. **P8.5** — is the RSA operator a contraction? Converts a latency knob into a
-   stopping rule.
-3. **P4.5** — genealogy needs a free category. If this is right, letra is a
+1. **P8.5** — is the RSA operator a contraction? Converts a latency knob into a
+   stopping rule, and answers the conversational track's depth question.
+2. **P4.5** — genealogy needs a free category. If this is right, letra is a
    rewrite; if there is a fold-based encoding I have missed, it is not.
-4. **P9.5** — should content and structure ever be averaged?
-5. **P5.4** — is a multiset quotient of DRS wanted?
+3. **P9.5** — should content and structure ever be averaged?
+4. **P5.4** — is a multiset quotient of DRS wanted?
+5. **P7.7** — coupling is an antichain with *overlapping* truth sets. Does the
+   ranking layer need to represent that overlap explicitly, rather than treating
+   readings as if marginals summed to 1?
+
+**Resolved this session:** P7.5 (coupling is an antichain, measured over 524,288
+models) and P8.7 (RSA does rank coupling, given informativity — the earlier
+zero was a prior artifact).
 
 Everything tagged **[stipulated]** is scaffolding: replaced when data arrives, not
 a design question. Everything tagged **[structural]** or **[conjectured]** would

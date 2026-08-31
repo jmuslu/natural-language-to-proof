@@ -26,8 +26,8 @@ The short version of the design:
 probability anywhere. 348 shared checks, plus 23 on `truth-mode` and 38 on
 `provenance-mode`.
 
-**Stage 2 in progress: probabilistic augmentation.** 136 checks, in its own suite
-so Stage 1's number stays a stable signal. **545 checks total** on a track branch.
+**Stage 2 in progress: probabilistic augmentation.** 142 checks, in its own suite
+so Stage 1's number stays a stable signal. **551 checks total** on a track branch.
 
 | Built | Not built |
 |---|---|
@@ -334,7 +334,7 @@ src/NL2Proof/
 app/Main.hs            demo
 test/Harness.hs        shared assert scaffolding, no framework dependency
 test/Spec.hs           348 Stage 1 checks
-test/Stage2Spec.hs     136 Stage 2 checks
+test/Stage2Spec.hs     142 Stage 2 checks
 docs/                  standalone probes, not wired into a suite
 ```
 
