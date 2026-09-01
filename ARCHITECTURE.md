@@ -794,6 +794,75 @@ DRT-based test set:
 
 Test all three against the same fixed evaluation set, not in isolation.
 
+#### The SDRT tie-in, and what wiring it up revealed
+
+Building SDRT and *using* SDRT turned out to be different jobs with different
+findings. The relations, the right frontier and the glue logic were correct and
+inert: nothing consulted `sdrsAccessible`, so anaphora resolution still ran off a
+flat `mergeDRS`. `NL2Proof.Stage2.Threading` closes that, and three things came
+out of it that belong in the architecture rather than in a module header.
+
+**1. Accessibility flows left-to-right across a relation; the kind governs the
+*next* unit.** For `relation(a, b)`, `a`'s referents are available to `b`
+whatever the relation is. A coordinating relation closes `a` for whatever attaches
+*after* `b`. Getting this off by one would make a coordinating relation block its
+own right argument. The consequence is structural: the frontier consulted when
+resolving unit *n* is the frontier of the structure through *n-1*, so the
+threading loop is inherently one step behind the graph it is building.
+
+**2. The frontier is a filter, so it can only lose coverage.** The frontier's
+referents are a subset of the flat merge's — every unit is in the merge, only some
+are open. Switching the default from flat to frontier-restricted is therefore a
+strict loss, and here it is a loss driven by *stipulated* cue weights. This is the
+single most important reason SDRT threading is not simply installed as the Stage 1
+default: it would be trading a correct resolution for a guessed number, silently.
+
+**3. The least committal relation is not the least committal for accessibility.**
+`glue`'s no-cue default is `Continuation`, chosen because it commits to the least
+*about the discourse*. But `Continuation` is coordinating, so it is the most
+restrictive choice for *anaphora*. With no cues firing, committing to it closes
+every parent and accessibility collapses to the previous sentence alone. Two
+notions of "least committal" that look like one and point opposite ways.
+
+So there are two policies rather than one, and the split is the standing principle
+applied at this layer:
+
+| policy | frontier from | effect on antecedents |
+|---|---|---|
+| `Committed` | `argmax` of the relation distribution | hard filter; can delete a correct resolution |
+| `Marginal` | every relation with positive mass, weighted | ranking; deletes nothing |
+
+`Marginal` is the one that belongs here. `Elaboration` always retains positive
+mass, so a parent is never fully closed, and the frontier contributes a *graded
+preference* over antecedents instead of a veto. Collapse stays a separate logged
+step, exactly as everywhere else. Measured on
+`"A student arrived. Mary smiles. She reads a book."`: flat resolves `she`,
+`Committed` fails, `Marginal` resolves it at mass **0.488** — which is exactly the
+subordinating mass of that edge's relation distribution, not a tuned constant.
+
+**The marginal is over one edge, not over the structure.** Marginalising over every
+relation choice in a discourse means carrying a distribution over *structures*,
+whose support is exponential in the number of segments. `Threading` marginalises
+over the most recent edge only, holding earlier attachments at their committed
+values. That is enough to grade the referent whose reachability the last choice
+governs. It is a deliberate truncation, not an approximation with a bound, and if
+longer discourses matter it is the first thing that has to change.
+
+**Known over-restriction, recorded rather than patched.** A resolved pronoun adds
+no referent to its unit's universe — substitution replaces a constant with an
+existing `Ref`. So under `Committed`, a chain of coordinating relations starves:
+`"A man walked in. He sat down. He ordered."` has an empty frontier universe at the
+third unit. Real SDRT percolates referents up the graph. This does not, and
+`Marginal` hides the symptom without addressing the cause.
+
+**And the corpus cannot see any of this.** Both multi-sentence fragment cases are
+two sentences long, and a two-unit structure has one edge whose parent is always on
+the pre-attachment frontier — so no relation choice can change anything. Both
+policies diverge from flat on zero cases. That is asserted as a check rather than
+assumed, which makes it say two things at once: the tie-in is safe on the existing
+corpus, and the corpus is too short to exercise it. Three segments is the minimum
+for this layer to be observable at all.
+
 #### On the absence of a data source
 
 `NL2Proof.Stage2.Fingerprint` currently computes *structural* fingerprints rather
@@ -1189,9 +1258,16 @@ different five, so the space is at least {coreferent, novel} × {collective,
 distributive}.
 
 This would be a **better motivating case for SDRT** than anything in the current
-fragment, which has no example where a discourse relation does real disambiguating
-work. Elaboration or Background favours coreference; Narration more readily
+fragment. Elaboration or Background favours coreference; Narration more readily
 licenses a novel group.
+
+Note what changed since this was written and what did not. The threading tie-in
+now has a three-sentence example where the relation does real disambiguating work
+(`"A student arrived. Mary smiles. She reads a book."`), so the mechanism is no
+longer unexercised. But that example turns on *pronoun* accessibility, which the
+frontier already governs. The plural case turns on whether a repeated **full NP**
+corefers, which needs NP-level anaphora — prerequisite 3 below, still absent. So
+this remains the better case, for a narrower reason than originally stated.
 
 Three prerequisites, none present:
 
