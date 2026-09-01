@@ -15,6 +15,7 @@ import qualified Data.Map.Strict as M
 
 import Harness
 import NL2Proof.Fragment
+import NL2Proof.Pipeline
 import NL2Proof.Provenance
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Stage2.Alternatives
@@ -24,6 +25,11 @@ import NL2Proof.Stage2.Model
 import NL2Proof.Stage2.Modifier
 import NL2Proof.Stage2.Pipeline
 import NL2Proof.Stage2.RSA
+import NL2Proof.DRT.Build
+import NL2Proof.DRT.Types
+import NL2Proof.Syntax.Tokenize
+import NL2Proof.Syntax.Lexicon
+import NL2Proof.Stage2.SDRT
 import NL2Proof.Trace
 
 --------------------------------------------------------------------------------
@@ -542,6 +548,136 @@ orderChecks =
     nubOn = foldr (\x acc -> if x `elem` acc then acc else x : acc) []
 
 --------------------------------------------------------------------------------
+-- 11. SDRT: relations, the right frontier, and accessibility
+--------------------------------------------------------------------------------
+
+-- | The point of SDRT is that relation choice changes what a later sentence can
+-- refer to. These checks pin that down, and pin down the example that *cannot*
+-- show it -- which is the trap worth having a regression for.
+sdrtChecks :: [Check]
+sdrtChecks =
+  [ -- Inventory: the kind split is what drives everything else.
+    expectEq "sdrt: four coordinating relations" 4
+      (length [r | r <- allRelations, relationKind r == Coordinating])
+  , expectEq "sdrt: four subordinating relations" 4
+      (length [r | r <- allRelations, relationKind r == Subordinating])
+  , expect "sdrt: every relation has a layer in 1..3"
+      (all (\r -> relationLayer r >= 1 && relationLayer r <= 3) allRelations)
+  , expect "sdrt: Narration is layer 1, cued from the surface"
+      (relationLayer Narration == 1)
+  , expect "sdrt: Explanation is layer 3, needs inference"
+      (relationLayer Explanation == 3)
+  , expect "sdrt: every relation glosses its own kind"
+      (all (not . null . relationGloss) allRelations)
+
+  , -- The right frontier.
+    expectEq "sdrt: a subordinating relation leaves the parent open"
+      [Label 2, Label 1] (rightFrontier (joined Elaboration))
+  , expectEq "sdrt: a coordinating relation closes the parent"
+      [Label 2] (rightFrontier (joined Narration))
+  , expect "sdrt: isOpen agrees with the frontier"
+      (isOpen (joined Elaboration) (Label 1)
+         && not (isOpen (joined Narration) (Label 1)))
+
+  , -- THE payoff: same two DRSs, different relation, different accessibility.
+    expectEq "sdrt: under Elaboration the earlier referent stays accessible"
+      [Ref "x"] (sdrsAccessible (joined Elaboration))
+  , expectEq "sdrt: under Narration it does not"
+      [] (sdrsAccessible (joined Narration))
+  , expect "sdrt: so relation choice changes downstream anaphora"
+      (sdrsAccessible (joined Elaboration) /= sdrsAccessible (joined Narration))
+
+  , -- And the flat monoid cannot express the difference at all.
+    expect "sdrt: mergeDRS is identical under both relations"
+      (accessibleRefs (mergeDRS (duDRS k1) (duDRS k2))
+         == accessibleRefs (mergeDRS (duDRS k1) (duDRS k2)))
+  , expect "sdrt: and it keeps the referent regardless, so it cannot discriminate"
+      (accessibleRefs (mergeDRS (duDRS k1) (duDRS k2)) == [Ref "x"])
+
+  , -- The trap. A universally quantified first unit has an EMPTY top-level
+    -- universe, so it contributes nothing whether open or closed, and the two
+    -- relations give identical results. Using it to demonstrate SDRT would make
+    -- the layer look inert.
+    expect "sdrt: a duplex-only first unit cannot discriminate the relations"
+      (sdrsAccessible (joinedWith badK1 Elaboration)
+         == sdrsAccessible (joinedWith badK1 Narration))
+  , expectEq "sdrt: because its accessible set is empty either way"
+      [] (sdrsAccessible (joinedWith badK1 Elaboration))
+  , expect "sdrt: even though the frontier genuinely differs"
+      (rightFrontier (joinedWith badK1 Elaboration)
+         /= rightFrontier (joinedWith badK1 Narration))
+
+  , -- Climbing: a coordinating edge is skipped but climbed THROUGH, so a
+    -- subordinating ancestor above it stays open. Easy to get wrong by stopping
+    -- at the first coordinating edge.
+    expectEq "sdrt: climbs through a coordinating edge to a subordinating ancestor"
+      [Label 3, Label 1] (rightFrontier threeChain)
+
+  , -- Glue: builds the space, prunes nothing.
+    expect "sdrt: glue assigns positive mass to every relation"
+      (maybe False (\d -> length (support d) == length allRelations) (glue k1 k2))
+  , expect "sdrt: glue is normalized"
+      (maybe False isNormalized (glue k1 k2))
+  , expect "sdrt: with no cues, Continuation is the least committal default"
+      (maybe False (\d -> argmax d == Just Continuation) (glue k1 k2))
+  , expectEq "sdrt: and no cues fire on that pair" [] (detectCues k1 k2)
+
+  , -- Cues that do fire.
+    expect "sdrt: generic-then-specific is detected"
+      (GenericThenSpecific `elem` detectCues badK1 k2)
+  , expect "sdrt: and it favours Instance"
+      (maybe False (\d -> argmax d == Just Instance) (glue badK1 k2))
+  , expect "sdrt: a shared predicate is detected"
+      (any isShared (detectCues k1 sameVerb))
+  , expect "sdrt: cue weights never reach zero, so nothing is pruned by a cue"
+      (all (\c -> all (\r -> cueWeight c r > 0) allRelations)
+           [GenericThenSpecific, NewReferent, SharedPredicate "p", Connective "then"])
+
+  , -- The connective path exists but cannot fire yet, and that is a lexicon gap
+    -- rather than an SDRT gap. Asserted so the gap is visible.
+    expect "sdrt: a connective-led sentence still fails to parse (lexicon gap)"
+      (null [d | Just d <- [drsOf "Then Mary smiles."]])
+  , expect "sdrt: but the connective cue is defined and weighted"
+      (cueWeight (Connective "then") Narration > cueWeight (Connective "then") Elaboration)
+  ]
+  where
+    k1 = mkUnit 1 "A student arrived."
+    k2 = mkUnit 2 "Mary smiles."
+    badK1 = mkUnit 1 "Every student reads a book."
+    -- Must actually share a predicate with k1, whose predicates are
+    -- {student, arrive}. "Mary reads a book" shares none; "Susan arrived"
+    -- shares `arrive`.
+    sameVerb = mkUnit 3 "Susan arrived."
+
+    joined rel = joinedWith k1 rel
+    joinedWith a rel = attach rel (Label 1) k2 (addRoot a emptySDRS)
+
+    -- K1 --Elaboration--> K2 --Narration--> K3
+    threeChain =
+      attach Narration (Label 2) (mkUnit 3 "Mary smiles.")
+        (attach Elaboration (Label 1) k2 (addRoot k1 emptySDRS))
+
+    isShared (SharedPredicate _) = True
+    isShared _                   = False
+
+mkUnit :: Int -> String -> DiscourseUnit
+mkUnit i txt =
+  DiscourseUnit (Label i) (dscDRS (prDiscourse (runFragment sdrtSrc txt))) (toks txt)
+  where
+    toks =
+      concatMap (map tokText . tokenizeSentence (inLexicon fragmentLexicon) maxPhraseLength)
+        . splitSentences
+
+-- | 'Nothing' when the text produced no conditions at all, i.e. nothing parsed.
+drsOf :: String -> Maybe DRS
+drsOf txt =
+  let d = dscDRS (prDiscourse (runFragment sdrtSrc txt))
+  in if null (drsConds d) then Nothing else Just d
+
+sdrtSrc :: SourceId
+sdrtSrc = SourceId "sdrt"
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
@@ -560,4 +696,5 @@ main =
        , pipelineChecks
        , modelChecks
        , orderChecks
+       , sdrtChecks
        ])
