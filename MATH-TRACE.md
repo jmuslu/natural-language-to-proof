@@ -43,7 +43,7 @@ layer has something non-trivial to do.
 | Spans | half-open intervals `[a,b) ⊂ ℕ`, ordered by inclusion |
 | Operation | tokenization: a partial map Σ\* → list of (token, interval) |
 | Structure used | `spanUnion` = join in the interval lattice (least interval containing both) |
-| Checked | slicing a token's span out of the source reproduces the token (348-suite) |
+| Checked | slicing a token's span out of the source reproduces the token (Stage 1 suite) |
 
 `spanUnion` is a **join**, not a union: intervals are not closed under set union,
 so the operation returns the least covering interval. That is why a provenance
@@ -412,43 +412,60 @@ grades instead. Measured on the three-sentence example, `μ(x) = 0.488`, which i
 exactly `P(relationKind = Subordinating)` at that edge — a derived quantity, not a
 threshold.
 
-**Two deflations, both measured.** First, `μ` takes only **two** values at one
-free edge: `1` for a referent in `acc_coord`, `P(sub)` for one in
-`acc_sub \ acc_coord`, since those are the only two focal sets. One global degree
-of freedom, not a per-referent grade. Second, "deletes nothing" is about the
-prefix and not about the discourse: at four segments the implementation offers
-**nothing** while the full marginal keeps the referent at `0.488`, because the
-truncation holds every earlier edge at a committed value. `fullMarginalAt`
-measures this; it is a total deletion, not a perturbation.
+**Two deflations, both measured, and both artifacts of the same truncation.**
+First, `μ` takes only **two** values at one free edge: `1` for a referent in
+`acc_coord`, `P(sub)` for one in `acc_sub \ acc_coord`, since those are the only
+two focal sets. At two free edges it is genuinely graded — `0.488` and `0.435` on
+the four-segment colliding text. Second, "deletes nothing" is about the prefix and
+not the discourse: at four segments the implementation offers **nothing** while the
+full marginal keeps the referent at `0.488`, because the truncation holds every
+earlier edge at a committed value. `fullMarginalAt` measures this; it is a total
+deletion, not a perturbation.
 
 That is the same move as everywhere else in the design: replace a hard quotient by
 a ranking, and keep the collapse separate and logged.
 
-### Resolved: `μ` is on the *wrong* space, and that is a Stage 1 bug
+### Fixed: `μ` was on the wrong space, because DRS merge had an unstated precondition
 
-The question "which non-additive measure is `μ`" has an answer, and it is that the
-question is premature: **`Ref` is not a discourse-wide identifier.** Referent names
-are generated per sentence, so `"A student arrived. A professor walks."` gives both
-existentials the name `x`, and the merge asserts `student(x) & arrive(x) &
-professor(x) & walk(x)` — one individual who is both. Two distinct elements of the
-domain have been identified.
+`mergeDRS` is sound only when the two universes are **disjoint** — the standard
+side condition on DRS merge, and nothing enforced it. Referent names come from the
+lambda terms, so `"A student arrived. A professor walks."` gave both existentials
+the name `x`, and the merge asserted `student(x) & arrive(x) & professor(x) &
+walk(x)`: one individual who is both. Two distinct elements of the domain
+identified.
 
-For this layer specifically: `acc` is supposed to distinguish referents *by
-originating unit*, since that is what open-versus-closed means, and `Ref` does not
-record the unit. `accessibleOn`'s `nub` then merges a closed unit's `x` with an
-open unit's `x`. The correct index is `(Label, Ref)` or globally fresh names.
+For this layer specifically, `acc` must distinguish referents *by originating
+unit*, since that is what open-versus-closed means, and `Ref` did not record the
+unit — `accessibleOn`'s `nub` merged a closed unit's `x` with an open unit's `x`.
 
-And the index decides the answer to the measure question:
+`freshenAgainst` discharges the precondition at the merge (not in `toDRS`), so
+`Ref` is now discourse-unique and `(Label, Ref)` adds nothing. It is
+alpha-conversion, hence a translation and not a decision: nothing is logged, and
+`mapRefs` carries provenance through so a renamed referent is still traceable.
 
-| index | distinct focal sets | nested (consonant)? |
+### And consonance holds exactly where the truncation does
+
+Before the fix the index decided the answer, which is how a cheap test came to lie:
+
+| index | focal sets | nested? |
 |---|---|---|
-| `Ref` | 2 | **yes** |
-| `(Label, Ref)` | 4 | **no** — `{(K2,x)}` crosses `{(K1,x)}` |
+| `Ref` (buggy) | 2 | yes |
+| `(Label, Ref)` | 4 | no — `{(K2,x)}` crosses `{(K1,x)}` |
 
-So a consonance test would report "possibility measure", and that report would be
-an artefact of the name collision. Under the correct index the focal family is not
-nested, so `μ` is **not** a possibility distribution and the t-norm route is closed
-on the merits rather than left open.
+After the fix both agree: 4 sets, non-nested, crossing `[x2]` versus `[x]`. But
+the structural statement is sharper than "not consonant". Since
+
+> `frontier(Subordinating) = frontier(Coordinating) ∪ {parent}`
+
+at **one** free edge there are exactly two focal sets, ordered by inclusion — so
+consonance is a **theorem** there, not a measurement. At **two** free edges they
+cross, measured.
+
+The implementation marginalises over one edge. So it occupies the only regime in
+which `μ` is a possibility distribution, and that regime *is* the truncation.
+Since the truncation must go — it deletes referents — the possibility reading goes
+with it. That retires the possibility-versus-belief-function question rather than
+answering it, and it is a stronger result than either answer would have been.
 
 ### The semiring is a free parameter only once the truncation is gone
 
@@ -535,14 +552,7 @@ rejected.
 Ordered by how much a good answer changes the design. These are the ones where
 your judgement would actually redirect the work.
 
-1. **`Ref` is not a discourse-wide identifier, and the merge is unsound because
-   of it.** Two same-shaped existential sentences collide on `x`, so the merged DRS
-   asserts one individual is both a student and a professor. A Stage 1 bug that all
-   348 checks miss, and the reason the frontier mass cannot be typed: `acc` must
-   distinguish referents by originating unit and `Ref` does not record it. Fixing
-   it is a design choice with provenance consequences — globally fresh names, or
-   accessibility indexed by `(Label, Ref)`. (Layer 9b)
-2. **Make antecedent choice an alternative.** The frontier mass has nowhere to go
+1. **Make antecedent choice an alternative.** The frontier mass has nowhere to go
    because `μ : Ref → [0,1]` and readings are indexed by `Int`; there is no joint
    space, which is upstream of every question about combination rules. Materialise
    antecedent assignments in `Stage2.Alternatives` and `μ` becomes a prior over
@@ -580,11 +590,17 @@ your judgement would actually redirect the work.
 
 ### Resolved this session
 
-- **The frontier mass is not a possibility distribution, and the cheap test that
-  says otherwise is reading an artifact.** Under `Ref`-indexing the focal family
-  has 2 sets and is nested; under `(Label, Ref)`-indexing it has 4 and is not,
-  crossing at `{(K2,x)}` vs `{(K1,x)}`. Consonance is a property of `acc` and the
-  index, not of the weights, so no choice of semiring makes it hold. (Layer 9b)
+- **DRS merge had an unstated disjointness precondition, and violating it was
+  unsound.** `"A student arrived. A professor walks."` merged to one `x` that was
+  both. Fixed by `freshenAgainst` at the merge; 348 Stage 1 checks pass unchanged,
+  18 regression checks added. `Ref` is now discourse-unique, so `(Label, Ref)`
+  buys nothing. (Layer 9b)
+- **Consonance holds exactly where the one-edge truncation does, and that is a
+  theorem.** `frontier(Sub) = frontier(Coord) ∪ {parent}` gives exactly two nested
+  focal sets at one free edge; at two they cross (measured). So `μ` is a
+  possibility distribution only under the truncation, and the truncation has to go
+  — the possibility-versus-belief-function question retires rather than being
+  answered. (Layer 9b)
 - **The candidate semirings coincide where the code currently operates.**
   `(max,×)` and `(max,min)` both give `0.122` at one free edge, because `⊗` meets
   a boolean indicator and `P ≤ 1`. They separate only at two free edges. So "the

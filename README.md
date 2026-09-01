@@ -23,9 +23,9 @@ The short version of the design:
 ## Status
 
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
-probability anywhere. 348 shared checks.
+probability anywhere. 366 shared checks.
 
-**Stage 2 in progress: probabilistic augmentation.** 219 checks, in its own suite
+**Stage 2 in progress: probabilistic augmentation.** 226 checks, in its own suite
 so Stage 1's number stays a stable signal.
 
 What Stage 2 has and has not:
@@ -82,42 +82,71 @@ referent to its unit's universe, so under `Committed` a chain of coordinating
 relations starves. Real SDRT percolates referents up the graph; this does not, and
 `Marginal` hides the symptom without fixing the cause.
 
-#### Blocker found while tracing this back down
+#### A soundness bug found while tracing this back down — now fixed
 
-**`Ref` is per-sentence, not per-discourse.** Two same-shaped existential
-sentences collide on the same referent name, and the merge then identifies two
-different individuals:
+`mergeDRS` has an unstated precondition: DRS merge is only sound when the two
+universes are **disjoint**. Referent names come from the lambda terms, so two
+sentences of the same shape arrive with the same names, and nothing enforced the
+precondition. Before the fix:
 
 ```
-"A student arrived. A professor walks."
-  +--------------+
-  | x x          |     universe [x,x] -- 1 distinct name, 2 entries
-  +--------------+
-  | student(x)   |
-  | arrive(x)    |
-  | professor(x) |     <- the same x
-  | walk(x)      |
-  +--------------+
+"A student arrived. A professor walks."          "A student arrived. A professor walks."
+  +--------------+                                +---------------+
+  | x x          |   1 distinct name, 2 entries   | x x2          |
+  +--------------+                                +---------------+
+  | student(x)   |                                | student(x)    |
+  | arrive(x)    |                                | arrive(x)     |
+  | professor(x) |   <- the same x                | professor(x2) |
+  | walk(x)      |                                | walk(x2)      |
+  +--------------+                                +---------------+
+     BEFORE: one individual who is both              AFTER
 ```
 
-This is a **Stage 1 soundness bug**, not an SDRT one, and the 348 checks miss it
-because no fragment case has two same-shaped existential sentences. Downstream the
-anaphora decision degenerates to `chose x over 1: x` — the chosen antecedent and
-the rejected alternative are the same string.
+A **Stage 1 soundness bug**, not an SDRT one, and all 348 checks missed it because
+no fragment case has two same-shaped existential sentences — the same
+corpus-too-short failure, biting harder. Downstream the anaphora decision read
+`chose x over 1: x`: the choice and the rejected alternative were the same string.
+It now reads `chose x2 over 1: x`.
 
-It blocks the frontier specifically: telling apart "`x` from a closed unit" and
-"`x` from an open unit" is the frontier's entire job, and `Ref` does not record
-which unit a referent came from. Asserted as checks so the bug is visible and any
-fix has to update them.
+Fixed by `DRT.Types.freshenAgainst`, applied in `extendDiscourse` and in
+`Stage2.Threading` — the two places that merge boxes from different sentences.
+The renaming is alpha-conversion: mechanical, so nothing is logged, and
+`mapRefs` carries each referent's provenance through, so a renamed referent still
+traces to the words that introduced it. Sentence-local DRSs are untouched.
+
+**Stage 1's count did not move for behaviour** — 348 checks all still pass
+unchanged, and 18 regression checks were added for the invariant, giving 366. The
+count is stable because no existing case could exercise the bug.
+
+##### What the fix did to the open question
+
+With `Ref` now discourse-unique, `(Label, Ref)` adds nothing and the frontier can
+do its job. Re-measured on the colliding text:
+
+| free edges | focal sets | nested? |
+|---|---|---|
+| 1 | 2 | **yes** — and this is a theorem, not a measurement |
+| 2 | 4 | **no** — `[x2]` crosses `[x]` |
+
+`frontier(subordinating) = frontier(coordinating) ∪ {parent}`, so at one free edge
+there are exactly two focal sets and they are nested by construction. At two they
+cross. The implementation runs at one free edge, which means it sits in the *only*
+regime where the possibility-measure reading is available — **and that regime is
+the truncation.** The truncation has to go because it deletes referents, so the
+possibility reading goes with it. They stand or fall together.
+
+The two-valued deflation was also an artifact of one free edge. At two, μ is
+genuinely graded: `x2` (from `K2`) at **0.488**, `x` (from `K1`) at **0.435** — and
+the truncated implementation offers only the first, deleting the deeper candidate.
 
 Check counts are **per checkout**, since nothing merges between track branches:
 
 | branch | Stage 1 | Stage 2 | track | total |
 |---|---|---|---|---|
-| `main` | 348 | 219 | — | **567** |
-| `conversational` | 348 | 219 | — (docs only) | **567** |
-| `truth-mode` | 348 | 219 | 23 | **590** |
-| `provenance-mode` | 348 | 219 | 38 | **605** |
+| `main` | 366 | 226 | — | **592** |
+| `conversational` | 366 | 226 | — (docs only) | **592** |
+| `truth-mode` | 366 | 226 | 23 | **615** |
+| `provenance-mode` | 366 | 226 | 38 | **630** |
 
 There is no meaningful project-wide total. An earlier version of this section
 claimed a single project-wide figure, which sums — the sum across *both* track
@@ -161,7 +190,7 @@ Each track's own trajectory lives on its branch in `MODE.md`.
 ```
 main ──┬── shared core: Provenance, Syntax (CCG), Semantics (lambda), DRT,
        │                DRT.Canonical, Collapse.Class, Fragment, Pipeline
-       │                                                   348 checks
+       │                                                   366 checks
        ├── truth-mode      = epistemic → NL2Proof.Collapse.Truth      + 23 checks
        ├── provenance-mode = letra     → NL2Proof.Collapse.Provenance + 38 checks
        └── conversational              → docs only, no backend yet
@@ -423,8 +452,8 @@ src/NL2Proof/
     Pipeline.hs        Stage 2 end to end
 app/Main.hs            demo
 test/Harness.hs        shared assert scaffolding, no framework dependency
-test/Spec.hs           348 Stage 1 checks
-test/Stage2Spec.hs     219 Stage 2 checks
+test/Spec.hs           366 Stage 1 checks
+test/Stage2Spec.hs     226 Stage 2 checks
 docs/                  standalone probes, not wired into a suite
 ```
 

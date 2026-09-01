@@ -333,27 +333,43 @@ The distribution at the `K1 → K2` edge, with no cue firing:
 > But the follow-up question is not "which non-additive measure is it", because
 > **its domain is wrong** (P5b.9).
 >
-> **P5b.9 [measured]** `Ref` is per-sentence, not per-discourse.
-> `"A student arrived. A professor walks."` gives both existentials the name `x`,
-> and the merge asserts `student(x) & arrive(x) & professor(x) & walk(x)` — one
+> **P5b.9 [was measured, now fixed]** `mergeDRS` is sound only when the two
+> universes are disjoint, and nothing enforced it. `Ref` was per-sentence, so
+> `"A student arrived. A professor walks."` gave both existentials the name `x` and
+> the merge asserted `student(x) & arrive(x) & professor(x) & walk(x)` — one
 > individual who is both a student and a professor.
 > *Consequence:* a **Stage 1 soundness bug**, missed by all 348 checks because no
-> fragment case has two same-shaped existential sentences. It blocks this layer in
-> particular: telling `x`-from-a-closed-unit apart from `x`-from-an-open-unit is
-> the frontier's entire job, and `Ref` does not record the unit.
-> *Falsify:* find a discourse where two segments introduce referents and the merged
-> universe has as many distinct names as entries.
+> fragment case has two same-shaped existential sentences. It blocked this layer in
+> particular: telling `x`-from-a-closed-unit apart from `x`-from-an-open-unit is the
+> frontier's entire job, and `Ref` did not record the unit.
+> *Fixed* by `freshenAgainst`, applied at the merge rather than in `toDRS` — so
+> sentence-local boxes are untouched. It is alpha-conversion, hence unlogged, and
+> `mapRefs` carries each referent's provenance through. The box now reads
+> `professor(x2)`, and the anaphora decision reads `chose x2 over 1: x` instead of
+> the degenerate `chose x over 1: x`.
+> *Falsify:* find a discourse whose merged universe has fewer distinct names than
+> entries. 18 checks in `Spec.hs` §14 try.
 >
-> **P5b.10 [measured]** Consonance depends on the index, so a nestedness test
-> would answer the measure question from an artefact:
+> **P5b.10 [proved + measured]** Consonance holds exactly where the truncation
+> does. Since `frontier(Sub) = frontier(Coord) ∪ {parent}`, one free edge gives
+> exactly two focal sets ordered by inclusion — nested **by construction**, a
+> theorem rather than a measurement. Two free edges cross.
 >
-> | index | focal sets | nested? |
+> | free edges | focal sets | nested? |
 > |---|---|---|
-> | `Ref` | 2 | yes |
-> | `(Label, Ref)` | 4 | no — `{(K2,x)}` crosses `{(K1,x)}` |
+> | 1 | 2 | yes — theorem |
+> | 2 | 4 | no — `[x2]` crosses `[x]` |
 >
-> *Consequence:* under the correct index `μ` is **not** a possibility
-> distribution, so the t-norm route is closed on the merits.
+> *Consequence:* the implementation occupies the **only** regime in which `μ` is a
+> possibility distribution, and that regime is the truncation. The truncation has
+> to go, so the possibility reading goes with it — the
+> possibility-versus-belief-function question **retires** rather than being
+> answered, which is a stronger outcome than either answer.
+>
+> **P5b.10b [measured]** The two-tier deflation in P5b.4 is also an artefact of one
+> free edge. At two, `μ` is genuinely graded: `x2` at `0.488`, `x` at `0.435` on
+> the four-segment colliding text — and the truncated implementation offers only
+> `x2`, deleting the deeper candidate.
 >
 > **P5b.11 [measured]** The Viterbi and possibilistic semirings give the *same*
 > number here (`0.122`), because `⊗` meets a boolean indicator and `P ≤ 1`. They

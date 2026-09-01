@@ -1,7 +1,7 @@
 -- | Stage 2 test suite: probabilistic augmentation.
 --
 -- Kept separate from @Spec.hs@ on purpose. Stage 1 "is meant to stop changing",
--- so its 348 checks should stay a stable number that means the same thing over
+-- so its check count should stay a stable number that means the same thing over
 -- time. Adding Stage 2 assertions to it would make that number drift and destroy
 -- its value as a signal.
 --
@@ -849,40 +849,80 @@ thrSrc = SourceId "thread"
 
 -- | Section 12 shipped a graded frontier and a claim that `Marginal` "deletes
 -- nothing". Both were checked at three segments and neither generalises. These
--- checks are the trace back down, and they pin four findings.
+-- checks are the trace back down.
 --
--- The headline one is not about the algebra at all: __two same-shaped existential
--- sentences collide on the same 'Ref'__, so the merged DRS unsoundly identifies a
--- student with a professor. Every question about what measure the frontier
--- carries is downstream of that, because the frontier's whole job is to tell
--- apart referents by which unit they came from, and 'Ref' does not record it.
+-- The headline finding was not about the algebra at all: two same-shaped
+-- existential sentences collided on the same 'Ref', so the merged DRS unsoundly
+-- identified a student with a professor, and every question about what measure
+-- the frontier carries was downstream of that. __That is now fixed__ by
+-- 'NL2Proof.DRT.Types.freshenAgainst' — see @Spec.hs@ section 14 for the
+-- soundness checks. What is pinned here is the /consequence/ for this layer,
+-- which is the part that changed: with a correct index the frontier mass is
+-- provably __not__ a possibility distribution, so the cheap nestedness test that
+-- would have said otherwise was reading a name collision.
 muChecks :: [Check]
 muChecks =
-  [ -- 1. THE BLOCKER. Referent names are per-sentence, not per-discourse.
-    expectEq "mu: two same-shaped existentials produce the same Ref"
+  [ -- 1. Where the collision was. Segment-local DRSs still share names, which is
+    -- correct -- each sentence is alpha-equivalent to itself -- and the merge is
+    -- where disjointness has to be established.
+    expectEq "mu: two same-shaped existentials are still locally both x"
       [Ref "x", Ref "x"]
       (map (head . accessibleRefs . segDRS) (take 2 (segsOf collide)))
-  , expectEq "mu: so the merged universe has a duplicate"
-      (1, 2)
+  , expectEq "mu: but the merged universe now has two distinct referents"
+      (2, 2)
       (let u = accessibleRefs (dscDRS (prDiscourse (runFragment thrSrc collide)))
        in (length (nub u), length u))
-  , expect "mu: and the merge asserts one individual is both student and professor"
-      (let cs = drsPredicates (dscDRS (prDiscourse (runFragment thrSrc collide)))
-       in all (`elem` cs) ["student", "professor"]
-            && length (nub (accessibleRefs (dscDRS (prDiscourse (runFragment thrSrc collide))))) == 1)
-  , expect "mu: the anaphora decision degenerates -- choice equals its alternative"
-      (any (\d -> decKind d == "anaphora" && decAlternatives d == [decChoice d])
-           (traceDecisions (prTrace (runFragment thrSrc collideAna))))
+  , expect "mu: so the student is no longer the professor"
+      (let d = dscDRS (prDiscourse (runFragment thrSrc collide))
+           refOf p = [r | CPred q [DRef r] _ <- drsConds d, q == p]
+       in refOf "student" /= refOf "professor")
+  , expect "mu: and the anaphora decision no longer offers a choice against itself"
+      (all (\d -> decChoice d `notElem` decAlternatives d)
+           [ d | d <- traceDecisions (prTrace (runFragment thrSrc collideAna))
+               , decKind d == "anaphora" ])
+  , expect "mu: SDRT threading freshens too, so units never share a referent"
+      (let rs = concatMap (drsRefs . duDRS) (unitsInOrder (thSDRS collideThreaded))
+       in length rs == length (nub rs))
 
-  , -- 2. Consonance is an artefact of that collision, not a fact about
-    -- discourse structure. Under Ref-indexing the focal sets are nested, so a
-    -- nestedness test would report "possibility measure" -- and be wrong.
-    expect "mu: Ref-indexed focal sets are nested (consonant)"
-      (nestedUnder refIndexed)
-  , expect "mu: (Label, Ref)-indexed focal sets are NOT"
+  , -- 2. The payoff. With a correct index the focal family is NOT nested, so mu
+    -- is not a possibility distribution and the t-norm route closes on the
+    -- merits rather than being left open. Both indexings now agree, which is the
+    -- concrete sense in which the fix made Ref honest.
+    expect "mu: Ref-indexed focal sets are NOT nested"
+      (not (nestedUnder refIndexed))
+  , expect "mu: (Label, Ref)-indexed focal sets are NOT either"
       (not (nestedUnder pairIndexed))
-  , expectEq "mu: Ref-indexing sees 2 focal sets where (Label, Ref) sees 4"
-      (2, 4) (length (focalFamily refIndexed), length (focalFamily pairIndexed))
+  , expectEq "mu: and the two indexings now see the same focal family"
+      (4, 4) (length (focalFamily refIndexed), length (focalFamily pairIndexed))
+  , expect "mu: the crossing pair is two referents at different depths"
+      (let sets = focalFamily pairIndexed
+       in any (\(a, b) -> not (all (`elem` b) a) && not (all (`elem` a) b))
+              [(a, b) | a <- sets, b <- sets])
+
+  , -- 2b. And the sharpest consequence: consonance holds at ONE free edge as a
+    -- theorem, because frontier(sub) = frontier(coord) + {parent} gives exactly
+    -- two nested focal sets. It fails at TWO. The implementation runs at one free
+    -- edge, so it sits in the only regime where the possibility reading is
+    -- available -- and that regime is the truncation. The truncation and the
+    -- possibility reading stand or fall together, and the truncation has to go.
+    expect "mu: at one free edge the focal family is nested, always"
+      (let s1 = focalAt collideFour 4 1 in length s1 == 2 && nestedSets s1)
+  , expect "mu: at two free edges it is not"
+      (let s2 = focalAt collideFour 4 2 in length s2 == 4 && not (nestedSets s2))
+  , expect "mu: so mu is a possibility distribution only under the truncation"
+      (nestedSets (focalAt collideFour 4 1)
+         && not (nestedSets (focalAt collideFour 4 2)))
+
+  , -- 2c. The two-valued deflation was itself an artefact of one free edge. With
+    -- two, mu is genuinely graded across referents.
+    expect "mu: two free edges give two distinct masses, not one"
+      (case fullMarginalAt (thSDRS collideFourM) 4 of
+         Just rs -> length (nub (map rkMass rs)) == 2
+         Nothing -> False)
+  , expect "mu: and the truncation deletes the deeper of the two candidates"
+      (case (stRanked (thSteps collideFourM !! 3), fullMarginalAt (thSDRS collideFourM) 4) of
+         (t, Just f) -> length t == 1 && length f == 2
+         _           -> False)
 
   , -- 3. mu is two-valued at one free edge, so "graded ranking" oversells it.
     -- Every offered referent is either fully open (mass 1) or open only under a
@@ -937,6 +977,33 @@ muChecks =
 
     threeM = threadDiscourse Marginal (segsOf threeSent)
     fourM = threadDiscourse Marginal (segsOf fourSent)
+    collideThreaded = threadDiscourse Marginal (segsOf collideThree)
+    collideFour = "A student arrived. A professor walks. Mary smiles. She reads a book."
+    collideFourM = threadDiscourse Marginal (segsOf collideFour)
+
+    -- The focal family for unit @k@ with @m@ trailing edges free, on the
+    -- committed topology. Same construction 'fullMarginalAt' marginalises over.
+    focalAt txt k m =
+      let s0 = thSDRS (threadDiscourse Committed (segsOf txt))
+          units = unitsInOrder s0
+          parents = [p | (_, p, _) <- sdrsEdges s0]
+          committed = [r | (r, _, _) <- sdrsEdges s0]
+          nEdges = k - 2
+          freeIx = [nEdges - m .. nEdges - 1]
+          labelsFor rho =
+            [ maybe (committed !! i) id (lookup i (zip freeIx rho))
+            | i <- [0 .. length committed - 1]
+            ]
+          built rho =
+            foldl (\acc (rel, p, u) -> attach rel p u acc)
+              (addRoot (head units) emptySDRS)
+              (zip3 (labelsFor rho) (take nEdges parents) (take nEdges (drop 1 units)))
+      in nub [ sort (accessibleOn (built rho) (rightFrontier (built rho)))
+             | rho <- sequence (replicate m allRelations)
+             ]
+
+    nestedSets sets =
+      and [all (`elem` b) a || all (`elem` a) b | a <- sets, b <- sets]
 
     -- The focal family {acc(S[rho])} over both edges of the colliding text,
     -- under the two candidate index sets.
