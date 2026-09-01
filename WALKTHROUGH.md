@@ -148,7 +148,11 @@ Folds, read off the same tree:
 | `provSources` | `{demo}` |
 | `provSpan` | `[0,26)` |
 | `provDepth` | 4 |
-| `provSize` | 8 |
+| `provSize` | 9 |
+
+Count it off the tree: **four** rule nodes — one root `<` and three `>` — plus five
+lexical leaves. An earlier version of this table said 8, miscounting the rule
+nodes as three; the drawing above was always right.
 
 > **P4.1 [proved]** `Prov` is the initial algebra of
 > `F X = (SourceId × Span × String) + (RuleName × List X)`. Every fold is an
@@ -165,7 +169,7 @@ Folds, read off the same tree:
 > *Why state it:* "fold" is not one thing. The homomorphism folds are the ones
 > that can be computed incrementally under merge; the others cannot.
 >
-> **P4.4 [proved]** `provSize > provDepth` here (8 > 4), and in general no single
+> **P4.4 [proved]** `provSize > provDepth` here (9 > 4), and in general no single
 > numeric fold recovers the tree.
 > *Consequence:* provenance-mode retains strictly more than any summary of it.
 > That is not a design preference, it is a counting fact.
