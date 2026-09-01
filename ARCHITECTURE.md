@@ -1016,6 +1016,124 @@ Applies throughout, especially Stages 2–3.
 - **Traceability**: every atomic clause in the formal output should be traceable
   back to its source text span, independent of mode.
 
+## Notes for when compression starts
+
+Parked here because it is not needed yet and will be needed as soon as any
+serious compression work begins.
+
+### There are four notions of "same claim", and only two are built
+
+The question "can truth-mode compress statements that are identical *enough*"
+sounds like one question. It is four, and they do not sit on a single dial:
+
+| Notion | Relation | Status |
+|---|---|---|
+| syntactic canonical equality | finest | **built** — `Truth.compress`: sort + dedup on `CanonCond` |
+| multiset equality (commutative, not idempotent) | coarser | **empty slot** — P5.4, nothing constructs one |
+| logical equivalence | coarser still | **not built, and see below** |
+| graded similarity | *not an equivalence relation at all* | built, weights stipulated — the fingerprint kernel |
+
+### Truth-mode's compression is deterministic, and could not be otherwise
+
+`Truth.compress` is `sort` then `dedup` over `CanonCond`, whose `Ord` is
+structural. No threshold, no score, nothing to tune. Two conditions merge exactly
+when they are structurally equal after `canonicalize` — which strips provenance
+and renames referents, so it is equality-up-to-renaming rather than literal
+identity, but still an exact relation.
+
+**And it could not be made probabilistic even in principle.** A similarity score
+is not transitive, so no threshold on it induces an equivalence relation, so it
+cannot define a quotient. "Merge anything above 0.9 similar" is not well defined:
+the result depends on the order you merge in.
+
+That is why the fingerprint kernel cannot become the compression mechanism no
+matter how well its weights are fitted. It is the wrong kind of object for the
+job — it ranks, it does not quotient.
+
+### The spec overclaims here, and the gap is not closable
+
+This document's own framing says truth-mode collapses sentences that *entail the
+same proposition*, and the README table says "same proposition, two sources →
+merged into one canonical form". Both describe **logical equivalence**.
+`compress` implements **syntactic canonical equality**, which is strictly finer.
+
+Demonstrable: `~(P | Q)` and `~P & ~Q` are logically equivalent and produce
+different `CanonCond` shapes — a `CanNot` over a disjunctive box versus two
+separate `CanNot` conditions. They will not merge. Established by reading
+`compress`, not yet by a run.
+
+The gap looks closable now that `Stage2.Model.equivalent` exists. It is not:
+
+- The fragment has **binary** predicates (`read`, `see`, `love`), so it is full
+  first-order, where validity is **undecidable**. Monadic first-order would be
+  decidable; this is not monadic.
+- `Stage2.Model.equivalent` checks a *finite* model set. Finding a counterexample
+  refutes equivalence soundly. Finding none establishes nothing — two formulas
+  may agree at domain size 3 and diverge at 4.
+
+So the model layer is useful in the **opposite** direction from the one that
+suggests itself first. It can safely *split* two readings that look the same; it
+can never safely *merge* two that look different. Compression's honest ceiling is
+a syntactic or multiset quotient, optionally sharpened by finite-model refutation
+used to keep things apart.
+
+**The model checker is a splitter, not a merger.** That reframing is the useful
+part of this note.
+
+### Plural predication is a coverage gap compression will hit
+
+Recorded here because the collective/distributive split produces multiple readings
+from one span, which is exactly the situation compression has to adjudicate.
+
+For `"There are 5 monkeys. 5 monkeys ate bananas."` the phenomenon decomposes
+into **two** problems living in different places, and conflating them is what
+makes it look like one:
+
+| Sub-problem | Where it belongs |
+|---|---|
+| does the repeated NP corefer, or introduce a fresh group? | discourse level — genuinely SDRT, since the segment relation constrains the right frontier and hence accessibility |
+| given a fixed group, collective or distributive? | clause-internal candidate generation, alongside scope permutation |
+
+Both are candidates rather than facts: `"5 monkeys ate bananas"` can describe a
+different five, so the space is at least {coreferent, novel} × {collective,
+distributive}.
+
+This would be a **better motivating case for SDRT** than anything in the current
+fragment, which has no example where a discourse relation does real disambiguating
+work. Elaboration or Background favours coreference; Narration more readily
+licenses a novel group.
+
+Three prerequisites, none present:
+
+1. **A numeral determiner.** The lexicon has three distinct determiner meanings
+   (`every`; `a`/`an`/`some`; `no`) and no numerals or plural morphology. A
+   lexicon gap, cheap.
+2. **Plural individuals — cheaper than it looks.** Link's mereology does **not**
+   add a type. It enriches the domain of `e` into a complete atomic join
+   semilattice, so groups are inhabitants of `e` rather than a new sort. `Ty`,
+   `catTy` and `Semantics.Lambda` are untouched. What changes is
+   `Stage2.Model`'s `modelDomain :: [Int]`, which becomes atom-sets with a
+   part-of order — one module, sitting next to the entailment machinery that
+   would have to reason about it anyway.
+3. **NP-level anaphora.** Deliberately absent: resolution is "most recent
+   accessible referent" and nothing else. Recognizing that a repeated full NP
+   corefers is a harder matching problem than resolving a pronoun, and none of
+   the nine cases exercise it.
+
+It is also a **new stratification class**, closer in spirit to the modifier table
+than to the scope code, layered by what settles it:
+
+| Layer | Case | Example |
+|---|---|---|
+| 1 | explicit cue | `each` forces distributive, `together` forces collective |
+| 2 | predicate lexical semantics | `gathered` is obligatorily collective; `smiled` obligatorily distributive |
+| 3 | genuinely underdetermined | `ate bananas` |
+
+Layer 2 is the analogue of **privative** modifiers: a class where one candidate is
+not merely dispreferred but ungrammatical. `"The monkeys gathered"` has no
+distributive reading at all. Generating it is still correct; the ranking layer
+must be able to send it to zero rather than merely low.
+
 ## Non-goals / guardrails for this phase
 
 - Do **not** attempt to make pragmatics fully discrete/provable — it is
