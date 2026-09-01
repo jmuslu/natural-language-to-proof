@@ -365,6 +365,81 @@ Two consequences, the second of which corrects an earlier claim made right here:
 
 ---
 
+## Layer 9b — Discourse structure and the frontier
+
+| | |
+|---|---|
+| Object | a labelled DAG `(K, E ⊆ R × K × K)` whose nodes carry DRSs |
+| Map out | `acc : SDRS → P(Ref)`, the frontier's referents |
+| What it replaces | `accessibleRefs ∘ mergeDRS`, a monoid homomorphism |
+
+Sits between Layer 4 (DRS) and Layer 10 (collapse), and it is the one place where
+a *graph* is load-bearing rather than a convenience.
+
+### The frontier is not expressible as a fold over the merge
+
+`mergeDRS` is a monoid, so anything computed by folding it can only see order and
+multiplicity. "Which units are still open for attachment" is not such a property:
+it depends on the *kinds* of the edges above a node, which the merge has already
+discarded. This is the same shape of argument as Layer 3's genealogy — the
+information is destroyed by the homomorphism, so no fold over the target can
+recover it — and it is why SDRT is a new object rather than a richer DRS.
+
+Concretely, `frontierFrom` is a reachability computation: the least set containing
+`ℓ` and closed under "climb to a parent, and keep it if the edge is
+subordinating". Reachability is exactly what an initial-algebra fold cannot do.
+
+### `acc` is antitone in commitment, which is why the default is graded
+
+Write `acc_C` for the frontier referents under `Committed` and `acc_F` for the
+flat merge's universe. Then, for any structure:
+
+> `acc_C(S) ⊆ acc_F(S)`
+
+with equality only when every edge is subordinating. Committing to a relation can
+only shrink the antecedent set — the frontier is a **filter**, and a filter
+driven by stipulated cue weights.
+
+`Marginal` replaces the filter with a measure. For referent `r`, define
+
+> `μ(r) = Σ { P(ρ) : ρ ∈ R, r ∈ acc(S[e ↦ ρ]) }`
+
+the mass of relation values for the last edge `e` under which `r` survives.
+Because `relationKind⁻¹(Subordinating)` is non-empty and `glue` gives every
+relation positive mass, `μ(r) > 0` for every `r ∈ acc_F` restricted to the
+committed prefix. So `Marginal` **deletes nothing** and grades instead. Measured
+on the three-sentence example, `μ(x) = 0.488`, which is exactly
+`P(relationKind = Subordinating)` at that edge — a derived quantity, not a
+threshold.
+
+That is the same move as everywhere else in the design: replace a hard quotient by
+a ranking, and keep the collapse separate and logged.
+
+### Open: is `μ` a measure on the right space?
+
+`μ` is a sum of probabilities over relation values, indexed by referents. It is
+not a probability distribution over referents — masses do not sum to 1 across
+`Ref`, and should not, since accessibility is not exclusive. It is closer to a
+**fuzzy membership function**, or to the belief function of a Dempster–Shafer
+structure whose focal elements are the sets `acc(S[e ↦ ρ])`.
+
+Worth settling, because it decides how `μ` may legitimately be combined with the
+RSA posterior at Layer 8. If it is a belief function, combining by multiplication
+is wrong and Dempster's rule is the operation; if it is fuzzy membership, a
+t-norm is; if it is neither, it should not be combined with a probability at all
+and can only be used to order candidates. Right now it only orders, which is the
+safe reading, and nothing downstream multiplies it.
+
+### And the marginal is truncated at one edge, deliberately
+
+Marginalising over every relation choice means a distribution over structures,
+whose support is `|R|^(n-1)` for `n` segments — `8^(n-1)` here. The
+implementation marginalises over the most recent edge only. This is a stated
+truncation with no error bound, and it is the first thing that has to change if
+discourses longer than three sentences matter.
+
+---
+
 ## Layer 10 — Collapse
 
 | | |
@@ -390,26 +465,31 @@ your judgement would actually redirect the work.
 1. **Is the RSA operator a contraction?** Would replace a latency knob with a
    convergence criterion, and answers the conversational track's open question
    about affordable depth directly. (Layer 8)
-2. **`Dist` should be the finite distribution monad.** No `join`/`>>=`, so
+2. **What kind of object is the graded frontier mass `μ`?** Probability, belief
+   function, or fuzzy membership — and the answer decides whether it may be
+   multiplied into the RSA posterior, combined by Dempster's rule, or used only to
+   order candidates. It currently only orders, which is the safe reading, so this
+   is a question about what is *allowed* next rather than a bug. (Layer 9b)
+3. **`Dist` should be the finite distribution monad.** No `join`/`>>=`, so
    probabilistic steps cannot compose. RSA's recursion *is* Kleisli composition,
    and Stage 3 rollback is a probabilistic state transformer that will need it.
    (Layer 7)
-3. **Genealogy is a free category, not an initial algebra.** A fold cannot answer
+4. **Genealogy is a free category, not an initial algebra.** A fold cannot answer
    "is there a path from A to B". This is the real reason `Prov` cannot serve
    letra — not its leaf type — and it makes letra a rewrite rather than an
    extension. (Layer 3)
-4. **Should content and structure similarity stay separate coordinates** rather
+5. **Should content and structure similarity stay separate coordinates** rather
    than being averaged into one scalar? (Layer 6)
-5. **Is a multiset quotient of DRS wanted** — commutative but not idempotent —
+6. **Is a multiset quotient of DRS wanted** — commutative but not idempotent —
    for a "same claim" test independent of truth-mode? Nothing currently
    constructs it. (Layer 4)
-6. **Count linear extensions** rather than filtering `n!` permutations. The
+7. **Count linear extensions** rather than filtering `n!` permutations. The
    number of linear extensions is also the right thing to report as the size of
    the scope space. (Layer 5)
-7. **Span meet is missing**, so "what do two derivations share textually" is
+8. **Span meet is missing**, so "what do two derivations share textually" is
    uncomputable — needed by the conversational track's edit-to-scope problem.
    (Layer 0)
-8. **Only application is enabled** from the Lambek calculus. A deliberate
+9. **Only application is enabled** from the Lambek calculus. A deliberate
    restriction to a strictly smaller sub-calculus; worth naming as such rather
    than leaving it to look accidental. (Layer 1)
 
