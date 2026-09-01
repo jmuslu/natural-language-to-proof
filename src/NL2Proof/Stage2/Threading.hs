@@ -77,6 +77,7 @@ module NL2Proof.Stage2.Threading
     -- * Antecedent ranking
   , Ranked(..)
   , rankedAntecedents
+  , fullMarginalAt
   , antecedentsFor
     -- * Threading
   , Step(..)
@@ -92,7 +93,7 @@ module NL2Proof.Stage2.Threading
   , renderDivergence
   ) where
 
-import Data.List (intercalate, sortBy)
+import Data.List (intercalate, nub, sortBy)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Data.Ord (comparing)
 
@@ -206,6 +207,63 @@ rankedAntecedents policy s lastEdge =
       concat (reverse [reverse (accessibleRefs (duDRS u)) | u <- unitsInOrder s])
 
     rankOf r = fromMaybe (length recency) (lookupIndex r recency)
+
+-- | Antecedents for unit @k@ marginalising over __every__ edge label in the
+-- committed topology, not only the last one.
+--
+-- This exists to __measure the truncation__, not to replace it. Cost is
+-- @|R|^(k-2)@ = @8^(k-2)@, and it returns 'Nothing' rather than a number when
+-- that is unreasonable, so the infeasibility is visible instead of slow.
+--
+-- Two caveats that keep this from being "the correct version of
+-- 'rankedAntecedents'":
+--
+-- * The __topology is held fixed__ at whatever 'threadDiscourse' committed to.
+--   A genuine full marginal ranges over attachment sites too, since the site for
+--   unit @n@ is @head (rightFrontier ...)@ and therefore depends on earlier
+--   relation choices. So this is a marginal over labelings of one DAG, not over
+--   DAGs, and it is a lower bound on the real gap.
+--
+-- * 'rkLicensors' loses information here. A licensing witness is now a /tuple/ of
+--   relations, and flattening it to the set of relations that appear anywhere
+--   discards which combinations did the licensing. That loss is exactly the
+--   missing multiset structure: at one free edge each relation occurs at most
+--   once so set and multiset coincide, and multiplicity only becomes observable
+--   from two free edges on.
+fullMarginalAt :: SDRS -> Int -> Maybe [Ranked]
+fullMarginalAt s k
+  | k < 2 = Just []
+  | m > 5 = Nothing                     -- 8^6 = 262144 labelings; say so instead
+  | length dists /= m = Nothing         -- some edge had no glue distribution
+  | otherwise = Just result
+  where
+    units = unitsInOrder s
+    parents = [p | (_, p, _) <- sdrsEdges s]
+    m = k - 2
+
+    edgesUsed = zip (take m parents) (take m (drop 1 units))
+
+    dists = [d | (p, u) <- edgesUsed, Just pu <- [unitAt s p], Just d <- [glue pu u]]
+
+    prefixSDRS labels =
+      foldl (\acc (rel, p, u) -> attach rel p u acc)
+        (addRoot (head units) emptySDRS)
+        (zip3 labels (take m parents) (take m (drop 1 units)))
+
+    assigns = sequence (replicate m allRelations)
+
+    weightOf rho = product (zipWith prob dists rho)
+
+    visible rho = let s' = prefixSDRS rho in accessibleOn s' (rightFrontier s')
+
+    result =
+      sortBy (comparing (negate . rkMass))
+        [ Ranked r mass (nub (concat wit))
+        | r <- dedup (concatMap visible assigns)
+        , let wit = [rho | rho <- assigns, r `elem` visible rho]
+        , let mass = sum (map weightOf wit)
+        , mass > 0
+        ]
 
 -- | Replace the relation on a specific edge, leaving everything else alone.
 setEdge :: Label -> Label -> Relation -> SDRS -> SDRS
