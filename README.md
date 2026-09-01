@@ -25,29 +25,30 @@ The short version of the design:
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
 probability anywhere. 348 shared checks.
 
-**Stage 2 in progress: probabilistic augmentation.** 142 checks, in its own suite
+**Stage 2 in progress: probabilistic augmentation.** 170 checks, in its own suite
 so Stage 1's number stays a stable signal.
 
 What Stage 2 has and has not:
 
 | Built | Not built |
 |---|---|
-| candidate generation: scope permutation, modifier-noun fusion | **SDRT** and discourse relations |
+| candidate generation: scope permutation, modifier-noun fusion | connectives in the lexicon (blocks layer-1 SDRT cues) |
 | structural fingerprints + similarity kernel | distributional vectors (no data wired in) |
 | RSA: literal/pragmatic listener, speaker, depth-parametric | learned priors or costs |
 | finite model enumeration, entailment, informativity | domain sizes much above 3 |
+| **SDRT**: relations, right frontier, glue logic | SDRT wired into discourse threading |
 
 Check counts are **per checkout**, since nothing merges between track branches:
 
 | branch | Stage 1 | Stage 2 | track | total |
 |---|---|---|---|---|
-| `main` | 348 | 142 | — | **490** |
-| `conversational` | 348 | 142 | — (docs only) | **490** |
-| `truth-mode` | 348 | 142 | 23 | **513** |
-| `provenance-mode` | 348 | 142 | 38 | **528** |
+| `main` | 348 | 170 | — | **518** |
+| `conversational` | 348 | 170 | — (docs only) | **518** |
+| `truth-mode` | 348 | 170 | 23 | **541** |
+| `provenance-mode` | 348 | 170 | 38 | **556** |
 
 There is no meaningful project-wide total. An earlier version of this section
-claimed "551", which is `348 + 142 + 23 + 38` — the sum across *both* track
+claimed a single project-wide figure, which sums — the sum across *both* track
 branches. No single checkout contains that, because the tracks never merge into
 each other.
 
@@ -64,7 +65,7 @@ table exists to prevent.
 |---|---|---|---|
 | **1** — Montague + CCG + DRT, provenance-tagged | **done**, shared | **done**, shared | **done**, shared |
 | **2** — augmentation: alternatives, fingerprints, RSA, models | **in progress**, shared | **in progress**, shared | **in progress**, shared |
-| **2b** — SDRT and discourse relations | not started | not started | not started |
+| **2b** — SDRT: relations, right frontier, glue | **in progress**, shared | **in progress**, shared | **in progress**, shared |
 | **3** — attribute grammars, speculative commit + rollback | when rollback is wanted | **cannot work without it** | open |
 | **4** — epistemic graph layer: Kripke, DEL, AGM | epistemic **only** | n/a | n/a |
 
@@ -345,11 +346,12 @@ src/NL2Proof/
     Fingerprint.hs     structural fingerprints + similarity kernel
     Model.hs           finite models, entailment, informativity
     RSA.hs             literal/pragmatic listener, speaker
+    SDRT.hs            discourse relations, right frontier, glue
     Pipeline.hs        Stage 2 end to end
 app/Main.hs            demo
 test/Harness.hs        shared assert scaffolding, no framework dependency
 test/Spec.hs           348 Stage 1 checks
-test/Stage2Spec.hs     142 Stage 2 checks
+test/Stage2Spec.hs     170 Stage 2 checks
 docs/                  standalone probes, not wired into a suite
 ```
 
