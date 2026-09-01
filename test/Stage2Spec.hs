@@ -11,6 +11,7 @@
 -- model setup rather than a possible bug in the implementation.
 module Main (main) where
 
+import Data.List (isInfixOf)
 import qualified Data.Map.Strict as M
 
 import Harness
@@ -30,6 +31,7 @@ import NL2Proof.DRT.Types
 import NL2Proof.Syntax.Tokenize
 import NL2Proof.Syntax.Lexicon
 import NL2Proof.Stage2.SDRT
+import NL2Proof.Stage2.Threading
 import NL2Proof.Trace
 
 --------------------------------------------------------------------------------
@@ -678,6 +680,170 @@ sdrtSrc :: SourceId
 sdrtSrc = SourceId "sdrt"
 
 --------------------------------------------------------------------------------
+-- 12. The SDRT tie-in: threading that actually consults the frontier
+--------------------------------------------------------------------------------
+
+-- | Section 11 checks that the frontier is computed correctly. These checks ask
+-- whether anything /uses/ it, which is a different question and was the honest
+-- gap left open when SDRT was built.
+--
+-- Two facts do most of the work:
+--
+-- * the fragment corpus __cannot__ show a divergence, because both of its
+--   multi-sentence cases are two sentences long
+-- * a three-sentence discourse __does__, and under 'Committed' the divergence is
+--   a lost resolution rather than a different one
+threadingChecks :: [Check]
+threadingChecks =
+  [ -- Structure. The threader builds the graph it claims to build.
+    expectEq "threading: three segments become three units" 3
+      (length (labelsInOrder (thSDRS threeCommitted)))
+  , expectEq "threading: and two edges" 2
+      (length (sdrsEdges (thSDRS threeCommitted)))
+  , expect "threading: the first unit has no attachment site"
+      (null (stFrontier (head (thSteps threeCommitted))))
+  , expect "threading: and no relation"
+      (stRelation (head (thSteps threeCommitted)) == Nothing)
+
+  , -- The off-by-one. K2 attaches to K1, so K1's referent is offered to K2
+    -- whatever relation is chosen at that step: accessibility flows from the
+    -- left argument of a relation to its right one.
+    expectEq "threading: unit 2 is offered the referent from unit 1"
+      [Ref "x"] (map rkRef (stRanked (thSteps threeCommitted !! 1)))
+  , expect "threading: at full mass, since no earlier edge exists to hedge over"
+      (all ((== 1) . rkMass) (stRanked (thSteps threeCommitted !! 1)))
+
+  , -- With no cues firing, glue defaults to Continuation, which is
+    -- coordinating. So committed threading closes K1 and unit 3 gets nothing.
+    expectEq "threading: with no cues the chosen relation is Continuation"
+      (Just Continuation) (stRelation (thSteps threeCommitted !! 1))
+  , expect "threading: which is coordinating"
+      (relationKind Continuation == Coordinating)
+  , expect "threading: so under Committed unit 3 is offered no antecedent"
+      (null (stRanked (thSteps threeCommitted !! 2)))
+
+  , -- Marginal keeps it, graded. Elaboration always retains positive mass, so
+    -- the referent is never deleted -- only ranked below certainty.
+    expectEq "threading: under Marginal unit 3 is still offered the referent"
+      [Ref "x"] (map rkRef (stRanked (thSteps threeMarginal !! 2)))
+  , expect "threading: but at less than full mass"
+      (case stRanked (thSteps threeMarginal !! 2) of
+         (r : _) -> rkMass r > 0 && rkMass r < 1
+         []      -> False)
+  , expect "threading: and the mass is exactly the subordinating mass"
+      (case ( stRanked (thSteps threeMarginal !! 2)
+            , stRelDist (thSteps threeMarginal !! 1) ) of
+         ((r : _), Just d) ->
+           abs ( rkMass r
+                   - sum [ m | (rel, m) <- ranked d
+                             , relationKind rel == Subordinating ] ) < 1e-9
+         _ -> False)
+  , expect "threading: licensed only by subordinating relations"
+      (case stRanked (thSteps threeMarginal !! 2) of
+         (r : _) -> not (null (rkLicensors r))
+                      && all ((== Subordinating) . relationKind) (rkLicensors r)
+         []      -> False)
+
+  , -- The consequence for the pronoun, which is the whole point.
+    expect "threading: flat threading resolves the third-sentence pronoun"
+      (flatResolved threeSent)
+  , expect "threading: Committed threading does not -- a strict loss"
+      (not (sdrtResolved Committed threeSent))
+  , expect "threading: Marginal threading does"
+      (sdrtResolved Marginal threeSent)
+  , expectEq "threading: so Committed diverges from flat on exactly one anaphor"
+      1 (length (compareThreading Committed (segsOf threeSent)))
+  , expectEq "threading: and the divergence is a loss, not a different choice"
+      [Nothing] (map dvSDRT (compareThreading Committed (segsOf threeSent)))
+  , expectEq "threading: while Marginal diverges nowhere"
+      [] (compareThreading Marginal (segsOf threeSent))
+
+  , -- Forcing a subordinating relation restores it even under Committed. This
+    -- is the check that the loss above is about the stipulated cue weights and
+    -- not about the frontier code being broken.
+    expect "threading: a generic-then-specific cue picks a subordinating relation"
+      (fmap relationKind (stRelation (thSteps genericLed !! 1))
+         == Just Subordinating)
+  , expect "threading: so Committed leaves the earlier unit open there"
+      (stFrontier (thSteps genericLed !! 2) == [Label 2, Label 1])
+  , expect "threading: and logs the attachment site it picked from the two"
+      (any (\d -> decKind d == "sdrt-attachment")
+           (traceDecisions (thTrace genericLed)))
+
+  , -- The corpus. Both multi-sentence cases have two segments, so the only
+    -- parent is always on the pre-attachment frontier and no relation choice can
+    -- change anything. Neither policy may regress the existing suite.
+    expectEq "threading: no divergence on any fragment case under Committed"
+      [] (concat [ compareThreading Committed (segsOf (caseText c))
+                 | c <- fragmentCases ])
+  , expectEq "threading: nor under Marginal"
+      [] (concat [ compareThreading Marginal (segsOf (caseText c))
+                 | c <- fragmentCases ])
+  , expect "threading: and that is because no case has three segments"
+      (all (\c -> length (segsOf (caseText c)) <= 2) fragmentCases)
+  , expect "threading: the anaphora case still resolves under both policies"
+      (sdrtResolved Committed anaphoraCase && sdrtResolved Marginal anaphoraCase)
+  , expect "threading: the blocked case still fails under both, as it should"
+      (not (sdrtResolved Committed blockedCase)
+         && not (sdrtResolved Marginal blockedCase))
+
+  , -- Decisions are logged, with alternatives, per the tracing contract.
+    expect "threading: relation choice is logged as a decision with alternatives"
+      (case [ d | d <- traceDecisions (thTrace threeCommitted)
+                , decKind d == "sdrt-relation" ] of
+         (d : _) -> length (decAlternatives d) == length allRelations - 1
+         []      -> False)
+  , expect "threading: the anaphora decision names the frontier heuristic"
+      (any (\d -> decKind d == "anaphora"
+                    && "right frontier" `isInfixOf` decWhy d)
+           (traceDecisions (thTrace threeMarginal)))
+  , expect "threading: and the Marginal heuristic reports the mass it used"
+      (any (\d -> decKind d == "anaphora" && "mass" `isInfixOf` decWhy d)
+           (traceDecisions (thTrace threeMarginal)))
+  , expect "threading: a closed frontier is diagnosed, not silently dropped"
+      (any (\g -> diagKind g == UnresolvedAnaphor
+                    && "coordinating" `isInfixOf` diagMsg g)
+           (traceDiagnostics (thTrace threeCommitted)))
+
+  , -- The flat merge of the threaded units is the flat discourse DRS, which is
+    -- what makes the two comparable at all: the graph is additional structure,
+    -- not a different DRS.
+    expect "threading: Marginal threading reproduces the flat discourse conditions"
+      (drsConds (threadedDRS threeMarginal)
+         == drsConds (dscDRS (prDiscourse (runFragment thrSrc threeSent))))
+  ]
+  where
+    threeSent = "A student arrived. Mary smiles. She reads a book."
+    genericSent = "Every student reads a book. Mary smiles. She sleeps."
+    anaphoraCase = "A student arrived. She smiles."
+    blockedCase = "No student sleeps. She smiles."
+
+    threeCommitted = threadDiscourse Committed (segsOf threeSent)
+    threeMarginal = threadDiscourse Marginal (segsOf threeSent)
+    genericLed = threadDiscourse Committed (segsOf genericSent)
+
+-- | The segments of a text, as Stage 1 produces them.
+segsOf :: String -> [Segment]
+segsOf txt = segmentsOf thrSrc (runFragment thrSrc txt)
+
+-- | Did flat threading give some anaphor an antecedent, with none left over?
+flatResolved :: String -> Bool
+flatResolved txt = resolvedIn (dscTrace (prDiscourse (runFragment thrSrc txt)))
+
+-- | Same question under SDRT threading.
+sdrtResolved :: Policy -> String -> Bool
+sdrtResolved policy txt =
+  resolvedIn (thTrace (threadDiscourse policy (segsOf txt)))
+
+resolvedIn :: Trace -> Bool
+resolvedIn tr =
+  any (\d -> decKind d == "anaphora") (traceDecisions tr)
+    && not (any (\g -> diagKind g == UnresolvedAnaphor) (traceDiagnostics tr))
+
+thrSrc :: SourceId
+thrSrc = SourceId "thread"
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
@@ -697,4 +863,5 @@ main =
        , modelChecks
        , orderChecks
        , sdrtChecks
+       , threadingChecks
        ])

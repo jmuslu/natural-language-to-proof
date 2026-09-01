@@ -26,7 +26,10 @@ module NL2Proof.DRT.Build
   , toDRS
   , predicatesOn
     -- * Anaphora resolution
+  , Antecedents(..)
+  , flatAntecedents
   , resolveAnaphora
+  , resolveAnaphoraWith
     -- * Discourse
   , Discourse(..)
   , emptyDiscourse
@@ -173,15 +176,57 @@ predicatesOn v = nub . go
 -- every application of it is logged with the alternatives it passed over, so the
 -- disagreements it produces are visible instead of silent. That log is the input
 -- Stage 2 needs in order to do better.
+--
+-- The candidate set now comes from 'Antecedents' rather than being computed
+-- inline, so "do better" can mean "supply a different candidate set" without
+-- touching the substitution or the logging. 'NL2Proof.Stage2.Threading' is the
+-- first consumer of that.
 resolveAnaphora :: DRS -> DRS -> Prov -> (DRS, Trace)
-resolveAnaphora context new sentProv = foldl step (new, mempty) (anaphorConstants new)
-  where
-    -- 'accessibleRefs' yields source order (within a sentence 'toDRS' conses
-    -- outermost-first, and across sentences 'mergeDRS' appends), so the most
-    -- recently introduced referent is the *last* one. Reverse to put it first.
-    candidates = reverse (accessibleRefs context)
+resolveAnaphora context = resolveAnaphoraWith (flatAntecedents context)
 
-    step (drs, tr) name = case candidates of
+-- | A ranked candidate list together with the name of the rule that produced it.
+--
+-- Introduced so that the /source/ of antecedents is a parameter rather than a
+-- hard-coded call to 'accessibleRefs'. Stage 1 supplies 'flatAntecedents'; the
+-- SDRT layer supplies a frontier-restricted list. Both then go through the same
+-- 'resolveAnaphoraWith', so the substitution and the logging are shared and only
+-- the candidate set differs — which is what makes the two comparable at all.
+--
+-- 'antWhy' and 'antNoneNote' travel with the candidates because a 'Decision'
+-- that does not name its own heuristic is not reusable, and the two sources have
+-- genuinely different explanations for the same outcome: flat threading says a
+-- missing antecedent is inside a negated box, SDRT threading says it was closed
+-- off by a coordinating relation.
+data Antecedents = Antecedents
+  { antCandidates :: [Ref]
+    -- ^ Best first.
+  , antWhy        :: String
+    -- ^ The rule that ordered them.
+  , antNoneNote   :: String
+    -- ^ Why there may be none, for the diagnostic.
+  }
+
+-- | Stage 1's source: every top-level referent of the accumulated context,
+-- most recent first.
+--
+-- 'accessibleRefs' yields source order (within a sentence 'toDRS' conses
+-- outermost-first, and across sentences 'mergeDRS' appends), so the most
+-- recently introduced referent is the /last/ one. Reverse to put it first.
+flatAntecedents :: DRS -> Antecedents
+flatAntecedents context =
+  Antecedents
+    { antCandidates = reverse (accessibleRefs context)
+    , antWhy = "most recently introduced accessible referent"
+    , antNoneNote =
+        "referents inside negated or implicational boxes are correctly"
+          ++ " inaccessible"
+    }
+
+resolveAnaphoraWith :: Antecedents -> DRS -> Prov -> (DRS, Trace)
+resolveAnaphoraWith ants new sentProv =
+  foldl step (new, mempty) (anaphorConstants new)
+  where
+    step (drs, tr) name = case antCandidates ants of
       [] ->
         ( drs
         , tr
@@ -190,8 +235,7 @@ resolveAnaphora context new sentProv = foldl step (new, mempty) (anaphorConstant
                 { diagKind = UnresolvedAnaphor
                 , diagMsg =
                     "no accessible antecedent for " ++ name
-                      ++ " (note: referents inside negated or implicational"
-                      ++ " boxes are correctly inaccessible)"
+                      ++ " (note: " ++ antNoneNote ants ++ ")"
                 , diagProv = provFor name
                 }
         )
@@ -203,7 +247,7 @@ resolveAnaphora context new sentProv = foldl step (new, mempty) (anaphorConstant
                 { decKind = "anaphora"
                 , decChoice = show chosen
                 , decAlternatives = map show rejected
-                , decWhy = "most recently introduced accessible referent"
+                , decWhy = antWhy ants
                 , decProv = provFor name
                 }
         )

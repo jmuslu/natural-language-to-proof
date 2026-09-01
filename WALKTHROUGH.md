@@ -18,6 +18,10 @@ This one exhibits the objects and what holds of them.
 
 **Input:** `Every student reads a book.`
 
+One exception, flagged where it occurs: S5b needs a three-sentence discourse,
+because a single sentence has no discourse graph and a two-sentence one cannot
+show the frontier doing anything. Every other layer runs on the input above.
+
 ---
 
 ## S0 — Source
@@ -224,6 +228,105 @@ nodes as three; the drawing above was always right.
 > multisets compare unequal.
 > *Open:* is a multiset quotient wanted — commutative but not idempotent — for a
 > "same claim" test independent of truth-mode? Nothing currently constructs one.
+
+---
+
+## S5b — Discourse structure
+
+**A second input is needed here, and that is itself the point.** One sentence has
+no discourse graph, and a *two*-sentence discourse has exactly one edge whose
+parent is always reachable, so it cannot show the frontier doing anything either.
+Three segments is the minimum at which this layer is observable.
+
+**Input:** `A student arrived. Mary smiles. She reads a book.`
+
+Per-segment DRSs, top universes only:
+
+```
+K1  ┌───────────┐      K2  ┌───────────┐      K3  ┌────────────┐
+    │ x           │          │ (empty)     │          │ x1          │
+    ├───────────┤          ├───────────┤          ├────────────┤
+    │ student(x)  │          │ smile(mary) │          │ book(x1)    │
+    │ arrive(x)   │          │             │          │ read(?she,  │
+    └───────────┘          └───────────┘          │       x1)   │
+                                                    └────────────┘
+```
+
+The graph the threader builds, with the kind of each edge:
+
+```
+K1 ──Continuation──▶ K2 ──Narration──▶ K3
+      (coordinating)        (coordinating)
+```
+
+State at each step. `sites` is the pre-attachment frontier; `μ` is the mass of
+last-edge relation values under which each referent survives.
+
+| step | sites | antecedents offered | resolves `?she`? |
+|---|---|---|---|
+| K1 | — | — | n/a |
+| K2 | `K1` | `x` at `μ = 1.0` | n/a |
+| K3, flat | — | `x` (whole universe) | yes |
+| K3, `Committed` | `K2` | none | **no** |
+| K3, `Marginal` | `K2` | `x` at `μ = 0.488` | yes |
+
+The distribution at the `K1 → K2` edge, with no cue firing:
+
+| relation | mass | kind |
+|---|---|---|
+| `Continuation` | 0.146 | coordinating |
+| `Narration`, `Result`, `Contrast` | 0.122 each | coordinating |
+| `Elaboration`, `Explanation`, `Background`, `Instance` | 0.122 each | subordinating |
+| | **0.488 subordinating** | |
+
+> **P5b.1 [proved]** For `relation(a, b)`, `a`'s referents are accessible to `b`
+> whatever the relation is; the kind governs what the **next** unit sees.
+> *Consequence:* the frontier consulted when resolving unit *n* is the frontier
+> through *n-1*, so the threading loop runs one step behind the graph. Reading it
+> otherwise would make a coordinating relation block its own right argument.
+> *Falsify:* find a relation under which K2 fails to see `x`. The K2 row above is
+> `μ = 1.0` for exactly this reason.
+>
+> **P5b.2 [proved]** `acc_Committed(S) ⊆ acc_flat(S)`, with equality iff every
+> edge is subordinating.
+> *Consequence:* SDRT threading can only **remove** antecedents. It is a filter,
+> and on this fragment the filter is set by stipulated cue weights — which is
+> why it is not installed as the Stage 1 default.
+>
+> **P5b.3 [measured]** `μ(x) = 0.488` at K3, and this equals
+> `P(relationKind = Subordinating)` at the `K1 → K2` edge exactly.
+> *Consequence:* the grade is derived from the relation distribution, not a
+> threshold. Changing a cue weight moves it; nothing else does.
+>
+> **P5b.4 [checked]** `Marginal` deletes nothing, because `Elaboration` always
+> retains positive mass and is subordinating.
+> *Consequence:* the frontier contributes a **ranking** over antecedents rather
+> than a veto, which is the standing principle applied at this layer.
+>
+> **P5b.5 [checked]** The nine-case corpus shows **zero** divergence between flat
+> and either policy.
+> *Consequence:* one assertion says two things — the tie-in is safe on the
+> existing corpus, and the corpus is too short to exercise it.
+>
+> **P5b.6 [stipulated]** `glue`'s no-cue default is `Continuation`, the least
+> committal *relation*. But it is coordinating, hence the most restrictive choice
+> for *accessibility*.
+> *Open:* two notions of "least committal" that look like one and point opposite
+> ways. Left as-is because `Marginal` makes the choice non-destructive; if
+> `Committed` ever becomes the default, this weight is the first thing to revisit.
+>
+> **P5b.7 [structural gap]** A resolved pronoun adds no referent to its unit's
+> universe, so under `Committed` a chain of coordinating relations starves:
+> `"A man walked in. He sat down. He ordered."` reaches the third unit with an
+> empty frontier universe. Real SDRT percolates referents up the graph.
+> *Open:* percolation is the fix; `Marginal` only hides the symptom.
+>
+> **P5b.8 [conjectured]** `μ` is not a probability distribution over referents
+> — masses need not sum to 1, and should not, since accessibility is not
+> exclusive. It looks like a belief function or a fuzzy membership.
+> *Consequence if true:* it may not be multiplied into the RSA posterior at S8.
+> Currently it only orders candidates, which is safe under any of the three
+> readings.
 
 ---
 
