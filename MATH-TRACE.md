@@ -343,12 +343,25 @@ Any model that treats scope readings as a partition of a space is therefore
 mis-specified. Mine did, at first. The right object is a sub-poset of the
 Lindenbaum algebra, and the question is where in it the speaker was.
 
-**Suspect / open — structural, and the most important one here.** Which fragment
-ambiguities are chains and which are genuine antichains? Coupling readings look like an antichain (`chinese_dragon` neither
-entails nor is entailed by the fully intersective reading) — worth checking with
-`entails`, because if true it means coupling and scope need *different*
-probabilistic treatments, and that would explain why RSA does nothing for coupling
-while the fingerprint kernel does.
+**Resolved — measured.** Coupling readings **are** an antichain: all six
+pairs incomparable over 524,288 models, while scope readings are a chain. The two
+ambiguity types are genuinely different order-theoretic situations.
+
+Two consequences, the second of which corrects an earlier claim made right here:
+
+- **An antichain is not a partition.** The four coupling truth sets overlap
+  (8 + 16 + 16 + 16 = 56 models individually, union strictly smaller), so
+  marginals over readings do not sum to 1. Neither a chain nor a partition — a
+  third situation, and both mis-modellings are available.
+- **RSA does rank coupling readings after all.** An earlier version of this
+  paragraph said RSA "does nothing for coupling" and cast the fingerprint kernel
+  as the necessary substitute. Wrong: the zero sharpening came from
+  `surfaceScopePrior` being blind to coupling — all four readings share a
+  quantifier signature — not from anything about coupling itself. Given
+  informativity from this layer, sharpening is `0.0575` bits and the *more*
+  informative reading is down-weighted, the same scalar pattern as scope. The
+  fingerprint kernel measures structural similarity, a different quantity, not a
+  fallback for where RSA fails.
 
 ---
 
