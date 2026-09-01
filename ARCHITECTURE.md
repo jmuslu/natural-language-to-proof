@@ -833,10 +833,26 @@ garbage or gets truth conditions wrong.**
 | 3 | subsective | `skilled`, `large` | property is relative to the head; needs a lexical resource |
 | 3 | privative | `fake`, `former`, `alleged` | head predicate does **not** hold — a representation error in Stage 1, not an ambiguity to rank |
 
-Concretely, this cut the coupling case from four generated readings to two:
-restricting fusion to classificatory modifiers stopped `ancient_chinese` and
-`chinese_red` being proposed as English subkinds. A generator that ignores the
-distinction spends the ranking layer's evidence rejecting its own noise.
+Concretely, on `"ancient Chinese red dragon"` the classes separate `chinese`
+(classificatory, a plausible subkind with `dragon`) from `ancient` and `red`
+(intersective, not subkind-forming).
+
+**How that information is used was reversed, and this section originally had it
+wrong.** The first implementation applied the stratification as a *filter*,
+suppressing non-classificatory fusions and cutting the candidate set from four
+readings to two. That looked like a win and was recorded here as one.
+
+It is not. Filtering at generation time is preemptive pruning — see
+[Build the space; do not preemptively prune it](#build-the-space-do-not-preemptively-prune-it)
+below, which supersedes the earlier framing. The candidate set is back to four,
+with the classification attached to each candidate as evidence (`ccClass`,
+`ccLicensed`, `ccLayer`) so the ranking layer can down-weight rather than the
+generator omit.
+
+The stratification itself was right; only its application was wrong. And the
+reversal was vindicated empirically: with real informativity the ranking layer
+*does* separate those four readings, so the two that filtering would have deleted
+were rankable all along.
 
 **The same stratification applies to SDRT's discourse relations**, and for the
 same reason. Some are structurally cued — Narration largely follows from tense
@@ -899,6 +915,13 @@ filter was wrong. It is now attached to each candidate as evidence
 (`ccClass`, `ccLicensed`, `ccLayer`) and the ranking layer down-weights, rather
 than the generator omitting. The space went from 2 candidates back to 4, with the
 licensing information still present.
+
+This reverses what
+[Stratification](#stratification-not-all-modifiers-or-relations-are-one-kind-of-thing)
+above originally claimed as a success, and that section has been corrected to say
+so. Subsequent measurement settled it: the ranking layer separates all four
+readings on informativity, so the two candidates filtering removed were rankable
+and deleting them lost information.
 
 ### Spend computation freely
 

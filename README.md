@@ -23,11 +23,12 @@ The short version of the design:
 ## Status
 
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
-probability anywhere. 348 shared checks, plus 23 on `truth-mode` and 38 on
-`provenance-mode`.
+probability anywhere. 348 shared checks.
 
 **Stage 2 in progress: probabilistic augmentation.** 142 checks, in its own suite
-so Stage 1's number stays a stable signal. **551 checks total** on a track branch.
+so Stage 1's number stays a stable signal.
+
+What Stage 2 has and has not:
 
 | Built | Not built |
 |---|---|
@@ -35,6 +36,20 @@ so Stage 1's number stays a stable signal. **551 checks total** on a track branc
 | structural fingerprints + similarity kernel | distributional vectors (no data wired in) |
 | RSA: literal/pragmatic listener, speaker, depth-parametric | learned priors or costs |
 | finite model enumeration, entailment, informativity | domain sizes much above 3 |
+
+Check counts are **per checkout**, since nothing merges between track branches:
+
+| branch | Stage 1 | Stage 2 | track | total |
+|---|---|---|---|---|
+| `main` | 348 | 142 | — | **490** |
+| `conversational` | 348 | 142 | — (docs only) | **490** |
+| `truth-mode` | 348 | 142 | 23 | **513** |
+| `provenance-mode` | 348 | 142 | 38 | **528** |
+
+There is no meaningful project-wide total. An earlier version of this section
+claimed "551", which is `348 + 142 + 23 + 38` — the sum across *both* track
+branches. No single checkout contains that, because the tracks never merge into
+each other.
 
 Stage 1 is meant to stop changing. Later stages consume its output; they should
 not require edits to it.
