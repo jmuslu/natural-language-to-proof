@@ -1080,6 +1080,96 @@ used to keep things apart.
 **The model checker is a splitter, not a merger.** That reframing is the useful
 part of this note.
 
+### Adjective ordering: reuses S6's machinery, with three corrections
+
+Conventional adjective order (`"ancient Chinese red dragon"` is natural,
+`"red Chinese ancient dragon"` is marked) is a real phenomenon and the machinery
+for checking it mostly already exists. Four pieces, of which two are cheap, one is
+a named limitation, and one is a genuinely new inference problem.
+
+#### 1. It is a sortedness check, unless the hierarchy is partial
+
+The tempting move is to say this is the same linear-extension test as scope
+(P6.2): assign each modifier a rank from a Cinque-style hierarchy (quantity <
+subjective quality < size < shape < color < provenance < material) and check
+whether the observed sequence is a linear extension of it.
+
+That analogy holds **only if the hierarchy is partial.** The scope poset is
+genuinely partial — two quantifiers can be incomparable, which is why counting
+linear extensions is non-trivial there. Cinque's hierarchy is usually presented as
+**total**, and a total order has exactly one linear extension: itself. The check
+then degenerates to *sortedness by rank*, `O(n)`, and "linear extension" is the
+wrong frame for it.
+
+**Decide this deliberately.** A partial hierarchy — some adjective classes
+genuinely free relative to each other — is the more defensible linguistic
+position, and it is the version where S6's machinery is actually reused rather
+than merely resembled. Total gives "is this sorted"; partial gives "is this one of
+*k* admissible orders". Different question, different code.
+
+#### 2. Order is currently truth-conditionally inert, because fusion targets the head
+
+The natural worry is that order stops being logically free once a classificatory
+modifier is in play, since adjacency would determine which fusion is available.
+
+**Not in this implementation.** `couplingCandidates` fuses each modifier with
+`headNoun` — the last predicate in the chain — and adjacency plays no role. So
+permuting modifiers yields an *identical* candidate set, and adjective order is
+truth-conditionally inert for classificatory modifiers just as much as for
+intersective ones. Any ordering check here is therefore purely about markedness,
+never about logic.
+
+**But that is a limitation, not a result.** Nested fusion is linguistically real:
+`"Chinese red-dragon"` and `"Chinese-dragon that is red"` differ. The head-only
+rule never produces `chinese_red_dragon`, nor a fusion over an already-fused head,
+so it **under-generates**. If nested fusion were added, adjacency would matter,
+order would become logically relevant, and the worry above would be correct.
+
+Recorded as a named under-generation so the inertness is not mistaken for a
+finding about language.
+
+#### 3. Inversion count, not hashing — and it cancels unless alternatives differ
+
+A hash answers "same or not". The right measure for "how far from conventional
+order" is graded: **inversion count**, i.e. Kendall tau distance to the
+rank-sorted sequence.
+
+The natural home is the RSA speaker cost, which P8.6 already shows behaving as a
+knob (implicature weakens `0.808 → 0.835 → 0.853` as paraphrase cost rises). But
+there is a constraint that would otherwise be discovered the hard way:
+
+> In `S(u|m) ∝ exp(α(log L(m|u) − cost(u)))` and `L1(m|u) ∝ prior(m) · S(u|m)`, a
+> cost attached to the **observed** utterance is uniform in `m` and therefore
+> **cancels in normalization.**
+
+Adding order-markedness cost to the observed utterance alone changes the posterior
+over readings by exactly nothing. It does work only if the *alternatives differ*
+in order-markedness — if some readings are more naturally expressed with a
+different word order, so cost varies across the utterance set. Plausible for
+coupled readings, but it has to be built that way on purpose.
+
+Without that, this is an addition that compiles, runs, changes no number, and
+takes a while to diagnose.
+
+#### 4. Working backwards is abduction, and there is a cheap first version
+
+"Given an order that violates the hierarchy, infer which class assignment would
+make it conform" is genuine abduction: surface order as *evidence* for class
+disambiguation, running the check in reverse.
+
+It only has work to do if class assignment is uncertain, and
+`fragmentModifierClasses :: M.Map String ModifierClass` is deterministic. The full
+version needs that table to become a distribution — the same stipulated-to-be-fitted
+shape as the fingerprint weights (P9.4).
+
+**But a cheaper first version already has its hook.** `ambiguousModifiers` exists
+and records where the table is *making a choice rather than reporting a fact* —
+currently `old`, intersective in `"an old man"` and subsective in
+`"an old friend"`. Abduction can run over just the flagged entries, generating
+candidates for each admissible class, without converting the whole table to a
+distribution first. Consistent with build-the-space, and it reuses something
+already present.
+
 ### Plural predication is a coverage gap compression will hit
 
 Recorded here because the collective/distributive split produces multiple readings
