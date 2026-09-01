@@ -25,7 +25,7 @@ The short version of the design:
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
 probability anywhere. 348 shared checks.
 
-**Stage 2 in progress: probabilistic augmentation.** 170 checks, in its own suite
+**Stage 2 in progress: probabilistic augmentation.** 202 checks, in its own suite
 so Stage 1's number stays a stable signal.
 
 What Stage 2 has and has not:
@@ -36,16 +36,54 @@ What Stage 2 has and has not:
 | structural fingerprints + similarity kernel | distributional vectors (no data wired in) |
 | RSA: literal/pragmatic listener, speaker, depth-parametric | learned priors or costs |
 | finite model enumeration, entailment, informativity | domain sizes much above 3 |
-| **SDRT**: relations, right frontier, glue logic | SDRT wired into discourse threading |
+| **SDRT**: relations, right frontier, glue logic | referent percolation up the graph (see below) |
+| **SDRT threading**: the frontier drives anaphora resolution | a corpus long enough to exercise it (needs 3+ sentences) |
+
+#### SDRT threading, measured
+
+The frontier is no longer computed and ignored: `Stage2.Threading` resolves each
+sentence's pronouns against the right frontier instead of against a flat merge.
+Two things came out of wiring it up that are worth stating as results rather than
+as design notes.
+
+**It can only ever remove antecedents.** The frontier's referents are a subset of
+the flat merge's. So this is not a free improvement — it is a filter, and on this
+fragment the filter is driven by *stipulated* cue weights. Hence two policies:
+
+| policy | what it does | on `"A student arrived. Mary smiles. She reads a book."` |
+|---|---|---|
+| flat (Stage 1) | whole accumulated universe | resolves `she` → `x` |
+| `Committed` | argmax relation, then its frontier | **fails** — `Continuation` closed `K1` |
+| `Marginal` | union over positive-mass relations, graded | resolves `she` → `x` at mass **0.488** |
+
+**The least committal relation is not the least committal for accessibility.**
+`glue`'s no-cue default is `Continuation` because it commits to the least *about
+the discourse* — but it is coordinating, so it is the most restrictive choice for
+*anaphora*. With no cues firing, `Committed` closes every parent and accessibility
+collapses to the previous sentence alone. `Marginal` is the policy that fits the
+standing principle: `Elaboration` always keeps positive mass, so the referent is
+never deleted, only ranked. The 0.488 above is exactly the subordinating mass of
+that edge's relation distribution — measured, not assigned.
+
+On the nine-case fragment **both policies diverge from flat on nothing**, because
+both multi-sentence cases are two sentences long and a two-unit structure has one
+edge whose parent is always on the pre-attachment frontier. That is asserted as a
+check: the tie-in is safe to run on the existing corpus, *and* the corpus is too
+short to exercise it.
+
+Known over-restriction, recorded rather than patched: a resolved pronoun adds no
+referent to its unit's universe, so under `Committed` a chain of coordinating
+relations starves. Real SDRT percolates referents up the graph; this does not, and
+`Marginal` hides the symptom without fixing the cause.
 
 Check counts are **per checkout**, since nothing merges between track branches:
 
 | branch | Stage 1 | Stage 2 | track | total |
 |---|---|---|---|---|
-| `main` | 348 | 170 | — | **518** |
-| `conversational` | 348 | 170 | — (docs only) | **518** |
-| `truth-mode` | 348 | 170 | 23 | **541** |
-| `provenance-mode` | 348 | 170 | 38 | **556** |
+| `main` | 348 | 202 | — | **550** |
+| `conversational` | 348 | 202 | — (docs only) | **550** |
+| `truth-mode` | 348 | 202 | 23 | **573** |
+| `provenance-mode` | 348 | 202 | 38 | **588** |
 
 There is no meaningful project-wide total. An earlier version of this section
 claimed a single project-wide figure, which sums — the sum across *both* track
@@ -65,7 +103,7 @@ table exists to prevent.
 |---|---|---|---|
 | **1** — Montague + CCG + DRT, provenance-tagged | **done**, shared | **done**, shared | **done**, shared |
 | **2** — augmentation: alternatives, fingerprints, RSA, models | **in progress**, shared | **in progress**, shared | **in progress**, shared |
-| **2b** — SDRT: relations, right frontier, glue | **in progress**, shared | **in progress**, shared | **in progress**, shared |
+| **2b** — SDRT: relations, right frontier, glue, threading | **in progress**, shared | **in progress**, shared | **in progress**, shared |
 | **3** — attribute grammars, speculative commit + rollback | when rollback is wanted | **cannot work without it** | open |
 | **4** — epistemic graph layer: Kripke, DEL, AGM | epistemic **only** | n/a | n/a |
 
@@ -347,11 +385,12 @@ src/NL2Proof/
     Model.hs           finite models, entailment, informativity
     RSA.hs             literal/pragmatic listener, speaker
     SDRT.hs            discourse relations, right frontier, glue
+    Threading.hs       the frontier drives anaphora; two policies
     Pipeline.hs        Stage 2 end to end
 app/Main.hs            demo
 test/Harness.hs        shared assert scaffolding, no framework dependency
 test/Spec.hs           348 Stage 1 checks
-test/Stage2Spec.hs     170 Stage 2 checks
+test/Stage2Spec.hs     202 Stage 2 checks
 docs/                  standalone probes, not wired into a suite
 ```
 

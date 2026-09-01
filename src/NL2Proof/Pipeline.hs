@@ -22,6 +22,7 @@ module NL2Proof.Pipeline
     -- * Running
   , runPipeline
   , runFragment
+  , sentenceProv
     -- * Ambiguity detection
   , detectCoupling
     -- * Reporting

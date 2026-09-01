@@ -66,10 +66,15 @@ module NL2Proof.Stage2.SDRT
   , emptySDRS
   , addRoot
   , attach
+  , labelsInOrder
+  , unitsInOrder
     -- * The right frontier
   , rightFrontier
+  , frontierFrom
   , sdrsAccessible
+  , accessibleOn
   , isOpen
+  , unitAt
     -- * Glue logic
   , Cue(..)
   , detectCues
@@ -201,6 +206,14 @@ attach rel parent u s =
     , sdrsLast = Just (duLabel u)
     }
 
+-- | Labels in source order. 'Label''s 'Ord' is on the sentence index, so the
+-- map's own key order is source order and no separate sequence is needed.
+labelsInOrder :: SDRS -> [Label]
+labelsInOrder = M.keys . sdrsUnits
+
+unitsInOrder :: SDRS -> [DiscourseUnit]
+unitsInOrder = M.elems . sdrsUnits
+
 --------------------------------------------------------------------------------
 -- The right frontier
 --------------------------------------------------------------------------------
@@ -216,9 +229,15 @@ attach rel parent u s =
 -- edge, which would make deeply nested structures lose accessibility they should
 -- keep.
 rightFrontier :: SDRS -> [Label]
-rightFrontier s = case sdrsLast s of
-  Nothing -> []
-  Just l  -> nub (l : climb [l] l)
+rightFrontier s = maybe [] (frontierFrom s) (sdrsLast s)
+
+-- | The frontier as seen from an arbitrary label rather than from 'sdrsLast'.
+--
+-- 'rightFrontier' is this at the last node. Threading needs the general version
+-- because it asks the question at a node that is not yet the last one: given that
+-- a new unit would attach /here/, what stays open?
+frontierFrom :: SDRS -> Label -> [Label]
+frontierFrom s l = nub (l : climb [l] l)
   where
     parentsOf n = [(rel, p) | (rel, p, c) <- sdrsEdges s, c == n]
 
@@ -234,6 +253,9 @@ rightFrontier s = case sdrsLast s of
 isOpen :: SDRS -> Label -> Bool
 isOpen s l = l `elem` rightFrontier s
 
+unitAt :: SDRS -> Label -> Maybe DiscourseUnit
+unitAt s l = M.lookup l (sdrsUnits s)
+
 -- | Referents a following sentence may resolve against.
 --
 -- Union of the top-level universes of the units on the right frontier. This is
@@ -241,12 +263,21 @@ isOpen s l = l `elem` rightFrontier s
 -- "NL2Proof.DRT.Types".'accessibleRefs' on a flat merge: same per-unit rule,
 -- but restricted to open units.
 sdrsAccessible :: SDRS -> [Ref]
-sdrsAccessible s =
+sdrsAccessible s = accessibleOn s (rightFrontier s)
+
+-- | Referents contributed by a given set of labels, __most recent first__.
+--
+-- Order matters here in a way it does not for 'sdrsAccessible' as a set: the
+-- anaphora heuristic takes the head of this list, so the ordering /is/ the
+-- heuristic. Frontier order is last-unit-first, and within a unit
+-- 'accessibleRefs' is left-to-right, so each unit's universe is reversed.
+accessibleOn :: SDRS -> [Label] -> [Ref]
+accessibleOn s ls =
   nub
     [ r
-    | l <- rightFrontier s
-    , Just u <- [M.lookup l (sdrsUnits s)]
-    , r <- accessibleRefs (duDRS u)
+    | l <- ls
+    , Just u <- [unitAt s l]
+    , r <- reverse (accessibleRefs (duDRS u))
     ]
 
 --------------------------------------------------------------------------------
