@@ -407,15 +407,88 @@ driven by stipulated cue weights.
 the mass of relation values for the last edge `e` under which `r` survives.
 Because `relationKind⁻¹(Subordinating)` is non-empty and `glue` gives every
 relation positive mass, `μ(r) > 0` for every `r ∈ acc_F` restricted to the
-committed prefix. So `Marginal` **deletes nothing** and grades instead. Measured
-on the three-sentence example, `μ(x) = 0.488`, which is exactly
-`P(relationKind = Subordinating)` at that edge — a derived quantity, not a
+committed prefix. So `Marginal` deletes nothing **on the committed prefix**, and
+grades instead. Measured on the three-sentence example, `μ(x) = 0.488`, which is
+exactly `P(relationKind = Subordinating)` at that edge — a derived quantity, not a
 threshold.
+
+**Two deflations, both measured.** First, `μ` takes only **two** values at one
+free edge: `1` for a referent in `acc_coord`, `P(sub)` for one in
+`acc_sub \ acc_coord`, since those are the only two focal sets. One global degree
+of freedom, not a per-referent grade. Second, "deletes nothing" is about the
+prefix and not about the discourse: at four segments the implementation offers
+**nothing** while the full marginal keeps the referent at `0.488`, because the
+truncation holds every earlier edge at a committed value. `fullMarginalAt`
+measures this; it is a total deletion, not a perturbation.
 
 That is the same move as everywhere else in the design: replace a hard quotient by
 a ranking, and keep the collapse separate and logged.
 
-### Open: is `μ` a measure on the right space?
+### Resolved: `μ` is on the *wrong* space, and that is a Stage 1 bug
+
+The question "which non-additive measure is `μ`" has an answer, and it is that the
+question is premature: **`Ref` is not a discourse-wide identifier.** Referent names
+are generated per sentence, so `"A student arrived. A professor walks."` gives both
+existentials the name `x`, and the merge asserts `student(x) & arrive(x) &
+professor(x) & walk(x)` — one individual who is both. Two distinct elements of the
+domain have been identified.
+
+For this layer specifically: `acc` is supposed to distinguish referents *by
+originating unit*, since that is what open-versus-closed means, and `Ref` does not
+record the unit. `accessibleOn`'s `nub` then merges a closed unit's `x` with an
+open unit's `x`. The correct index is `(Label, Ref)` or globally fresh names.
+
+And the index decides the answer to the measure question:
+
+| index | distinct focal sets | nested (consonant)? |
+|---|---|---|
+| `Ref` | 2 | **yes** |
+| `(Label, Ref)` | 4 | **no** — `{(K2,x)}` crosses `{(K1,x)}` |
+
+So a consonance test would report "possibility measure", and that report would be
+an artefact of the name collision. Under the correct index the focal family is not
+nested, so `μ` is **not** a possibility distribution and the t-norm route is closed
+on the merits rather than left open.
+
+### The semiring is a free parameter only once the truncation is gone
+
+`μ(r) = ⊕_ρ P(ρ) ⊗ 1[r ∈ acc(S[e ↦ ρ])]` is a semiring-weighted sum, so the
+semiring is formally a choice, and different choices yield different *kinds* of
+object. Measured at one free edge: `(+,×) = 0.488`, `(max,×) = 0.122`,
+`(max,min) = 0.122`. The Viterbi and possibilistic semirings **coincide**, because
+`⊗` meets a boolean indicator and `P ≤ 1` gives `min(P,1) = P × 1 = P`. They
+separate only at two free edges (`0.018` versus `0.122`).
+
+So the four-way choice is really two — sum over licensors or max over licensors —
+and it becomes a genuine four-way choice exactly when the one-edge truncation is
+dropped. Note also that max-over-licensors is *not* MAP: MAP is argmax-then-test,
+which is `Committed`, already implemented and measured to offer nothing here.
+
+### No joint space, so no combination rule applies yet
+
+`μ : Ref → [0,1]`. The RSA posterior is `Dist Int` over `readingIndex`, ranging
+over scope permutations and coupling fusions. `Ref` occurs nowhere in
+`Stage2.Alternatives`, `Stage2.Pipeline` or `Stage2.RSA` — checked. Every question
+about Dempster's rule, t-norms, or credal sets presupposes a product space that
+does not exist.
+
+The native construction is to make antecedent choice an **alternative**, so a
+reading is `(scope order, coupling, antecedent assignment)`. Then `μ` is a prior
+over readings, the same object as every other Stage 2 weight, and `reweight` is
+the combination. Same pattern as scope: Stage 1 collapses and logs the rejected
+antecedents as strings; materialising them is Stage 2's job, and anaphora is the
+one place it has not been done.
+
+### The multiset gap and the truncation are one gap
+
+At one free edge a licensing witness contains each relation at most once, so
+multiset and set coincide — measured multiplicity `1`. At two free edges
+multiplicity `2` appears. So the Layer-4-style "commutative but not idempotent"
+intermediate is not a separate thing to build here: `rkLicensors` already carries
+the set-level version, and the multiplicity it is missing exists only in the
+regime the truncation excludes.
+
+### Superseded: is `μ` a measure on the right space?
 
 `μ` is a sum of probabilities over relation values, indexed by referents. It is
 not a probability distribution over referents — masses do not sum to 1 across
@@ -462,39 +535,64 @@ rejected.
 Ordered by how much a good answer changes the design. These are the ones where
 your judgement would actually redirect the work.
 
-1. **Is the RSA operator a contraction?** Would replace a latency knob with a
+1. **`Ref` is not a discourse-wide identifier, and the merge is unsound because
+   of it.** Two same-shaped existential sentences collide on `x`, so the merged DRS
+   asserts one individual is both a student and a professor. A Stage 1 bug that all
+   348 checks miss, and the reason the frontier mass cannot be typed: `acc` must
+   distinguish referents by originating unit and `Ref` does not record it. Fixing
+   it is a design choice with provenance consequences — globally fresh names, or
+   accessibility indexed by `(Label, Ref)`. (Layer 9b)
+2. **Make antecedent choice an alternative.** The frontier mass has nowhere to go
+   because `μ : Ref → [0,1]` and readings are indexed by `Int`; there is no joint
+   space, which is upstream of every question about combination rules. Materialise
+   antecedent assignments in `Stage2.Alternatives` and `μ` becomes a prior over
+   readings, combined by the existing `reweight`. Dissolves the question rather
+   than answering it, and it is the same move scope already made. (Layer 9b)
+3. **Drop the one-edge marginalisation truncation.** Common cause of four separate
+   symptoms: `μ` is two-valued, multiset collapses to set, the candidate semirings
+   coincide, and `Marginal` still deletes referents at four segments.
+   `fullMarginalAt` measures the gap; it does not close it. (Layer 9b)
+4. **Is the RSA operator a contraction?** Would replace a latency knob with a
    convergence criterion, and answers the conversational track's open question
    about affordable depth directly. (Layer 8)
-2. **What kind of object is the graded frontier mass `μ`?** Probability, belief
-   function, or fuzzy membership — and the answer decides whether it may be
-   multiplied into the RSA posterior, combined by Dempster's rule, or used only to
-   order candidates. It currently only orders, which is the safe reading, so this
-   is a question about what is *allowed* next rather than a bug. (Layer 9b)
-3. **`Dist` should be the finite distribution monad.** No `join`/`>>=`, so
+5. **`Dist` should be the finite distribution monad.** No `join`/`>>=`, so
    probabilistic steps cannot compose. RSA's recursion *is* Kleisli composition,
    and Stage 3 rollback is a probabilistic state transformer that will need it.
    (Layer 7)
-4. **Genealogy is a free category, not an initial algebra.** A fold cannot answer
+6. **Genealogy is a free category, not an initial algebra.** A fold cannot answer
    "is there a path from A to B". This is the real reason `Prov` cannot serve
    letra — not its leaf type — and it makes letra a rewrite rather than an
    extension. (Layer 3)
-5. **Should content and structure similarity stay separate coordinates** rather
+7. **Should content and structure similarity stay separate coordinates** rather
    than being averaged into one scalar? (Layer 6)
-6. **Is a multiset quotient of DRS wanted** — commutative but not idempotent —
+8. **Is a multiset quotient of DRS wanted** — commutative but not idempotent —
    for a "same claim" test independent of truth-mode? Nothing currently
    constructs it. (Layer 4)
-7. **Count linear extensions** rather than filtering `n!` permutations. The
+9. **Count linear extensions** rather than filtering `n!` permutations. The
    number of linear extensions is also the right thing to report as the size of
    the scope space. (Layer 5)
-8. **Span meet is missing**, so "what do two derivations share textually" is
+10. **Span meet is missing**, so "what do two derivations share textually" is
    uncomputable — needed by the conversational track's edit-to-scope problem.
    (Layer 0)
-9. **Only application is enabled** from the Lambek calculus. A deliberate
+11. **Only application is enabled** from the Lambek calculus. A deliberate
    restriction to a strictly smaller sub-calculus; worth naming as such rather
    than leaving it to look accidental. (Layer 1)
 
 ### Resolved this session
 
+- **The frontier mass is not a possibility distribution, and the cheap test that
+  says otherwise is reading an artifact.** Under `Ref`-indexing the focal family
+  has 2 sets and is nested; under `(Label, Ref)`-indexing it has 4 and is not,
+  crossing at `{(K2,x)}` vs `{(K1,x)}`. Consonance is a property of `acc` and the
+  index, not of the weights, so no choice of semiring makes it hold. (Layer 9b)
+- **The candidate semirings coincide where the code currently operates.**
+  `(max,×)` and `(max,min)` both give `0.122` at one free edge, because `⊗` meets
+  a boolean indicator and `P ≤ 1`. They separate only at two free edges. So "the
+  semiring is a free parameter" is true but gated on dropping the truncation.
+  And max-over-licensors is not MAP — argmax-then-test is `Committed`. (Layer 9b)
+- **There is no joint space for the frontier mass and the RSA posterior**, so the
+  choice of combination rule was never the live question. `Ref` occurs nowhere in
+  `Alternatives`, `Stage2.Pipeline` or `RSA` — checked, not assumed. (Layer 9b)
 - **Coupling readings form an antichain; scope readings form a chain.** Measured
   over 524,288 models at domain size 2: all six coupling pairs incomparable,
   scope strictly ordered. The two ambiguity types are genuinely different

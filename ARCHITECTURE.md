@@ -863,6 +863,94 @@ assumed, which makes it say two things at once: the tie-in is safe on the existi
 corpus, and the corpus is too short to exercise it. Three segments is the minimum
 for this layer to be observable at all.
 
+#### Tracing the frontier mass back down: what it is, and what blocks the question
+
+The tie-in left one question open — what kind of object the graded mass is, and
+therefore how it may legitimately combine with the RSA posterior. Tracing it back
+down answers it, but not from the direction the question suggests.
+
+**1. The domain is wrong, and that is a Stage 1 soundness bug.** `Ref` is
+per-sentence, not per-discourse. `"A student arrived. A professor walks."` gives
+both existentials the referent `x`, so the merge asserts `student(x) & arrive(x) &
+professor(x) & walk(x)` — one individual who is both. Two distinct individuals
+have been unsoundly identified. The 348 Stage 1 checks miss it because no fragment
+case has two same-shaped existential sentences, which is the "corpus too short"
+problem biting a second and worse time.
+
+This blocks the frontier specifically. Distinguishing "`x` from a closed unit"
+from "`x` from an open unit" is the frontier's whole purpose, and `Ref` does not
+record which unit a referent came from — `accessibleOn`'s `nub` conflates them.
+So the mass is indexed by the wrong set, and no question about which measure it is
+can be answered before that is fixed. The fix is a design choice with provenance
+consequences (globally fresh names at build time, versus indexing accessibility by
+`(Label, Ref)`), so it is recorded rather than taken unilaterally.
+
+**2. Consonance is an artefact of that collision.** The tempting cheap test is
+whether the focal family `{acc(S[e ↦ ρ])}` is nested — if so the mass is a
+possibility distribution and a t-norm is the licensed combination. Measured on the
+colliding text: under `Ref`-indexing the family has **2** sets and *is* nested;
+under `(Label, Ref)`-indexing it has **4** and is **not**, with an explicit
+crossing pair `{(K2,x)}` versus `{(K1,x)}`. So the nestedness test would come back
+"possibility measure" and that answer would be an artefact of a name collision,
+not a fact about discourse structure. Fix the index and the possibility-theory
+route closes on the merits.
+
+**3. The semiring is not a free parameter in the regime the code occupies.** The
+mass is a semiring-weighted sum — `⊕_ρ P(ρ) ⊗ 1[r ∈ acc(...)]` — so in principle
+the semiring is a choice, and different choices give different *kinds* of object
+rather than different numbers. Measured, at one free edge:
+
+| semiring | mass of `x` |
+|---|---|
+| `(+, ×)` — expectation | 0.488 |
+| `(max, ×)` — Viterbi | 0.122 |
+| `(max, min)` — possibilistic | 0.122 |
+
+The last two **coincide**, because `⊗` is applied to a boolean indicator and
+`P ≤ 1`, so `min(P,1) = P × 1 = P`. Four candidate algebras collapse to two
+questions: sum over licensors, or max over licensors. They separate only at two
+free edges (0.018 versus 0.122) — that is, exactly when the one-edge truncation is
+dropped. The freedom the semiring framing promises is real but it is downstream of
+the truncation, not available now.
+
+And the Viterbi reading is not MAP. MAP is *argmax the relation, then test*, which
+is `Committed` — already implemented. Measured: the overall argmax is `Narration`
+(coordinating), which offers nothing.
+
+**4. There is no joint space, which is upstream of every combination rule.** The
+mass is indexed by `Ref`. The RSA posterior is indexed by `readingIndex :: Int`
+over scope permutations and coupling fusions. `Ref` does not occur anywhere in
+`Stage2.Alternatives`, `Stage2.Pipeline` or `Stage2.RSA`. Asking which rule
+combines them presupposes a product space that does not exist.
+
+**5. So the native move is not an uncertainty calculus at all.** Make antecedent
+choice an *alternative*: a reading becomes `(scope order, coupling, antecedent
+assignment)`. Then the frontier mass is a **prior over readings** — the same
+`Dist Int` as everything else in Stage 2 — and `Distribution.reweight` already
+performs the combination. No belief functions, no t-norms, no new algebra.
+
+This is the same pattern the scope work already follows. Stage 1 collapses to one
+antecedent and logs the others *as strings* in `decAlternatives`; Stage 2's job is
+to materialise what Stage 1 declined. Anaphora is the one place where that has not
+been done, which is why its output had nowhere to go.
+
+**6. Two claims from the tie-in were too strong, and one deflation is worth
+stating.** `Marginal` "deletes nothing" holds at one uncertain edge only: at four
+segments the implementation offers nothing for `K4` while the full marginal keeps
+the referent at 0.488. `fullMarginalAt` now measures that gap rather than leaving
+it unstated. And at one free edge the mass takes only **two** values — 1 for a
+referent in the coordinating frontier, `P(subordinating)` for one reachable only
+subordinately. It is a two-tier partition with a single global tier weight, not a
+per-referent grade; calling it a ranking oversells it.
+
+**7. The missing multiset structure and the one-edge truncation are the same
+gap.** At one free edge each relation occurs at most once in a licensing witness,
+so multiset and set coincide and there is no multiplicity to lose. Multiplicity
+first appears at two free edges — measured. So there is no separate "build the
+multiset intermediate" task; there is one task, which is dropping the truncation,
+and `rkLicensors` already holds the set-level version of it (unconsumed by
+`antecedentsFor`).
+
 #### On the absence of a data source
 
 `NL2Proof.Stage2.Fingerprint` currently computes *structural* fingerprints rather

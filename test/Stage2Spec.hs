@@ -11,7 +11,7 @@
 -- model setup rather than a possible bug in the implementation.
 module Main (main) where
 
-import Data.List (isInfixOf)
+import Data.List (isInfixOf, nub, sort)
 import qualified Data.Map.Strict as M
 
 import Harness
@@ -844,6 +844,138 @@ thrSrc :: SourceId
 thrSrc = SourceId "thread"
 
 --------------------------------------------------------------------------------
+-- 13. What kind of object is the frontier mass? Tracing it back down.
+--------------------------------------------------------------------------------
+
+-- | Section 12 shipped a graded frontier and a claim that `Marginal` "deletes
+-- nothing". Both were checked at three segments and neither generalises. These
+-- checks are the trace back down, and they pin four findings.
+--
+-- The headline one is not about the algebra at all: __two same-shaped existential
+-- sentences collide on the same 'Ref'__, so the merged DRS unsoundly identifies a
+-- student with a professor. Every question about what measure the frontier
+-- carries is downstream of that, because the frontier's whole job is to tell
+-- apart referents by which unit they came from, and 'Ref' does not record it.
+muChecks :: [Check]
+muChecks =
+  [ -- 1. THE BLOCKER. Referent names are per-sentence, not per-discourse.
+    expectEq "mu: two same-shaped existentials produce the same Ref"
+      [Ref "x", Ref "x"]
+      (map (head . accessibleRefs . segDRS) (take 2 (segsOf collide)))
+  , expectEq "mu: so the merged universe has a duplicate"
+      (1, 2)
+      (let u = accessibleRefs (dscDRS (prDiscourse (runFragment thrSrc collide)))
+       in (length (nub u), length u))
+  , expect "mu: and the merge asserts one individual is both student and professor"
+      (let cs = drsPredicates (dscDRS (prDiscourse (runFragment thrSrc collide)))
+       in all (`elem` cs) ["student", "professor"]
+            && length (nub (accessibleRefs (dscDRS (prDiscourse (runFragment thrSrc collide))))) == 1)
+  , expect "mu: the anaphora decision degenerates -- choice equals its alternative"
+      (any (\d -> decKind d == "anaphora" && decAlternatives d == [decChoice d])
+           (traceDecisions (prTrace (runFragment thrSrc collideAna))))
+
+  , -- 2. Consonance is an artefact of that collision, not a fact about
+    -- discourse structure. Under Ref-indexing the focal sets are nested, so a
+    -- nestedness test would report "possibility measure" -- and be wrong.
+    expect "mu: Ref-indexed focal sets are nested (consonant)"
+      (nestedUnder refIndexed)
+  , expect "mu: (Label, Ref)-indexed focal sets are NOT"
+      (not (nestedUnder pairIndexed))
+  , expectEq "mu: Ref-indexing sees 2 focal sets where (Label, Ref) sees 4"
+      (2, 4) (length (focalFamily refIndexed), length (focalFamily pairIndexed))
+
+  , -- 3. mu is two-valued at one free edge, so "graded ranking" oversells it.
+    -- Every offered referent is either fully open (mass 1) or open only under a
+    -- subordinating last edge (mass P(sub)). One global degree of freedom.
+    expectEq "mu: at one free edge mu takes at most two distinct values" True
+      (length (nub [rkMass r | st <- thSteps threeM, r <- stRanked st]) <= 2)
+  , expect "mu: and the non-unit value is exactly the subordinating mass"
+      (case [rkMass r | r <- stRanked (thSteps threeM !! 2)] of
+         (v : _) -> abs (v - subMassAt threeM 1) < 1e-9
+         []      -> False)
+
+  , -- 4. The one-edge truncation is not a small perturbation: at four segments
+    -- it DELETES a referent the full marginal keeps at ~0.488. So "Marginal
+    -- deletes nothing" holds at one uncertain edge and fails past it.
+    expect "mu: at 4 segments the truncation offers nothing for K4"
+      (null (stRanked (thSteps fourM !! 3)))
+  , expect "mu: while the full marginal keeps the referent"
+      (case fullMarginalAt (thSDRS fourM) 4 of
+         Just (r : _) -> rkRef r == Ref "x" && rkMass r > 0.4
+         _            -> False)
+  , expect "mu: so the truncation can delete, which is what Marginal was for"
+      (null (stRanked (thSteps fourM !! 3))
+         && maybe False (not . null) (fullMarginalAt (thSDRS fourM) 4))
+  , expect "mu: at 3 segments truncated and full agree exactly"
+      (case (stRanked (thSteps threeM !! 2), fullMarginalAt (thSDRS threeM) 3) of
+         ((a : _), Just (b : _)) -> abs (rkMass a - rkMass b) < 1e-9
+         _                       -> False)
+  , expect "mu: multiset multiplicity is unobservable at one free edge"
+      (all ((<= 1) . length) [rkLicensors r | r <- stRanked (thSteps threeM !! 2)]
+         || all (\r -> length (rkLicensors r) == length (nub (rkLicensors r)))
+                (stRanked (thSteps threeM !! 2)))
+  , expect "mu: fullMarginalAt refuses rather than blowing up on long discourses"
+      (fullMarginalAt (thSDRS threeM) 9 == Nothing)
+
+  , -- 5. There is no joint space for mu and the RSA posterior to live in, which
+    -- is upstream of every question about combination rules. mu is indexed by
+    -- Ref; readings are indexed by an Int over scope permutations and couplings.
+    expect "mu: readings are indexed by Int, not by Ref"
+      (all (>= 0) (map readingIndex (s2Readings (runStage2 pv (caseTerm "quantified")))))
+  , expect "mu: and no reading's constants name a discourse referent"
+      (null [ ()
+            | rd <- s2Readings (runStage2 pv (caseTerm "quantified"))
+            , v <- constNames (readingTerm rd)
+            , v `elem` map show (concatMap (map rkRef . stRanked) (thSteps threeM))
+            ])
+  ]
+  where
+    collide = "A student arrived. A professor walks."
+    collideAna = "A student arrived. A professor walks. She smiles."
+    threeSent = "A student arrived. Mary smiles. She reads a book."
+    fourSent = "A student arrived. Mary smiles. John sleeps. She reads a book."
+
+    threeM = threadDiscourse Marginal (segsOf threeSent)
+    fourM = threadDiscourse Marginal (segsOf fourSent)
+
+    -- The focal family {acc(S[rho])} over both edges of the colliding text,
+    -- under the two candidate index sets.
+    refIndexed = False
+    pairIndexed = True
+
+    focalFamily byPair =
+      nub [ accOf byPair [a, b] | a <- allRelations, b <- allRelations ]
+
+    nestedUnder byPair =
+      let sets = focalFamily byPair
+      in and [all (`elem` y) x || all (`elem` x) y | x <- sets, y <- sets]
+
+    accOf byPair labels =
+      let th = threadDiscourse Committed (segsOf collideThree)
+          s0 = thSDRS th
+          units = unitsInOrder s0
+          parents = [p | (_, p, _) <- sdrsEdges s0]
+          built =
+            foldl (\acc (rel, p, u) -> attach rel p u acc)
+              (addRoot (head units) emptySDRS)
+              (zip3 labels (take 2 parents) (take 2 (drop 1 units)))
+          fr = rightFrontier built
+      in sort
+           (nub   -- accessibleOn nubs, so Ref-indexing must too
+              [ if byPair then show l ++ ":" ++ show r else show r
+              | l <- fr
+              , Just u <- [unitAt built l]
+              , r <- accessibleRefs (duDRS u)
+              ])
+
+    collideThree = "A student arrived. A professor walks. Mary smiles."
+
+    subMassAt th i =
+      case stRelDist (thSteps th !! i) of
+        Just d  -> sum [m | (r, m) <- ranked d, relationKind r == Subordinating]
+        Nothing -> 0
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
@@ -864,4 +996,5 @@ main =
        , orderChecks
        , sdrtChecks
        , threadingChecks
+       , muChecks
        ])
