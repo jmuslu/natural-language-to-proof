@@ -25,7 +25,7 @@ The short version of the design:
 **Stage 1 complete: discrete semantic core.** Deterministic, tested, no
 probability anywhere. 348 shared checks.
 
-**Stage 2 in progress: probabilistic augmentation.** 202 checks, in its own suite
+**Stage 2 in progress: probabilistic augmentation.** 219 checks, in its own suite
 so Stage 1's number stays a stable signal.
 
 What Stage 2 has and has not:
@@ -56,6 +56,12 @@ fragment the filter is driven by *stipulated* cue weights. Hence two policies:
 | `Committed` | argmax relation, then its frontier | **fails** — `Continuation` closed `K1` |
 | `Marginal` | union over positive-mass relations, graded | resolves `she` → `x` at mass **0.488** |
 
+At **four** segments `Marginal` fails too: the implementation offers nothing for
+`K4` while the full marginal keeps the referent at **0.488**. The one-edge
+truncation reintroduces exactly the hard commitment the policy existed to avoid.
+So "`Marginal` deletes nothing" holds at *one uncertain edge* and not past it —
+`fullMarginalAt` measures the gap.
+
 **The least committal relation is not the least committal for accessibility.**
 `glue`'s no-cue default is `Continuation` because it commits to the least *about
 the discourse* — but it is coordinating, so it is the most restrictive choice for
@@ -76,14 +82,42 @@ referent to its unit's universe, so under `Committed` a chain of coordinating
 relations starves. Real SDRT percolates referents up the graph; this does not, and
 `Marginal` hides the symptom without fixing the cause.
 
+#### Blocker found while tracing this back down
+
+**`Ref` is per-sentence, not per-discourse.** Two same-shaped existential
+sentences collide on the same referent name, and the merge then identifies two
+different individuals:
+
+```
+"A student arrived. A professor walks."
+  +--------------+
+  | x x          |     universe [x,x] -- 1 distinct name, 2 entries
+  +--------------+
+  | student(x)   |
+  | arrive(x)    |
+  | professor(x) |     <- the same x
+  | walk(x)      |
+  +--------------+
+```
+
+This is a **Stage 1 soundness bug**, not an SDRT one, and the 348 checks miss it
+because no fragment case has two same-shaped existential sentences. Downstream the
+anaphora decision degenerates to `chose x over 1: x` — the chosen antecedent and
+the rejected alternative are the same string.
+
+It blocks the frontier specifically: telling apart "`x` from a closed unit" and
+"`x` from an open unit" is the frontier's entire job, and `Ref` does not record
+which unit a referent came from. Asserted as checks so the bug is visible and any
+fix has to update them.
+
 Check counts are **per checkout**, since nothing merges between track branches:
 
 | branch | Stage 1 | Stage 2 | track | total |
 |---|---|---|---|---|
-| `main` | 348 | 202 | — | **550** |
-| `conversational` | 348 | 202 | — (docs only) | **550** |
-| `truth-mode` | 348 | 202 | 23 | **573** |
-| `provenance-mode` | 348 | 202 | 38 | **588** |
+| `main` | 348 | 219 | — | **567** |
+| `conversational` | 348 | 219 | — (docs only) | **567** |
+| `truth-mode` | 348 | 219 | 23 | **590** |
+| `provenance-mode` | 348 | 219 | 38 | **605** |
 
 There is no meaningful project-wide total. An earlier version of this section
 claimed a single project-wide figure, which sums — the sum across *both* track
@@ -390,7 +424,7 @@ src/NL2Proof/
 app/Main.hs            demo
 test/Harness.hs        shared assert scaffolding, no framework dependency
 test/Spec.hs           348 Stage 1 checks
-test/Stage2Spec.hs     202 Stage 2 checks
+test/Stage2Spec.hs     219 Stage 2 checks
 docs/                  standalone probes, not wired into a suite
 ```
 
