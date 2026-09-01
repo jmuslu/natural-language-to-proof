@@ -298,10 +298,17 @@ The distribution at the `K1 → K2` edge, with no cue firing:
 > *Consequence:* the grade is derived from the relation distribution, not a
 > threshold. Changing a cue weight moves it; nothing else does.
 >
-> **P5b.4 [checked]** `Marginal` deletes nothing, because `Elaboration` always
-> retains positive mass and is subordinating.
-> *Consequence:* the frontier contributes a **ranking** over antecedents rather
-> than a veto, which is the standing principle applied at this layer.
+> **P5b.4 [checked, and narrower than it first looked]** `Marginal` deletes
+> nothing *on the committed prefix*, because `Elaboration` always retains positive
+> mass and is subordinating.
+> *Consequence:* at one uncertain edge the frontier contributes a ranking rather
+> than a veto. **But not beyond it:** at four segments the implementation offers
+> nothing while the full marginal keeps the referent at `0.488`, because the
+> truncation holds every earlier edge at a committed value. `fullMarginalAt`
+> measures the gap.
+> *Also narrower:* `μ` takes only **two** values here — `1` and `P(sub)` — since
+> there are only two focal sets. A two-tier partition with one global tier weight,
+> not a per-referent grade.
 >
 > **P5b.5 [checked]** The nine-case corpus shows **zero** divergence between flat
 > and either policy.
@@ -321,12 +328,46 @@ The distribution at the `K1 → K2` edge, with no cue firing:
 > empty frontier universe. Real SDRT percolates referents up the graph.
 > *Open:* percolation is the fix; `Marginal` only hides the symptom.
 >
-> **P5b.8 [conjectured]** `μ` is not a probability distribution over referents
-> — masses need not sum to 1, and should not, since accessibility is not
-> exclusive. It looks like a belief function or a fuzzy membership.
-> *Consequence if true:* it may not be multiplied into the RSA posterior at S8.
-> Currently it only orders candidates, which is safe under any of the three
-> readings.
+> **P5b.8 [checked]** `μ` is not a probability distribution over referents —
+> masses need not sum to 1, and should not, since accessibility is not exclusive.
+> But the follow-up question is not "which non-additive measure is it", because
+> **its domain is wrong** (P5b.9).
+>
+> **P5b.9 [measured]** `Ref` is per-sentence, not per-discourse.
+> `"A student arrived. A professor walks."` gives both existentials the name `x`,
+> and the merge asserts `student(x) & arrive(x) & professor(x) & walk(x)` — one
+> individual who is both a student and a professor.
+> *Consequence:* a **Stage 1 soundness bug**, missed by all 348 checks because no
+> fragment case has two same-shaped existential sentences. It blocks this layer in
+> particular: telling `x`-from-a-closed-unit apart from `x`-from-an-open-unit is
+> the frontier's entire job, and `Ref` does not record the unit.
+> *Falsify:* find a discourse where two segments introduce referents and the merged
+> universe has as many distinct names as entries.
+>
+> **P5b.10 [measured]** Consonance depends on the index, so a nestedness test
+> would answer the measure question from an artefact:
+>
+> | index | focal sets | nested? |
+> |---|---|---|
+> | `Ref` | 2 | yes |
+> | `(Label, Ref)` | 4 | no — `{(K2,x)}` crosses `{(K1,x)}` |
+>
+> *Consequence:* under the correct index `μ` is **not** a possibility
+> distribution, so the t-norm route is closed on the merits.
+>
+> **P5b.11 [measured]** The Viterbi and possibilistic semirings give the *same*
+> number here (`0.122`), because `⊗` meets a boolean indicator and `P ≤ 1`. They
+> separate only at two free edges (`0.018` vs `0.122`).
+> *Consequence:* "the semiring is a free parameter" is true but downstream of the
+> truncation, not available now. And max-over-licensors is not MAP —
+> argmax-then-test is `Committed`, already built.
+>
+> **P5b.12 [checked]** There is no joint space: `μ` is indexed by `Ref`, readings
+> by `readingIndex :: Int`, and `Ref` occurs nowhere in `Alternatives`,
+> `Stage2.Pipeline` or `RSA`.
+> *Consequence:* the native move is to make antecedent choice an **alternative**,
+> so `μ` becomes a prior over readings and `reweight` is the combination. No
+> borrowed uncertainty calculus.
 
 ---
 
