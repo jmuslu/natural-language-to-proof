@@ -219,7 +219,7 @@ descent rather than checked mechanically.
 That inverts the failure mode, and so the tests:
 
 - epistemic track fails by **admitting an ill-typed thing** → assert
-  well-typedness (what the current 348 checks do)
+  well-typedness (what the current Stage 1 checks do)
 - conversational fails by **being confidently wrong, or by failing to revise**
   → assert **calibration** (stated confidence tracks observed accuracy) and
   **revisability** (a steering input actually invalidates every inference that
@@ -869,31 +869,54 @@ The tie-in left one question open — what kind of object the graded mass is, an
 therefore how it may legitimately combine with the RSA posterior. Tracing it back
 down answers it, but not from the direction the question suggests.
 
-**1. The domain is wrong, and that is a Stage 1 soundness bug.** `Ref` is
-per-sentence, not per-discourse. `"A student arrived. A professor walks."` gives
-both existentials the referent `x`, so the merge asserts `student(x) & arrive(x) &
-professor(x) & walk(x)` — one individual who is both. Two distinct individuals
-have been unsoundly identified. The 348 Stage 1 checks miss it because no fragment
-case has two same-shaped existential sentences, which is the "corpus too short"
-problem biting a second and worse time.
+**1. The domain was wrong, because of a Stage 1 soundness bug — now fixed.**
+`mergeDRS` has an unstated precondition: merge is only sound when the two
+universes are disjoint. Referent names come from the lambda terms, so
+`"A student arrived. A professor walks."` gave both existentials the referent `x`,
+and the merge asserted `student(x) & arrive(x) & professor(x) & walk(x)` — one
+individual who is both. Two distinct individuals unsoundly identified. All 348
+Stage 1 checks missed it because no fragment case has two same-shaped existential
+sentences: the "corpus too short" problem biting a second and worse time.
 
-This blocks the frontier specifically. Distinguishing "`x` from a closed unit"
-from "`x` from an open unit" is the frontier's whole purpose, and `Ref` does not
-record which unit a referent came from — `accessibleOn`'s `nub` conflates them.
-So the mass is indexed by the wrong set, and no question about which measure it is
-can be answered before that is fixed. The fix is a design choice with provenance
-consequences (globally fresh names at build time, versus indexing accessibility by
-`(Label, Ref)`), so it is recorded rather than taken unilaterally.
+It blocked the frontier specifically. Distinguishing "`x` from a closed unit"
+from "`x` from an open unit" is the frontier's whole purpose, and `Ref` did not
+record which unit a referent came from — `accessibleOn`'s `nub` conflated them.
 
-**2. Consonance is an artefact of that collision.** The tempting cheap test is
-whether the focal family `{acc(S[e ↦ ρ])}` is nested — if so the mass is a
-possibility distribution and a t-norm is the licensed combination. Measured on the
-colliding text: under `Ref`-indexing the family has **2** sets and *is* nested;
-under `(Label, Ref)`-indexing it has **4** and is **not**, with an explicit
-crossing pair `{(K2,x)}` versus `{(K1,x)}`. So the nestedness test would come back
-"possibility measure" and that answer would be an artefact of a name collision,
-not a fact about discourse structure. Fix the index and the possibility-theory
-route closes on the merits.
+`DRT.Types.freshenAgainst` discharges the precondition, applied in
+`extendDiscourse` and in `Stage2.Threading`. Two things make this the cheap option
+rather than the invasive one. It is **alpha-conversion**: mechanical, so nothing
+is logged, and `mapRefs` carries each referent's provenance through, so a renamed
+referent is still traceable to the words that introduced it. And it happens **at
+the merge, not in `toDRS`**, so sentence-local DRSs are untouched and a sentence
+read on its own reads the same. Stage 1's 348 checks all pass unchanged; 18
+regression checks were added, giving 366.
+
+The alternative — indexing accessibility by `(Label, Ref)` and leaving Stage 1
+alone — was rejected because it fixes the frontier's symptom while leaving a DRS
+that asserts a student is a professor. That is a wrong answer, not a missing
+feature.
+
+**2. Consonance was an artefact of that collision, and the correction has a sharp
+consequence.** The tempting cheap test is whether the focal family
+`{acc(S[e ↦ ρ])}` is nested — if so the mass is a possibility distribution and a
+t-norm is licensed. Measured before the fix: `Ref`-indexed gave **2** nested sets,
+`(Label, Ref)`-indexed gave **4** and non-nested, crossing at `{(K2,x)}` versus
+`{(K1,x)}`. The test would have reported "possibility measure" off a name
+collision.
+
+After the fix `Ref` is discourse-unique, `(Label, Ref)` adds nothing, and both
+indexings agree — 4 sets, non-nested, crossing `[x2]` versus `[x]`. But the sharp
+part is the *structure* of when consonance holds:
+
+> `frontier(subordinating) = frontier(coordinating) ∪ {parent}`
+
+so at **one** free edge there are exactly two focal sets and they are nested **by
+construction** — a theorem, not a measurement. At **two** they cross. The
+implementation runs at one free edge, which means it sits in the only regime where
+the possibility reading is available, **and that regime is the truncation.** Since
+the truncation has to go (it deletes referents), the possibility reading goes with
+it. They stand or fall together, which retires the whole
+possibility-versus-belief-function question rather than answering it.
 
 **3. The semiring is not a free parameter in the regime the code occupies.** The
 mass is a semiring-weighted sum — `⊕_ρ P(ρ) ⊗ 1[r ∈ acc(...)]` — so in principle
@@ -934,14 +957,19 @@ antecedent and logs the others *as strings* in `decAlternatives`; Stage 2's job 
 to materialise what Stage 1 declined. Anaphora is the one place where that has not
 been done, which is why its output had nowhere to go.
 
-**6. Two claims from the tie-in were too strong, and one deflation is worth
-stating.** `Marginal` "deletes nothing" holds at one uncertain edge only: at four
-segments the implementation offers nothing for `K4` while the full marginal keeps
-the referent at 0.488. `fullMarginalAt` now measures that gap rather than leaving
-it unstated. And at one free edge the mass takes only **two** values — 1 for a
-referent in the coordinating frontier, `P(subordinating)` for one reachable only
-subordinately. It is a two-tier partition with a single global tier weight, not a
-per-referent grade; calling it a ranking oversells it.
+**6. Two claims from the tie-in were too strong.** `Marginal` "deletes nothing"
+holds at one uncertain edge only: at four segments the implementation offers
+nothing for `K4` while the full marginal keeps the referent at 0.488.
+`fullMarginalAt` now measures that gap rather than leaving it unstated.
+
+And at one free edge the mass takes only **two** values — 1 for a referent in the
+coordinating frontier, `P(subordinating)` for one reachable only subordinately —
+so it is a two-tier partition with a single global weight, not a per-referent
+grade. That deflation is itself an artifact of the truncation: at two free edges,
+measured on the four-segment colliding text, `x2` gets **0.488** and `x` gets
+**0.435**, and the truncated implementation offers only `x2`. So the mass is
+genuinely graded, and the reason it did not look it is the same reason everything
+else in this section collapses — one free edge.
 
 **7. The missing multiset structure and the one-edge truncation are the same
 gap.** At one free edge each relation occurs at most once in a licensing witness,

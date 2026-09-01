@@ -456,6 +456,118 @@ canonicalChecks =
 -- Main
 --------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------
+-- 14. Discourse merge soundness: referents must be discourse-unique
+--------------------------------------------------------------------------------
+
+-- | 'mergeDRS' is only sound when the two universes are disjoint, and referent
+-- names come from the lambda terms, so two sentences of the __same shape__ arrive
+-- with the same names. Before 'freshenAgainst' was applied in
+-- 'extendDiscourse', @"A student arrived. A professor walks."@ merged to
+--
+-- > | x x          |
+-- > | student(x)   |
+-- > | arrive(x)    |
+-- > | professor(x) |
+-- > | walk(x)      |
+--
+-- one individual who is both. That is a soundness bug, not a modelling
+-- limitation, and none of the other 348 checks could see it: no case in the
+-- fragment has two same-shaped existential sentences.
+--
+-- These checks exist so that gap cannot reopen. The texts are written here rather
+-- than added to 'fragmentCases' because they are regression fixtures for one
+-- property, not evaluation cases with expected logical forms.
+freshnessChecks :: [Check]
+freshnessChecks =
+  concatMap perText
+    [ "A student arrived. A professor walks."
+    , "A student arrived. A student arrived."
+    , "A student arrived. A professor walks. A student arrived."
+    , "A student arrived. She smiles."
+    , "No student sleeps. She smiles."
+    , "Every student reads a book. A professor walks."
+    ]
+    ++
+    [ -- The collision case, spelled out.
+      expectEq "freshness: two same-shaped existentials get distinct referents"
+        2 (length (nub (accessibleRefs (discourseOf collide))))
+    , expect "freshness: and the student is no longer the professor"
+        (let d = discourseOf collide
+             refOf pr = [r | CPred p [DRef r] _ <- drsConds d, p == pr]
+         in refOf "student" /= refOf "professor"
+              && not (null (refOf "student"))
+              && not (null (refOf "professor")))
+
+    , -- Freshening happens at the merge, not in 'toDRS': the sentence-local
+      -- DRSs are untouched, so a sentence read on its own still reads the same.
+      expect "freshness: sentence-local DRSs are left alone"
+        (all (\r -> maybe True ((== [Ref "x"]) . accessibleRefs) (srDRS r))
+             (prSentences (runFragment testSource collide)))
+
+    , -- Renaming is alpha-conversion, so provenance must survive it. A renamed
+      -- referent that could not be traced back to its words would be a worse bug
+      -- than the one being fixed.
+      expect "freshness: every renamed referent still names the source"
+        (all (\(_, pr) -> provSources pr == [testSource])
+             (drsUniverse (discourseOf collide)))
+    , expect "freshness: and still reaches a real span in the text"
+        (all (\(_, pr) -> maybe False (inText collide) (provSpan pr))
+             (drsUniverse (discourseOf collide)))
+
+    , -- No collision means no work: an empty substitution is the cheap witness.
+      expectEq "freshness: freshenAgainst is identity when nothing collides"
+        [] (snd (freshenAgainst [Ref "z"] (fst (freshenAgainst [] (bare "A student arrived.")))))
+    , expect "freshness: and renames exactly the colliding referent when there is one"
+        (case freshenAgainst [Ref "x"] (bare "A student arrived.") of
+           (_, [(Ref "x", Ref new)]) -> new /= "x"
+           _                         -> False)
+    , expect "freshness: the fresh name avoids names already in play"
+        (case freshenAgainst [Ref "x", Ref "x2"] (bare "A student arrived.") of
+           (_, [(_, r)]) -> r `notElem` [Ref "x", Ref "x2"]
+           _             -> False)
+
+    , -- 'mapRefs' is structural: it must not add, drop or reshape anything.
+      expect "freshness: mapRefs preserves size"
+        (let d = bare "Every student reads a book."
+         in drsSize (mapRefs (\(Ref r) -> Ref (r ++ "!")) d) == drsSize d)
+    , expect "freshness: mapRefs reaches referents inside subordinate boxes"
+        (let d = bare "No student sleeps."
+         in all (\(Ref r) -> "!" `isInfixOf` r)
+                (drsRefs (mapRefs (\(Ref r) -> Ref (r ++ "!")) d)))
+    , expect "freshness: mapRefs leaves constants alone"
+        (let d = bare "John loves Mary."
+         in drsConstants (mapRefs (\(Ref r) -> Ref (r ++ "!")) d) == drsConstants d)
+
+    , -- The anaphora cases must be untouched, which is why Stage 1's count did
+      -- not move when this was fixed.
+      expect "freshness: the anaphora case still resolves to the student"
+        (any (\d -> decKind d == "anaphora")
+             (traceDecisions (prTrace (runFragment testSource "A student arrived. She smiles."))))
+    ]
+  where
+    collide = "A student arrived. A professor walks."
+
+    perText txt =
+      [ expectEq ("freshness: no duplicate referent names in " ++ show txt)
+          (length u) (length (nub u))
+      ]
+      where
+        u = drsRefs (discourseOf txt)
+
+    discourseOf txt = dscDRS (prDiscourse (runFragment testSource txt))
+
+    bare txt =
+      case [d | r <- prSentences (runFragment testSource txt), Just d <- [srDRS r]] of
+        (d : _) -> d
+        []      -> emptyDRS
+
+    inText txt (Span a b) = a >= 0 && b <= length txt && a <= b
+
+--------------------------------------------------------------------------------
+-- Assembly
+--------------------------------------------------------------------------------
+
 allChecks :: [Check]
 allChecks =
   concat
@@ -472,6 +584,7 @@ allChecks =
     , lambdaChecks
     , couplingChecks
     , canonicalChecks
+    , freshnessChecks
     ]
 
 main :: IO ()
