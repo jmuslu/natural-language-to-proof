@@ -265,6 +265,11 @@ fullMarginalAt s k
         , mass > 0
         ]
 
+-- | Every referent already in the structure, at every depth. The set a new
+-- segment must be freshened against.
+placedRefs :: SDRS -> [Ref]
+placedRefs s = concatMap (drsRefs . duDRS) (unitsInOrder s)
+
 -- | Replace the relation on a specific edge, leaving everything else alone.
 setEdge :: Label -> Label -> Relation -> SDRS -> SDRS
 setEdge p c rel s =
@@ -343,8 +348,14 @@ threadDiscourse policy segs = case segs of
     go sdrs lastEdge steps tr ((i, seg) : more) =
       let front = rightFrontier sdrs
           rs = rankedAntecedents policy sdrs lastEdge
+          -- Same disjointness precondition as the flat merge, and the same fix:
+          -- referent names come from the lambda terms, so two segments of the
+          -- same shape arrive with the same names. Freshen against every unit
+          -- already placed, not just the frontier -- a closed unit's referents
+          -- are unreachable, but they are still in the structure.
+          (freshDRS, _) = freshenAgainst (placedRefs sdrs) (segDRS seg)
           (resolved, trAna) =
-            resolveAnaphoraWith (antecedentsFor policy rs) (segDRS seg) (segProv seg)
+            resolveAnaphoraWith (antecedentsFor policy rs) freshDRS (segProv seg)
 
           lbl = Label i
           unit = DiscourseUnit lbl resolved (segTokens seg)
@@ -449,8 +460,9 @@ compareThreading policy segs =
     flatSteps _ [] = []
     flatSteps ctx (s : ss) =
       let ants = flatAntecedents ctx
-          (resolved, _) = resolveAnaphoraWith ants (segDRS s) (segProv s)
-      in (segDRS s, listToMaybe (antCandidates ants))
+          (fresh, _) = freshenAgainst (drsRefs ctx) (segDRS s)
+          (resolved, _) = resolveAnaphoraWith ants fresh (segProv s)
+      in (fresh, listToMaybe (antCandidates ants))
            : flatSteps (mergeDRS ctx resolved) ss
 
     cmp (d, flatPick) st =

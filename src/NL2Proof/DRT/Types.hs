@@ -31,15 +31,18 @@ module NL2Proof.DRT.Types
   , drsConstants
   , anaphorConstants
   , drsSize
-    -- * Substitution
+    -- * Substitution and alpha-conversion
   , substConst
   , substConstDRS
+  , mapRefs
+  , freshenAgainst
     -- * Rendering
   , renderDTerm
   , renderDRS
   , drsBoxLines
   ) where
 
+import Data.Maybe (fromMaybe)
 import Data.List (intercalate, nub)
 
 import NL2Proof.Provenance
@@ -94,6 +97,32 @@ emptyDRS = DRS [] []
 -- This is plain DRS merge. It is /not/ the collapse step: merging two boxes from
 -- the same discourse keeps every provenance tag intact, whereas collapsing is
 -- where truth-mode discards them.
+--
+-- == Precondition: the universes must be disjoint
+--
+-- This is the standard side condition on DRS merge and it is __not enforced
+-- here__, because @mergeDRS@ is also used on boxes that were built to share
+-- names on purpose. Violating it is unsound rather than merely confusing:
+-- concatenating @[x]@ with @[x]@ produces one universe in which every condition
+-- from both boxes constrains the /same/ variable, so two distinct individuals
+-- get identified.
+--
+-- Concretely, before this was enforced at the discourse level,
+-- @"A student arrived. A professor walks."@ produced
+--
+-- > | x x          |
+-- > | student(x)   |
+-- > | arrive(x)    |
+-- > | professor(x) |
+-- > | walk(x)      |
+--
+-- which asserts one individual is both. Referent names come from the lambda
+-- terms, and two sentences of the same shape get the same name, so the collision
+-- is the common case rather than a corner one.
+--
+-- 'freshenAgainst' discharges the precondition, and
+-- 'NL2Proof.DRT.Build.extendDiscourse' applies it at the one place that merges
+-- boxes from different sentences.
 mergeDRS :: DRS -> DRS -> DRS
 mergeDRS (DRS u1 c1) (DRS u2 c2) = DRS (u1 ++ u2) (c1 ++ c2)
 
@@ -219,6 +248,60 @@ substConstDRS name new (DRS us cs) = DRS us (map go cs)
     go (CNot d p')     = CNot (substConstDRS name new d) p'
     go (CImp a b p')   = CImp (substConstDRS name new a) (substConstDRS name new b) p'
     go (COr a b p')    = COr (substConstDRS name new a) (substConstDRS name new b) p'
+
+-- | Rename every referent, at every depth.
+--
+-- Alpha-conversion for boxes. Mechanical: it is a /translation/, not a decision,
+-- so nothing is logged and no provenance is added. Each referent keeps the
+-- provenance it already had, so a renamed referent can still be traced to the
+-- words that introduced it — which is the whole reason renaming is safe to do
+-- silently.
+mapRefs :: (Ref -> Ref) -> DRS -> DRS
+mapRefs f (DRS us cs) = DRS [(f r, p) | (r, p) <- us] (map goC cs)
+  where
+    goC c = case c of
+      CPred n as p -> CPred n (map goT as) p
+      CEq a b p    -> CEq (goT a) (goT b) p
+      CNot d p     -> CNot (mapRefs f d) p
+      CImp a b p   -> CImp (mapRefs f a) (mapRefs f b) p
+      COr a b p    -> COr (mapRefs f a) (mapRefs f b) p
+
+    goT t = case t of
+      DRef r   -> DRef (f r)
+      DConst c -> DConst c
+
+-- | Rename the referents of a DRS so that none of them occurs in @taken@,
+-- discharging 'mergeDRS''s disjointness precondition.
+--
+-- Returns the freshened DRS and the substitution actually applied, with identity
+-- mappings omitted — so an empty list means there was no collision, which is the
+-- common case and worth being able to check cheaply.
+--
+-- Renames at __every__ depth, not just the top universe. Only top-level
+-- collisions are unsound (a referent inside a negated or implicational box is
+-- bound by that box), but renaming everything makes the post-merge invariant
+-- "all referent names in the discourse are distinct" hold outright, which is far
+-- easier to assert than "distinct where it matters".
+freshenAgainst :: [Ref] -> DRS -> (DRS, [(Ref, Ref)])
+freshenAgainst taken d = (mapRefs rename d, [p | p@(a, b) <- pairs, a /= b])
+  where
+    mine = nub (drsRefs d)
+    pairs = assign (taken ++ mine) mine
+
+    assign _ [] = []
+    assign avoid (r : rs)
+      | r `notElem` taken = (r, r) : assign avoid rs
+      | otherwise =
+          let r' = firstFree avoid r
+          in (r, r') : assign (r' : avoid) rs
+
+    rename r = fromMaybe r (lookup r pairs)
+
+    -- Numeric suffixes, skipping anything already in play. The fragment already
+    -- produces names like @x1@ from the lambda terms, so a suffix scheme that
+    -- did not check for collisions would reintroduce the bug it is fixing.
+    firstFree avoid (Ref b) =
+      head [Ref c | n <- [(2 :: Int) ..], let c = b ++ show n, Ref c `notElem` avoid]
 
 --------------------------------------------------------------------------------
 -- Rendering

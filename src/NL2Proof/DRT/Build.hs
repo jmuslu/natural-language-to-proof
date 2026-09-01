@@ -281,9 +281,21 @@ emptyDiscourse = Discourse emptyDRS mempty
 
 -- | Add one sentence's DRS to the discourse, resolving its anaphors against what
 -- came before.
+--
+-- __Freshens first.__ 'mergeDRS' is only sound when the two universes are
+-- disjoint, and referent names come from the lambda terms, so two sentences of
+-- the same shape arrive with the same names. Without the alpha-conversion,
+-- @\"A student arrived. A professor walks.\"@ merged to a single @x@ that was
+-- both — see 'mergeDRS' for the box.
+--
+-- The renaming is mechanical and therefore not logged. Each referent keeps its
+-- own provenance through 'mapRefs', so a renamed referent is still traceable to
+-- the words that introduced it, which is what makes silence the right choice
+-- here rather than a lost decision.
 extendDiscourse :: Discourse -> DRS -> Prov -> Discourse
 extendDiscourse (Discourse ctx tr) new sentProv =
-  let (resolved, tr') = resolveAnaphora ctx new sentProv
+  let (fresh, _) = freshenAgainst (drsRefs ctx) new
+      (resolved, tr') = resolveAnaphora ctx fresh sentProv
   in Discourse (mergeDRS ctx resolved) (tr <> tr')
 
 -- | Fold a sequence of sentence DRSs into one discourse, left to right.
