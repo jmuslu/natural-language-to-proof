@@ -1,43 +1,148 @@
 # natural-language-to-proof
 
-Converting natural language into discrete, checkable logical forms, with an
-explicit and separated layer for handling ambiguity probabilistically **before**
-collapsing to a final form.
+Turning natural language into discrete logical claims that an **external domain
+oracle** can confirm or refute — so the result is usable as a reinforcement-learning
+reward signal without the system supplying its own grounding.
 
 | Document | What it is for |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | the design, the three tracks, standing principles |
-| [MATH-TRACE.md](MATH-TRACE.md) | the mathematical object at each layer, and where it is wrong |
-| [WALKTHROUGH.md](WALKTHROUGH.md) | one sentence as explicit state plus checkable propositions |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | the design, the four stages, the standing limitations |
+| [TRACE.md](TRACE.md) | one scenario through every layer: the object, the state, and the checkable propositions |
 
-The short version of the design:
+The short version:
 
-> **Search** (parsing, readings, discourse relations, similarity) is
-> probabilistic, open-world, and never finished.
-> **Verification** (is this proposition well-typed / provable) is discrete,
-> closed-world, and mechanical.
-> These must never be conflated. The pipeline always collapses explicitly from
-> the first to the second, and **that collapse is a decision, not a derivation,
-> so it gets logged as one.**
+> This is **not** meaning extraction in general. An LLM does that with broader
+> coverage and lower cost. What an LLM cannot do is hand back a claim together
+> with a checkable certificate that the claim is true — and that certificate is
+> the output this substrate is for.
+
+And the constraint the whole design is organised around:
+
+> **A system cannot use its own internal consistency checks as the reward signal
+> for the step that produces the claims in the first place.**
+>
+> Type-checking and provability are internal. Rewarding either measures
+> self-agreement, not truth, and an RL policy will find and exploit the gap.
+> Truth enters at exactly one place: an oracle that is not part of the system.
+
+## The four stages
+
+```
+1. INITIAL SPACE     text -> CCG -> lambda -> typeOf -> DRS -> candidate readings
+                     search; commits to nothing
+
+2. VERIFICATION      claims + full derivations retained
+                     -> external oracle -> Confirmed | Refuted | Unknown
+                     -> recorded in a genealogy DAG
+
+3. FUSION            oracle-confirmed claims only -> dedup
+                     safe here and nowhere earlier
+
+4. REWARD            confirmed claims + mechanical consequences -> score
+                     never "did it typecheck", never "was a proof found"
+```
+
+Two properties are enforced by types rather than by discipline:
+
+- **`Verify.Oracle.Confirmed` has no exported constructor.** `confirm` is the only
+  way to obtain one, so feeding unverified claims to fusion is a type error.
+- **`Reward.score` never sees a `Term`.** It takes a `Fused` and a `Genealogy`, so
+  it *cannot* consult `typeOf` and there is no proof search available to it.
+
+And one is enforced by a fixed-point choice:
+
+- **A claim cannot ground itself.** `Genealogy.grounded` is the *least* fixed
+  point of "has a justification whose antecedents are all grounded". A ring of
+  mutually-justifying claims satisfies the greatest fixed point — they are
+  mutually consistent — and the least fixed point not at all. Mutual consistency
+  is exactly the self-agreement that must not be mistaken for truth.
+
+### `Unknown` is not `Refuted`
+
+Oracle coverage is binary per domain. A physics engine settles trajectories and
+has nothing to say about monetary policy, so `Verdict` has three cases and
+uncovered claims score **zero in both directions** — penalising them would train
+the policy away from domains that merely lack instrumentation; rewarding them
+would invent evidence.
+
+Where no oracle exists for a domain, this design cannot ground it. That is
+inherent, and `Verify.Oracle.coverage` reports the uncovered share so the size of
+the remainder stays visible.
 
 ## Status
 
-**Stage 1 complete: discrete semantic core.** Deterministic, tested, no
-probability anywhere. 366 shared checks.
+**Stage 1: complete.** Deterministic Montague/CCG/DRT core, no probability
+anywhere. 366 checks.
 
-**Stage 2 in progress: probabilistic augmentation.** 226 checks, in its own suite
-so Stage 1's number stays a stable signal.
+**Stage 2 (candidate generation and ranking): in progress.** Scope permutation,
+modifier–noun fusion, structural fingerprints, finite models, RSA, SDRT and
+SDRT-aware discourse threading. 226 checks.
 
-What Stage 2 has and has not:
+**Substrate (verification, genealogy, fusion, reward): first cut built.** 85
+checks, and they assert design constraints rather than linguistic behaviour — the
+self-grounding and self-agreement checks are the load-bearing ones.
+
+| Suite | Checks | What it pins |
+|---|---|---|
+| `test/Spec.hs` | 366 | the discrete core, and discourse-merge soundness |
+| `test/Stage2Spec.hs` | 226 | candidate generation, ranking, SDRT threading |
+| `test/SubstrateSpec.hs` | 85 | oracle boundary, grounded support, precise retraction, reward admissibility |
+| **total** | **677** | |
+
+What the substrate has and has not:
 
 | Built | Not built |
 |---|---|
-| candidate generation: scope permutation, modifier-noun fusion | connectives in the lexicon (blocks layer-1 SDRT cues) |
-| structural fingerprints + similarity kernel | distributional vectors (no data wired in) |
-| RSA: literal/pragmatic listener, speaker, depth-parametric | learned priors or costs |
-| finite model enumeration, entailment, informativity | domain sizes much above 3 |
-| **SDRT**: relations, right frontier, glue logic | referent percolation up the graph (see below) |
-| **SDRT threading**: the frontier drives anaphora resolution | a corpus long enough to exercise it (needs 3+ sentences) |
+| oracle interface with a three-valued verdict and a type-level confirmation gate | any **real** oracle — the ones in the suite are plumbing, not physics |
+| genealogy DAG: node identity, justifications, least-fixed-point support | supersession (revision-with-history) as distinct from retraction |
+| precise retraction as a difference of fixed points | AGM-style minimal revision when a reversal creates inconsistency |
+| cross-derivation convergence detection | a corpus long enough to exercise any of it |
+| reward with an executable admissibility check | learned weights; the current ones are stipulated |
+| modus ponens over the confirmed base, with its soundness side condition | anything stronger, deliberately — see below |
+
+### Precise retraction, measured
+
+The reason the genealogy is a DAG and not a tree. Two confirmed premises `n0` and
+`n1`; `n2` derived independently from each; `n3` derived from `n0` alone.
+Retracting `n0`:
+
+| answer | result |
+|---|---|
+| coarse — everything downstream (`dependents`) | `n2`, `n3` |
+| precise — lost all grounded support (`retract`) | `n0`, `n3` |
+| difference | `n2`, which `n1` still supports |
+
+The precise answer is the difference of the grounded sets before and after, which
+is *why* it is precise. `retractionReport` reports the gap, and `rrSurvived` names
+exactly what a coarse retraction would have destroyed.
+
+### Reward: internal coherence is worth nothing
+
+Asserted, not remarked. A chain of 5 perfectly well-formed, mutually-justifying
+claims with no oracle beneath it scores `0.0`. So does a chain of 50. The
+admissibility check has teeth too: a weight table that pays anything for
+uncovered claims, or fails to penalise refutation, or values inherited grounding
+above direct confirmation, is reported inadmissible.
+
+## What was cut
+
+The design used to be three parallel *tracks* (epistemic, conversational, letra)
+selected per use case. Verification and fusion turned out to be sequential
+stages, not alternative dispositions, so the framing went with the tracks.
+
+| Cut | Disposition |
+|---|---|
+| **conversational track** | gone entirely. Its mechanism was a human correcting live output — external help by definition, which contradicts the goal. Branch deleted, spec deleted, "RSA as conversational oracle" framing not salvaged. |
+| **the three-tracks-on-one-tower analogy** | gone. It assumed three alternatives for a decision the design no longer makes. |
+| **`truth-mode` as a track** | gone. `compress` was sold as epistemic verification and is syntactic dedup; the operation survives as `Fusion.compress`, the framing does not. |
+| **`provenance-mode` as a track** | gone as a *choice*; the discipline is now mandatory stage 2 (`Verify.Claims`). Retention is a precondition for retraction, not a preference. |
+| **Stage 4 (Kripke/DEL/AGM)** | re-scoped, not deleted. May fit oracle-reversal propagation, but has to be re-derived from that motivation. |
+
+Branches are gone with the tracks; everything lives on `main`. The retired
+branches are kept as `archive/*` tags, so nothing is lost and nothing merges from
+them.
+
+## Findings worth keeping
 
 #### SDRT threading, measured
 
@@ -139,118 +244,8 @@ The two-valued deflation was also an artifact of one free edge. At two, μ is
 genuinely graded: `x2` (from `K2`) at **0.488**, `x` (from `K1`) at **0.435** — and
 the truncated implementation offers only the first, deleting the deeper candidate.
 
-Check counts are **per checkout**, since nothing merges between track branches:
-
-| branch | Stage 1 | Stage 2 | track | total |
-|---|---|---|---|---|
-| `main` | 366 | 226 | — | **592** |
-| `conversational` | 366 | 226 | — (docs only) | **592** |
-| `truth-mode` | 366 | 226 | 23 | **615** |
-| `provenance-mode` | 366 | 226 | 38 | **630** |
-
-There is no meaningful project-wide total. An earlier version of this section
-claimed a single project-wide figure, which sums — the sum across *both* track
-branches. No single checkout contains that, because the tracks never merge into
-each other.
-
 Stage 1 is meant to stop changing. Later stages consume its output; they should
 not require edits to it.
-
-### Stages are per-track, not a global roadmap
-
-There is no single linear plan. The three tracks share Stage 1 and then need
-different things — reading the stage numbers as one sequence is the mistake this
-table exists to prevent.
-
-| Stage | epistemic<br>(truth-mode) | conversational | letra<br>(provenance-mode) |
-|---|---|---|---|
-| **1** — Montague + CCG + DRT, provenance-tagged | **done**, shared | **done**, shared | **done**, shared |
-| **2** — augmentation: alternatives, fingerprints, RSA, models | **in progress**, shared | **in progress**, shared | **in progress**, shared |
-| **2b** — SDRT: relations, right frontier, glue, threading | **in progress**, shared | **in progress**, shared | **in progress**, shared |
-| **3** — attribute grammars, speculative commit + rollback | when rollback is wanted | **cannot work without it** | open |
-| **4** — epistemic graph layer: Kripke, DEL, AGM | epistemic **only** | n/a | n/a |
-
-**Augmentation is shared, and general.** Stage 2 is not a per-track option. It is
-always worth understanding a statement from every angle before collapsing —
-the extra angles derive additional insight, and the layer's job is to keep signals
-from being lost before anything commits. What differs is what each track *does*
-with the candidate set: epistemic collapses it, conversational reweights it live,
-letra retains it with lineage. All three need it built first.
-
-**On the name collision.** Stage 4 is called the "epistemic graph layer" and it
-does sit on the epistemic track — but *Stage 4 is not what makes that track
-epistemic*. The track is epistemic because it has a **firm domain verifier**;
-Stage 4 is one later formalism built on it, and the track is fully usable without
-it. Likewise letra is not "epistemic minus Stage 4" — it has no verifier at all.
-
-Each track's own trajectory lives on its branch in `MODE.md`.
-
-## Branches
-
-```
-main ──┬── shared core: Provenance, Syntax (CCG), Semantics (lambda), DRT,
-       │                DRT.Canonical, Collapse.Class, Fragment, Pipeline
-       │                                                   366 checks
-       ├── truth-mode      = epistemic → NL2Proof.Collapse.Truth      + 23 checks
-       ├── provenance-mode = letra     → NL2Proof.Collapse.Provenance + 38 checks
-       └── conversational              → docs only, no backend yet
-
-merge direction: main ──> every track branch (never sideways)
-```
-
-**`truth-mode` is the epistemic track and `provenance-mode` is letra** — the same
-things under two naming schemes, not modes that feed tracks. The branch names
-came first and are what you check out; the track names name them better. See
-[ARCHITECTURE.md](ARCHITECTURE.md) for the third track, **conversational**, which
-sits between the two on how firm its oracle is.
-
-The augmentation and derivation stages are **identical** across tracks. Only the
-collapse step differs, so only the collapse step is branched. Shared fixes land
-on `main` and merge down; nothing merges between track branches.
-
-Each branch adds its backend, its `test/ModeSpec.hs`, and a `MODE.md` — all new
-files — plus a few additive lines in `nl2proof.cabal` to register them with cabal.
-
-### Why branches rather than modules
-
-The branch layout is **deliberate, and it is about separability.** A branch is a
-complete tree, so porting a track to its own repository is
-`git push newremote truth-mode:main` — and a cross-track import is
-*physically impossible* rather than merely discouraged. Modules plus a lint test
-would be a weaker guarantee: a test can be deleted, a branch boundary cannot be
-accidentally crossed. The goal is to stay separable by construction rather than
-becoming inseparable by default.
-
-Note what branches do **not** provide: access control. Anyone who can clone the
-repository can check out any branch. Isolation happens at port time, not at
-repository-access time.
-
-**One real cost.** `nl2proof.cabal` is a shared edit point and does conflict.
-Adding Stage 2 to `main` appended a `test-suite` stanza at end-of-file, and both
-mode branches had appended theirs in the same place, so all three merges
-conflicted. Trivial to resolve — keep both stanzas — but real, and
-an earlier version of this README wrongly promised merges would always be clean.
-
-**Specced, not yet done.** Give each branch its own package directory registered
-through `cabal.project`'s `optional-packages`, which is ignored when the directory
-is absent. A branch would then add *only new files* and never edit a shared one,
-removing the conflict without weakening separability.
-
-The build scripts already have no such problem: they discover `test/*Spec.hs` by
-glob, so the no-package-manager path needs no branch edits at all.
-
-| | `truth-mode` = epistemic | `provenance-mode` = letra |
-|---|---|---|
-| Keeps | final logical content | the derivation path |
-| Same proposition, two sources | merged into one canonical form | two independently traceable facts |
-| Lossy | yes, deliberately | no |
-| Provenance question | "why" (which sources *could* have) | "how" (full derivation tree) |
-| Supports retraction | no | yes |
-
-Both are folds over the *same* `Prov` tree — which is why provenance tagging had
-to exist from day one rather than being retrofitted. `main` defines the contract
-in [`NL2Proof.Collapse.Class`](src/NL2Proof/Collapse/Class.hs); neither
-implementation lives there.
 
 ## Building
 
@@ -271,8 +266,8 @@ needed. That makes the build work offline, and makes the dependency-free
 constraint enforceable rather than merely stated: adding a Hackage dependency
 fails the build instead of silently succeeding.
 
-On a mode branch, `cabal test all` runs the shared core suite **and** that
-branch's own suite.
+`cabal test all` runs all three suites: the discrete core, candidate
+generation, and the substrate.
 
 <details>
 <summary>If cabal complains about <code>root.json</code> signatures</summary>
@@ -311,7 +306,7 @@ Both scripts typecheck everything with `-Wall` and then run the suite. Pass
 `demo` to run the demo instead, or `compile` to build and run native binaries.
 If `ghc` is already on your PATH, `GHC_BIN` can be skipped.
 
-Built and tested on **GHC 9.4.7 / Ubuntu 24.04** (compiled, all four branches)
+Built and tested on **GHC 9.4.7 / Ubuntu 24.04** (compiled)
 and **GHC 9.12.4 / Windows** (interpreted). Compiled runs are roughly 90x faster
 than `runghc` — 0.05s versus 4.56s for the core suite — so compiling is worth it
 wherever the platform allows it.
@@ -436,8 +431,8 @@ src/NL2Proof/
   Syntax/CCG.hs        signs, combinators, CKY parser
   DRT/Types.hs         DRS boxes, conditions, accessibility, rendering
   DRT/Build.hs         term -> DRS, anaphora resolution, discourse threading
-  DRT/Canonical.hs     provenance-free view, shared by both collapse modes
-  Collapse/Class.hs    the seam: Selection and CollapseStrategy
+  DRT/Canonical.hs     provenance-free view: claim identity
+  Collapse/Class.hs    the seam: Selection, chosen reading plus rejected fiber
   Fragment.hs          the fixed evaluation set
   Pipeline.hs          text -> DRS, wiring it together
   Stage2/
@@ -450,18 +445,41 @@ src/NL2Proof/
     SDRT.hs            discourse relations, right frontier, glue
     Threading.hs       the frontier drives anaphora; two policies
     Pipeline.hs        Stage 2 end to end
+  Verify/Oracle.hs     stage 2: Verdict, Oracle, Confirmed (abstract)
+  Verify/Claims.hs     stage 2: claims with derivations retained, no dedup
+  Genealogy.hs         stage 2: the DAG, grounded support, precise retraction
+  Fusion.hs            stage 3: dedup of oracle-confirmed claims only
+  Reward.hs            stage 4: the RL signal and its admissibility check
 app/Main.hs            demo
 test/Harness.hs        shared assert scaffolding, no framework dependency
-test/Spec.hs           366 Stage 1 checks
-test/Stage2Spec.hs     226 Stage 2 checks
+test/Spec.hs           366 discrete-core checks
+test/Stage2Spec.hs     226 candidate-generation checks
+test/SubstrateSpec.hs  85 substrate checks
 docs/                  standalone probes, not wired into a suite
 ```
 
 ## Next
 
-Stage 2, per ARCHITECTURE.md: SDRT, RSA, and DisCoCat evaluated **in parallel
-against the same nine cases**, not in isolation. SDRT anchors directly onto the
-existing DRS boxes, so no translation layer is needed.
+In order, and the order matters.
 
-Before that, the two collapse backends on the track branches should be filled in
-against the Stage 1 output that now exists.
+1. **Decide, per intended domain, whether an external oracle actually exists.**
+   This determines whether the RL loop closes at all for that domain, and no
+   amount of pipeline work substitutes for it. Everything below is wasted effort
+   in a domain with no oracle.
+2. **Plug in one real oracle** and replace a whitelist with it. The seam is
+   `Verify.Oracle.Oracle`; the toy oracles in the suite exist only to exercise
+   the plumbing.
+3. **Build a generator over the lexicon and the CCG rules.** The nine-case corpus
+   has now hidden two real defects — an inert SDRT frontier and an unsound DRS
+   merge — and both needed only a discriminating example, not new vocabulary. A
+   green suite currently means "no case exercises this".
+4. **Drop the one-edge marginalisation truncation** in `Stage2.Threading`. It is
+   the common cause of four separate symptoms; `fullMarginalAt` measures the gap
+   but does not close it.
+5. **Make antecedent choice an alternative** so the frontier mass becomes a prior
+   over readings in the same `Dist Int` space everything else uses.
+
+Not next, and deliberately: growing the lexicon toward arbitrary text. That is a
+separate and separately unbounded problem from the truth problem, and the current
+type system (`Ty = TyE | TyT`) has no events, times or degrees, so real-world
+prose is out of reach for reasons a bigger lexicon does not touch.
