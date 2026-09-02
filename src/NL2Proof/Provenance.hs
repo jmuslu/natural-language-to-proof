@@ -8,13 +8,16 @@
 -- including it now is cheap.
 --
 -- The key design decision: 'Prov' is a __tree__, not a flat source tag. That
--- makes truth-mode and provenance-mode two different /folds over one shared
--- structure/ rather than two different data models:
+-- makes the two dispositions two different /folds over one shared structure/
+-- rather than two different data models:
 --
--- * truth-mode      collapses it   ('provSources' — @why@-provenance)
--- * provenance-mode preserves it   (the whole tree — @how@-provenance)
+-- * fusion       collapses it   ('provSources' — @why@-provenance)
+-- * verification preserves it   (the whole tree — @how@-provenance)
 --
 -- @how@-provenance is strictly more informative than @why@-provenance.
+--
+-- What a tree cannot do is answer reachability, which is what retraction needs;
+-- "NL2Proof.Genealogy" is the graph for that, and the two coexist.
 module NL2Proof.Provenance
   ( -- * Sources and spans
     SourceId(..)
@@ -48,9 +51,10 @@ import Data.List (intercalate, nub, sortOn)
 
 -- | Identifier for a source document, utterance, or speaker.
 --
--- In provenance-mode this is the unit of retraction: if a @SourceId@ is later
--- found unreliable, every conclusion whose derivation tree touches it must be
--- locatable.
+-- This is the coarse unit of retraction: if a @SourceId@ is found unreliable,
+-- every conclusion whose derivation tree touches it must be locatable. The
+-- fine-grained unit is a 'NL2Proof.Genealogy.NodeId', for when a single oracle
+-- answer reverses rather than a whole document being distrusted.
 newtype SourceId = SourceId String
   deriving (Eq, Ord)
 
@@ -121,9 +125,9 @@ provLeaves = \case
 
 -- | @why@-provenance: which sources could have produced this result.
 --
--- This is the truth-mode fold — it discards /how/ and keeps only /whether/.
+-- This is the fusion-side fold — it discards /how/ and keeps only /whether/.
 -- Two derivations from the same source become indistinguishable here, which is
--- exactly the lossiness truth-mode wants and provenance-mode forbids.
+-- exactly the lossiness fusion wants and verification forbids.
 provSources :: Prov -> [SourceId]
 provSources = nub . map (\(s, _, _) -> s) . provLeaves
 
@@ -153,8 +157,8 @@ provDepth = \case
   ProvLex{}     -> 1
   ProvRule _ ks -> 1 + maximum (0 : map provDepth ks)
 
--- | Total node count. A crude but useful measure of how much provenance-mode
--- retains that truth-mode throws away.
+-- | Total node count. A crude but useful measure of how much verification
+-- retains that fusion throws away.
 provSize :: Prov -> Int
 provSize = \case
   ProvLex{}     -> 1

@@ -24,11 +24,6 @@ because a single sentence has no discourse graph and a two-sentence one cannot
 show the frontier doing anything. S11–S13 use synthetic claims, because no real
 oracle is wired in yet.
 
-> This document replaces the former `MATH-TRACE.md` and `WALKTHROUGH.md`, which
-> were parallel spines over the same layers — one naming objects, one exhibiting
-> state. Keeping them apart meant every finding had to be recorded twice, and
-> twice is where they drift.
-
 ## Two kinds of gap, kept apart
 
 This is a construction yard. Most of what looks unfinished is scaffolding, and
@@ -296,8 +291,8 @@ Folds, read off the same tree:
 | `provSize` | 9 |
 
 Count it off the tree: **four** rule nodes — one root `<` and three `>` — plus five
-lexical leaves. An earlier version of this table said 8, miscounting the rule
-nodes as three; the drawing above was always right.
+lexical leaves. Worth counting rather than eyeballing: the rule nodes are easy to
+undercount by one.
 
 > **P4.1 [proved]** `Prov` is the initial algebra of
 > `F X = (SourceId × Span × String) + (RuleName × List X)`. Every fold is an
@@ -422,13 +417,11 @@ And the collapse question becomes a standard one: fusion takes the quotient and
 picks a representative; verification keeps the **fibers** of the quotient map.
 `selRejected` is the fiber.
 
-The refactor added one thing to this picture that changes its force. The two
-dispositions used to be alternatives, chosen per use case. They are now
-*sequential*, and the order is forced: the quotient destroys the multiplicity
-that retraction needs, so it cannot be taken until an oracle has settled truth.
-Idempotence is not merely lossy here, it is lossy **about corroboration** —
-`{A} ∪ {A} = {A}` is exactly the erasure of "two derivations agree" into "one
-derivation said it".
+The two dispositions are *sequential*, and the order is forced: the quotient
+destroys the multiplicity retraction needs, so it cannot be taken until an oracle
+has settled truth. Idempotence is not merely lossy here, it is lossy **about
+corroboration** — `{A} ∪ {A} = {A}` is exactly the erasure of "two derivations
+agree" into "one derivation said it".
 
 **Suspect / open — structural.** `canonicalize` deliberately does *not* quotient by order,
 which is right for the retaining stage but means it is not a normal form. Two DRSs
@@ -553,23 +546,21 @@ The distribution at the `K1 → K2` edge, with no cue firing:
 > But the follow-up question is not "which non-additive measure is it", because
 > **its domain is wrong** (P5b.9).
 >
-> **P5b.9 [was measured, now fixed]** `mergeDRS` is sound only when the two
-> universes are disjoint, and nothing enforced it. `Ref` was per-sentence, so
-> `"A student arrived. A professor walks."` gave both existentials the name `x` and
-> the merge asserted `student(x) & arrive(x) & professor(x) & walk(x)` — one
-> individual who is both a student and a professor.
-> *Consequence:* a **Stage 1 soundness bug**, missed by all 348 checks because no
-> fragment case has two same-shaped existential sentences. It blocked this layer in
-> particular: telling `x`-from-a-closed-unit apart from `x`-from-an-open-unit is the
-> frontier's entire job, and `Ref` did not record the unit.
-> *Fixed* by `freshenAgainst`, applied at the merge rather than in `toDRS` — so
-> sentence-local boxes are untouched. It is alpha-conversion, hence unlogged, and
-> `mapRefs` carries each referent's provenance through. The box now reads
-> `professor(x2)`, and the anaphora decision reads `chose x2 over 1: x` instead of
-> the degenerate `chose x over 1: x`.
+> **P5b.9 [proved + checked]** `mergeDRS` is sound only when the two universes are
+> disjoint, and `freshenAgainst` discharges that at the merge — applied in
+> `extendDiscourse` and in `Stage2.Threading`. `Ref` is therefore discourse-unique.
+> *Why it must hold here:* telling `x`-from-a-closed-unit apart from
+> `x`-from-an-open-unit is the frontier's entire job, and `Ref` does not record
+> which unit a referent came from. Without uniqueness,
+> `"A student arrived. A professor walks."` merges to one `x` that is both student
+> and professor, and `accessibleOn`'s `nub` conflates the two.
+> *Why at the merge rather than in `toDRS`:* the renaming is alpha-conversion, so
+> nothing is logged and `mapRefs` carries provenance through; and sentence-local
+> boxes stay untouched, so a sentence read alone reads the same.
 > *Falsify:* find a discourse whose merged universe has fewer distinct names than
 > entries. 18 checks in `Spec.hs` §14 try.
->
+
+
 > **P5b.10 [proved + measured]** Consonance holds exactly where the truncation
 > does. Since `frontier(Sub) = frontier(Coord) ∪ {parent}`, one free edge gives
 > exactly two focal sets ordered by inclusion — nested **by construction**, a
@@ -734,21 +725,6 @@ intermediate is not a separate thing to build here: `rkLicensors` already carrie
 the set-level version, and the multiplicity it is missing exists only in the
 regime the truncation excludes.
 
-### Superseded: is `μ` a measure on the right space?
-
-`μ` is a sum of probabilities over relation values, indexed by referents. It is
-not a probability distribution over referents — masses do not sum to 1 across
-`Ref`, and should not, since accessibility is not exclusive. It is closer to a
-**fuzzy membership function**, or to the belief function of a Dempster–Shafer
-structure whose focal elements are the sets `acc(S[e ↦ ρ])`.
-
-Worth settling, because it decides how `μ` may legitimately be combined with the
-RSA posterior at Layer 8. If it is a belief function, combining by multiplication
-is wrong and Dempster's rule is the operation; if it is fuzzy membership, a
-t-norm is; if it is neither, it should not be combined with a probability at all
-and can only be used to order candidates. Right now it only orders, which is the
-safe reading, and nothing downstream multiplies it.
-
 ### And the marginal is truncated at one edge, deliberately
 
 Marginalising over every relation choice means a distribution over structures,
@@ -883,7 +859,7 @@ derivable by inspection.
 > model treating the readings as a partition is mis-specified — mine was, and this
 > is the proposition that showed it.
 >
-> **P7.5 [measured — RESOLVED]** Coupling readings form an **antichain**. All
+> **P7.5 [measured]** Coupling readings form an **antichain**. All
 > six pairs are incomparable, over 524,288 models at domain size 2.
 > `chinese_dragon` is an uninterpreted predicate with no relation to
 > `chinese(x) ∧ dragon(x)`, so neither direction entails.
@@ -924,28 +900,28 @@ not as an empirical result but as a lattice fact. The only live question is whet
 the strengthened reading also holds, which is **scalar implicature**, structurally.
 
 Any model that treats scope readings as a partition of a space is therefore
-mis-specified. Mine did, at first. The right object is a sub-poset of the
+mis-specified — an easy mistake to make, since a partition is the default mental
+model for "a set of alternative readings". The right object is a sub-poset of the
 Lindenbaum algebra, and the question is where in it the speaker was.
 
-**Resolved — measured.** Coupling readings **are** an antichain: all six
-pairs incomparable over 524,288 models, while scope readings are a chain. The two
-ambiguity types are genuinely different order-theoretic situations.
+**Measured.** Coupling readings **are** an antichain: all six pairs incomparable
+over 524,288 models, while scope readings are a chain. The two ambiguity types are
+genuinely different order-theoretic situations.
 
-Two consequences, the second of which corrects an earlier claim made right here:
+Two consequences:
 
 - **An antichain is not a partition.** The four coupling truth sets overlap
   (8 + 16 + 16 + 16 = 56 models individually, union strictly smaller), so
   marginals over readings do not sum to 1. Neither a chain nor a partition — a
   third situation, and both mis-modellings are available.
-- **RSA does rank coupling readings after all.** An earlier version of this
-  paragraph said RSA "does nothing for coupling" and cast the fingerprint kernel
-  as the necessary substitute. Wrong: the zero sharpening came from
-  `surfaceScopePrior` being blind to coupling — all four readings share a
-  quantifier signature — not from anything about coupling itself. Given
-  informativity from this layer, sharpening is `0.0575` bits and the *more*
-  informative reading is down-weighted, the same scalar pattern as scope. The
-  fingerprint kernel measures structural similarity, a different quantity, not a
-  fallback for where RSA fails.
+- **RSA ranks coupling readings, given informativity.** With
+  `surfaceScopePrior` alone the sharpening is exactly zero, but that is a property
+  of the prior rather than of coupling: all four readings share a quantifier
+  signature, so a scope-shaped prior cannot see them apart. Given informativity
+  from this layer, sharpening is `0.0575` bits and the *more* informative reading
+  is down-weighted — the same scalar pattern as scope. The fingerprint kernel
+  measures structural similarity, a different quantity, and is not a fallback for
+  where RSA fails.
 
 ---
 
@@ -1020,32 +996,31 @@ deep RSA can afford to go.
 > The weakening with cost is the sanity check: not-using an expensive alternative
 > is weaker evidence.
 >
-> **P8.7 [measured — CORRECTED]** An earlier version recorded coupling
-> sharpening as exactly 0 and concluded RSA cannot rank coupling readings. That
-> was an artifact of the prior, not a fact about coupling: `surfaceScopePrior` is
-> blind to coupling differences because all four readings share a quantifier
-> signature.
->
-> Given real informativity from the model layer, RSA **does** rank them:
+> **P8.7 [measured]** RSA ranks **coupling** readings too, but only once it has a
+> real informativity measure. Under `surfaceScopePrior` the sharpening is exactly
+> `0`, because that prior is blind to coupling — all four readings share a
+> quantifier signature. Given informativity from the model layer:
 >
 > | reading | true in | informativity | L0 | L1 |
 > |---|---|---|---|---|
 > | fully intersective (4 conjuncts) | 8 | 5.0 bits | 0.205 | **0.114** |
 > | each fused variant (3 conjuncts) | 16 | 4.0 bits | 0.410 | 0.376 |
 >
-> Sharpening `0.0575` bits. And the direction is the same scalar pattern as scope:
+> Sharpening `0.0575` bits, and the direction is the same scalar pattern as scope:
 > the *more* informative reading is **down**-weighted, because a speaker who meant
 > it had a more explicit option available.
-> *Corrected consequence:* RSA handles both ambiguity types once it has
-> informativity. The fingerprint kernel is not a substitute for it — it
-> measures a different thing (structural similarity), not a fallback for where RSA
-> fails.
+> *Consequence:* RSA handles both ambiguity types once it has informativity. The
+> fingerprint kernel is not a substitute — it measures structural similarity, a
+> different thing.
 >
-> **P8.8 [retracted]** *"RSA cannot break a symmetry the prior does not already
-> break."* False. The reference-game test produces the implicature under a uniform
-> prior from an asymmetric **lexicon**. The true statement is about the earlier
-> setup only: it had no informativity measure, so the prior was its sole
-> asymmetry — a property of the construction, not of RSA.
+> **P8.8 [checked]** RSA **can** break a symmetry the prior does not break. The
+> reference-game test produces the implicature under a uniform prior, driven
+> entirely by an asymmetric **lexicon**.
+> *Consequence:* a setup where the prior is the only asymmetry will show
+> prior-driven sharpening and nothing else, but that is a fact about the setup, not
+> about RSA. Read any sharpening number together with what asymmetries its model
+> actually contains.
+
 
 ### Missing: `Dist` is not a monad, and it should be
 
@@ -1143,16 +1118,16 @@ rejected.
 > that signature was rejected in favour of `Selection`.
 >
 > **P10.3 [proved]** Verification and fusion are two dispositions toward one
-> quotient, and the refactor made them sequential rather than alternative:
+> quotient, applied in sequence:
 >
 > | stage | action |
 > |---|---|
 > | verification (S11) | never quotient; keep the fibers, so retraction stays possible |
 > | fusion (S12) | take the quotient, keep a representative — only after the oracle |
 >
-> *Consequence:* the earlier framing had these as a choice per use case, which
-> made the ordering look arbitrary. It is not: the quotient destroys what
-> retraction reads.
+> *Consequence:* the order is not a convention. The quotient destroys exactly what
+> retraction reads, so taking it first would be a correctness error rather than a
+> style choice.
 
 ---
 
@@ -1163,7 +1138,7 @@ rejected.
 | Object (verdict) | a three-element set `{Confirmed, Refuted, Unknown}`, **not** a Boolean |
 | Object (graph) | a labelled DAG of claims with `Justification` edges, plus a verdict assignment on premises |
 | Map out | `grounded : Genealogy → P(NodeId)`, the **least** fixed point of grounded support |
-| What it replaces | nothing — this layer did not exist before the refactor |
+| Why a graph | reachability and addressable identity, neither of which a fold over `Prov` can supply |
 
 ### State
 
@@ -1295,9 +1270,9 @@ entailedFrom  ->  [p, p -> q, q -> r, q, r]
 > **P12.2 [proved, and checked]** Syntactic canonical equality is **strictly
 > finer** than logical equivalence. Witness: `~(P | Q)` and `~P & ~Q` are
 > equivalent, produce different `CanonCond` shapes, and do not merge.
-> *Consequence:* the gap does not close by improving `compress`. It is the reason
-> this module is bookkeeping rather than verification, and the reason the old
-> "collapses sentences entailing the same proposition" claim was retired.
+> *Consequence:* the gap does not close by improving `compress`, which is why this
+> module is bookkeeping rather than verification. "Collapses sentences entailing
+> the same proposition" describes something strictly coarser than what runs.
 >
 > **P12.3 [proved]** `detachable` guards modus ponens on `null (canonUniverse a)`.
 > A duplex condition whose antecedent box binds a referent is a **universal**, not
@@ -1437,7 +1412,7 @@ your judgement would actually redirect the work.
    restriction to a strictly smaller sub-calculus; worth naming as such rather
    than leaving it to look accidental. (S2)
 
-### Resolved this session
+### Settled — measured, and not open any more
 
 - **DRS merge had an unstated disjointness precondition, and violating it was
   unsound.** `"A student arrived. A professor walks."` merged to one `x` that was
@@ -1466,10 +1441,10 @@ your judgement would actually redirect the work.
   individually 8 + 16 + 16 + 16 = 56 models, union strictly smaller — so
   marginals over readings do not sum to 1. A third situation, distinct from both
   a chain and a partition, and both mis-modellings are available.
-- **RSA does rank coupling readings**, once given informativity from the model
-  layer instead of a scope-signature prior. The earlier "sharpening exactly 0"
-  was an artifact of a prior blind to coupling, not a fact about coupling.
-  Corrected in place rather than only in git history. (S8)
+- **RSA ranks coupling readings**, once given informativity from the model layer
+  instead of a scope-signature prior. A scope-signature prior yields sharpening
+  exactly `0` here, which is a property of that prior rather than of coupling.
+  (S8)
 
 ### Scaffolding — environment artifacts, not design questions
 
@@ -1499,10 +1474,6 @@ The propositions most worth attacking, in order:
 5. **P7.7** — coupling is an antichain with *overlapping* truth sets. Does the
    ranking layer need to represent that overlap explicitly, rather than treating
    readings as if marginals summed to 1?
-
-**Resolved this session:** P7.5 (coupling is an antichain, measured over 524,288
-models) and P8.7 (RSA does rank coupling, given informativity — the earlier
-zero was a prior artifact).
 
 Everything tagged **[stipulated]** is scaffolding: replaced when data arrives, not
 a design question. Everything tagged **[structural]** or **[conjectured]** would

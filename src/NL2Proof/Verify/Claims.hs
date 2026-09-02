@@ -1,21 +1,17 @@
 -- | The verification stage's claim table: atomic claims with their derivations
 -- retained in full.
 --
--- == Salvaged, and re-scoped
+-- == Retention is a precondition, not a preference
 --
--- This is what used to be @Collapse.Provenance@ on the @provenance-mode@ branch.
--- The code survives the refactor almost unchanged; what changed is its
--- position. It was one of three alternative /dispositions/ a caller could pick.
--- It is now a mandatory /stage/, because the pipeline downstream of it needs
--- exactly what it provides:
+-- Everything downstream needs exactly what this stage provides:
 --
 -- * an external oracle can reverse an earlier answer, so the derivation record
 --   has to still be there when it does ("NL2Proof.Genealogy")
 -- * 'NL2Proof.Fusion' deduplicates, and a deduplication performed before
 --   verification would destroy that record
 --
--- So retention is no longer a preference to be traded against compactness. It is
--- a precondition for the stage after next.
+-- So this cannot be traded against compactness. A more compact claim table is a
+-- claim table retraction cannot run on.
 --
 -- == Claim identity versus claim derivation
 --

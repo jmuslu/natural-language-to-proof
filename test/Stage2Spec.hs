@@ -350,7 +350,7 @@ referenceGameChecks =
 
 -- | RSA cannot break a symmetry the prior does not already break.
 --
--- Asserted rather than described, because an earlier version of the Pipeline
+-- Asserted rather than described, because the Pipeline
 -- documentation claimed the sharpening was zero across the board and a bias sweep
 -- disproved it. These checks are what stop that claim drifting again.
 scopeRankingChecks :: [Check]
@@ -684,8 +684,8 @@ sdrtSrc = SourceId "sdrt"
 --------------------------------------------------------------------------------
 
 -- | Section 11 checks that the frontier is computed correctly. These checks ask
--- whether anything /uses/ it, which is a different question and was the honest
--- gap left open when SDRT was built.
+-- whether anything /uses/ it, which is a different question: a correctly computed
+-- frontier that nothing consults has no observable effect.
 --
 -- Two facts do most of the work:
 --
@@ -844,22 +844,23 @@ thrSrc :: SourceId
 thrSrc = SourceId "thread"
 
 --------------------------------------------------------------------------------
--- 13. What kind of object is the frontier mass? Tracing it back down.
+-- 13. What kind of object is the frontier mass?
 --------------------------------------------------------------------------------
 
--- | Section 12 shipped a graded frontier and a claim that `Marginal` "deletes
--- nothing". Both were checked at three segments and neither generalises. These
--- checks are the trace back down.
+-- | Section 12's graded frontier raises the question of what kind of measure the
+-- mass is, since that decides how it may be combined with the RSA posterior.
+-- These checks pin the answer, and the answer is that two things have to hold
+-- before the question is even well posed.
 --
--- The headline finding was not about the algebra at all: two same-shaped
--- existential sentences collided on the same 'Ref', so the merged DRS unsoundly
--- identified a student with a professor, and every question about what measure
--- the frontier carries was downstream of that. __That is now fixed__ by
--- 'NL2Proof.DRT.Types.freshenAgainst' — see @Spec.hs@ section 14 for the
--- soundness checks. What is pinned here is the /consequence/ for this layer,
--- which is the part that changed: with a correct index the frontier mass is
--- provably __not__ a possibility distribution, so the cheap nestedness test that
--- would have said otherwise was reading a name collision.
+-- First, the mass is indexed by 'Ref', so 'Ref' has to be discourse-unique —
+-- otherwise the index conflates distinct individuals and any measure computed
+-- over it is measuring a phantom. 'NL2Proof.DRT.Types.freshenAgainst' provides
+-- that; @Spec.hs@ section 14 holds the soundness checks.
+--
+-- Second, with a correct index the focal family is __not__ nested, so the mass is
+-- provably not a possibility distribution. The cheap nestedness test returns the
+-- opposite answer under a colliding index, which is why the first condition is
+-- not a technicality.
 muChecks :: [Check]
 muChecks =
   [ -- 1. Where the collision was. Segment-local DRSs still share names, which is
@@ -872,11 +873,11 @@ muChecks =
       (2, 2)
       (let u = accessibleRefs (dscDRS (prDiscourse (runFragment thrSrc collide)))
        in (length (nub u), length u))
-  , expect "mu: so the student is no longer the professor"
+  , expect "mu: so the student is not the professor"
       (let d = dscDRS (prDiscourse (runFragment thrSrc collide))
            refOf p = [r | CPred q [DRef r] _ <- drsConds d, q == p]
        in refOf "student" /= refOf "professor")
-  , expect "mu: and the anaphora decision no longer offers a choice against itself"
+  , expect "mu: and the anaphora decision does not offer a choice against itself"
       (all (\d -> decChoice d `notElem` decAlternatives d)
            [ d | d <- traceDecisions (prTrace (runFragment thrSrc collideAna))
                , decKind d == "anaphora" ])

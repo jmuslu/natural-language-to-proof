@@ -1,12 +1,12 @@
 -- | SDRT-aware discourse threading: the tie-in between
 -- "NL2Proof.Stage2.SDRT" and the anaphora resolution in "NL2Proof.DRT.Build".
 --
--- == What was missing before this module
+-- == What this module is for
 --
--- SDRT computed 'sdrsAccessible' correctly and nothing consulted it.
--- 'NL2Proof.DRT.Build.extendDiscourse' resolved pronouns against
--- 'NL2Proof.DRT.Types.accessibleRefs' of a flat merge, so the right frontier had
--- no effect on any output. The layer existed, was tested, and was inert.
+-- "NL2Proof.Stage2.SDRT" computes the right frontier. Without something that
+-- consults it, anaphora resolution runs off
+-- 'NL2Proof.DRT.Types.accessibleRefs' of a flat merge and the frontier has no
+-- effect on any output — correct, tested, and inert. This is what consults it.
 --
 -- == The first thing to notice, because it constrains the whole design
 --

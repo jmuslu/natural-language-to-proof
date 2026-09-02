@@ -179,7 +179,7 @@ modifierChains isModifier t =
 -- one predicate.
 --
 -- __Only 'Classificatory' modifiers fuse__, per
--- "NL2Proof.Stage2.Modifier".'mayFuseWithHead'. An earlier version treated every
+-- "NL2Proof.Stage2.Modifier".'mayFuseWithHead'. Treating every
 -- @N\/N@ word as fusable and generated @ancient_chinese@ and @chinese_red@ among
 -- its candidates — neither a plausible English subkind. Modifier classes are not
 -- interchangeable, and a generator that ignores the distinction produces garbage
@@ -215,7 +215,7 @@ data CouplingCandidate = CouplingCandidate
 
 -- | __Every__ fusion the chain admits, annotated rather than filtered.
 --
--- An earlier version suppressed fusions whose modifier was not
+-- Suppressing fusions whose modifier is not
 -- 'Classificatory', which meant @ancient_chinese@ and @chinese_red@ were never
 -- generated for @"ancient Chinese red dragon"@. That was preemptive pruning, and
 -- it is the wrong shape for this architecture: __build the space first, narrow it

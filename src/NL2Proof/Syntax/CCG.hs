@@ -27,7 +27,7 @@ module NL2Proof.Syntax.CCG
   , lexicalSigns
   , parseWith
   , parse
-    -- * Truth-mode helper
+    -- * Fusion helper
   , dedupeByMeaning
   ) where
 
@@ -173,13 +173,13 @@ parse lexicon src toks =
   parseWith applicationRules (map (lexicalSigns lexicon src) toks)
 
 --------------------------------------------------------------------------------
--- Truth-mode helper
+-- Fusion helper
 --------------------------------------------------------------------------------
 
 -- | Collapse derivations that differ in shape but agree on category and meaning.
 --
--- This is a __truth-mode__ operation and is offered as a helper, not applied by
--- the parser. In provenance-mode two derivations with the same meaning are
+-- This is a __fusion-side__ operation and is offered as a helper, not applied by
+-- the parser. Before verification two derivations with the same meaning are
 -- distinct objects: if one source is later retracted, the other must survive
 -- independently, which is impossible once they have been merged.
 --

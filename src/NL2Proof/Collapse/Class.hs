@@ -1,17 +1,18 @@
--- | The collapse interface: the single seam where truth-mode and
--- provenance-mode differ.
+-- | The handoff from search to disposition: a chosen reading, the readings it
+-- was chosen over, and the rule that broke the tie.
 --
--- __This module is the contract between the branches.__ It lives on @main@ and
--- is shared. Neither mode's implementation lives here:
+-- __This is the seam.__ Everything upstream — tokenizing, CCG derivation, lambda
+-- composition, type checking, DRS construction, anaphora resolution — produces
+-- candidates and commits to nothing. Everything downstream disposes of them:
 --
--- * @truth-mode@ branch      → @NL2Proof.Collapse.Truth@
--- * @provenance-mode@ branch → @NL2Proof.Collapse.Provenance@
+-- * "NL2Proof.Verify.Claims" retains every derivation, because an oracle can
+--   reverse itself and retraction needs the record
+-- * "NL2Proof.Fusion" collapses the survivors, but only after an oracle has
+--   spoken
 --
--- Everything upstream of this module — tokenizing, CCG derivation, lambda
--- composition, type checking, DRS construction, anaphora resolution — is
--- identical for both modes and must stay that way. If a change to one mode
--- requires editing anything upstream of here, that is a signal the seam is in
--- the wrong place, not a reason to fork the core.
+-- If a change to a downstream stage requires editing anything upstream of here,
+-- that is a signal the seam is in the wrong place, not a reason to fork the
+-- core.
 --
 -- == Why 'Selection' exists
 --
@@ -120,11 +121,10 @@ selectionDecision s =
 -- Strategies
 --------------------------------------------------------------------------------
 
--- | A named collapse strategy producing some mode-specific artifact @a@.
+-- | A named disposition producing some stage-specific artifact @a@.
 --
--- @a@ is left open on purpose. truth-mode will instantiate it at something like
--- a canonical normal form suitable for handing to a proof checker;
--- provenance-mode at something carrying the derivation forest. Both are
+-- @a@ is left open on purpose. Fusion instantiates it at a canonical normal
+-- form; verification at something carrying the derivation forest. Both are
 -- 'CollapseStrategy', so the pipeline that feeds them is written once.
 data CollapseStrategy a = CollapseStrategy
   { strategyName :: String

@@ -16,10 +16,9 @@
 --    /precisely those/. A tree has no node identity to address and no edges to
 --    follow backwards.
 --
--- So this is a graph with named nodes, not a richer tree. ARCHITECTURE.md filed
--- that as an open question for a long time; the shift to an oracle-grounded
--- pipeline made it the first blocking piece of engineering, because retraction
--- is not an optional refinement once an external oracle can change its mind.
+-- So this is a graph with named nodes, not a richer tree — and it is
+-- load-bearing rather than a refinement, because retraction is not optional
+-- once an external oracle can change its mind.
 --
 -- == Support is a least fixed point, and that is the anti-self-agreement property
 --

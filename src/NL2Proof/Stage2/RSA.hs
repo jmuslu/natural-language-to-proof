@@ -1,9 +1,14 @@
 -- | Rational Speech Act reasoning: the probabilistic mapping from an utterance
 -- to a distribution over readings.
 --
--- This is the __soft oracle__ of ARCHITECTURE.md's Stage 2 — Bayesian
--- listener\/speaker reasoning over candidate readings, giving graded warrant
--- where the epistemic track has a binary verifier and letra has none.
+-- Bayesian listener\/speaker reasoning over candidate readings, giving a graded
+-- ranking before anything is offered for verification.
+--
+-- __This is not a verifier and must not be read as one.__ It ranks candidates by
+-- how a rational speaker would have chosen among them; whether a candidate is
+-- /true/ is settled later and elsewhere, by "NL2Proof.Verify.Oracle". Treating a
+-- high pragmatic posterior as evidence would be exactly the self-agreement the
+-- reward signal is built to exclude.
 --
 -- == The recursion
 --
@@ -17,9 +22,8 @@
 --
 -- Depth @k = 0@ is the literal listener. Each further level reasons about the
 -- level below. 'pragmaticListener' takes @k@ explicitly rather than fixing it,
--- because the conversational track's latency budget will decide how deep it can
--- afford to go — and per ARCHITECTURE.md the plan is @k = 1@ by default with
--- escalation only when the candidate set is genuinely contested.
+-- because a latency budget decides how deep it can afford to go — @k = 1@ by
+-- default, with escalation only when the candidate set is genuinely contested.
 --
 -- == What is stipulated
 --
@@ -120,8 +124,8 @@ speaker k model = speakerFrom model (listenerTable (k - 1) model)
 -- lower-level listener inside every one of those calls, giving
 -- @O(|M|^2 |U|)@ listener evaluations with a further linear 'prob' scan inside.
 -- At 256 models that was slow enough to hang an interpreted run. Computed once,
--- it is @O(|M| |U|)@ with @log|M|@ lookups — which also matters directly for the
--- conversational track's latency budget.
+-- it is @O(|M| |U|)@ with @log|M|@ lookups, which is what makes a depth budget
+-- a real choice rather than a formality.
 listenerTable :: (Ord u, Ord m) => Int -> RSAModel u m -> [(u, M.Map m Double)]
 listenerTable k model =
   [ (u, toMap d) | u <- rsaUtterances model, Just d <- [listenerAt k model u] ]

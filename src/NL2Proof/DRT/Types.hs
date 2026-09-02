@@ -96,7 +96,7 @@ emptyDRS = DRS [] []
 --
 -- This is plain DRS merge. It is /not/ the collapse step: merging two boxes from
 -- the same discourse keeps every provenance tag intact, whereas collapsing is
--- where truth-mode discards them.
+-- where fusion discards them.
 --
 -- == Precondition: the universes must be disjoint
 --
@@ -107,8 +107,8 @@ emptyDRS = DRS [] []
 -- from both boxes constrains the /same/ variable, so two distinct individuals
 -- get identified.
 --
--- Concretely, before this was enforced at the discourse level,
--- @"A student arrived. A professor walks."@ produced
+-- Concretely, without enforcement at the discourse level,
+-- @"A student arrived. A professor walks."@ merges to
 --
 -- > | x x          |
 -- > | student(x)   |
@@ -178,8 +178,8 @@ drsConditionProvs (DRS _ cs) = concatMap go cs
 
 -- | Every provenance tag in the structure: referents and conditions, all depths.
 --
--- This is the handle the two collapse modes grab. provenance-mode keeps these
--- trees; truth-mode reduces them with 'provSources' or discards them.
+-- This is the handle both dispositions grab. Verification keeps these trees;
+-- fusion reduces them with 'provSources' or discards them.
 drsAllProvs :: DRS -> [Prov]
 drsAllProvs (DRS us cs) = map snd us ++ concatMap go cs
   where

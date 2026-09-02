@@ -162,8 +162,7 @@ scoreWith w f g =
 -- design requires of it?
 --
 -- Exists so the constraints are executable. A weight table that violates them
--- compiles and runs and quietly trains the wrong thing, which is precisely the
--- failure mode that motivated the refactor.
+-- compiles, runs, and quietly trains the wrong thing.
 data Admissibility = Admissibility
   { adUncoveredIsZero    :: Bool
     -- ^ Uncovered claims must contribute exactly zero.

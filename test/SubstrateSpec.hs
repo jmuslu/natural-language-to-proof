@@ -320,8 +320,8 @@ fusionChecks =
   , expect "fusion: nor anything uncovered"
       (null (fusedClaims (fuse (confirmAll blindOracle [cl "p"]))))
 
-  , -- The salvaged box-level compression, with its honest limitation asserted
-    -- so it cannot quietly be forgotten again.
+  , -- Box-level compression, with its honest limitation asserted so it stays
+    -- visible.
     expectEq "fusion: compress dedupes at depth" 1
       (let inner = box [cl "p", cl "p"]
            (kept, _) = compress (Canonical [] [CanNot inner])

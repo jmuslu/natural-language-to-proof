@@ -3,9 +3,9 @@
 -- == Why this module exists
 --
 -- Stage 1 gives every adjective one lexical entry — intersective conjunction,
--- @\\P. \\x. a(x) & P(x)@ — and "NL2Proof.Stage2.Alternatives" originally treated
--- every @N\/N@ word as an equally good fusion candidate. Both are the same
--- flattening error: __modifiers are not one kind of thing, and the classes differ
+-- @\\P. \\x. a(x) & P(x)@ — and the obvious candidate rule for
+-- "NL2Proof.Stage2.Alternatives" would treat every @N\/N@ word as an equally
+-- good fusion candidate. Both are the same flattening error: __modifiers are not one kind of thing, and the classes differ
 -- in how hard they are to resolve.__ Treating them uniformly means either
 -- over-generating implausible candidates or silently getting truth conditions
 -- wrong.

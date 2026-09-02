@@ -28,9 +28,13 @@
 -- asymmetry RSA is built to exploit.
 --
 -- It also gives the project a real, if tiny, __model checker__: 'entails' decides
--- entailment between readings over all models of a given size. That is a
--- semantic counterpart to the epistemic track's syntactic type check, and it is
--- honest about its limits — see 'entails'.
+-- entailment between readings over all models of a given size — a semantic
+-- counterpart to the syntactic type check, and honest about its limits, see
+-- 'entails'.
+--
+-- It is __not__ an oracle. Entailment between two readings of one sentence is
+-- an internal fact; grounding comes from "NL2Proof.Verify.Oracle". What this
+-- module supplies downstream is informativity, which RSA ranks with.
 module NL2Proof.Stage2.Model
   ( -- * Models
     Model(..)

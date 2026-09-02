@@ -1,22 +1,22 @@
 -- | A provenance-free view of a DRS, with referents canonically renamed.
 --
--- This lives on @main@, shared, because __both__ modes need it — for opposite
--- reasons:
+-- Shared, because __both__ dispositions need it — for opposite reasons:
 --
--- * @truth-mode@ uses it as its /output/. Strip provenance, then compress:
---   equal propositions become one.
--- * @provenance-mode@ uses it as claim /identity/. Two facts are "the same
---   claim" exactly when their canonical forms are equal — which is what lets it
---   detect that two derivations converged while still keeping them apart.
+-- * "NL2Proof.Fusion" uses it as its /output/. Strip provenance, then compress:
+--   structurally equal claims become one.
+-- * "NL2Proof.Verify.Claims" uses it as claim /identity/. Two facts are "the
+--   same claim" exactly when their canonical forms are equal — which is what
+--   lets it detect that two derivations converged while still keeping them
+--   apart.
 --
--- So the shared part is stripping and renaming. What each mode does next is not
--- shared, and is not here.
+-- So the shared part is stripping and renaming. What happens next is not shared,
+-- and is not here.
 --
 -- Note what this module deliberately does __not__ do: no sorting, no
 -- deduplication, no merging. Condition order is preserved exactly. Those are
--- compression steps, they are lossy, and they belong to truth-mode. A
--- \"canonical form\" that silently deduplicated would make provenance-mode
--- impossible to build on top of it.
+-- compression steps, they are lossy, and they belong to fusion. A
+-- \"canonical form\" that silently deduplicated would make the verification
+-- stage impossible to build on top of it.
 module NL2Proof.DRT.Canonical
   ( -- * Canonical forms
     CRef(..)
@@ -63,7 +63,7 @@ instance Show CTerm where
 
 -- | A condition with its provenance removed.
 --
--- 'Ord' is derived and is what truth-mode's sort relies on. It is an arbitrary
+-- 'Ord' is derived and is what fusion's sort relies on. It is an arbitrary
 -- but stable total order — the point is determinism, not meaningfulness.
 data CanonCond
   = CanPred String [CTerm]
@@ -135,7 +135,7 @@ canonicalize top = go top
 --------------------------------------------------------------------------------
 
 -- | Referents plus conditions, at all depths. Comparing this before and after a
--- compression step is how truth-mode measures what it discarded.
+-- compression step is how fusion measures what it discarded.
 canonSize :: Canonical -> Int
 canonSize (Canonical us cs) = length us + sum (map go cs)
   where

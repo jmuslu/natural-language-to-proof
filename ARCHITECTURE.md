@@ -43,9 +43,9 @@ source of grounding for it.
 
 ## The four stages
 
-Four stages, in order. This is a pipeline, not a choice of dispositions — the
-earlier "three tracks" framing described a decision the design no longer has to
-make, and is [recorded as cut](#what-was-cut-and-why) below.
+Four stages, in order, each with a different disposition toward the candidate
+set. Not a choice between them: every claim that reaches the reward signal has
+passed through all four.
 
 ```
 1. INITIAL SPACE                                       (search; commits to nothing)
@@ -76,11 +76,9 @@ make, and is [recorded as cut](#what-was-cut-and-why) below.
 | 3 | **collapse** | avoid storing one confirmed fact five times |
 | 4 | score | the only two admissible sources are oracle confirmation and mechanical entailment from a confirmed base |
 
-### Why verification precedes fusion, and why that ordering *is* the refactor
+### Why verification must precede fusion
 
-Verification and fusion were previously bundled together as "epistemics".
-Splitting them was the load-bearing move, because the two need opposite
-dispositions:
+The two stages need opposite dispositions, so bundling them is not an option:
 
 - **Verification needs retention.** While truth is undecided, independent
   corroboration is information: "two derivations agree" must stay
@@ -120,73 +118,16 @@ instrumentation, which is a fact about the tooling. Rewarding it would invent
 evidence. Zero is the only defensible value, and `Reward.rwUncovered` reports the
 count so the size of the ungroundable remainder stays visible.
 
-## What was cut, and why
-
-Recorded so it does not have to be re-derived, and so nothing gets quietly
-resurrected.
-
-### The conversational track — cut entirely
-
-Its mechanism was a human correcting live output. That is external help by
-definition, which contradicts the goal directly. It also addressed an unrelated
-problem — real-time cross-lingual interpretation with a human in the loop — that
-has no bearing on this pipeline.
-
-There is no partial version worth keeping. The branch is gone, the ~400 lines of
-specification are gone, and the "RSA as conversational oracle" framing is
-explicitly *not* salvaged: RSA keeps its Stage 1/2 role as a ranker over
-well-typed candidates, and that role has nothing to do with a human in a loop.
-
-### The "three tracks on one tower" framing — cut
-
-The tower analogy assumed three genuine alternatives for one disposition
-decision. That is no longer the shape of the problem: verification and fusion are
-sequential stages. The analogy actively misleads about the current architecture,
-so it is not carried forward.
-
-### `truth-mode` as a track — cut; one piece salvaged
-
-`Collapse.Truth.compress` was sold as epistemic verification and is nothing of
-the kind. It is `sort` then `dedup` over `CanonCond` — syntactic equality up to
-referent renaming — which is strictly finer than "entails the same proposition".
-The gap does not close by improving the implementation: `~(P | Q)` and
-`~P & ~Q` are logically equivalent, produce different `CanonCond` shapes, and
-will never merge. That is asserted as a check in the substrate suite so it cannot
-be forgotten a second time.
-
-**Kept:** the dedup logic, repositioned as `Fusion.compress` — post-verification
-bookkeeping, safe because truth was already settled upstream.
-**Cut:** the epistemic-track framing, and the idempotent-fold-as-verification
-framing that went with it.
-
-### `provenance-mode` as a track — cut; the disposition promoted to a stage
-
-`Collapse.Provenance` survives almost unchanged as `Verify.Claims`. What changed
-is its position: it was one of three alternatives a caller could pick, and it is
-now mandatory, because the stages after it require what it provides. Retention is
-no longer a preference to be traded against compactness.
-
-The name *letra* was the informal label for this disposition. It is retired as a
-track name; the discipline it named is now simply what stage 2 does.
-
-### Stage 4 (epistemic graph layer) — re-scoped, not deleted
-
-AGM belief revision may well be the right formalism for oracle-reversal
-propagation. But it has to be re-derived from *that* motivation rather than
-inherited from its old slot "on the epistemic track". Filed as an open question
-below, not as a carryover and not as a cut.
-
 ## New tensions this design introduces
 
 These did not exist in the three-track framing. They are consequences of the new
 one and have to be designed for rather than inherited.
 
-### Genealogy is load-bearing, and it is now built
+### Genealogy is load-bearing
 
-Previously an open question; now the first thing that had to exist.
-`NL2Proof.Genealogy` is the DAG: `NodeId` for addressable identity,
-`Justification` for derivation edges, and grounded support computed as a **least
-fixed point**.
+`NL2Proof.Genealogy` is the DAG that retraction runs on: `NodeId` for addressable
+identity, `Justification` for derivation edges, and grounded support computed as a
+**least fixed point**.
 
 Taking the least rather than the greatest fixed point is the whole point, and it
 is the formal content of the goal's hard constraint:
@@ -308,19 +249,24 @@ Independent of the truth problem, and worth not conflating with it:
 Neither ever reaches "covers arbitrary text" the way an LLM does, and that was
 never the goal.
 
-### The corpus is the weakest link in the test suite
+### The corpus cannot falsify several things the suite appears to check
 
-Recorded because it has now caused two real defects rather than one. The
-nine-case evaluation set has hidden:
+The evaluation set is nine hand-written cases, and its *size* — not its content —
+leaves whole properties untested while the suite reads green. Two concrete gaps,
+both still true:
 
-1. **SDRT's right frontier being inert** — divergence needs three segments, and
-   every multi-sentence case has two.
-2. **DRS merge being unsound** — needs two same-shaped existential sentences, and
-   no case has them. All 348 checks passed throughout.
+1. **Discourse-relation choice is unobservable.** Divergence between flat and
+   frontier-restricted anaphora needs three segments; every multi-sentence case
+   has two, and in a two-unit structure the only parent is always on the
+   pre-attachment frontier.
+2. **Referent collisions are unreachable.** Detecting them needs two same-shaped
+   existential sentences, and no case has a pair.
 
-A green suite here means "no case exercises this", not "this works". A generator
-over the lexicon and the CCG rules would have caught both within a handful of
-samples and is still unbuilt.
+So a green suite means "no case exercises this", not "this works". Before trusting
+a property, construct the discriminating example and run it — and where a property
+turns out unobservable, assert *that*, so the inert case is visible rather than
+silently reassuring. A generator over the lexicon and the CCG rules would cover
+this class outright and is unbuilt.
 
 ## Core architectural principle
 
@@ -346,12 +292,7 @@ derivation, which is exactly the conflation this design forbids.
 
 ## Provenance, genealogy, and augmentation
 
-### Augmentation is not optional, and never was
-
-An earlier version of this document marked Stage 2 as "optional / essential /
-maybe" depending on which track you were on. That was wrong, and the error
-mattered — it is what made a candidate-generation layer look like a per-track
-luxury instead of a precondition.
+### Augmentation is not optional
 
 **Augmentation is useful in every case.** It is always worth understanding a
 statement from every angle before collapsing, because the additional angles
@@ -359,10 +300,9 @@ statement from every angle before collapsing, because the additional angles
 signals are not lost before anything commits. Collapsing straight off Stage 1
 throws away information that was never looked at.
 
-Under the four-stage pipeline this stops being a question at all. Stage 1
-generates the space, stage 2 verifies members of it, and stage 3 collapses only
-what an oracle confirmed. There is no path from text to reward that skips
-generation, so there is nothing to make optional.
+Stage 1 generates the space, stage 2 verifies members of it, and stage 3
+collapses only what an oracle confirmed. There is no path from text to reward that
+skips generation, so there is nothing to make optional.
 
 What the stages differ on is **disposition**, and it is exactly two things:
 
@@ -372,8 +312,7 @@ What the stages differ on is **disposition**, and it is exactly two things:
 | 2 | retain everything, including multiplicity | an oracle can reverse itself, and independent corroboration is information while truth is undecided |
 | 3 | collapse | truth is settled, so multiplicity is duplicate storage |
 
-Same machinery throughout, divergent use — the same shape as the collapse seam,
-now sequenced rather than chosen between.
+Same machinery throughout, divergent use.
 
 ### Provenance and genealogy are two axes, not one
 
@@ -477,13 +416,12 @@ DRT-based test set:
 
 Test all three against the same fixed evaluation set, not in isolation.
 
-#### The SDRT tie-in, and what wiring it up revealed
+#### SDRT threading: three properties that constrain the design
 
-Building SDRT and *using* SDRT turned out to be different jobs with different
-findings. The relations, the right frontier and the glue logic were correct and
-inert: nothing consulted `sdrsAccessible`, so anaphora resolution still ran off a
-flat `mergeDRS`. `NL2Proof.Stage2.Threading` closes that, and three things came
-out of it that belong in the architecture rather than in a module header.
+`NL2Proof.Stage2.Threading` resolves each sentence's anaphors against the right
+frontier rather than against a flat `mergeDRS`. Three properties of that follow
+from the structure rather than from the implementation, and belong in the
+architecture rather than in a module header.
 
 **1. Accessibility flows left-to-right across a relation; the kind governs the
 *next* unit.** For `relation(a, b)`, `a`'s referents are available to `b`
@@ -541,69 +479,57 @@ third unit. Real SDRT percolates referents up the graph. This does not, and
 **And the corpus cannot see any of this.** Both multi-sentence fragment cases are
 two sentences long, and a two-unit structure has one edge whose parent is always on
 the pre-attachment frontier — so no relation choice can change anything. Both
-policies diverge from flat on zero cases. That is asserted as a check rather than
-assumed, which makes it say two things at once: the tie-in is safe on the existing
-corpus, and the corpus is too short to exercise it. Three segments is the minimum
-for this layer to be observable at all.
+policies diverge from flat on zero cases, asserted as a check, which says two
+things at once: threading is safe to run on the existing corpus, and the corpus is
+too short to exercise it. Three segments is the minimum for this layer to be
+observable at all.
 
-#### Tracing the frontier mass back down: what it is, and what blocks the question
+#### What the graded frontier mass is, and what it may combine with
 
-The tie-in left one question open — what kind of object the graded mass is, and
-therefore how it may legitimately combine with the RSA posterior. Tracing it back
-down answers it, but not from the direction the question suggests.
+The frontier contributes a graded mass over candidate antecedents. Whether that
+mass is a probability, a belief function or a fuzzy membership decides how it may
+legitimately be combined with the RSA posterior — and the answer is that the
+question does not arise yet, for two independent reasons.
 
-**1. The domain was wrong, because of a Stage 1 soundness bug — now fixed.**
-`mergeDRS` has an unstated precondition: merge is only sound when the two
-universes are disjoint. Referent names come from the lambda terms, so
-`"A student arrived. A professor walks."` gave both existentials the referent `x`,
-and the merge asserted `student(x) & arrive(x) & professor(x) & walk(x)` — one
-individual who is both. Two distinct individuals unsoundly identified. All 348
-Stage 1 checks missed it because no fragment case has two same-shaped existential
-sentences: the "corpus too short" problem biting a second and worse time.
+**Referents are discourse-unique, and that is a precondition rather than a
+convenience.** `mergeDRS` is sound only when the two universes are disjoint.
+Referent names come from the lambda terms, so two sentences of the same shape
+arrive with the same names, and `DRT.Types.freshenAgainst` discharges the
+precondition at the merge — applied in `extendDiscourse` and in
+`Stage2.Threading`, the two places that combine boxes from different sentences.
+Without it, `"A student arrived. A professor walks."` merges to a single `x` that
+is both student and professor: two distinct individuals identified.
 
-It blocked the frontier specifically. Distinguishing "`x` from a closed unit"
-from "`x` from an open unit" is the frontier's whole purpose, and `Ref` did not
-record which unit a referent came from — `accessibleOn`'s `nub` conflated them.
+Two properties make that the cheap enforcement point rather than an invasive one.
+It is **alpha-conversion** — mechanical, so nothing is logged, and `mapRefs`
+carries each referent's provenance through, so a renamed referent still traces to
+the words that introduced it. And it happens **at the merge, not in `toDRS`**, so
+sentence-local boxes are untouched and a sentence read on its own reads the same.
 
-`DRT.Types.freshenAgainst` discharges the precondition, applied in
-`extendDiscourse` and in `Stage2.Threading`. Two things make this the cheap option
-rather than the invasive one. It is **alpha-conversion**: mechanical, so nothing
-is logged, and `mapRefs` carries each referent's provenance through, so a renamed
-referent is still traceable to the words that introduced it. And it happens **at
-the merge, not in `toDRS`**, so sentence-local DRSs are untouched and a sentence
-read on its own reads the same. Stage 1's 348 checks all pass unchanged; 18
-regression checks were added, giving 366.
+This matters for the frontier specifically: telling "`x` from a closed unit" apart
+from "`x` from an open unit" is the frontier's whole purpose, and `Ref` does not
+record which unit a referent came from. With discourse-unique names it does not
+have to, and `(Label, Ref)` buys nothing over `Ref`.
 
-The alternative — indexing accessibility by `(Label, Ref)` and leaving Stage 1
-alone — was rejected because it fixes the frontier's symptom while leaving a DRS
-that asserts a student is a professor. That is a wrong answer, not a missing
-feature.
-
-**2. Consonance was an artefact of that collision, and the correction has a sharp
-consequence.** The tempting cheap test is whether the focal family
-`{acc(S[e ↦ ρ])}` is nested — if so the mass is a possibility distribution and a
-t-norm is licensed. Measured before the fix: `Ref`-indexed gave **2** nested sets,
-`(Label, Ref)`-indexed gave **4** and non-nested, crossing at `{(K2,x)}` versus
-`{(K1,x)}`. The test would have reported "possibility measure" off a name
-collision.
-
-After the fix `Ref` is discourse-unique, `(Label, Ref)` adds nothing, and both
-indexings agree — 4 sets, non-nested, crossing `[x2]` versus `[x]`. But the sharp
-part is the *structure* of when consonance holds:
+**Consonance holds exactly where the truncation does.** The cheap test for "is
+this a possibility measure" is whether the focal family `{acc(S[e ↦ ρ])}` is
+nested. Since
 
 > `frontier(subordinating) = frontier(coordinating) ∪ {parent}`
 
-so at **one** free edge there are exactly two focal sets and they are nested **by
-construction** — a theorem, not a measurement. At **two** they cross. The
-implementation runs at one free edge, which means it sits in the only regime where
-the possibility reading is available, **and that regime is the truncation.** Since
-the truncation has to go (it deletes referents), the possibility reading goes with
-it. They stand or fall together, which retires the whole
+one free edge gives exactly two focal sets, ordered by inclusion — nested **by
+construction**, a theorem rather than a measurement. At two free edges they cross:
+4 sets, non-nested, `[x2]` against `[x]`.
+
+`Stage2.Threading` marginalises over one edge, so it sits in the only regime where
+the possibility reading is available — and that regime *is* the truncation. Since
+the truncation has to go (it deletes referents, below), the possibility reading
+goes with it. The two stand or fall together, which retires the
 possibility-versus-belief-function question rather than answering it.
 
-**3. The semiring is not a free parameter in the regime the code occupies.** The
-mass is a semiring-weighted sum — `⊕_ρ P(ρ) ⊗ 1[r ∈ acc(...)]` — so in principle
-the semiring is a choice, and different choices give different *kinds* of object
+**The semiring is a free parameter only once the truncation is gone.** The mass is
+a semiring-weighted sum — `⊕_ρ P(ρ) ⊗ 1[r ∈ acc(...)]` — so in principle the
+semiring is a choice, and different choices give different *kinds* of object
 rather than different numbers. Measured, at one free edge:
 
 | semiring | mass of `x` |
@@ -615,52 +541,49 @@ rather than different numbers. Measured, at one free edge:
 The last two **coincide**, because `⊗` is applied to a boolean indicator and
 `P ≤ 1`, so `min(P,1) = P × 1 = P`. Four candidate algebras collapse to two
 questions: sum over licensors, or max over licensors. They separate only at two
-free edges (0.018 versus 0.122) — that is, exactly when the one-edge truncation is
-dropped. The freedom the semiring framing promises is real but it is downstream of
-the truncation, not available now.
+free edges (0.018 versus 0.122) — again, exactly when the truncation is dropped.
 
 And the Viterbi reading is not MAP. MAP is *argmax the relation, then test*, which
-is `Committed` — already implemented. Measured: the overall argmax is `Narration`
-(coordinating), which offers nothing.
+is `Committed`. Measured: the overall argmax is `Narration` (coordinating), which
+offers nothing.
 
-**4. There is no joint space, which is upstream of every combination rule.** The
-mass is indexed by `Ref`. The RSA posterior is indexed by `readingIndex :: Int`
-over scope permutations and coupling fusions. `Ref` does not occur anywhere in
+**There is no joint space, which is upstream of every combination rule.** The mass
+is indexed by `Ref`. The RSA posterior is indexed by `readingIndex :: Int` over
+scope permutations and coupling fusions. `Ref` does not occur anywhere in
 `Stage2.Alternatives`, `Stage2.Pipeline` or `Stage2.RSA`. Asking which rule
 combines them presupposes a product space that does not exist.
 
-**5. So the native move is not an uncertainty calculus at all.** Make antecedent
-choice an *alternative*: a reading becomes `(scope order, coupling, antecedent
-assignment)`. Then the frontier mass is a **prior over readings** — the same
-`Dist Int` as everything else in Stage 2 — and `Distribution.reweight` already
+**So the move is a data-modelling one, not an uncertainty calculus.** Make
+antecedent choice an *alternative*: a reading becomes `(scope order, coupling,
+antecedent assignment)`. Then the frontier mass is a **prior over readings** — the
+same `Dist Int` as everything else in Stage 2 — and `Distribution.reweight` already
 performs the combination. No belief functions, no t-norms, no new algebra.
 
-This is the same pattern the scope work already follows. Stage 1 collapses to one
+That is the pattern the scope work already follows. Stage 1 collapses to one
 antecedent and logs the others *as strings* in `decAlternatives`; Stage 2's job is
-to materialise what Stage 1 declined. Anaphora is the one place where that has not
-been done, which is why its output had nowhere to go.
+to materialise what Stage 1 declined. Anaphora is the one place it has not been
+done, which is why the frontier's output has nowhere to go.
 
-**6. Two claims from the tie-in were too strong.** `Marginal` "deletes nothing"
-holds at one uncertain edge only: at four segments the implementation offers
-nothing for `K4` while the full marginal keeps the referent at 0.488.
-`fullMarginalAt` now measures that gap rather than leaving it unstated.
+**What `Marginal` guarantees, and where it stops.** `Marginal` deletes nothing *on
+the committed prefix*, because `Elaboration` always retains positive mass. It does
+not extend past that: at four segments the implementation offers nothing for `K4`
+while the full marginal keeps the referent at 0.488, because the one-edge
+truncation holds every earlier edge at a committed value and so reintroduces the
+hard commitment the policy exists to avoid. `fullMarginalAt` measures the gap.
 
-And at one free edge the mass takes only **two** values — 1 for a referent in the
-coordinating frontier, `P(subordinating)` for one reachable only subordinately —
-so it is a two-tier partition with a single global weight, not a per-referent
-grade. That deflation is itself an artifact of the truncation: at two free edges,
-measured on the four-segment colliding text, `x2` gets **0.488** and `x` gets
-**0.435**, and the truncated implementation offers only `x2`. So the mass is
-genuinely graded, and the reason it did not look it is the same reason everything
-else in this section collapses — one free edge.
+The mass is also barely graded at one free edge — two values only, `1` for a
+referent in the coordinating frontier and `P(subordinating)` for one reachable only
+subordinately. At two free edges it is genuinely graded: on the four-segment
+colliding text `x2` gets **0.488** and `x` gets **0.435**, with the truncated
+implementation offering only `x2`. One free edge is the common cause of everything
+flat in this section.
 
-**7. The missing multiset structure and the one-edge truncation are the same
-gap.** At one free edge each relation occurs at most once in a licensing witness,
-so multiset and set coincide and there is no multiplicity to lose. Multiplicity
-first appears at two free edges — measured. So there is no separate "build the
-multiset intermediate" task; there is one task, which is dropping the truncation,
-and `rkLicensors` already holds the set-level version of it (unconsumed by
-`antecedentsFor`).
+**The missing multiset structure and the one-edge truncation are the same gap.** At
+one free edge each relation occurs at most once in a licensing witness, so multiset
+and set coincide and there is no multiplicity to lose. Multiplicity first appears
+at two free edges — measured. So there is no separate "build the multiset
+intermediate" task; there is one task, dropping the truncation, and `rkLicensors`
+already holds the set-level version of it (unconsumed by `antecedentsFor`).
 
 #### On the absence of a data source
 
@@ -705,16 +628,14 @@ Concretely, on `"ancient Chinese red dragon"` the classes separate `chinese`
 (classificatory, a plausible subkind with `dragon`) from `ancient` and `red`
 (intersective, not subkind-forming).
 
-**How that information is used was reversed, and this section originally had it
-wrong.** The first implementation applied the stratification as a *filter*,
-suppressing non-classificatory fusions and cutting the candidate set from four
-readings to two. That looked like a win and was recorded here as one.
-
-It is not. Filtering at generation time is preemptive pruning — see
+**The classification is evidence, not a filter, and the difference matters.**
+Applying the stratification at generation time — suppressing non-classificatory
+fusions — cuts the candidate set from four readings to two, and looks like a win.
+It is not: filtering at generation time is preemptive pruning, see
 [Build the space; do not preemptively prune it](#build-the-space-do-not-preemptively-prune-it)
-below, which supersedes the earlier framing. The candidate set is back to four,
-with the classification attached to each candidate as evidence (`ccClass`,
-`ccLicensed`, `ccLayer`) so the ranking layer can down-weight rather than the
+below. So the candidate set stays at four, with the classification attached to
+each candidate as evidence (`ccClass`, `ccLicensed`, `ccLayer`) so the ranking
+layer can down-weight rather than the
 generator omit.
 
 The stratification itself was right; only its application was wrong. And the
@@ -744,20 +665,15 @@ the error at a larger scale.
   structures with attached confidence/ambiguity annotations rather than halting
   on first ambiguity.
 
-### Stage 4 — Re-scoped: oracle-reversal propagation
+### Stage 4 — Oracle-reversal propagation
 
-**Formerly** "epistemic graph layer", scoped to the epistemic track. That track
-no longer exists, so the scope is gone with it and what remains is a question
-rather than a plan.
-
-The live question is narrow: when an oracle reverses an answer and the reversal
+A question rather than a plan, and a narrow one: when an oracle reverses an answer and the reversal
 creates an *inconsistency* rather than merely removing support, what is the
 minimal revision? `Genealogy.retract` already answers the extensional part —
 which claims lose grounded support — so anything added here has to earn its place
 against that baseline.
 
-Formalisms worth evaluating **against that use case specifically**, not inherited
-because they were once on a roadmap:
+Formalisms worth evaluating **against that use case specifically**:
 
 - AGM belief revision postulates, for coherent minimal change.
 - Dynamic Epistemic Logic, for update mechanics, if multi-agent structure
@@ -781,21 +697,17 @@ A candidate that is never generated cannot be collapsed, cannot be recorded as
 rejected, and cannot be recovered when the judgement that excluded it turns out to
 be wrong. That is the same failure as a parser returning only its first parse.
 
-Worked example, from getting it wrong: `Stage2.Alternatives` originally
-*suppressed* modifier fusions whose modifier was not classificatory, so
-`ancient_dragon` and `red_dragon` were never generated for
-`"ancient Chinese red dragon"`. The stratification was right; applying it as a
-filter was wrong. It is now attached to each candidate as evidence
-(`ccClass`, `ccLicensed`, `ccLayer`) and the ranking layer down-weights, rather
-than the generator omitting. The space went from 2 candidates back to 4, with the
-licensing information still present.
+Worked example, and the tempting mistake: suppressing modifier fusions whose
+modifier is not classificatory would mean `ancient_dragon` and `red_dragon` are
+never generated for `"ancient Chinese red dragon"`, leaving 2 candidates instead
+of 4. The stratification that motivates the suppression is right; applying it as a
+filter is wrong. So `Stage2.Alternatives` attaches it to each candidate as
+evidence (`ccClass`, `ccLicensed`, `ccLayer`) and the ranking layer down-weights,
+rather than the generator omitting.
 
-This reverses what
-[Stratification](#stratification-not-all-modifiers-or-relations-are-one-kind-of-thing)
-above originally claimed as a success, and that section has been corrected to say
-so. Subsequent measurement settled it: the ranking layer separates all four
-readings on informativity, so the two candidates filtering removed were rankable
-and deleting them lost information.
+Measurement settles it rather than taste: the ranking layer separates all four
+readings on informativity, so the two candidates a filter would remove are
+rankable, and removing them loses information that is demonstrably there.
 
 ### Spend computation freely
 
@@ -924,13 +836,12 @@ That is why the fingerprint kernel cannot become the compression mechanism no
 matter how well its weights are fitted. It is the wrong kind of object for the
 job — it ranks, it does not quotient.
 
-### The spec overclaims here, and the gap is not closable
+### It is tempting to overclaim here, and the gap is not closable
 
-The old framing said this step collapses sentences that *entail the same
-proposition*, which describes **logical equivalence**. `compress` implements
-**syntactic canonical equality**, which is strictly finer. The overclaim is what
-retired the "epistemic verification" reading of this module; the operation itself
-is fine as post-verification bookkeeping.
+The natural description of this step — "collapses sentences that entail the same
+proposition" — is **logical equivalence**. `compress` implements **syntactic
+canonical equality**, which is strictly finer. Reading the stronger claim into it
+is what would make it look like verification; it is bookkeeping.
 
 Demonstrable: `~(P | Q)` and `~P & ~Q` are logically equivalent and produce
 different `CanonCond` shapes — a `CanNot` over a disjunctive box versus two
@@ -1073,7 +984,8 @@ now has a three-sentence example where the relation does real disambiguating wor
 longer unexercised. But that example turns on *pronoun* accessibility, which the
 frontier already governs. The plural case turns on whether a repeated **full NP**
 corefers, which needs NP-level anaphora — prerequisite 3 below, still absent. So
-this remains the better case, for a narrower reason than originally stated.
+this remains the better case, for a narrow reason: it needs a mechanism the
+frontier does not supply.
 
 Three prerequisites, none present:
 

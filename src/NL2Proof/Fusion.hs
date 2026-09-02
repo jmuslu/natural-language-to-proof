@@ -1,18 +1,15 @@
 -- | Stage 3 of the substrate pipeline: fusion of oracle-confirmed claims.
 --
--- == What this is, and what it was
+-- == This is bookkeeping, not verification
 --
--- The deduplication here is salvaged from what used to be @Collapse.Truth@ on
--- the @truth-mode@ branch. The /code/ was fine. The /claim made for it/ was not:
--- it was presented as epistemic verification, and it is nothing of the kind.
--- @compress@ is @sort@ then @dedup@ over 'CanonCond' — syntactic equality up to
+-- 'compress' is @sort@ then @dedup@ over 'CanonCond' — syntactic equality up to
 -- referent renaming. That is strictly finer than "entails the same
 -- proposition", and the gap does not close by improving the implementation:
 -- @~(P | Q)@ and @~P & ~Q@ are logically equivalent, produce different
 -- 'CanonCond' shapes, and will never merge.
 --
--- So the operation is kept and the framing is dropped. It is __bookkeeping__,
--- not verification.
+-- So reading this stage as establishing anything is a mistake. It removes
+-- duplicate storage; truth was settled upstream.
 --
 -- == And bookkeeping is only safe here because verification already happened
 --
@@ -26,10 +23,10 @@
 -- storing the same confirmed fact five times. Nothing is being /established/ by
 -- the merge.
 --
--- That ordering is the load-bearing part of the refactor. Verification needs
--- retention; fusion needs collapse; and they have to happen in that order,
--- because a collapse performed first destroys the derivation record that
--- retraction depends on ("NL2Proof.Genealogy").
+-- The ordering is load-bearing. Verification needs retention; fusion needs
+-- collapse; and they have to happen in that order, because a collapse performed
+-- first destroys the derivation record that retraction depends on
+-- ("NL2Proof.Genealogy").
 --
 -- == The gate
 --
@@ -41,7 +38,7 @@ module NL2Proof.Fusion
     Fused(..)
   , fuse
   , fusedContains
-    -- * Box-level compression (salvaged verbatim)
+    -- * Box-level compression
   , compress
   , compressionRatio
     -- * Mechanical entailment over a confirmed base
@@ -95,10 +92,9 @@ fusedContains f c = c `elem` fusedClaims f
 -- | Sort and deduplicate conditions at every depth, returning the compressed
 -- form and the number of nodes removed.
 --
--- Salvaged unchanged. Sorting is by the derived 'Ord' on 'CanonCond': an
--- arbitrary but stable total order. Stability is the requirement, not
--- meaningfulness — the point is that the same content always lands in the same
--- shape.
+-- Sorting is by the derived 'Ord' on 'CanonCond': an arbitrary but stable total
+-- order. Stability is the requirement, not meaningfulness — the point is that the
+-- same content always lands in the same shape.
 compress :: Canonical -> (Canonical, Int)
 compress c = (compressed, canonSize c - canonSize compressed)
   where

@@ -124,32 +124,13 @@ admissibility check has teeth too: a weight table that pays anything for
 uncovered claims, or fails to penalise refutation, or values inherited grounding
 above direct confirmation, is reported inadmissible.
 
-## What was cut
+## Properties worth knowing
 
-The design used to be three parallel *tracks* (epistemic, conversational, letra)
-selected per use case. Verification and fusion turned out to be sequential
-stages, not alternative dispositions, so the framing went with the tracks.
+#### SDRT threading
 
-| Cut | Disposition |
-|---|---|
-| **conversational track** | gone entirely. Its mechanism was a human correcting live output — external help by definition, which contradicts the goal. Branch deleted, spec deleted, "RSA as conversational oracle" framing not salvaged. |
-| **the three-tracks-on-one-tower analogy** | gone. It assumed three alternatives for a decision the design no longer makes. |
-| **`truth-mode` as a track** | gone. `compress` was sold as epistemic verification and is syntactic dedup; the operation survives as `Fusion.compress`, the framing does not. |
-| **`provenance-mode` as a track** | gone as a *choice*; the discipline is now mandatory stage 2 (`Verify.Claims`). Retention is a precondition for retraction, not a preference. |
-| **Stage 4 (Kripke/DEL/AGM)** | re-scoped, not deleted. May fit oracle-reversal propagation, but has to be re-derived from that motivation. |
-
-Branches are gone with the tracks; everything lives on `main`. The retired
-branches are kept as `archive/*` tags, so nothing is lost and nothing merges from
-them.
-
-## Findings worth keeping
-
-#### SDRT threading, measured
-
-The frontier is no longer computed and ignored: `Stage2.Threading` resolves each
-sentence's pronouns against the right frontier instead of against a flat merge.
-Two things came out of wiring it up that are worth stating as results rather than
-as design notes.
+`Stage2.Threading` resolves each sentence's pronouns against the right frontier
+rather than against a flat merge. Two consequences follow from the structure
+rather than from the implementation.
 
 **It can only ever remove antecedents.** The frontier's referents are a subset of
 the flat merge's. So this is not a free improvement — it is a filter, and on this
@@ -161,11 +142,11 @@ fragment the filter is driven by *stipulated* cue weights. Hence two policies:
 | `Committed` | argmax relation, then its frontier | **fails** — `Continuation` closed `K1` |
 | `Marginal` | union over positive-mass relations, graded | resolves `she` → `x` at mass **0.488** |
 
-At **four** segments `Marginal` fails too: the implementation offers nothing for
-`K4` while the full marginal keeps the referent at **0.488**. The one-edge
-truncation reintroduces exactly the hard commitment the policy existed to avoid.
-So "`Marginal` deletes nothing" holds at *one uncertain edge* and not past it —
-`fullMarginalAt` measures the gap.
+`Marginal`'s guarantee stops at one uncertain edge. At **four** segments it
+offers nothing for `K4` while the full marginal keeps the referent at **0.488**:
+the one-edge truncation holds every earlier edge at a committed value, and so
+reintroduces the hard commitment the policy exists to avoid. `fullMarginalAt`
+measures the gap.
 
 **The least committal relation is not the least committal for accessibility.**
 `glue`'s no-cue default is `Continuation` because it commits to the least *about
@@ -178,71 +159,66 @@ that edge's relation distribution — measured, not assigned.
 
 On the nine-case fragment **both policies diverge from flat on nothing**, because
 both multi-sentence cases are two sentences long and a two-unit structure has one
-edge whose parent is always on the pre-attachment frontier. That is asserted as a
-check: the tie-in is safe to run on the existing corpus, *and* the corpus is too
-short to exercise it.
+edge whose parent is always on the pre-attachment frontier. Asserted as a check,
+which says two things at once: threading is safe to run on the existing corpus,
+*and* the corpus is too short to exercise it.
 
-Known over-restriction, recorded rather than patched: a resolved pronoun adds no
+Known over-restriction, stated rather than patched: a resolved pronoun adds no
 referent to its unit's universe, so under `Committed` a chain of coordinating
 relations starves. Real SDRT percolates referents up the graph; this does not, and
-`Marginal` hides the symptom without fixing the cause.
+`Marginal` hides the symptom without addressing the cause.
 
-#### A soundness bug found while tracing this back down — now fixed
+#### Discourse referents are unique, and the merge depends on it
 
-`mergeDRS` has an unstated precondition: DRS merge is only sound when the two
-universes are **disjoint**. Referent names come from the lambda terms, so two
-sentences of the same shape arrive with the same names, and nothing enforced the
-precondition. Before the fix:
+`mergeDRS` is sound only when the two universes are **disjoint** — the standard
+side condition on DRS merge. Referent names come from the lambda terms, so two
+sentences of the same shape arrive with the same names, and something has to
+discharge the precondition:
 
 ```
-"A student arrived. A professor walks."          "A student arrived. A professor walks."
-  +--------------+                                +---------------+
-  | x x          |   1 distinct name, 2 entries   | x x2          |
-  +--------------+                                +---------------+
-  | student(x)   |                                | student(x)    |
-  | arrive(x)    |                                | arrive(x)     |
-  | professor(x) |   <- the same x                | professor(x2) |
-  | walk(x)      |                                | walk(x2)      |
-  +--------------+                                +---------------+
-     BEFORE: one individual who is both              AFTER
+"A student arrived. A professor walks."
+  +---------------+
+  | x x2          |
+  +---------------+
+  | student(x)    |
+  | arrive(x)     |
+  | professor(x2) |     two individuals, not one
+  | walk(x2)      |
+  +---------------+
 ```
 
-A **Stage 1 soundness bug**, not an SDRT one, and all 348 checks missed it because
-no fragment case has two same-shaped existential sentences — the same
-corpus-too-short failure, biting harder. Downstream the anaphora decision read
-`chose x over 1: x`: the choice and the rejected alternative were the same string.
-It now reads `chose x2 over 1: x`.
+`DRT.Types.freshenAgainst` does it at the merge, applied in `extendDiscourse` and
+in `Stage2.Threading` — the two places that combine boxes from different
+sentences. Without it both existentials share `x` and the box asserts one
+individual is both a student and a professor.
 
-Fixed by `DRT.Types.freshenAgainst`, applied in `extendDiscourse` and in
-`Stage2.Threading` — the two places that merge boxes from different sentences.
-The renaming is alpha-conversion: mechanical, so nothing is logged, and
-`mapRefs` carries each referent's provenance through, so a renamed referent still
-traces to the words that introduced it. Sentence-local DRSs are untouched.
+Two properties make that the cheap enforcement point. The renaming is
+**alpha-conversion**: mechanical, so nothing is logged, and `mapRefs` carries each
+referent's provenance through, so a renamed referent still traces to the words
+that introduced it. And it happens **at the merge, not in `toDRS`**, so
+sentence-local boxes are untouched and a sentence read on its own reads the same.
 
-**Stage 1's count did not move for behaviour** — 348 checks all still pass
-unchanged, and 18 regression checks were added for the invariant, giving 366. The
-count is stable because no existing case could exercise the bug.
+##### What that settles about the frontier mass
 
-##### What the fix did to the open question
-
-With `Ref` now discourse-unique, `(Label, Ref)` adds nothing and the frontier can
-do its job. Re-measured on the colliding text:
+`Ref` is discourse-unique, so `(Label, Ref)` buys nothing and the frontier can do
+its job — telling "`x` from a closed unit" apart from "`x` from an open unit".
+Measured on the colliding text:
 
 | free edges | focal sets | nested? |
 |---|---|---|
-| 1 | 2 | **yes** — and this is a theorem, not a measurement |
+| 1 | 2 | **yes** — a theorem, not a measurement |
 | 2 | 4 | **no** — `[x2]` crosses `[x]` |
 
-`frontier(subordinating) = frontier(coordinating) ∪ {parent}`, so at one free edge
-there are exactly two focal sets and they are nested by construction. At two they
-cross. The implementation runs at one free edge, which means it sits in the *only*
-regime where the possibility-measure reading is available — **and that regime is
-the truncation.** The truncation has to go because it deletes referents, so the
-possibility reading goes with it. They stand or fall together.
+`frontier(subordinating) = frontier(coordinating) ∪ {parent}`, so one free edge
+gives exactly two focal sets, nested by construction. At two they cross. The
+implementation runs at one free edge, so it sits in the *only* regime where the
+possibility-measure reading is available — **and that regime is the truncation.**
+The truncation has to go, because it deletes referents, so the possibility reading
+goes with it. The two stand or fall together.
 
-The two-valued deflation was also an artifact of one free edge. At two, μ is
-genuinely graded: `x2` (from `K2`) at **0.488**, `x` (from `K1`) at **0.435** — and
-the truncated implementation offers only the first, deleting the deeper candidate.
+The mass is also barely graded at one free edge — two values only. At two it is
+genuinely graded: `x2` (from `K2`) at **0.488**, `x` (from `K1`) at **0.435**, with
+the truncated implementation offering only the first.
 
 Stage 1 is meant to stop changing. Later stages consume its output; they should
 not require edits to it.

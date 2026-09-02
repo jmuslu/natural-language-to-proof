@@ -405,12 +405,12 @@ couplingChecks = case caseById "coupling" of
          ]
 
 --------------------------------------------------------------------------------
--- 13. Canonical view (shared by both collapse modes)
+-- 13. Canonical view (shared by both dispositions)
 --------------------------------------------------------------------------------
 
 -- | The shared provenance-free view must be blind to provenance and to variable
--- naming, and must __not__ compress. Compression is truth-mode's job; if it
--- happened here, provenance-mode could not be built on top of this module.
+-- naming, and must __not__ compress. Compression is fusion's job; if it happened
+-- here, the verification stage could not be built on top of this module.
 canonicalChecks :: [Check]
 canonicalChecks =
   [ expectEq
@@ -425,7 +425,7 @@ canonicalChecks =
       "canonical: distinguishes genuinely different content"
       (canonOf testSource "John loves Mary." /= canonOf testSource "Mary smiles.")
   , -- The load-bearing one: two assertions of the same proposition stay two
-    -- conditions here. truth-mode collapses them; this module must not.
+    -- conditions here. Fusion collapses them; this module must not.
     expectEq
       "canonical: does NOT deduplicate repeated claims"
       2
@@ -492,7 +492,7 @@ freshnessChecks =
     [ -- The collision case, spelled out.
       expectEq "freshness: two same-shaped existentials get distinct referents"
         2 (length (nub (accessibleRefs (discourseOf collide))))
-    , expect "freshness: and the student is no longer the professor"
+    , expect "freshness: and the student is not the professor"
         (let d = discourseOf collide
              refOf pr = [r | CPred p [DRef r] _ <- drsConds d, p == pr]
          in refOf "student" /= refOf "professor"
