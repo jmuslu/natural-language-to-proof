@@ -1,0 +1,6 @@
+# LF everywhere, on every platform.
+#
+# The project builds on Linux and every generated file is written with LF, so
+# letting a checkout convert to CRLF makes untouched files show up as modified
+# and lets line-ending churn ride along in unrelated commits.
+* text=auto eol=lf
