@@ -1050,6 +1050,73 @@ muChecks =
         Nothing -> 0
 
 --------------------------------------------------------------------------------
+-- 14. Scope permutation must not move the anaphora answer
+--------------------------------------------------------------------------------
+
+-- | The integration that had never been made, made as a test.
+--
+-- 'scopeAlternatives' produces object-wide readings, and nothing anywhere lowered
+-- one into a DRS, so the anaphora layer had never been handed a term in which the
+-- object nests outside the subject. That mattered, because the old ordering rule
+-- was @reverse . accessibleRefs@: 'NL2Proof.DRT.Types.addRef' conses, so nesting
+-- decides where a referent lands in the universe, and under an object-wide
+-- reading a following pronoun would have resolved to the __subject__.
+--
+-- Scope is a fact about quantifier nesting. It moves no word in the sentence, so
+-- the two readings have to agree about recency, and
+-- 'NL2Proof.DRT.Types.recencyOrdered' makes them agree by reading spans.
+--
+-- Note what these checks do /not/ claim: that either reading is the right one.
+-- Choosing between them is ranking's job. The claim is only that the anaphora
+-- answer is stable across a choice that has nothing to do with anaphora.
+scopeRecencyChecks :: [Check]
+scopeRecencyChecks =
+  case (prSentences (runFragment recSrc twoIndefinites), pronounDRS) of
+    ([r], Just pron)
+      | Just form <- srForm r ->
+          let prov = sentenceProv recSrc r
+              idx = buildProvIndex fragmentLexicon prov
+              boxes = [toDRS idx prov t | t <- scopeAlternatives form]
+              wordFor d ref = maybe "?" provSurface (lookup ref (drsUniverse d))
+              universeOrder d = map show (accessibleRefs d)
+              byRecency d = map (wordFor d) (recencyOrdered d)
+              oldRule d = map (wordFor d) (reverse (accessibleRefs d))
+              resolvedTo d =
+                [ wordFor d (Ref (decChoice dec))
+                | dec <- traceDecisions (snd (resolveAnaphora d pron prov))
+                , decKind dec == "anaphora"
+                ]
+          in [ expectEq "scope-recency: the sentence has two scope readings" 2
+                 (length boxes)
+             , expect "scope-recency: whose universes really are ordered differently"
+                 (length (nub (map universeOrder boxes)) == 2)
+             , expectEq "scope-recency: recency is the same under both" 1
+                 (length (nub (map byRecency boxes)))
+             , expectEq "scope-recency: and it is the object, in both"
+                 [["book", "student"]]
+                 (nub (map byRecency boxes))
+             , expectEq "scope-recency: reversing the universe would not have been"
+                 2
+                 (length (nub (map oldRule boxes)))
+             , expectEq "scope-recency: so a following pronoun resolves the same way"
+                 [["book"]]
+                 (nub (map resolvedTo boxes))
+             ]
+    _ -> [bad "scope-recency: fixture parsed" "unexpected pipeline result"]
+  where
+    twoIndefinites = "A student reads a book."
+
+    -- Sentence-local DRS for the pronoun sentence. Its universe is empty, so it
+    -- needs no freshening against the context.
+    pronounDRS =
+      case prSentences (runFragment recSrc "It arrived.") of
+        [r] -> srDRS r
+        _   -> Nothing
+
+recSrc :: SourceId
+recSrc = SourceId "recency"
+
+--------------------------------------------------------------------------------
 -- Main
 --------------------------------------------------------------------------------
 
@@ -1071,4 +1138,5 @@ main =
        , sdrtChecks
        , threadingChecks
        , muChecks
+       , scopeRecencyChecks
        ])

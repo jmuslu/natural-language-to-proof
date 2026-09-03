@@ -24,6 +24,7 @@ module NL2Proof.DRT.Types
   , condProv
   , drsRefs
   , accessibleRefs
+  , recencyOrdered
   , drsConditionProvs
   , drsAllProvs
   , drsSources
@@ -43,7 +44,7 @@ module NL2Proof.DRT.Types
   ) where
 
 import Data.Maybe (fromMaybe)
-import Data.List (intercalate, nub)
+import Data.List (intercalate, nub, sortBy)
 
 import NL2Proof.Provenance
 import NL2Proof.Semantics.Lambda (isAnaphorName)
@@ -132,6 +133,11 @@ instance Semigroup DRS where
 instance Monoid DRS where
   mempty = emptyDRS
 
+-- | Introduce a referent.
+--
+-- Conses, so the universe ends up in reverse construction order. That is a
+-- plumbing choice and __nothing semantic may be read off it__: see
+-- 'recencyOrdered' for why, and for the ordering that is safe to read.
 addRef :: Ref -> Prov -> DRS -> DRS
 addRef r p d = d { drsUniverse = (r, p) : drsUniverse d }
 
@@ -163,8 +169,44 @@ drsRefs (DRS us cs) = map fst us ++ concatMap go cs
 -- Top-level universe only. Subordinate boxes are inaccessible, which is the
 -- standard DRT constraint and the reason this is a separate function from
 -- 'drsRefs' rather than a filter over it.
+--
+-- The result is in __construction order__, which carries no linguistic meaning.
+-- For an ordering that does, use 'recencyOrdered'.
 accessibleRefs :: DRS -> [Ref]
 accessibleRefs = map fst . drsUniverse
+
+-- | The accessible referents ordered by the surface position of the words that
+-- introduced them, latest first. This is /recency/.
+--
+-- __Recency is computed from spans, not from the shape of the universe list__,
+-- and keeping those apart is the entire reason this function exists next to
+-- 'accessibleRefs'.
+--
+-- Construction order is the composite of two unrelated implementation choices:
+-- 'addRef' conses, so within one sentence the __outermost__ quantifier lands
+-- first, and 'mergeDRS' appends, so earlier sentences land first. Reversing that
+-- list gives the right answer for the sentences Stage 1 currently produces — but
+-- only for the cross-sentence half by design. The within-sentence half is a
+-- coincidence resting on a third fact: the transitive verb entry always gives
+-- the subject wide scope, which makes /outermost/ coincide with /leftmost/.
+--
+-- "NL2Proof.Stage2.Alternatives".'NL2Proof.Stage2.Alternatives.scopeAlternatives'
+-- permutes exactly that. Under an object-wide reading the nesting inverts, the
+-- cons order inverts with it, and a reversal would rank the subject as the more
+-- recent of the two — wrongly, and with nothing in the anaphora code mentioning
+-- scope, so nothing would flag it.
+--
+-- Surface position does not move when scope permutes. Ordering by it is
+-- therefore invariant under precisely the change that breaks the reversal, and
+-- it says what recency means rather than arranging for it.
+--
+-- A referent whose provenance reaches no lexical leaf has no position and ranks
+-- last. Equal positions fall back to construction order, latest first.
+recencyOrdered :: DRS -> [Ref]
+recencyOrdered (DRS us _) = [r | (_, _, r) <- sortBy laterFirst keyed]
+  where
+    keyed = [(provSpan p, i, r) | (i, (r, p)) <- zip [0 :: Int ..] us]
+    laterFirst (sp1, i1, _) (sp2, i2, _) = compare sp2 sp1 <> compare i2 i1
 
 -- | Provenance of every condition, at every depth.
 drsConditionProvs :: DRS -> [Prov]

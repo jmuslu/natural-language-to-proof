@@ -679,7 +679,51 @@ allChecks =
     , couplingChecks
     , canonicalChecks
     , freshnessChecks
+    , recencyChecks
     ]
+
+--------------------------------------------------------------------------------
+-- 15. Recency is surface position, not universe order
+--------------------------------------------------------------------------------
+
+-- | 'recencyOrdered' must read spans, not the shape of the universe list.
+--
+-- The universe is built by 'addRef', which conses, so its order is the reverse
+-- of construction. Reversing it back gives recency only while /outermost/
+-- coincides with /leftmost/, which holds only because Stage 1's transitive verb
+-- always gives the subject wide scope. These checks pin the ordering to the one
+-- thing scope permutation cannot move.
+--
+-- Built by hand rather than through the pipeline, so that a universe in an order
+-- Stage 1 would never produce can be handed in directly. @Stage2Spec.hs@ section
+-- 14 does the same thing with a real scope-permuted reading.
+recencyChecks :: [Check]
+recencyChecks =
+  [ expectEq
+      "recency: later span first, whatever order the universe is in"
+      [Ref "b", Ref "a"]
+      (recencyOrdered forwards)
+  , expectEq
+      "recency: and the same answer with the universe reversed"
+      [Ref "b", Ref "a"]
+      (recencyOrdered backwards)
+  , expect
+      "recency: which is the property construction order does not have"
+      (reverse (accessibleRefs forwards) /= reverse (accessibleRefs backwards))
+  , expectEq
+      "recency: a referent with no lexical provenance ranks last"
+      [Ref "b", Ref "a", Ref "nowhere"]
+      (recencyOrdered (DRS (drsUniverse backwards ++ [(Ref "nowhere", noSpan)]) []))
+  , expectEq
+      "recency: equal spans fall back to universe order, latest first"
+      [Ref "late", Ref "early"]
+      (recencyOrdered (DRS [(Ref "early", at 0 4), (Ref "late", at 0 4)] []))
+  ]
+  where
+    at a b = ProvLex testSource (Span a b) (replicate (b - a) 'w')
+    noSpan = provRule "no-leaves" []
+    forwards = DRS [(Ref "a", at 2 9), (Ref "b", at 22 26)] []
+    backwards = DRS [(Ref "b", at 22 26), (Ref "a", at 2 9)] []
 
 main :: IO ()
 main = runChecks "stage 1 core" allChecks

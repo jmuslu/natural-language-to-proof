@@ -171,9 +171,13 @@ predicatesOn v = nub . go
 -- | Resolve unresolved anaphors in @new@ against the referents accessible in
 -- @context@.
 --
--- __The heuristic, stated explicitly:__ pick the most recently introduced
--- accessible referent. Nothing else — no gender agreement, no number agreement,
--- no salience weighting, no world knowledge.
+-- __The heuristic, stated explicitly:__ pick the accessible referent whose
+-- introducing words sit latest in the text. Nothing else — no gender agreement,
+-- no number agreement, no salience weighting, no world knowledge.
+--
+-- "Latest in the text" rather than "last added to the universe": see
+-- 'recencyOrdered'. The two agree today and stop agreeing the moment a
+-- scope-permuted reading is lowered into a box.
 --
 -- It is stated here rather than left implicit because an un-stated heuristic
 -- isn't reusable on the next batch of examples. It is deliberately weak, and
@@ -213,14 +217,17 @@ data Antecedents = Antecedents
 -- | Stage 1's source: every top-level referent of the accumulated context,
 -- most recent first.
 --
--- 'accessibleRefs' yields source order (within a sentence 'toDRS' conses
--- outermost-first, and across sentences 'mergeDRS' appends), so the most
--- recently introduced referent is the /last/ one. Reverse to put it first.
+-- Ordering comes from 'recencyOrdered', which reads the surface position of the
+-- words that introduced each referent. It deliberately does /not/ reverse
+-- 'accessibleRefs': that list is in construction order, and construction order
+-- coincides with surface order only while the grammar gives every subject wide
+-- scope over its object. Recency has to mean "later in the text" for a reason
+-- that survives scope permutation.
 flatAntecedents :: DRS -> Antecedents
 flatAntecedents context =
   Antecedents
-    { antCandidates = reverse (accessibleRefs context)
-    , antWhy = "most recently introduced accessible referent"
+    { antCandidates = recencyOrdered context
+    , antWhy = "most recently introduced accessible referent, by surface position"
     , antNoneNote =
         "referents inside negated or implicational boxes are correctly"
           ++ " inaccessible"

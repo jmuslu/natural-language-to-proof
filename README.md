@@ -329,7 +329,7 @@ discourse DRS (after anaphora resolution):
 
 -- decisions (1)
 [anaphora] chose x (forced, no alternatives)
-    why: most recently introduced accessible referent
+    why: most recently introduced accessible referent, by surface position
     at:  19:29 "she smiles"
 ```
 
@@ -385,7 +385,8 @@ lexicon would put Stage 2's job in the wrong place:
 - **Scope is fixed** at subject-wide in the transitive verb entry. The inverse
   reading of `"Every student reads a book"` is not generated. Scope alternation
   is candidate generation — Stage 2.
-- **Anaphora resolution is "most recent accessible referent"** and nothing else:
+- **Anaphora resolution is "most recent accessible referent"**, where recent
+  means latest surface position, and nothing else:
   no gender or number agreement, no salience, no world knowledge. Deliberately
   weak, and every application is logged with the alternatives it passed over, so
   its failures are visible instead of silent. That log is Stage 2's input.

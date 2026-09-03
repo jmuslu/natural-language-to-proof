@@ -201,10 +201,14 @@ rankedAntecedents policy s lastEdge =
       in accessibleOn s' (rightFrontier s')
 
     -- Recency over the whole discourse, used only as a tie-break so that grading
-    -- never silently reorders equal-mass candidates. Most recent unit first, and
-    -- within a unit rightmost first.
-    recency =
-      concat (reverse [reverse (accessibleRefs (duDRS u)) | u <- unitsInOrder s])
+    -- never silently reorders equal-mass candidates.
+    --
+    -- One rule, not two: 'recencyOrdered' sorts by surface position, so "most
+    -- recent unit first" and "within a unit, rightmost first" are the same
+    -- statement rather than two orderings that have to be composed and happen to
+    -- agree. Merging the units first is sound because they are freshened against
+    -- 'placedRefs', so their universes are disjoint.
+    recency = recencyOrdered (mconcat (map duDRS (unitsInOrder s)))
 
     rankOf r = fromMaybe (length recency) (lookupIndex r recency)
 

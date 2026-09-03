@@ -436,6 +436,50 @@ The monoid is (nearly) free: it is lists, so it retains order and multiplicity.
 > multisets compare unequal.
 > *Open:* is a multiset quotient wanted — commutative but not idempotent — for a
 > "same claim" test independent of fusion? Nothing currently constructs one.
+>
+> **P5.5 [checked]** Recency is the surface order of the introducing words, read
+> off spans. It is **not** the order of the universe list, and the two are
+> different orderings of which only one means anything.
+
+### Recency: the case that is neither structural nor scaffolding
+
+The universe is built by `addRef`, which conses, and `mergeDRS`, which appends. Its
+order is therefore the composite of two implementation choices made for unrelated
+reasons: within a sentence the **outermost** quantifier lands first, across
+sentences the **earliest** one does. Reversing that list yields recency, and for
+the cross-sentence half it does so *by design* — someone wanted oldest-first
+accumulation read newest-first, and wrote that.
+
+The within-sentence half is a coincidence, and it rests on a third fact: Stage 1's
+transitive verb entry always gives the subject wide scope, so *outermost*
+coincides with *leftmost*. Nothing anywhere states that as an assumption the
+anaphora code depends on, because syntactically it does not — it depends on cons
+order, which depends on nesting, which depends on the lexical entry.
+
+`scopeAlternatives` (S6) permutes exactly that nesting, and until it was tested
+against this, no scope-permuted term had ever been lowered through `toDRS`. Do it
+and the coincidence reverses: under an object-wide reading the object nests
+outside, lands first in the universe, and the reversal ranks the **subject** as
+the more recent of the two. Wrong answer, silent, from a change with no visible
+connection to anaphora.
+
+This is why it gets its own entry rather than sitting under [stipulated] or
+[structural]. It is neither a design decision nor scaffolding — it is unstated
+coupling between an efficiency choice (cons is the cheap way to build a list) and
+a semantic outcome (which antecedent a pronoun gets). That category is the one
+worth naming, because the failure mode is invisible at both ends.
+
+Surface position does not move when scope permutes. `recencyOrdered` sorts by it,
+which *states* what recency means instead of arranging for it, and makes
+`addRef`'s cons and `mergeDRS`'s append genuinely scaffolding again — nothing
+semantic reads them. `Threading`'s tie-break collapses the same way: "most recent
+unit first, and within a unit rightmost first" was two orderings composed and
+observed to agree, and is now one call.
+
+> *Falsify:* lower both scope readings of `"A student reads a book."` through
+> `toDRS` and resolve `"It arrived."` against each. Same antecedent, `book`, is
+> the claim; the reversal gives two different answers, which is the check that
+> the property is not vacuous.
 
 ### This is where verification and fusion separate, exactly
 

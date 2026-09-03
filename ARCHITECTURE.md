@@ -1000,7 +1000,9 @@ Three prerequisites, none present:
    part-of order — one module, sitting next to the entailment machinery that
    would have to reason about it anyway.
 3. **NP-level anaphora.** Deliberately absent: resolution is "most recent
-   accessible referent" and nothing else. Recognizing that a repeated full NP
+   accessible referent" and nothing else, where *recent* is surface position —
+   read off spans rather than off the universe list, for the reason TRACE.md
+   P5.5 gives. Recognizing that a repeated full NP
    corefers is a harder matching problem than resolving a pronoun, and none of
    the nine cases exercise it.
 
