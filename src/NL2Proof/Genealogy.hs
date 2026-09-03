@@ -75,6 +75,7 @@ module NL2Proof.Genealogy
   , independentSupports
   , hasIndependentSupport
   , convergentNodes
+  , corroboratedNodes
     -- * Retraction
   , retract
   , RetractionReport(..)
@@ -283,19 +284,25 @@ independentSupports g i =
   , not (null (jAntecedents j))
   ]
 
+-- | Does some pair of this node's justifications rest on disjoint premise sets?
+--
+-- __Vacuously 'False' on a premise-only graph__, because 'independentSupports'
+-- skips justifications with no antecedents. Every graph
+-- 'NL2Proof.Verify.Claims.genealogyOf' currently builds is premise-only, so this
+-- measures /derivation-level/ independence and is not the corroboration signal
+-- for the present pipeline. 'corroboratedNodes' is.
 hasIndependentSupport :: Genealogy -> NodeId -> Bool
 hasIndependentSupport g i =
   or
-    [ null (a `intersect'` b)
+    [ S.null (S.intersection a b)
     | (a, k) <- zip sups [0 :: Int ..]
     , (b, l) <- zip sups [0 ..]
     , k < l
-    , not (null a)
-    , not (null b)
+    , not (S.null a)
+    , not (S.null b)
     ]
   where
-    sups = independentSupports g i
-    intersect' xs ys = [x | x <- xs, x `elem` ys]
+    sups = map S.fromList (independentSupports g i)
 
 -- | Nodes whose claim is asserted by more than one node.
 --
@@ -307,11 +314,38 @@ hasIndependentSupport g i =
 -- becomes visible.
 convergentNodes :: Genealogy -> [(CanonCond, [NodeId])]
 convergentNodes g =
-  [ (claim, is)
-  | claim <- nub (map nodeClaim (M.elems (gNodes g)))
-  , let is = [nodeId n | n <- M.elems (gNodes g), nodeClaim n == claim]
-  , length is > 1
+  [ (claim, map nodeId group) | (claim, group) <- claimGroups g, length group > 1 ]
+
+-- | Claims asserted by more than one node __via derivations that differ__.
+--
+-- This is the corroboration signal, and the distinctness requirement is what
+-- makes it one rather than a repetition counter. 'convergentNodes' groups by
+-- claim identity alone, which is the right question for fusion — those are
+-- precisely the nodes it will merge — and the wrong question for reward: the
+-- same claim reached by the same derivation twice is a duplicate, and a signal
+-- that paid for it would pay a policy for repeating itself. Two derivations that
+-- differ are evidence the extraction does not rest on a single fragile path.
+--
+-- What this does __not__ establish is independence of the /oracle answers/. An
+-- oracle is a function of the claim, so two nodes carrying the same claim receive
+-- the same verdict and one reversal takes both down. The signal is about the
+-- extraction, not a second opinion on the truth, and it is admissible for exactly
+-- that reason: it is a fact about how the claim was reached from the input, not
+-- something the system establishes about the claim itself.
+corroboratedNodes :: Genealogy -> [(CanonCond, [NodeId])]
+corroboratedNodes g =
+  [ (claim, map nodeId group)
+  | (claim, group) <- claimGroups g
+  , length (nub (map nodeProv group)) > 1
   ]
+
+claimGroups :: Genealogy -> [(CanonCond, [Node])]
+claimGroups g =
+  [ (claim, [n | n <- ns, nodeClaim n == claim])
+  | claim <- nub (map nodeClaim ns)
+  ]
+  where
+    ns = M.elems (gNodes g)
 
 --------------------------------------------------------------------------------
 -- Retraction

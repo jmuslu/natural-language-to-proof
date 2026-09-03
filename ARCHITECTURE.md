@@ -64,7 +64,8 @@ passed through all four.
    Modules: Fusion
 
 4. REWARD                                              (the RL signal)
-   confirmed claims + mechanical consequences of them -> score
+   confirmed claims + mechanical consequences + input-side coordinates
+             -> a VECTOR, of which the scalar is one stipulated collapse
    Never "did this typecheck". Never "was a proof found".
    Modules: Reward
 ```
@@ -100,6 +101,43 @@ table itself: uncovered claims must score exactly zero, refutation must be
 penalised, and direct confirmation must be worth at least as much as inherited
 grounding — otherwise the policy is rewarded for laundering claims through
 entailment instead of getting them checked.
+
+### The scalar is not the reward
+
+`Reward.rwScore` satisfies every constraint `admissibility` states, and TRACE.md
+P13.7–P13.9 prove three things about it anyway: it is **extensive** (so
+over-generation is free), it **never reads provenance** (so it does not depend on
+the input at all), and it **factors through the idempotent quotient** (so it
+cannot express corroboration). Each is a property of collapsing to one number,
+not of the numbers chosen.
+
+The first is the instructive one. The scalar is blind to over-generation *exactly
+when* `wUncovered = 0` — the same condition the section below correctly
+**requires**. One condition, two consequences, so no retuning separates them. The
+escape is a denominator, which is a coordinate rather than a weight.
+
+So stage 4 reports coordinates and treats the scalar as scaffolding:
+
+| coordinate | source | admissible because |
+|---|---|---|
+| `rwConfirmed`, `rwRefuted`, `rwUncovered` | the oracle | external to the system |
+| `rwOffered`, `rwYield` | the offer set | the denominator every count needs |
+| `rwGroundedSpan`, `rwSourceCoverage` | provenance | **input-determined** — a `Prov` is built by the parser from the source token's own span, so it cannot be asserted downstream or inflated without consuming more input |
+| `rwCorroborated` | provenance | same claim by *distinct* derivations; repetition does not qualify |
+| `rwNovel` | entailment | content the oracle had to supply, not implied by the rest |
+
+Two of those pull against each other on purpose: `rwCorroborated` pays for a
+claim arriving twice, `rwNovel` for a claim nothing else implies. A scalar cannot
+express a trade-off, only a ranking. The function over these coordinates is
+expected to be non-linear and is expected to be found empirically; writing one
+here would be a guess wearing the clothes of a design.
+
+The reason provenance is admissible deserves saying twice, because it is the move
+that gives the reward any input-dependence at all. The oracle is admissible
+because it is *outside the system*. Provenance is admissible because it is
+*determined by the input*. Those are two different arguments reaching the same
+place, and only the second can distinguish an extraction that accounts for the
+whole source from one that accounts for six characters of it.
 
 `Verify.Oracle.Confirmed` is abstract: its constructor is not exported, and
 `confirm` is the only way to obtain one. "Fusion only ever sees oracle-confirmed

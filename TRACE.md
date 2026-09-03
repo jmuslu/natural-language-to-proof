@@ -611,12 +611,38 @@ The distribution at the `K1 → K2` edge, with no cue firing:
 > *Consequence:* one assertion says two things — the tie-in is safe on the
 > existing corpus, and the corpus is too short to exercise it.
 >
-> **P5b.6 [stipulated]** `glue`'s no-cue default is `Continuation`, the least
+> **P5b.6 [measured]** `glue`'s no-cue default is `Continuation`, the least
 > committal *relation*. But it is coordinating, hence the most restrictive choice
-> for *accessibility*.
-> *Open:* two notions of "least committal" that look like one and point opposite
-> ways. Left as-is because `Marginal` makes the choice non-destructive; if
-> `Committed` ever becomes the default, this weight is the first thing to revisit.
+> for *accessibility* — two notions of "least committal" that look like one and
+> point opposite ways.
+>
+> `glue` is multiplicative in the weights, so the ratio between the best relation
+> of each kind **is** the perturbation threshold for flipping `relationKind`,
+> exactly, with no sampling. Measured by `docs/cue-weight-sensitivity.hs`:
+>
+> | edge | cue | argmax | kind | flips kind at |
+> |---|---|---|---|---|
+> | `"John loves Mary." / "Mary smiles."` | none | Continuation | Coordinating | **x1.2** |
+> | `"A student arrived." / "She smiles."` | none | Continuation | Coordinating | **x1.2** |
+> | `"A student arrived." / "A professor walks."` | `newref` | Narration | Coordinating | x2.0 |
+> | `"A student arrived." / "A student arrived."` | `shared`, `newref` | Continuation | Coordinating | x2.7 |
+> | `"Every student reads a book." / "Mary smiles."` | `generic>specific` | Instance | Subordinating | x4.16 |
+>
+> *Consequence, and it splits the layer in two.* Where a cue fires the kind
+> decision survives a 20% perturbation with 2x to 4x of room — which is what
+> **[stipulated]** is supposed to mean. Where no cue fires the only asymmetry left
+> is `noCuePrior Continuation = 1.2`, so a **20% wobble flips the kind**, and with
+> it the right frontier and which referents a pronoun can reach. Most edges in
+> this fragment are no-cue edges.
+>
+> So the number is not a guess that data will improve. On a no-cue edge there is
+> *no evidence*, and `1.2` is not evidence either — it is a tie-break wearing a
+> prior's clothes. That is an argument for `Marginal` over `Committed` on such
+> edges rather than for a different constant: marginalising reports the absence of
+> evidence, committing manufactures a structural decision out of it. `Marginal`
+> is not a refinement here; on a no-cue edge it is the only honest policy.
+> *Pinned:* `Stage2Spec` section 13b asserts the 2x floor for cue-driven edges, so
+> a future weight edit that erodes it fails rather than passing quietly.
 >
 > **P5b.7 [structural gap]** A resolved pronoun adds no referent to its unit's
 > universe, so under `Committed` a chain of coordinating relations starves:
@@ -1433,6 +1459,51 @@ chain of 50, same shape
 > **P13.6 [stipulated]** The weight *values*. Only the structure — which categories
 > exist, and which are pinned to zero — is derived. A real training run replaces
 > the numbers; it must not replace the zero.
+>
+> **P13.7 [proved]** `rwScore` is **extensive**: on disjoint claim sets the score
+> of the union is the sum. So it is unbounded in claim count and carries no
+> per-claim cost, and with `wUncovered = 0` over-generation is free.
+> *And it is not reweightable away.* The scalar is blind to over-generation
+> **exactly when** `wUncovered = 0` — the identical condition P13.3 *requires*,
+> for its own good reason. One condition, two consequences; no weight table
+> satisfies the requirement and escapes the blindness. The escape is a
+> **denominator**, which is a coordinate and not a weight: `rwYield`.
+>
+> **P13.8 [proved]** `rwScore` never reads provenance, so it is a function of the
+> claim multiset and the verdicts alone — **independent of the input**. Two
+> extractions grounding the same claims score identically whether one accounts for
+> the whole source or for six characters of it.
+> *Consequence:* the scalar has no gradient with respect to correspondence-to-input
+> at all. That is a stronger statement than "faithfulness is unchecked".
+> *Repaired as a coordinate, not as a weight:* `rwGroundedSpan` counts the
+> characters the grounded claims were derived from, `rwSourceCoverage` divides by
+> the source extent. Both are admissible because a `Prov` is built by the parser
+> from the source token's own span — **input-determined**, not assertable
+> downstream — which is the same argument that makes the oracle admissible,
+> reached by a different route.
+>
+> **P13.9 [proved]** `rwScore` factors through the **commutative idempotent
+> quotient** (P5.2), because `fusedClaims` is a set. So it cannot express "two
+> derivations agree" — which is precisely the one provability-shaped signal this
+> section argues is safe.
+>
+> **P13.10 [checked]** Corroboration requires **distinct derivations**, and the
+> distinction is not pedantic. `convergentNodes` groups by claim identity alone,
+> which is the right question for fusion — those are the nodes it merges — and
+> the wrong one for reward: the same claim reached the same way twice is
+> repetition, and a signal that paid for it would pay a policy for repeating
+> itself. `corroboratedNodes` requires the provenance trees to differ.
+> *Also checked:* `hasIndependentSupport` is **vacuously false on a premise-only
+> graph**, since it skips justifications with no antecedents — and every graph
+> `genealogyOf` builds is premise-only. It measures derivation-level
+> independence, which is a stronger notion that the present pipeline never
+> exhibits.
+>
+> **P13.11 [structural]** `rwCorroborated` and `rwNovel` pull in opposite
+> directions: one pays for a claim arriving twice, the other for a claim not
+> implied by the others. A single scalar cannot express a trade-off, only a
+> ranking, which is the general reason the coordinates are reported separately
+> rather than summed.
 
 ### Analysis: the two admissible sources, and why only two
 
@@ -1447,9 +1518,23 @@ already-confirmed base. Nothing else, and the exclusions are specific:
 
 The one safe use of a provability-shaped signal is **cross-derivation
 convergence**: independent extraction paths arriving at mutually-entailing forms.
-That is what `hasIndependentSupport` and `convergentNodes` measure, and it is safe
-precisely because it is a property of *two* derivations rather than of one
-statement.
+It is safe precisely because it is a property of *two* derivations rather than of
+one statement.
+
+Which function measures it needs care, and the obvious two do not:
+
+| function | groups by | fires on the real pipeline? | safe as reward? |
+|---|---|---|---|
+| `convergentNodes` | claim identity | yes | **no** — counts repetition |
+| `hasIndependentSupport` | disjoint premise sets | **no** — vacuous on premise-only graphs | yes, where it fires |
+| `corroboratedNodes` | claim identity **and** distinct provenance | yes | yes |
+
+What corroboration does *not* establish is independence of the oracle answers. An
+oracle is a function of the claim, so two nodes carrying the same claim get the
+same verdict and one reversal takes both down. The signal is about the
+**extraction**, not a second opinion on the truth — and that is exactly why it is
+admissible: it is a fact about how the claim was reached from the input, not
+something the system establishes about the claim itself.
 
 ---
 
@@ -1558,6 +1643,16 @@ The propositions most worth attacking, in order:
    ranking layer need to represent that overlap explicitly, rather than treating
    readings as if marginals summed to 1?
 
-Everything tagged **[stipulated]** is scaffolding: replaced when data arrives, not
-a design question. Everything tagged **[structural]** or **[conjectured]** would
-still be open with unlimited data and compute.
+Everything tagged **[structural]** or **[conjectured]** would still be open with
+unlimited data and compute.
+
+**[stipulated]** is mostly scaffolding — replaced when data arrives, not a design
+question — but the tag has turned out to cover two populations, and P5b.6 is the
+measurement that separates them. A stipulated number is scaffolding when the
+outcome it feeds is robust to perturbing it; where a cue fires, the glue weights
+clear a 20% wobble by 2x to 4x. `noCuePrior Continuation = 1.2` does not: a 20%
+wobble flips `relationKind` and therefore accessibility. So before trusting the
+tag, ask what margin the number wins by. The reward weights are the other case
+worth re-reading in that light — P13.7 shows their blind spot is a consequence of
+a *required* value rather than of a poorly chosen one, which is a defect no
+retuning reaches.

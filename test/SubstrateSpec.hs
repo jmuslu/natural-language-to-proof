@@ -77,6 +77,14 @@ unaryOracle =
 node :: Int -> CanonCond -> Node
 node i c = Node (NodeId i) c pv
 
+-- | Lexical provenance over a chosen span, so that two nodes can carry
+-- genuinely different derivations rather than the shared 'pv'.
+pvAt :: Int -> Int -> Prov
+pvAt a b = ProvLex (SourceId "substrate") (Span a b) (replicate (b - a) 'w')
+
+nodeP :: Int -> CanonCond -> Prov -> Node
+nodeP i c = Node (NodeId i) c
+
 -- | @n0@ and @n1@ are confirmed premises. @n2@ has two independent derivations,
 -- one from each. @n3@ rests on @n0@ alone.
 --
@@ -441,6 +449,125 @@ selfAgreementChecks =
         (addNode (node 0 (cl "p")) Refuted emptyGenealogy)
 
 --------------------------------------------------------------------------------
+-- 6b. What the scalar cannot see
+--------------------------------------------------------------------------------
+
+-- | Three properties of 'rwScore', executed rather than asserted.
+--
+-- Each is a fact about collapsing the coordinates to one number, and each is the
+-- reason the coordinates are reported separately. The point of these checks is
+-- not that the scalar is wrong — it satisfies every constraint 'admissibility'
+-- states — but that satisfying those constraints is compatible with all three
+-- blind spots, so a future weight table cannot be trusted to close them.
+--
+-- If any of these ever /fails/, someone has changed the collapse. That is
+-- allowed, and it should be deliberate, which is what a failing check here is
+-- for.
+scalarBlindSpotChecks :: [Check]
+scalarBlindSpotChecks =
+  [ -- 1. Extensivity: over-generation is free.
+    expect "blind: appending uncovered claims does not move the score"
+      (rwScore (score confirmedTwo (overGenerate 0))
+         == rwScore (score confirmedTwo (overGenerate 20)))
+  , expect "blind: and it is not that they went unnoticed"
+      (rwUncovered (score confirmedTwo (overGenerate 20)) == 20)
+  , expect "blind: the yield coordinate is what sees it"
+      (rwYield (score confirmedTwo (overGenerate 20))
+         < rwYield (score confirmedTwo (overGenerate 0)))
+  , expect "blind: no weight table separates the two, because it is one condition"
+      (adOverGenerationFree (admissibility defaultWeights)
+         == adUncoveredIsZero (admissibility defaultWeights))
+
+  , -- 2. Input-independence: the scalar never reads provenance.
+    expect "blind: grounding six characters scores what grounding the text scores"
+      (rwScore (score confirmedTwo (groundedOver 0 6))
+         == rwScore (score confirmedTwo (groundedOver 0 200)))
+  , expectEq "blind: the span coordinate distinguishes them" 6
+      (rwGroundedSpan (score confirmedTwo (groundedOver 0 6)))
+  , expectEq "blind: and reads coverage against the source when told its extent"
+      (Just 0.5)
+      (rwSourceCoverage
+         (scoreOver defaultWeights (Just (Span 0 20)) confirmedTwo
+            (groundedOver 0 10)))
+  , expectEq "blind: coverage is unknown, not total, when the extent is withheld"
+      Nothing
+      (rwSourceCoverage (score confirmedTwo (groundedOver 0 10)))
+
+  , -- 3. The idempotent quotient: corroboration is invisible to the scalar.
+    expect "blind: two derivations of one claim score as one derivation does"
+      (rwScore (score confirmedTwo twiceSameWay)
+         == rwScore (score confirmedTwo twiceDifferently))
+  , expectEq "blind: repetition is not corroboration" 0
+      (rwCorroborated (score confirmedTwo twiceSameWay))
+  , expectEq "blind: two distinct derivations are" 1
+      (rwCorroborated (score confirmedTwo twiceDifferently))
+  , expectEq "blind: convergence, which fusion wants, counts both" 1
+      (length (convergentNodes twiceSameWay))
+  , expect "blind: so convergence and corroboration are different questions"
+      (length (convergentNodes twiceSameWay)
+         /= length (corroboratedNodes twiceSameWay))
+
+  , -- The stronger notion, and why it is not the one used here.
+    expect "blind: premise-disjoint support is vacuous on a premise-only graph"
+      (not (any (hasIndependentSupport twiceDifferently) (nodeIds twiceDifferently)))
+  , expect "blind: while it does hold where derivations exist"
+      (hasIndependentSupport twoSupport (NodeId 2))
+
+  , -- Novelty: content the oracle had to supply.
+    expectEq "blind: a claim implied by the others is not novel" 2
+      (rwNovel (score (fuse (confirmAll yesOracle [cl "p", impl (cl "p") (cl "q"), cl "q"]))
+                  emptyGenealogy))
+  , expectEq "blind: with nothing implied, every claim is novel" 2
+      (rwNovel (score confirmedTwo emptyGenealogy))
+  , expect "blind: novelty and corroboration are opposite pressures"
+      (rwNovel (score confirmedTwo emptyGenealogy) > 0
+         && rwCorroborated (score confirmedTwo twiceDifferently) > 0)
+
+    -- Span coverage counts overlap once, which is what makes it a measure.
+  , expectEq "spanCoverage: overlapping spans count once" 8
+      (spanCoverage [Span 0 5, Span 3 8])
+  , expectEq "spanCoverage: naive summing double counts" 10
+      (sum (map spanWidth [Span 0 5, Span 3 8]))
+  , expectEq "spanCoverage: containment counts once" 10
+      (spanCoverage [Span 0 10, Span 2 4])
+  , expectEq "spanCoverage: disjoint spans add" 10
+      (spanCoverage [Span 10 15, Span 0 5])
+  , expectEq "spanCoverage: nothing covers nothing" 0 (spanCoverage [])
+  , expectEq "spanCoverage: empty spans contribute nothing" 0
+      (spanCoverage [Span 4 4, Span 9 9])
+  ]
+  where
+    confirmedTwo = fuse (confirmAll yesOracle [cl "p", cl "q"])
+
+    -- Two confirmed premises, plus k premises no oracle covers.
+    overGenerate k =
+      foldl
+        (\g i ->
+           addJustification (premise (NodeId i) "oracle")
+             (addNode (node i (cl ("j" ++ show i))) Unknown g))
+        (addJustification (premise (NodeId 1) "oracle")
+           (addJustification (premise (NodeId 0) "oracle")
+              (addNode (node 1 (cl "q")) Confirmed
+                 (addNode (node 0 (cl "p")) Confirmed emptyGenealogy))))
+        [2 .. k + 1]
+
+    -- One confirmed premise whose derivation covers [a,b) of the source.
+    groundedOver a b =
+      addJustification (premise (NodeId 0) "oracle")
+        (addNode (nodeP 0 (cl "p") (pvAt a b)) Confirmed emptyGenealogy)
+
+    -- The same claim twice. Same derivation in one graph, different in the
+    -- other; both grounded, so the difference is corroboration and nothing else.
+    twiceSameWay = twice (pvAt 0 4) (pvAt 0 4)
+    twiceDifferently = twice (pvAt 0 4) (pvAt 10 14)
+
+    twice p1 p2 =
+      addJustification (premise (NodeId 1) "oracle")
+        (addJustification (premise (NodeId 0) "oracle")
+           (addNode (nodeP 1 (cl "p") p2) Confirmed
+              (addNode (nodeP 0 (cl "p") p1) Confirmed emptyGenealogy)))
+
+--------------------------------------------------------------------------------
 -- 7. End to end, on the real front end
 --------------------------------------------------------------------------------
 
@@ -523,6 +650,7 @@ allChecks =
     , retractionChecks
     , fusionChecks
     , selfAgreementChecks
+    , scalarBlindSpotChecks
     , endToEndChecks
     ]
 

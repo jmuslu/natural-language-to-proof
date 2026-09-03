@@ -1050,6 +1050,72 @@ muChecks =
         Nothing -> 0
 
 --------------------------------------------------------------------------------
+-- 13b. How much can a stipulated cue weight move?
+--------------------------------------------------------------------------------
+
+-- | The kind-flip margin: the ratio between the best relation of each kind.
+--
+-- 'glue' is multiplicative in the cue weights, so this ratio is /exactly/ the
+-- factor by which a single weight must be scaled to change which kind wins. No
+-- sampling required, and no perturbation loop — the margin is the answer.
+--
+-- Kind is the right thing to measure rather than the relation itself, because
+-- 'relationKind' is what 'rightFrontier' consults. A flip inside one kind
+-- relabels an edge; a flip across kinds changes which referents are accessible.
+kindMargin :: DiscourseUnit -> DiscourseUnit -> Maybe Double
+kindMargin a b = case glue a b of
+  Nothing -> Nothing
+  Just d ->
+    let ps = toPairs d
+        best k = maximum (0 : [m | (r, m) <- ps, relationKind r == k])
+        co = best Coordinating
+        sub = best Subordinating
+    in if co <= 0 || sub <= 0
+         then Nothing
+         else Just (max co sub / min co sub)
+
+-- | \"Stipulated\" has to mean robust to the stipulation, and it is true of the
+-- cue weights and false of the no-cue prior. These checks pin both halves.
+--
+-- The bar is stated rather than discovered: a kind decision driven by a cue must
+-- survive a twenty-percent perturbation __with room to spare__, and @2x@ is the
+-- stated threshold. If a future weight edit erodes a cue-driven margin below it,
+-- this fails, which is the point.
+cueSensitivityChecks :: [Check]
+cueSensitivityChecks =
+  [ expectEq "cue: a no-cue edge rests on the prior alone"
+      (Just (noCuePrior Continuation / noCuePrior Narration))
+      (kindMargin (mkUnit 0 "John loves Mary.") (mkUnit 1 "Mary smiles."))
+  , expect "cue: which is a 20% margin, so the kind is not evidence-driven there"
+      (case kindMargin (mkUnit 0 "John loves Mary.") (mkUnit 1 "Mary smiles.") of
+         Just m  -> m < 1.5
+         Nothing -> False)
+  , expect "cue: no cue fires on that edge, which is why"
+      (null (detectCues (mkUnit 0 "John loves Mary.") (mkUnit 1 "Mary smiles.")))
+
+  , expect "cue: a generic-then-specific edge is robust to 20%"
+      (atLeast 2
+         (kindMargin (mkUnit 0 "Every student reads a book.")
+            (mkUnit 1 "Mary smiles.")))
+  , expect "cue: and so is a shared-predicate edge"
+      (atLeast 2
+         (kindMargin (mkUnit 0 "A student arrived.")
+            (mkUnit 1 "A student arrived.")))
+  , expect "cue: and a new-referent edge"
+      (atLeast 2
+         (kindMargin (mkUnit 0 "A student arrived.")
+            (mkUnit 1 "A professor walks.")))
+  , expect "cue: so the two populations differ by at least 1.6x in robustness"
+      (case ( kindMargin (mkUnit 0 "John loves Mary.") (mkUnit 1 "Mary smiles.")
+            , kindMargin (mkUnit 0 "Every student reads a book.") (mkUnit 1 "Mary smiles.")
+            ) of
+         (Just weak, Just strong) -> strong / weak >= 1.6
+         _                        -> False)
+  ]
+  where
+    atLeast t = maybe False (>= t)
+
+--------------------------------------------------------------------------------
 -- 14. Scope permutation must not move the anaphora answer
 --------------------------------------------------------------------------------
 
@@ -1138,5 +1204,6 @@ main =
        , sdrtChecks
        , threadingChecks
        , muChecks
+       , cueSensitivityChecks
        , scopeRecencyChecks
        ])

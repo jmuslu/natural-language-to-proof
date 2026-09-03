@@ -25,6 +25,7 @@ module NL2Proof.Provenance
   , spanUnion
   , spanCovers
   , spanWidth
+  , spanCoverage
     -- * Derivation trees
   , RuleName(..)
   , Prov(..)
@@ -81,6 +82,25 @@ spanCovers (Span a b) (Span c d) = a <= c && d <= b
 
 spanWidth :: Span -> Int
 spanWidth (Span a b) = b - a
+
+-- | Characters covered by a set of spans, counting overlaps __once__.
+--
+-- Deliberately not @sum . map spanWidth@. Spans overlap, and for a coverage
+-- measure the difference between the two is the difference between /how much of
+-- the input is accounted for/ and /how much was said about it/ — which is
+-- exactly the distinction a reward signal has to keep, since the second is
+-- inflatable by repetition and the first is not.
+--
+-- Empty spans contribute nothing. The result is @0@ for no spans, so a caller
+-- dividing by it must guard.
+spanCoverage :: [Span] -> Int
+spanCoverage =
+  sum . map spanWidth . merge . sortOn spanStart . filter ((> 0) . spanWidth)
+  where
+    merge (Span a b : Span c d : rest)
+      | c <= b    = merge (Span a (max b d) : rest)
+      | otherwise = Span a b : merge (Span c d : rest)
+    merge xs = xs
 
 --------------------------------------------------------------------------------
 -- Derivation trees

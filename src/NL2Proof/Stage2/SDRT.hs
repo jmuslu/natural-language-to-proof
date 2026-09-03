@@ -79,6 +79,7 @@ module NL2Proof.Stage2.SDRT
   , Cue(..)
   , detectCues
   , cueWeight
+  , noCuePrior
   , glue
     -- * Rendering
   , renderSDRS
@@ -353,16 +354,38 @@ cueWeight NewReferent _                       = 1
 -- Defeasibility lives here. Cues raise a relation's weight; they never establish
 -- it, and a later segment can contradict the choice — which is what Stage 3's
 -- rollback is for.
+-- | The prior when no cue fires at all. 'Continuation' is the least committal
+-- relation, so it takes the default.
+--
+-- __This is the most load-bearing number in the layer, and it is the one least
+-- like a cue weight.__ Measured rather than assumed: see
+-- @docs\/cue-weight-sensitivity.hs@.
+--
+-- Because 'glue' is multiplicative in the weights, the ratio between the best
+-- relation of each kind /is/ the perturbation threshold for flipping the kind,
+-- exactly. On an edge where some cue fires that ratio is @2.0@ to @4.16@ on the
+-- fragment: comfortably robust to a twenty-percent wobble, which is what
+-- \"stipulated\" is supposed to mean. On an edge where __no__ cue fires the
+-- only asymmetry left is this prior, so the ratio is @1.2@ — and a
+-- twenty-percent wobble flips 'relationKind', hence 'rightFrontier', hence which
+-- referents a later pronoun can reach.
+--
+-- Most edges in the fragment are no-cue edges. So the honest reading is not
+-- \"this number is a guess\" but: __on a no-cue edge there is no evidence, and
+-- @1.2@ is not evidence either — it is a tie-break wearing a prior's clothes.__
+-- That is an argument for 'NL2Proof.Stage2.Threading.Marginal' over
+-- 'NL2Proof.Stage2.Threading.Committed' on such edges, not an argument for a
+-- different number: marginalising reports the absence of evidence, while
+-- committing manufactures a structural decision out of it.
+noCuePrior :: Relation -> Double
+noCuePrior Continuation = 1.2
+noCuePrior _            = 1.0
+
 glue :: DiscourseUnit -> DiscourseUnit -> Maybe (Dist Relation)
 glue a b = fromWeights [(r, score r) | r <- allRelations]
   where
     cues = detectCues a b
-    score r = product [cueWeight c r | c <- cues] * base r
-
-    -- A weak prior over relations with no cue firing at all. Continuation is the
-    -- least committal, so it takes the default.
-    base Continuation = 1.2
-    base _            = 1.0
+    score r = product [cueWeight c r | c <- cues] * noCuePrior r
 
 --------------------------------------------------------------------------------
 -- Rendering
