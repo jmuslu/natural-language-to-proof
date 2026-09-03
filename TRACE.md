@@ -60,7 +60,7 @@ layer has something non-trivial to do.
 |---|---|
 | Object | `String` = element of the free monoid Σ\* over characters |
 | Spans | half-open intervals `[a,b) ⊂ ℕ`, ordered by inclusion |
-| Operation | tokenization: a partial map Σ\* → list of (token, interval) |
+| Operation | segmentation: Σ\* → a DAG whose edges are (lexical unit, interval) pairs |
 | Structure used | `spanUnion` = join in the interval lattice (least interval containing both) |
 | Checked | slicing a token's span out of the source reproduces the token (Stage 1 suite) |
 
@@ -90,8 +90,10 @@ State: an element of Σ\*, plus the interval `[0,27)`.
 
 ---
 
-## S1 — Tokens
+## S1 — Words and the lexical lattice
 ### State and propositions
+
+Whitespace tokenization, which is not the part in question:
 
 ```
 0  every    [0,5)
@@ -103,15 +105,52 @@ State: an element of Σ\*, plus the interval `[0,27)`.
 
 The period at `[26,27)` contributes no token.
 
-> **P1.1 [checked]** Token spans are pairwise disjoint and ordered.
+A **candidate lexical unit** is an edge over word boundaries `0..5`: a lexicon
+key matching words `[i,j)` is an edge `i → j`. Every key here is one word long,
+so the lattice is the line `0→1→2→3→4→5` and exactly one path runs through it.
+`"John does not love Mary."` is the fragment's only sentence where the lattice is
+not simply the words: `"does not"` is one edge `1→3`, and since neither `"does"`
+nor `"not"` is a key on its own, `1→2` and `2→3` do not exist. One path again,
+for a different reason.
+
+> **P1.1 [checked]** Word spans are pairwise disjoint and ordered.
 >
-> **P1.2 [proved]** Spans form a lattice under inclusion; `spanUnion` is its
+> **P1.2 [checked]** Unit spans are **not**. Units form a *cover* of the words,
+> not a partition: `"does not"` covers words 1 and 2, and if `"not"` were also a
+> key the two units would overlap. There is therefore no such object as "the
+> tokens of the sentence" between this layer and the parse, and anything reading
+> the unit set as a partition is reading a structure that does not exist.
+> *Checked* by a lexicon in which `"red dragon"` is an `N` and `"red"` an `N/N`:
+> two overlaps, both kept.
+>
+> **P1.3 [proved]** A *segmentation* is a path from node `0` to node `n`, i.e. a
+> set of units whose ranges partition `[0,n)`. Longest-match picks one path by a
+> local rule and leaves no record that others existed. CKY instead quantifies
+> over all of them, because a unit is a base case at its own span: every path
+> contributes its derivations to cell `(0,n)`, and the candidate set at the top is
+> the union over paths.
+> *Consequence:* segmentation ambiguity needs no machinery of its own. It arrives
+> as parse ambiguity — `ParseAmbiguity` plus a logged `Decision` — which is what
+> every other ambiguity in Stage 1 already gets. The fork itself is logged
+> separately as `SegmentationAmbiguity`, because a path that reaches no derivation
+> dies inside the table and would otherwise leave no trace of having been real.
+>
+> **P1.4 [proved]** The cost is nothing. Nodes are word boundaries, so the table
+> is still `O(n²)` cells with `O(n)` splits each, `n` in words. A lattice over
+> *character* offsets — what a language without whitespace requires, and how
+> MeCab-style tokenizers are built — multiplies `n` by mean word length and the
+> table by its cube. In English that buys nothing: how many words a unit spans is
+> in question, where a word ends is not.
+>
+> **P1.5 [proved]** Spans form a lattice under inclusion; `spanUnion` is its
 > **join**, not set union. Intervals are not closed under union, so the result may
-> cover characters that contributed nothing.
+> cover characters that contributed nothing. A multi-word unit is the first place
+> this is visible rather than merely possible: `"does not"` spans the blank
+> between its words.
 > *Consequence:* a provenance span is an over-approximation. Anyone reading a span
 > as "exactly the characters responsible" is reading it wrong.
 >
-> **P1.3 [structural gap]** Meet is never computed. "What do two derivations share
+> **P1.6 [structural gap]** Meet is never computed. "What do two derivations share
 > textually" is therefore not expressible. Any edit-to-scope query needs it.
 
 ---

@@ -667,7 +667,13 @@ mkUnit i txt =
   DiscourseUnit (Label i) (dscDRS (prDiscourse (runFragment sdrtSrc txt))) (toks txt)
   where
     toks =
-      concatMap (map tokText . tokenizeSentence (inLexicon fragmentLexicon) maxPhraseLength)
+      concatMap
+        ( map tokText
+            . latRaw
+            . sentenceLattice
+                (inLexicon fragmentLexicon)
+                (maxPhraseLength fragmentLexicon)
+        )
         . splitSentences
 
 -- | 'Nothing' when the text produced no conditions at all, i.e. nothing parsed.

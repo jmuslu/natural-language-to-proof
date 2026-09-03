@@ -17,7 +17,7 @@
 -- 'selfAgreementChecks' (the reward is unmoved by internal coherence).
 module Main (main) where
 
-import Data.List (nub, sort)
+import Data.List (sort)
 
 import Harness
 import NL2Proof.Collapse.Class
@@ -276,9 +276,16 @@ retractionChecks =
 
   , expect "retract: retracting an already-refuted premise loses nothing new"
       (null (snd (retract (NodeId 0) (setVerdict (NodeId 0) Refuted twoSupport))))
-  , expect "retract: retraction does not mutate the input graph"
-      (let (_, _) = retract (NodeId 0) twoSupport
-       in isGrounded twoSupport (NodeId 3))
+  , -- Purity makes "does not mutate the input" true by construction, so that
+    -- is not what this pins. What it pins is that the /new/ graph is the one
+    -- that carries the retraction: a caller holding the pre-retraction value
+    -- still gets the pre-retraction answer, which is why 'retract' has to
+    -- return it rather than only the list of losses.
+    expect "retract: the two graphs disagree about n0, and only the new one is right"
+      (let (g', lost) = retract (NodeId 0) twoSupport
+       in isGrounded twoSupport (NodeId 0)
+            && not (isGrounded g' (NodeId 0))
+            && NodeId 0 `elem` lost)
 
   , -- Convergence, which is what makes the survival above possible.
     expect "retract: n2 has independent support"

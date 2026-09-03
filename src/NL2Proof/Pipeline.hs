@@ -31,6 +31,7 @@ module NL2Proof.Pipeline
   ) where
 
 import Data.List (intercalate, nub, sort)
+import qualified Data.Map as M
 
 import NL2Proof.Collapse.Class
 import NL2Proof.DRT.Build
@@ -49,8 +50,12 @@ import NL2Proof.Trace
 
 data SentenceResult = SentenceResult
   { srSentence :: Sentence
+  , srLattice  :: Lattice
+    -- ^ Every candidate lexical unit, before the parser chose among them.
   , srTokens   :: [Token]
+    -- ^ Raw whitespace tokens. Not what was parsed — see 'srLattice'.
   , srUnknown  :: [Token]
+    -- ^ Raw tokens no candidate unit covers.
   , srParses   :: [Sign]
     -- ^ __All__ derivations, not the selected one.
   , srChosen   :: Maybe Sign
@@ -122,17 +127,20 @@ processSentence :: Lexicon -> SourceId -> Sentence -> SentenceResult
 processSentence lexicon src sent =
   SentenceResult
     { srSentence = sent
+    , srLattice = lat
     , srTokens = toks
     , srUnknown = unknown
     , srParses = parses
     , srChosen = chosen
     , srForm = form
     , srDRS = drs
-    , srTrace = unknownTrace <> couplingTrace <> parseTrace <> typeTrace
+    , srTrace =
+        unknownTrace <> segTrace <> couplingTrace <> parseTrace <> typeTrace
     }
   where
-    toks = tokenizeSentence (inLexicon lexicon) maxPhraseLength sent
-    unknown = filter (not . inLexicon lexicon . tokText) toks
+    lat = sentenceLattice (inLexicon lexicon) (maxPhraseLength lexicon) sent
+    toks = latRaw lat
+    unknown = uncoveredTokens lat
 
     unknownTrace =
       foldMap
@@ -145,9 +153,30 @@ processSentence lexicon src sent =
                })
         unknown
 
+    -- A fork is not a decision here, so it is a diagnostic and not a
+    -- 'Decision': nothing is collapsed at this point. It is still worth logging,
+    -- because a fork whose alternative dies inside the parse table leaves no
+    -- other trace that it existed.
+    segTrace =
+      foldMap
+        (\(u, v) ->
+           flag
+             Diagnostic
+               { diagKind = SegmentationAmbiguity
+               , diagMsg =
+                   "competing lexical units " ++ show (tokText u) ++ " and "
+                     ++ show (tokText v) ++ "; both kept, the parser decides"
+               , diagProv =
+                   provRule "segmentation"
+                     [ ProvLex src (tokSpan u) (tokText u)
+                     , ProvLex src (tokSpan v) (tokText v)
+                     ]
+               })
+        (latticeForks lat)
+
     couplingTrace = foldMap flag (detectCoupling lexicon src toks)
 
-    parses = parse lexicon src toks S
+    parses = parse lexicon src lat S
 
     sentProvFallback = provRule "sentence" [ProvLex src (sentSpan sent) (sentText sent)]
 
@@ -196,7 +225,7 @@ processSentence lexicon src sent =
         Right t
           | t == catTy (sCat s) ->
               let nf = normalize (sSem s)
-                  idx = buildProvIndex lexicon src toks
+                  idx = buildProvIndex lexicon (sProv s)
               in (Just nf, Just (toDRS idx (sProv s) nf), mempty)
         Right t ->
           ( Nothing
@@ -272,7 +301,9 @@ renderSentenceResult :: SentenceResult -> String
 renderSentenceResult r =
   unlines $
     [ "sentence " ++ show (sentSpan (srSentence r)) ++ " " ++ show (sentText (srSentence r))
-    , "  tokens:  " ++ unwords (map tokText (srTokens r))
+    , "  words:   " ++ unwords (map tokText (srTokens r))
+    , "  units:   "
+        ++ unwords (map (show . tokText) (M.elems (latUnits (srLattice r))))
     , "  parses:  " ++ show (length (srParses r))
     ]
       ++ [ "  form:    " ++ pretty f | Just f <- [srForm r] ]

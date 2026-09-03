@@ -45,7 +45,6 @@ import NL2Proof.DRT.Types
 import NL2Proof.Provenance
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.Lexicon
-import NL2Proof.Syntax.Tokenize
 import NL2Proof.Trace
 
 --------------------------------------------------------------------------------
@@ -58,17 +57,22 @@ import NL2Proof.Trace
 -- This is how conditions get __word-level__ provenance rather than merely
 -- sentence-level, without threading provenance through the lambda calculus
 -- itself. The lexicon is the only place a constant can enter a derivation, so
--- indexing the lexical items of a sentence is sufficient — and it keeps
+-- indexing that derivation's own lexical leaves is enough — and it keeps
 -- "NL2Proof.Semantics.Lambda" ignorant of provenance, which is the right
 -- separation.
+--
+-- Note the index is built from the /chosen derivation/, not from the words of
+-- the sentence. Those differ: competing segmentations put competing lexical
+-- units over the same words, and a unit that lost has no business supplying
+-- provenance for a constant it did not contribute.
 type ProvIndex = M.Map String Prov
 
-buildProvIndex :: Lexicon -> SourceId -> [Token] -> ProvIndex
-buildProvIndex lexicon src toks =
+buildProvIndex :: Lexicon -> Prov -> ProvIndex
+buildProvIndex lexicon p =
   M.fromList
-    [ (c, ProvLex src (tokSpan t) (tokText t))
-    | t <- toks
-    , e <- lookupWord lexicon (tokText t)
+    [ (c, ProvLex s sp w)
+    | (s, sp, w) <- provLeaves p
+    , e <- lookupWord lexicon w
     , c <- constNames (entrySem e)
     ]
 
@@ -294,8 +298,8 @@ emptyDiscourse = Discourse emptyDRS mempty
 -- here rather than a lost decision.
 extendDiscourse :: Discourse -> DRS -> Prov -> Discourse
 extendDiscourse (Discourse ctx tr) new sentProv =
-  let (fresh, _) = freshenAgainst (drsRefs ctx) new
-      (resolved, tr') = resolveAnaphora ctx fresh sentProv
+  let (freshened, _) = freshenAgainst (drsRefs ctx) new
+      (resolved, tr') = resolveAnaphora ctx freshened sentProv
   in Discourse (mergeDRS ctx resolved) (tr <> tr')
 
 -- | Fold a sequence of sentence DRSs into one discourse, left to right.

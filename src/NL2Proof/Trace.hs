@@ -78,7 +78,12 @@ renderDecision d =
 -- per the methodology notes, disagreements are more valuable than agreements —
 -- they are where failure modes become visible and harden into stated heuristics.
 data DiagKind
-  = -- | More than one CCG derivation survived.
+  = -- | Two lexical units compete for the same words, so the sentence has more
+    -- than one segmentation. Both are kept and the parser decides, which means
+    -- this often appears without 'ParseAmbiguity' following it: a fork whose
+    -- alternative reaches no derivation is a fork that was real and lost.
+    SegmentationAmbiguity
+  | -- | More than one CCG derivation survived.
     ParseAmbiguity
   | -- | Quantifier scope is underdetermined by the syntax.
     ScopeAmbiguity

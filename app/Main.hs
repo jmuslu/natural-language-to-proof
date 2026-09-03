@@ -7,6 +7,8 @@
 -- pipeline. See ARCHITECTURE.md.
 module Main (main) where
 
+import qualified Data.Map as M
+
 import NL2Proof.Collapse.Class
 import NL2Proof.DRT.Build
 import NL2Proof.DRT.Canonical
@@ -63,9 +65,12 @@ demo c = do
 showSentence :: SentenceResult -> IO ()
 showSentence r = do
   putStrLn
-    ( "  [" ++ show (sentSpan (srSentence r)) ++ "] tokens: "
+    ( "  [" ++ show (sentSpan (srSentence r)) ++ "] words: "
         ++ unwords (map tokText (srTokens r))
     )
+  case [tokText u | u <- M.elems (latUnits (srLattice r)), ' ' `elem` tokText u] of
+    []    -> pure ()
+    multi -> putStrLn ("      multi-word units: " ++ unwords (map show multi))
   putStrLn ("      derivations: " ++ show (length (srParses r)))
   case srForm r of
     Nothing -> putStrLn "      form: <none>"

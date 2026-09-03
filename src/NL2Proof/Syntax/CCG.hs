@@ -25,6 +25,7 @@ module NL2Proof.Syntax.CCG
   , combine
     -- * Parsing
   , lexicalSigns
+  , lexicalSpans
   , parseWith
   , parse
     -- * Fusion helper
@@ -128,49 +129,64 @@ combine rules l r = concatMap (\rule -> rule l r) rules
 -- Parsing
 --------------------------------------------------------------------------------
 
--- | Lexical lookup: one list of candidate signs per token. An unknown token
--- yields an empty list, which makes the whole parse fail — reported as a
--- diagnostic by the caller rather than raised as an error here.
+-- | Lexical lookup for one candidate unit. A unit with no entry yields an empty
+-- list, which makes every derivation through it fail — reported as a diagnostic
+-- by the caller rather than raised as an error here.
 lexicalSigns :: Lexicon -> SourceId -> Token -> [Sign]
 lexicalSigns lexicon src tok =
   [ Sign (entryCat e) (entrySem e) prov | e <- lookupWord lexicon (tokText tok) ]
   where
     prov = ProvLex src (tokSpan tok) (tokText tok)
 
--- | CKY over a sequence of per-token candidate sign lists.
+-- | Lexical signs for every unit in a lattice, keyed by the same raw-token
+-- range. Ranges with no entry are absent rather than present-and-empty.
+lexicalSpans :: Lexicon -> SourceId -> Lattice -> M.Map (Int, Int) [Sign]
+lexicalSpans lexicon src l =
+  M.filter (not . null) (M.map (lexicalSigns lexicon src) (latUnits l))
+
+-- | CKY over a lattice of candidate lexical spans.
 --
--- The table is defined by lazy self-reference: @cell@ reads @table@ for shorter
--- spans, and @table@ is built from @cell@. This relies on 'Data.Map' being lazy
--- in its values.
-parseWith :: [Rule] -> [[Sign]] -> Cat -> [Sign]
-parseWith rules tokenSigns goal =
+-- Two things differ from textbook CKY over a token list, and they are the same
+-- thing twice: cells are keyed by @(from, to)@ node pairs rather than
+-- @(start, length)@, and a lexical unit is a /base case at its own span/ rather
+-- than only at width one. That generalization is the whole of what admits
+-- multi-word entries without a segmentation pass in front of the parser. The
+-- @"does not"@ unit fills cell @(1, 3)@ directly; if @"does"@ and @"not"@ also
+-- had entries, their derivation would fill @(1, 3)@ alongside it and both would
+-- be returned.
+--
+-- Complexity is unchanged at @O(n^3)@ in words, because the node set is still
+-- word boundaries. The lattice widens what can fill a cell, not how many cells
+-- there are.
+--
+-- The table is defined by lazy self-reference: @cell@ reads @table@ for strictly
+-- shorter spans, and @table@ is built from @cell@. This relies on 'Data.Map'
+-- being lazy in its values.
+parseWith :: [Rule] -> Int -> M.Map (Int, Int) [Sign] -> Cat -> [Sign]
+parseWith rules n lexSpans goal =
   [ s | s <- M.findWithDefault [] (0, n) table, sCat s == goal ]
   where
-    n = length tokenSigns
-
     table :: M.Map (Int, Int) [Sign]
     table =
       M.fromList
-        [ ((i, len), cell i len)
+        [ ((i, i + len), cell i (i + len))
         | len <- [1 .. n]
         , i <- [0 .. n - len]
         ]
 
-    lexAt = M.fromList (zip [0 :: Int ..] tokenSigns)
+    cell i j =
+      M.findWithDefault [] (i, j) lexSpans
+        ++ [ s
+           | k <- [i + 1 .. j - 1]
+           , l <- M.findWithDefault [] (i, k) table
+           , r <- M.findWithDefault [] (k, j) table
+           , s <- combine rules l r
+           ]
 
-    cell i 1   = M.findWithDefault [] i lexAt
-    cell i len =
-      [ s
-      | k <- [1 .. len - 1]
-      , l <- M.findWithDefault [] (i, k) table
-      , r <- M.findWithDefault [] (i + k, len - k) table
-      , s <- combine rules l r
-      ]
-
--- | Parse a token sequence to the goal category using application only.
-parse :: Lexicon -> SourceId -> [Token] -> Cat -> [Sign]
-parse lexicon src toks =
-  parseWith applicationRules (map (lexicalSigns lexicon src) toks)
+-- | Parse a sentence lattice to the goal category using application only.
+parse :: Lexicon -> SourceId -> Lattice -> Cat -> [Sign]
+parse lexicon src l =
+  parseWith applicationRules (latEnd l) (lexicalSpans lexicon src l)
 
 --------------------------------------------------------------------------------
 -- Fusion helper

@@ -111,8 +111,11 @@ fragmentCases =
       , caseForms = [TNot (ap2 "love" (entity "john") (entity "mary"))]
       , caseDiags = []
       , caseNotes =
-          "\"does not\" is a single multi-word lexical entry, merged by the"
-            ++ " tokenizer's greedy longest-match pass."
+          "\"does not\" is a single multi-word lexical entry. It is a unit"
+            ++ " of the parse, not of a tokenization run in front of it: the"
+            ++ " lattice offers it as an edge spanning two words and CKY uses"
+            ++ " it. Here nothing competes, because neither part has an entry"
+            ++ " of its own."
       }
   , FragmentCase
       { caseId = "relative-clause"

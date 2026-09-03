@@ -13,6 +13,7 @@ module Main (main) where
 
 import Data.Char (toLower)
 import Data.List (isInfixOf, nub, sort)
+import qualified Data.Map as M
 
 import Harness
 import NL2Proof.Collapse.Class
@@ -173,22 +174,114 @@ slice :: Span -> String -> String
 slice (Span a b) = take (b - a) . drop a
 
 --------------------------------------------------------------------------------
--- 7. Multi-word lexical entries
+-- 7. Multi-word entries and the lexical lattice
 --------------------------------------------------------------------------------
 
+-- | A multi-word entry is a unit of the /parse/, not of a tokenization done in
+-- front of it.
+--
+-- Two facts here that have to be kept apart. The raw tokens are still words, so
+-- @"does"@ and @"not"@ both appear among them. The chosen derivation uses the
+-- @"does not"@ unit and neither part on its own. A greedy longest-match pass
+-- made the first of those false, which is precisely what made it lossy: a word
+-- absorbed into a phrase had no representation left.
 multiwordChecks :: [Check]
 multiwordChecks =
   case caseById "negation" of
     Nothing -> [bad "multiword: negation case present" "case not found"]
     Just c ->
-      let toks = concatMap srTokens (prSentences (runCase c))
+      let rs = prSentences (runCase c)
+          raw = concatMap (map tokText . srTokens) rs
+          units = concatMap (map tokText . M.elems . latUnits . srLattice) rs
+          leaves =
+            [ w
+            | r <- rs
+            , Just s <- [srChosen r]
+            , (_, _, w) <- provLeaves (sProv s)
+            ]
       in [ expect
-             "multiword: \"does not\" merged into one token"
-             ("does not" `elem` map tokText toks)
+             "multiword: the words are still words"
+             (["does", "not"] `isInfixOf` raw)
          , expect
-             "multiword: bare \"does\" not left behind"
-             ("does" `notElem` map tokText toks)
+             "multiword: \"does not\" is a candidate unit"
+             ("does not" `elem` units)
+         , expect
+             "multiword: and bare \"does\" is not, having no entry"
+             ("does" `notElem` units)
+         , expect
+             "multiword: the derivation uses the unit"
+             ("does not" `elem` leaves)
+         , expect
+             "multiword: and not its parts"
+             ("does" `notElem` leaves && "not" `notElem` leaves)
+         , expect
+             "multiword: no uncovered words"
+             (null (concatMap srUnknown rs))
+         , expectEq
+             "multiword: no fork, since the parts have no entries"
+             0
+             (length (concatMap (latticeForks . srLattice) rs))
          ]
+
+--------------------------------------------------------------------------------
+-- 7b. Segmentation ambiguity, preserved rather than resolved
+--------------------------------------------------------------------------------
+
+-- | A lexicon in which a fused compound competes with its own parts.
+--
+-- This is the case a greedy longest-match pass cannot represent, and the reason
+-- the lattice is not merely hygiene. A fused subkind can /only/ be written as a
+-- multi-word entry, so adding @"red dragon"@ as an @N@ under greedy matching
+-- deletes the iterated-intersection reading of the same two words before the
+-- parser sees it. That is the bad failure mode rather than the loud one: not no
+-- parse, but one parse, with the other meaning gone and nothing recording it.
+fusedLexicon :: Lexicon
+fusedLexicon =
+  mkLexicon
+    [ ("a", lookupWord fragmentLexicon "a")
+    , ("red", [adjEntry "red"])
+    , ("dragon", [nounEntry "dragon"])
+    , ("red dragon", [nounEntry "red_dragon"])
+    , ("sleeps", [ivEntry "sleep"])
+    ]
+
+latticeChecks :: [Check]
+latticeChecks =
+  expectEq "lattice: match window derived from the lexicon" 2
+    (maxPhraseLength fusedLexicon)
+    : case prSentences p of
+        [r] ->
+          let conss = map (sort . nub . constNames . normalize . sSem) (srParses r)
+          in [ expectEq "lattice: both segmentations reach S" 2 (length (srParses r))
+             , expect
+                 "lattice: the compound reading survives"
+                 (["red_dragon", "sleep"] `elem` conss)
+             , expect
+                 "lattice: and so does iterated intersection"
+                 (["dragon", "red", "sleep"] `elem` conss)
+             , expectEq
+                 "lattice: the fork is logged before the parser runs"
+                 2
+                 (length (latticeForks (srLattice r)))
+             , expect
+                 "lattice: as a diagnostic"
+                 (SegmentationAmbiguity `elem` diagKinds (prTrace p))
+             , expect
+                 "lattice: the parse ambiguity is reported too"
+                 (ParseAmbiguity `elem` diagKinds (prTrace p))
+             , expect
+                 "lattice: and the collapse names one alternative"
+                 ( [1] == [ length (decAlternatives d)
+                          | d <- traceDecisions (prTrace p)
+                          , decKind d == "parse-selection"
+                          ]
+                 )
+             , expect "lattice: no uncovered words" (null (srUnknown r))
+             ]
+        rs ->
+          [ bad "lattice: one sentence" ("got " ++ show (length rs)) ]
+  where
+    p = runPipeline fusedLexicon testSource "A red dragon sleeps."
 
 --------------------------------------------------------------------------------
 -- 8. Provenance
@@ -578,6 +671,7 @@ allChecks =
     , concatMap diagnosticChecks fragmentCases
     , concatMap spanChecks fragmentCases
     , multiwordChecks
+    , latticeChecks
     , concatMap provenanceChecks fragmentCases
     , anaphoraChecks
     , concatMap collapseChecks fragmentCases

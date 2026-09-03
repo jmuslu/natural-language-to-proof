@@ -74,10 +74,15 @@ entriesWithCat l c w = filter ((== c) . entryCat) (lookupWord l w)
 isModifierWord :: Lexicon -> String -> Bool
 isModifierWord l w = not (null (entriesWithCat l (N :/ N) w))
 
--- | Longest multi-word key in the fragment, in tokens. The tokenizer uses this
--- as its greedy-match window.
-maxPhraseLength :: Int
-maxPhraseLength = 3
+-- | Longest key in a lexicon, in words. 'NL2Proof.Syntax.Tokenize.Lattice' uses
+-- it as its match window.
+--
+-- Derived rather than declared. A hand-maintained constant that falls behind the
+-- lexicon fails silently in the worst way: a key longer than the window is never
+-- matched at all, so the sentence that needed it reports unknown words and no
+-- parse, with nothing pointing at the window as the cause.
+maxPhraseLength :: Lexicon -> Int
+maxPhraseLength l = maximum (1 : map (length . words) (lexiconKeys l))
 
 --------------------------------------------------------------------------------
 -- Entry builders

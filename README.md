@@ -299,7 +299,8 @@ working tree, so an OneDrive-synced checkout does not upload object files.
 
 ## What Stage 1 does
 
-Pipeline: text → sentences → tokens (exact spans) → CCG derivations →
+Pipeline: text → sentences → a lattice of candidate lexical units
+(exact spans) → CCG derivations →
 lambda terms → type check → DRS boxes → discourse merge with anaphora
 resolution → `Selection` handed to a collapse strategy.
 
@@ -309,11 +310,11 @@ $ ./scripts/build.sh demo
 anaphora  [cross-sentence pronoun]
 text: "A student arrived. She smiles."
 
-  [0:18] tokens: a student arrived
+  [0:18] words: a student arrived
       derivations: 1
       form: exists x. student(x) & arrive(x)
       provenance of first condition: cond("student"@demo[2:9])
-  [19:30] tokens: she smiles
+  [19:30] words: she smiles
       derivations: 1
       form: smile(?she)
 
@@ -403,7 +404,7 @@ src/NL2Proof/
   Semantics/Lambda.hs  typed lambda calculus, type checker, normalizer
   Syntax/Category.hs   CCG categories, category -> semantic type
   Syntax/Lexicon.hs    the fragment's vocabulary
-  Syntax/Tokenize.hs   sentence splitting, tokens with exact spans
+  Syntax/Tokenize.hs   sentence splitting, spans, the lexical lattice
   Syntax/CCG.hs        signs, combinators, CKY parser
   DRT/Types.hs         DRS boxes, conditions, accessibility, rendering
   DRT/Build.hs         term -> DRS, anaphora resolution, discourse threading

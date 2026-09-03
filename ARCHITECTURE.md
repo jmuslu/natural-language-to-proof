@@ -49,7 +49,7 @@ passed through all four.
 
 ```
 1. INITIAL SPACE                                       (search; commits to nothing)
-   text -> tokens -> CCG derivations -> lambda terms -> typeOf -> DRS
+   text -> lexical lattice -> CCG derivations -> lambda terms -> typeOf -> DRS
         -> candidate readings (scope, coupling), ranked by RSA
    Modules: Syntax.*, Semantics.Lambda, DRT.*, Stage2.*
 
@@ -357,7 +357,7 @@ src/NL2Proof/
   Provenance.hs        derivation trees: how a condition was derived
   Trace.hs             Decision / Diagnostic: every collapse, logged
   Semantics/Lambda.hs  simply-typed lambda calculus, typeOf, normalize
-  Syntax/              tokenizer, categories, lexicon, CKY parser
+  Syntax/              lexical lattice, categories, lexicon, CKY parser
   DRT/                 boxes, accessibility, discourse threading, canonical form
   Collapse/Class.hs    Selection: chosen reading + the rejected fiber
   Fragment.hs          the nine-case evaluation set
