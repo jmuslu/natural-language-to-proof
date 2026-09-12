@@ -367,13 +367,22 @@ After the survey above, the owner granted confirmation to build in `~/projects`
   robust and independent of that stack; wiring to real backtests is the
   integration step below, not a prerequisite for the gate's correctness.
 
-- **[structural] Integration gap, recorded not hidden.** The suite consumes a
-  per-period returns series, but the existing `results/*.json` store only summary
-  stats (PnL/win-rate/expectancy) — **no returns series or equity curve**. So the
-  live engine (`strategy-core`) must be extended to emit returns before it can
-  feed this suite. Documented in the module README; not yet done. Also: the
-  permutation null is the returns-level baseline; a price-level random-strategy
-  Monte Carlo is a complementary null that needs the engine + bar data.
+- **[checked] End-to-end on real market data.** `bars.py` (commit `636a2f5`,
+  lazy `pyarrow` import so the core stays dep-free) bridges a NautilusTrader bars
+  parquet → close-to-close returns → certificate. On the sample SPY bars (62
+  daily returns) the suite **correctly refuses to validate** buy-and-hold: a
+  full-sample Sharpe of 0.88 looks fine but `passed: false` — it fails
+  out-of-sample consistency (33% of folds positive) and the sign-flip null
+  (p = 0.36). The intended falsification behaviour, demonstrated on real data:
+  a strong full-sample number is not a validated edge.
+
+- **[structural] Integration gap, partially bridged.** `bars.py` handles the
+  bars→returns half. The remaining half: real strategies must emit their *own*
+  per-period returns (the `results/*.json` store only summary stats — PnL/win-
+  rate/expectancy, no returns series), so `strategy-core` still needs extending
+  before the live engine feeds the suite. Also still open: a price-level
+  random-strategy Monte-Carlo null (complements the returns-level sign-flip null;
+  needs the engine + bar data). Both documented in the module README.
 
 ## Layer 9 — `agentic-qr` identified as `~/projects` itself
 
