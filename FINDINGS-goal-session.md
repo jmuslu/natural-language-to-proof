@@ -330,6 +330,74 @@ backtester's statistical maturity "wasn't established" — now it is, measured.
   as blocked-with-reason, not attempted. (The anti-correlation argument itself is
   the handoff's reasoning, `[conjectured]` — it is not something the code proves.)
 
+## Layer 3 continuation — statistical validation suite built (`~/projects` confirmation granted)
+
+After the survey above, the owner granted confirmation to build in `~/projects`
+(= `agentic-qr`). Built the statistical suite the survey found missing.
+
+- **[checked] A dependency-free, deterministic validation suite now exists** at
+  `agentic-qr:shared/backtesting/validation/` (pushed to `main`, commit
+  `aeee8d5`; the repo's **first** automated test suite, 18 stdlib-`unittest`
+  cases, all passing). It supplies exactly the three properties the survey found
+  absent:
+  - **walk-forward / out-of-sample split** — expanding-window, time-ordered, no
+    lookahead; reports per-fold in-sample vs held-out Sharpe + a consistency
+    verdict.
+  - **null-model baseline** — sign-flip permutation test, empirical p-value with
+    add-one correction, deterministic per seed.
+  - **multiple-comparisons correction** — Benjamini-Hochberg FDR + Bonferroni
+    across a batch (the anti-p-hacking step).
+  Plus a `ValidationCertificate` export-boundary artifact (verdict + full trail:
+  tests run, thresholds, per-fold Sharpes, null p-value, FDR survival).
+
+- **[checked] The suite has real falsification power, checked on synthetic
+  ground truth (it does not certify itself).** Tests confirm: a planted-drift
+  signal fully validates against 15 noise decoys; a batch of 20 pure-noise
+  candidates yields ≤1 FDR "discovery"; the null test flags a planted signal
+  (p ≤ 0.05) and does not flag symmetric noise (p > 0.05). This is the
+  external-check discipline applied to the checker itself.
+
+- **[stipulated] Design choices, provisional.** Pure stdlib (no
+  numpy/pandas/nautilus — cannot break on a missing package the way the existing
+  engine does, and 72% of existing results *are* such breakages); engine-agnostic
+  (consumes a returns series from any source); fixed thresholds and procedures so
+  the signal-proposing agents can't shape the gate (the construction-independence
+  Layer 3 requires). *Alternative considered:* fixing/using the nautilus engine
+  and its heavy stack — rejected for now precisely because the suite must be
+  robust and independent of that stack; wiring to real backtests is the
+  integration step below, not a prerequisite for the gate's correctness.
+
+- **[structural] Integration gap, recorded not hidden.** The suite consumes a
+  per-period returns series, but the existing `results/*.json` store only summary
+  stats (PnL/win-rate/expectancy) — **no returns series or equity curve**. So the
+  live engine (`strategy-core`) must be extended to emit returns before it can
+  feed this suite. Documented in the module README; not yet done. Also: the
+  permutation null is the returns-level baseline; a price-level random-strategy
+  Monte Carlo is a complementary null that needs the engine + bar data.
+
+## Layer 9 — `agentic-qr` identified as `~/projects` itself
+
+- **[measured] `~/projects` *is* `aiqs-org/agentic-qr`.** `git remote -v` in
+  `~/projects` returns `git@github.com:aiqs-org/agentic-qr.git`. So the handoff's
+  Layer 0/9 uncertainty ("relationship not established") resolves: the trading
+  system (`strategy-core`, `quant-lib`, `shared/backtesting`) and the multi-agent
+  runtime described in Layer 9 are **one repo**, not two. Its README titles it
+  "Agentic QR … a multi-agent quantitative research and strategy-development
+  workspace."
+- **[measured] The repo had no automated tests before this session.** No test
+  dirs, no `test_*.py`, no `pytest`/`unittest` imports anywhere. The Layer 3
+  validation suite is the first — a small concrete step toward the "deterministic
+  gate every claim passes through" that Layer 9 says `nl2proof`'s discipline
+  should impose on `agentic-qr`.
+- **[measured] Repo hygiene note.** `agentic-qr` `main` had diverged from a local
+  working tree carrying stale/legacy uncommitted edits (owner-confirmed
+  overwritable) that overlapped with newer commits already on `origin/main`
+  (`quant-lib/src/agent.py`, `strategy-core/src/swe.py`). The Layer 3 commit was
+  landed cleanly on top of `origin/main` without entangling that reconciliation.
+  `.gitignore` validated: `results/`, `*.parquet`, `vault/`, `shared/data/`,
+  secrets, and venvs are ignored (bulk data stays untracked); the validation
+  module is correctly tracked.
+
 ## Open items, by layer (for the next pass)
 
 - **[Layer 1/2] Migrate the core parser (`CCG.hs`) to feature unification, or
@@ -343,20 +411,23 @@ backtester's statistical maturity "wasn't established" — now it is, measured.
 - **[Layer 1/2] The type-changing rule class** (the measured ~8% gap above) —
   implement as an explicit, separately-named rule set with its own coverage
   measurement, not by loosening the combinators.
-- **[Layer 2] Test-case generator over real AUTO derivations** — the second
-  "generator". Needs full-tree ingestion (internal `<T>` nodes, hence the
-  node-level atom inventory already surveyed). Target: the two known-unreachable
-  properties a 9-case fixture can't produce.
-- **[Layer 3] Harden the backtester into a real oracle** — add the three
-  measured-missing properties (walk-forward/OOS splits, multiple-comparisons
-  correction, null-model baseline), then the deterministic prefilter and the
-  export-boundary artifact (Layer 3/3.5). Located in `~/projects`, so gated on
-  explicit confirmation before code is written there.
-- **[Layer 4] Blocked on Layer 3, by design.** The externally-checked fix (fit
-  the combination against held-out oracle outcomes) cannot proceed until a
-  trustworthy oracle exists. Do not add fixed corroboration/novelty weights in
-  the interim — that is the trap. Revisit once Layer 3 has the three properties;
-  check then whether the same fitted combination answers Layer 5 (graph-trust).
+- **[Layer 2] Done: `.auto` derivation parser + reconstruction** (`CCGDeriv`,
+  `ccg-reconstruct`, ~96% of real sentences). Remaining: use the reconstructed
+  sentences as an actual test-case *fixture* feeding the DRT/SDRT stages, to hit
+  the two known-unreachable properties a 9-case fixture can't produce.
+- **[Layer 3] Suite built; two things remain.** The three properties now exist
+  (`agentic-qr:shared/backtesting/validation/`, commit `aeee8d5`). Remaining:
+  (a) extend `strategy-core` to emit a per-period returns series so the live
+  engine can feed the suite (the recorded integration gap), and (b) add the
+  deterministic prefilter + price-level random-strategy Monte-Carlo null
+  (Layer 3/3.5). Both are `~/projects` work (confirmation now granted).
+- **[Layer 4] Now unblockable via the Layer 3 suite, once returns flow.** The
+  externally-checked fix (fit the corroboration/novelty combination against
+  held-out oracle outcomes) needs oracle-checked outcomes; the validation suite +
+  its `ValidationCertificate` is the mechanism that produces them, once
+  `strategy-core` emits returns. Still do **not** add fixed corroboration/novelty
+  weights in the interim — that remains the trap. When revisiting, check whether
+  the same fitted combination answers Layer 5 (graph-trust).
 - **[Layer 5/7/8] Untouched.** Graph-trust, news-attribution logging, and the
   entropy/calibration metric were not opened. Per the handoff, Layer 5 likely
   shares Layer 4's solution; Layer 7's calibration likely shares Layer 3's build.
