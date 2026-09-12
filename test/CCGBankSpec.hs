@@ -16,11 +16,12 @@ import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>))
 import NL2Proof.Syntax.Category (Cat(..), catTy)
 import NL2Proof.Syntax.CCGBank
 import NL2Proof.Syntax.CCGRules
+import NL2Proof.Syntax.CCGDeriv
 
 main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
-   ++ unifyChecks ++ ruleChecks)
+   ++ unifyChecks ++ ruleChecks ++ derivChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -205,6 +206,49 @@ ruleChecks =
   , expect "N and NP do not combine to S"
       (not (reproduces "S" "N" "NP"))
   ]
+
+--------------------------------------------------------------------------------
+-- .auto derivation parsing & reconstruction
+--------------------------------------------------------------------------------
+
+-- A synthetic derivation tree (made-up words foo/bar/baz, NOT corpus text), so
+-- no CCGbank-licensed material lives in the repo. Structure mirrors a real
+-- transitive-clause derivation:
+--   S[dcl]  ->  NP   (S[dcl]\NP)
+--   S[dcl]\NP -> (S[dcl]\NP)/NP  NP
+syntheticAuto :: String
+syntheticAuto =
+  "(<T S[dcl] 0 2> (<L NP DT DT foo NP>) "
+  ++ "(<T S[dcl]\\NP 0 2> "
+  ++ "(<L (S[dcl]\\NP)/NP VBZ VBZ bar (S[dcl]\\NP)/NP>) "
+  ++ "(<L NP NN NN baz NP>) ) )"
+
+derivChecks :: [Check]
+derivChecks =
+  [ expectEq "parses a synthetic derivation tree"
+      (Right expectedTree) (parseAuto syntheticAuto)
+  , expect "leaf category is read (predarg parens do not break tokenising)"
+      (case parseAuto "(<L (S[dcl]\\NP)/NP VBZ VBZ bar (S[dcl]\\NP)/NP>)" of
+         Right (AutoLeaf c w) -> c == "(S[dcl]\\NP)/NP" && w == "bar"
+         _ -> False)
+  , expect "every binary node of the synthetic tree reconstructs"
+      (either (const False) fullyReconstructed (parseAuto syntheticAuto))
+  , expect "a broken binary node is flagged uncovered"
+      (case parseAuto "(<T S[dcl] 0 2> (<L NP DT DT foo NP>) (<L NP NN NN baz NP>) )" of
+         Right t  -> not (fullyReconstructed t)  -- NP NP does not combine to S[dcl]
+         Left _   -> False)
+  , expect "malformed auto line is a Left"
+      (case parseAuto "(<T S[dcl] 0 2> (<L NP" of Left _ -> True; Right _ -> False)
+  ]
+  where
+    expectedTree =
+      AutoTree "S[dcl]"
+        [ AutoLeaf "NP" "foo"
+        , AutoTree "S[dcl]\\NP"
+            [ AutoLeaf "(S[dcl]\\NP)/NP" "bar"
+            , AutoLeaf "NP" "baz"
+            ]
+        ]
 
 --------------------------------------------------------------------------------
 -- helpers

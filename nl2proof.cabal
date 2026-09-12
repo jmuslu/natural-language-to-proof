@@ -41,6 +41,7 @@ library
                       NL2Proof.Syntax.CCG
                       NL2Proof.Syntax.CCGBank
                       NL2Proof.Syntax.CCGRules
+                      NL2Proof.Syntax.CCGDeriv
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
                       NL2Proof.DRT.Canonical
@@ -88,6 +89,16 @@ executable ccg-grammar-coverage
     import:           warnings
     hs-source-dirs:   tools
     main-is:          CCGGrammarCoverage.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+executable ccg-reconstruct
+    -- Runs the rule set over real .auto derivations and reports how many whole
+    -- sentences reconstruct. Sentence-granularity external check behind Layer 2's
+    -- test-case generator. Research driver; reads .auto paths from argv.
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          CCGReconstruct.hs
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
 

@@ -235,6 +235,40 @@ against CCGbank's own `GRAMMAR` file (the external oracle for this layer).
   resolved, since the coverage work above did not require a `PP` meaning (only
   its category structure).
 
+## Layer 2 continuation — the test-case generator over real sentences
+
+The handoff's *second* generator: real CCGbank sentences as the test corpus,
+replacing combinatorial synthesis over the 9-case fixture. New library module
+`NL2Proof.Syntax.CCGDeriv` parses `.auto` derivation trees (tokeniser treats
+`<...>` headers as opaque, so the parenthesised predarg category inside a leaf
+does not break tree bracketing) and checks, at each binary node, whether the
+combinator set reproduces the gold category. Tool: `ccg-reconstruct`.
+
+- **[measured] Whole-sentence reconstruction over real `.auto` derivations**
+  (sections 00, 01, 23 — includes the standard dev/test sections):
+
+  | section | sentences | fully reconstructed | binary-node coverage | line parse fails |
+  |---|---|---|---|---|
+  | 00 | 1,913 | 1,833 (95.8%) | 43,425/43,509 (99.8%) | 0 |
+  | 01 | 1,982 | 1,908 (96.3%) | 44,644/44,719 (99.8%) | 0 |
+  | 23 | 2,407 | 2,313 (96.1%) | 52,860/52,964 (99.8%) | 0 |
+
+  ~96% of real sentences reconstruct end-to-end; 99.8% of binary nodes; zero
+  parse failures, zero category-parse errors, zero arity anomalies. The AUTO
+  parser handles every derivation in these sections.
+
+- **[measured] The ~4% of sentences that don't fully reconstruct are exactly the
+  ones containing a type-changing rule** — uncovered binary nodes concentrate on
+  `(S\NP)\(S\NP)`, `(S[dcl]\S[dcl])\NP`, `S/S`, `S\S`, and the `NP[expl]`
+  extraposition family, matching the GRAMMAR-level gap. This is the same
+  measured limitation seen two ways (rule types, then sentence instances), not a
+  new one — and it is the concrete target for the type-changing rule class in the
+  open items.
+
+- **Licensing:** the unit tests use synthetic words (`foo`/`bar`/`baz`), never
+  corpus text; only the `ccg-reconstruct` tool touches real `.auto` files, at
+  runtime, from `~/ccgbank/`. Nothing corpus-derived is committed.
+
 ## Layer 3 — the oracle candidate (`~/projects/shared/backtesting/`), interrogated
 
 Read-only survey (no changes made to `~/projects`; the operating conventions
