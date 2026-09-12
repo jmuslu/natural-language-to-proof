@@ -40,6 +40,7 @@ library
                       NL2Proof.Syntax.Tokenize
                       NL2Proof.Syntax.CCG
                       NL2Proof.Syntax.CCGBank
+                      NL2Proof.Syntax.CCGRules
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
                       NL2Proof.DRT.Canonical
@@ -77,6 +78,16 @@ executable ccgbank-report
     import:           warnings
     hs-source-dirs:   tools
     main-is:          CCGBankReport.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+executable ccg-grammar-coverage
+    -- Measures the combinatory rule set (CCGRules) against CCGbank's GRAMMAR
+    -- file of attested parent-->children rule instances. External check on the
+    -- rules and the feature-unification policy. Research driver.
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          CCGGrammarCoverage.hs
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
 

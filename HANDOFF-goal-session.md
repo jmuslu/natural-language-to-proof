@@ -69,6 +69,49 @@ whole stack exists to prevent.
   - Composition rules (`fwdComp`/`bwdComp`) exist in code but aren't used
     by the default parser.
 
+## Operating conventions for this session
+
+**Commit and push freely, within `~/nl2proof`.** No need to pause for
+approval to commit or push changes to this repo — that includes schema
+decisions made under the Layer 1 autonomy grant below. This does **not**
+extend to `~/projects` (the trading system) or anything capital-relevant or
+externally destructive — those still require explicit confirmation before
+acting, per Layer 3/9's scope boundary. One thing worth a deliberate check
+before any push, given Layer 0's note on CCGbank's LDC licensing: confirm
+no raw or bulk-derived CCGbank data is being committed to what may be a
+public repo — the corpus stays at `~/ccgbank/`, outside the repo, on
+purpose.
+
+**Use the status-tag convention from the first findings log as the
+standard**, not an improvisation specific to that pass: `[proved]`
+(theorem of the calculus), `[checked]` (asserted in a test suite),
+`[measured]` (came out of a run), `[conjectured]` (believed, unverified),
+`[stipulated]` (chosen, not derived), `[structural]` (the object or its use
+is wrong, and no amount of data fixes it). Apply it consistently across
+every layer's findings, not just Layers 0–2.
+
+**Verify a claim against actual tool/repo state before writing it into the
+findings log — don't describe an action from memory.** This isn't
+hypothetical caution: the first findings log stated "nothing committed this
+session" while a commit sat at `HEAD` with a clean working tree. Before
+logging that something was committed, built, tested, or measured, actually
+run `git status`/`git log`, the build, or the test suite and read its real
+output, rather than narrating what was intended to happen.
+
+**Overturning a previous `[stipulated]` decision is itself a logged act,
+never a silent replacement.** If a later pass changes an earlier schema
+choice, the findings log entry for that change should name what it's
+overturning and why, so the history of *why* the schema looks the way it
+does stays legible across sessions.
+
+**Don't end a session just because one thread hit a legitimate pause.**
+Per the handoff's own "move up and down the stack" instruction: if a task
+is genuinely blocked (needs review, needs an oracle that doesn't exist yet,
+needs data not yet available), that's a reason to shift to a different
+layer, not a reason to stop. A session ending early because it only worked
+one connected thread top-to-bottom is the exact pattern flagged as
+questionable in this project's own history — don't repeat it.
+
 ## Layer 1 — the syntactic substrate: `Cat` and `Ty` can't represent what CCGbank says
 
 CCGbank's `.auto` derivations carry feature-annotated categories —
@@ -106,6 +149,32 @@ appears in CCGbank, the credibility carries over. For anything genuinely
 novel to those other sources, it's back in Layer 2's original
 no-external-check position — the credibility has to be re-earned per
 source, not inherited once and assumed to travel with the pipeline.
+
+**Amendment — autonomy grant for schema-level decisions within this
+layer.** An earlier draft of this document implied schema choices (feature
+representation on `Cat`, the semantic type for `PP`, unification strategy
+for `fwdApp`/`bwdApp`) needed to pause for synchronous human review before
+proceeding. That's revised: **the agent should make these calls directly
+and keep moving, not block waiting for sign-off.** What still matters, and
+isn't relaxed, is how the decision is carried afterward:
+
+- Log it under the same status-tag discipline the findings log already
+  uses (`[stipulated]` for a choice made, not derived; `[structural]` where
+  the reasoning behind it matters as much as the choice) — with the
+  reasoning and the alternatives considered, not just the conclusion.
+- Keep it visibly provisional. A `[stipulated]` schema choice never
+  upgrades itself to `[checked]` or `[proved]` by virtue of having been
+  logged carefully, or by other work building on top of it without
+  incident. It stays open to being overturned on later review, and
+  anything built on top of it should be able to point back to the
+  specific stipulation it depends on.
+- This is a grant of autonomy for **making one reasoned decision at the
+  point it's needed**, not a license to brute-force or swarm-search across
+  many candidate schemas and keep whichever looks best by the system's own
+  metric — that remains exactly the trap Layer 5 describes, and this
+  amendment doesn't touch it. One agent reasoning through one fork and
+  logging it is a different act from many agents searching a space of
+  forks without an external check on which one is right.
 
 ## Layer 2 — what "the generator" actually builds, once Layer 1 has traction
 

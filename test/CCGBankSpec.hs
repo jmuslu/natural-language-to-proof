@@ -15,9 +15,12 @@ import Harness
 import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>))
 import NL2Proof.Syntax.Category (Cat(..), catTy)
 import NL2Proof.Syntax.CCGBank
+import NL2Proof.Syntax.CCGRules
 
 main :: IO ()
-main = runChecks "ccgbank" (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks)
+main = runChecks "ccgbank"
+  (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
+   ++ unifyChecks ++ ruleChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -43,6 +46,14 @@ parseChecks =
   , expectEq "feature on a parenthesised complex node"
       (Right (CSlash Bwd (CAtom "S" [Feat "dcl"]) (CAtom "NP" []) [Feat "conj"]))
       (parseCCGCat "(S[dcl]\\NP)[conj]")
+    -- the unparenthesised VP-conjunct form normalises the trailing [conj] to
+    -- the root, matching the parenthesised form rather than attaching it to NP
+  , expectEq "trailing [conj] normalises to the whole category"
+      (parseCCGCat "(S[dcl]\\NP)[conj]")
+      (parseCCGCat "S[dcl]\\NP[conj]")
+  , expectEq "trailing [conj] on a complex node, explicit"
+      (Right (CSlash Fwd (CAtom "NP" [Feat "nb"]) (CAtom "N" []) [Feat "conj"]))
+      (parseCCGCat "NP[nb]/N[conj]")
     -- malformed inputs are reported as Left, not silently accepted
   , expect "trailing slash is malformed"   (isLeft (parseCCGCat "S/"))
   , expect "unbalanced paren is malformed"  (isLeft (parseCCGCat "((S\\NP)"))
@@ -138,8 +149,72 @@ agreementChecks = map agrees sharedFragment
     toBareCatE c = maybe (Left "no bare Cat") Right (toBareCat c)
 
 --------------------------------------------------------------------------------
+-- Feature unification
+--------------------------------------------------------------------------------
+
+unifyChecks :: [Check]
+unifyChecks =
+  [ expect "underspecified S unifies with S[dcl]"
+      (unifiable (pc "S") (pc "S[dcl]"))
+  , expect "underspecified S\\NP unifies with S[dcl]\\NP"
+      (unifiable (pc "S\\NP") (pc "S[dcl]\\NP"))
+  , expect "NP[nb] unifies with bare NP"
+      (unifiable (pc "NP[nb]") (pc "NP"))
+  , expect "S[dcl] does not unify with S[b]"
+      (not (unifiable (pc "S[dcl]") (pc "S[b]")))
+  , expect "different atoms do not unify"
+      (not (unifiable (pc "NP") (pc "N")))
+  , expect "slash direction matters"
+      (not (unifiable (pc "S/NP") (pc "S\\NP")))
+  ]
+
+--------------------------------------------------------------------------------
+-- Combinatory rules, checked against CCGbank's top-frequency GRAMMAR rules
+--------------------------------------------------------------------------------
+
+-- | Does the rule set license @parent@ (up to feature unification) from the pair?
+-- @parent@, @l@, @r@ are given as CCGbank category strings.
+reproduces :: String -> String -> String -> Bool
+reproduces parent l r =
+  any (unifiable (pc parent)) (combine (pc l) (pc r))
+
+ruleChecks :: [Check]
+ruleChecks =
+  [ expect "N/N N -> N (fwd app)"                (reproduces "N" "N/N" "N")
+  , expect "NP[nb]/N N -> NP (fwd app, feature)" (reproduces "NP" "NP[nb]/N" "N")
+  , expect "NP NP\\NP -> NP (bwd app)"           (reproduces "NP" "NP" "NP\\NP")
+  , expect "NP S[dcl]\\NP -> S[dcl] (bwd app)"   (reproduces "S[dcl]" "NP" "S[dcl]\\NP")
+  , expect "PP/NP NP -> PP (fwd app)"            (reproduces "PP" "PP/NP" "NP")
+  , expect "adverbial modifies underspecified VP"
+      (reproduces "S[dcl]\\NP" "S[dcl]\\NP" "(S\\NP)\\(S\\NP)")
+  , expect "S/S S[dcl] -> S[dcl] (fwd app, underspec result)"
+      (reproduces "S[dcl]" "S/S" "S[dcl]")
+  , expect "conj NP -> NP[conj] (coordination mark)"
+      (reproduces "NP[conj]" "conj" "NP")
+  , expect "comma NP -> NP[conj] (comma as coordinator)"
+      (reproduces "NP[conj]" "," "NP")
+  , expect "NP NP[conj] -> NP (coordination apply)"
+      (reproduces "NP" "NP" "NP[conj]")
+  , expect "S[dcl] . -> S[dcl] (punct right)"
+      (reproduces "S[dcl]" "S[dcl]" ".")
+  , expect "comma S[dcl] -> S[dcl] (punct left)"
+      (reproduces "S[dcl]" "," "S[dcl]")
+  , expect "fwd composition: S/S S/S -> S/S"
+      (reproduces "S/S" "S/S" "S/S")
+    -- a pair that should NOT combine to an unrelated category
+  , expect "N and NP do not combine to S"
+      (not (reproduces "S" "N" "NP"))
+  ]
+
+--------------------------------------------------------------------------------
 -- helpers
 --------------------------------------------------------------------------------
+
+-- | Parse a category literal, erroring loudly on a parse bug (all literals here
+-- are valid CCGbank categories).
+pc :: String -> CCat
+pc s = either (\e -> error ("bad test category " ++ show s ++ ": " ++ e)) id
+             (parseCCGCat s)
 
 isLeft :: Either a b -> Bool
 isLeft (Left _)  = True

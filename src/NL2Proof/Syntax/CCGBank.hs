@@ -55,7 +55,7 @@ module NL2Proof.Syntax.CCGBank
   ) where
 
 import Data.Char (isAlpha, isSpace)
-import Data.List (nub, sort)
+import Data.List (isSuffixOf, nub, sort)
 
 import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>))
 import NL2Proof.Syntax.Category (Cat(..))
@@ -116,20 +116,40 @@ prettyCCat = go
 -- > atom     := [A-Za-z]+ | one of  . , : ;
 -- > feats    := ('[' [^]]+ ']')*
 --
--- __Known limitation, recorded not hidden:__ CCGbank writes a coordinated VP
--- conjunct as @S[dcl]\\NP[conj]@, meaning @(S[dcl]\\NP)[conj]@ — the @[conj]@
--- marks the whole category, not the @NP@. Without outer parens this parser
--- attaches @[conj]@ to the @NP@ atom instead. This does not affect the outputs
--- this module computes ('ccatToTy' and 'classify' both erase features), but a
--- faithful @[conj]@ normalisation is left as future work and flagged here rather
--- than silently mis-analysed.
+-- __On the @[conj]@ marker:__ CCGbank writes a coordinated VP conjunct as
+-- @S[dcl]\\NP[conj]@, meaning @(S[dcl]\\NP)[conj]@ — the @[conj]@ marks the whole
+-- category, not the @NP@. A naive left-to-right parse would attach @[conj]@ to
+-- the @NP@ atom. This parser normalises it to the root instead, justified by the
+-- measured invariant that @[conj]@ never occurs in non-final position anywhere in
+-- the corpus (see @tools/CCGGrammarCoverage.hs@ and the LEX check in
+-- @tools/CCGBankReport.hs@, both reporting zero non-trailing @[conj]@): a
+-- trailing @[conj]@ therefore always marks the whole category, so it is stripped
+-- and re-attached to the outermost node.
 parseCCGCat :: String -> Either String CCat
 parseCCGCat input =
-  case pSlash (dropWhile isSpace input) of
+  let s = dropWhile isSpace input
+  in case stripTrailingConj s of
+       Just core -> addFeats [Feat "conj"] <$> parseCore core
+       Nothing   -> parseCore s
+
+parseCore :: String -> Either String CCat
+parseCore s =
+  case pSlash s of
     Left e -> Left e
     Right (c, rest)
       | all isSpace rest -> Right c
       | otherwise        -> Left ("trailing input after category: " ++ show rest)
+
+-- | If the string (ignoring trailing whitespace) ends in the category-level
+-- @[conj]@ marker, return the prefix before it. See the invariant noted on
+-- 'parseCCGCat'.
+stripTrailingConj :: String -> Maybe String
+stripTrailingConj s =
+  let t      = reverse (dropWhile isSpace (reverse s))
+      marker = "[conj]"
+  in if marker `isSuffixOf` t
+       then Just (take (length t - length marker) t)
+       else Nothing
 
 type P a = String -> Either String (a, String)
 

@@ -22,8 +22,25 @@ notes whether the check behind it is external or internal.
   said a `tree` listing showed no `.git/`; that was wrong. `git rev-parse
   --is-inside-work-tree` returns true, tracking `origin/main`. (The harness
   environment banner also reports "Is a git repository: false" — also wrong;
-  the direct check overrides both.) Commits work here. Nothing committed this
-  session — changes left in the working tree pending explicit request.
+  the direct check overrides both.) Commits work here.
+
+  *Correction (later in the session, per the "verify against real tool output"
+  convention):* an earlier revision of this line read "Nothing committed this
+  session." That became stale the moment the Layer 0–2 work was committed and
+  pushed. Verified against `git log`: commit **`98eb904`** ("Layer 0-2: fix
+  build, survey CCGbank features, add category ingestion") is at HEAD on `main`,
+  in sync with `origin/main`, and the working tree was clean after it. The
+  operating conventions now grant free commit/push within `~/nl2proof`, so
+  subsequent work commits directly rather than waiting.
+
+- **[checked] No raw or bulk-derived CCGbank data is tracked** (LDC2005T13
+  licensing guard). `git grep` for AUTO-format markers (`wsj_NNNN`,
+  `PARSER=GOLD`, `<L …>`/`<T …>` nodes) over all tracked files returns nothing;
+  the largest tracked file is the pre-existing `TRACE.md`. The survey and report
+  tools reference `~/ccgbank/` by path at runtime and embed no corpus text; the
+  findings log carries only aggregate counts and a handful of grammar category
+  strings (e.g. `(S[dcl]\NP)/NP`), which are not corpus text. The corpus stays
+  outside the repo, on purpose.
 
 - **[measured→fixed] The repo did not build cleanly as committed.** Two cabal
   stanzas imported `Data.Map` without depending on `containers`:
@@ -156,13 +173,81 @@ run over the real corpus (`tools/CCGBankReport.hs`, executable `ccgbank-report`)
 
 ---
 
+## Layer 1/2 continuation — feature unification & GRAMMAR coverage
+
+Second pass, under the handoff's Layer 1 autonomy grant (schema calls made
+directly, logged `[stipulated]` with reasoning/alternatives, kept provisional).
+New module `NL2Proof.Syntax.CCGRules`; validated by `tools/CCGGrammarCoverage.hs`
+against CCGbank's own `GRAMMAR` file (the external oracle for this layer).
+
+- **[stipulated] Feature unification = underspecification-as-wildcard.** An empty
+  feature list unifies with any feature (`S` ~ `S[dcl]`); two specified lists
+  unify iff equal as sets. Implemented as `unifiable`/`featCompat` in
+  `CCGRules`. *Reasoning:* it is the only policy under which the corpus's
+  highest-frequency rules combine at all — `NP[nb]/N N → NP`, an
+  `(S\NP)\(S\NP)` adverbial modifying an `S[dcl]\NP`, `S/S S[dcl] → S[dcl]`.
+  *Alternatives considered:* (a) strict equality — this is what the core parser
+  (`CCG.hs` `fwdApp`/`bwdApp`, `==`) does; **measured** to cover only 80.5% of
+  binary rule firings vs. 99.8% for the wildcard policy, so it is demonstrably
+  wrong for the corpus. (b) full feature-variable unification with binding
+  propagation — deferred, not needed here because `GRAMMAR` categories are
+  ground; would be required for a *generative* parser emitting novel categories.
+  This choice stays `[stipulated]` and provisional; the core parser was **not**
+  migrated to it this pass (see open items).
+
+- **[measured] Combinatory-rule coverage against CCGbank GRAMMAR** (external
+  check; `ccg-grammar-coverage` over `CCGbank.00-24.grammar`, 3,471 rule
+  instances):
+  - Binary rules: 3,241 types / 1,099,492 occurrences. Unary rules: 230 types /
+    212,581 occurrences (type-changing / type-raising / `TOP` — counted
+    separately, never folded into binary coverage).
+  - **Unify-coverage: 2,984/3,241 binary types (92.1%), 99.8% of binary
+    occurrences.** Exact-coverage: 81.9% types / 80.5% occurrences. Parse
+    failures: 0.
+  - Every combinator fires on real data (FwdApp 1326, PunctRight 402, CoordMark
+    329, PunctLeft 301, BwdApp 231, BwdXComp 197, FwdComp 191, CoordApply 127,
+    BwdComp 56, FwdXComp 15) — none is dead code.
+
+- **[measured/structural] The ~8% uncovered binary rules are CCGbank
+  type-changing rules, a genuinely distinct mechanism** — dominated by
+  comma-mediated category change (`(S\NP)\(S\NP) --> , NP`;
+  `(S\NP)/(S\NP) --> S[dcl]/S[dcl] ,`) and cross-category coordination
+  (`S[dcl][conj] --> conj S[em]`; `S[adj]\NP[conj] --> conj PP`). These are not
+  pure combinatory application/composition and were **deliberately not forced**
+  into the combinator set — doing so would manufacture coverage by loosening the
+  rules until they fit, exactly the self-agreement move the stack forbids.
+  Handling them is a separate, explicit rule class (future work), not a tuning
+  knob on the existing rules.
+
+- **[measured→resolved] `[conj]` parser normalisation.** The first pass recorded
+  a deferred limitation: the unparenthesised VP-conjunct form `S[dcl]\NP[conj]`
+  was parsed with `[conj]` on the `NP` atom rather than the whole category. This
+  pass removes the limitation: `parseCCGCat` now strips a trailing `[conj]` and
+  re-attaches it to the root. *This is not overturning a `[stipulated]` choice* —
+  it was a documented gap, now closed, justified by the **measured** invariant
+  that `[conj]` never occurs non-trailing anywhere in either the LEX file (0) or
+  the GRAMMAR file (0). Backward-compatible: the parenthesised form parsed the
+  same way before and after; new tests pin the equivalence.
+
+- **[stipulated, unchanged] `PP`'s semantic type remains flagged, not decided.**
+  This pass did not settle it — `ccatToTy` still returns
+  `Left (AmbiguousAtomType "PP")`. Recorded as still-open rather than silently
+  resolved, since the coverage work above did not require a `PP` meaning (only
+  its category structure).
+
 ## Open items, by layer (for the next pass)
 
-- **[Layer 1/2] Extend `Cat` with features + PP.** Design work, not brute force.
-  The hard part is *feature unification* in `fwdApp`/`bwdApp` (replace `==` with
-  a subsumption check: underspecified selects specified). PP needs the manual
-  semantic-type decision above; until made, PP entries stay flagged. Doing this
-  unlocks 26%→92% of the distinct lexicon as representable.
+- **[Layer 1/2] Migrate the core parser (`CCG.hs`) to feature unification, or
+  keep the ingestion path separate.** The unification policy is now built and
+  externally validated on `CCat`, but the hand-written fragment's parser still
+  uses `==` on bare `Cat`. Decision still open: extend the core `Cat` with
+  features + `PP` and swap `==` for `unifiable` (bigger blast radius, risks the
+  386-check Stage-1 suite), vs. keep CCGbank ingestion on its own `CCat` path
+  and bridge only where needed. Either way, `PP`'s semantic type must be decided
+  before PP-bearing entries become real `Entry` values.
+- **[Layer 1/2] The type-changing rule class** (the measured ~8% gap above) —
+  implement as an explicit, separately-named rule set with its own coverage
+  measurement, not by loosening the combinators.
 - **[Layer 2] Test-case generator over real AUTO derivations** — the second
   "generator". Needs full-tree ingestion (internal `<T>` nodes, hence the
   node-level atom inventory already surveyed). Target: the two known-unreachable
