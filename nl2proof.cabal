@@ -39,6 +39,7 @@ library
                       NL2Proof.Syntax.Lexicon
                       NL2Proof.Syntax.Tokenize
                       NL2Proof.Syntax.CCG
+                      NL2Proof.Syntax.CCGBank
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
                       NL2Proof.DRT.Canonical
@@ -67,7 +68,17 @@ executable nl2proof-demo
     hs-source-dirs:   app
     main-is:          Main.hs
     default-language: Haskell2010
-    build-depends:    base, nl2proof
+    build-depends:    base, containers, nl2proof
+
+executable ccgbank-report
+    -- Runs the verified CCGbank category classifier over the real extracted
+    -- lexicon (LEX/*.lexicon) and reports the representability split. A research
+    -- driver, not part of the library or its test suites.
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          CCGBankReport.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
 
 test-suite nl2proof-test
     import:           warnings
@@ -76,7 +87,7 @@ test-suite nl2proof-test
     main-is:          Spec.hs
     other-modules:    Harness
     default-language: Haskell2010
-    build-depends:    base, nl2proof
+    build-depends:    base, containers, nl2proof
 
 test-suite nl2proof-substrate-test
     -- Verification, genealogy, fusion and reward. Separate suite because these
@@ -100,3 +111,15 @@ test-suite nl2proof-stage2-test
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+test-suite nl2proof-ccgbank-test
+    -- Parser and representability classifier for CCGbank's feature-annotated
+    -- categories. Own suite so its check count is a stable, separate number
+    -- from the Stage 1 language front end.
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          CCGBankSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, nl2proof
