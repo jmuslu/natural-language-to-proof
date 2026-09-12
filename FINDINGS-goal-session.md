@@ -235,6 +235,67 @@ against CCGbank's own `GRAMMAR` file (the external oracle for this layer).
   resolved, since the coverage work above did not require a `PP` meaning (only
   its category structure).
 
+## Layer 3 — the oracle candidate (`~/projects/shared/backtesting/`), interrogated
+
+Read-only survey (no changes made to `~/projects`; the operating conventions
+require explicit confirmation before modifying it). The handoff said this
+backtester's statistical maturity "wasn't established" — now it is, measured.
+
+- **[measured] Most accumulated "results" are failed runs.** 32 result JSONs in
+  `shared/backtesting/results/`: **23 (72%) have `status: strategy_written` with
+  a `backtest_error`** — all the same failure, `No module named
+  'nautilus_trader.model.data.bar'` (a packaging/version break in the
+  `nautilus_trader` dependency the engine imports). Only **9 are `completed`**.
+
+- **[measured] Even the completed runs are thin.** Of the 9 completed, 4 produced
+  non-zero PnL (2465, 1836, 342, 342) and 5 are all-zeros (the strategy never
+  traded). The entire metric inventory across every completed run is the
+  PnL family only: `PnL (total)`, `PnL% (total)`, Max/Avg/Min Winner, Max/Avg/Min
+  Loser, `Expectancy`, `Win Rate`. **No Sharpe, Sortino, drawdown, volatility, or
+  trade count** — no risk adjustment of any kind.
+
+- **[measured] None of the three required properties exists anywhere in
+  `~/projects`.** A grep across all Python for walk-forward / out-of-sample /
+  train-test-split / purge / embargo (property 1), Bonferroni / Benjamini-Hochberg
+  / FDR / deflated-Sharpe / family-wise (property 2), and null-model /
+  permutation / bootstrap / random-strategy baseline (property 3) returns **zero
+  hits for all three**. Verified by reading the engine path and metrics code, not
+  grep alone.
+
+- **[structural] Therefore, per the handoff's own rule, this is not yet usable as
+  the Layer 3 oracle.** "Until it demonstrably has all three properties, don't
+  let anything route through it as ground truth… a weak statistical suite here is
+  worse than no oracle at all." The backtester is a *scaffold that mostly does not
+  run*, reporting single-split raw PnL when it does. This is exactly the
+  "producing output is not the same as being correct" case the handoff predicted
+  for "already exists" systems. Building the suite out (the three properties,
+  plus the deterministic-prefilter and export-boundary design in Layer 3/3.5) is
+  real work located in `~/projects`, so it is gated on explicit confirmation
+  rather than done here.
+
+## Layer 4 — the reward manifold gap, verified against current code
+
+- **[measured] The handoff's `rwScore` claim is accurate.** `Reward.hs:245-249`:
+  `rwScore = wConfirmed·nConfirmed + wEntailed·nEntailed + wRefuted·nRefuted +
+  wUncovered·nUncovered`. `rwCorroborated`/`rwNovel` are computed and stored on
+  the `Reward` record (lines 240-241) but never enter the scalar; the `Weights`
+  record (lines 147-164) has no corroboration/novelty field at all, and
+  `wUncovered` is pinned to `0.0` (the Lagrangian-like precedent the handoff
+  noted). So the two corroboration coordinates are structurally outside the
+  reward, not merely zero-weighted.
+
+- **[structural, cross-layer dependency] Layer 4's sanctioned fix is currently
+  blocked on Layer 3.** The handoff's non-trap direction is "fit the combination
+  function against held-out, oracle-checked outcomes" (keeping an external check
+  on weight selection). That requires a trustworthy oracle — which the Layer 3
+  survey above just measured as not-yet-real. So Layers 3 and 4 are coupled the
+  way the handoff suspected Layers 4 and 5 are: no falsifying oracle → no
+  held-out outcomes to fit against → the anti-correlated corroboration/novelty
+  objectives cannot be combined by any externally-checked rule yet. Adding fixed
+  positive weights now would be precisely the linear-scalarization trap. Recorded
+  as blocked-with-reason, not attempted. (The anti-correlation argument itself is
+  the handoff's reasoning, `[conjectured]` — it is not something the code proves.)
+
 ## Open items, by layer (for the next pass)
 
 - **[Layer 1/2] Migrate the core parser (`CCG.hs`) to feature unification, or
@@ -252,9 +313,17 @@ against CCGbank's own `GRAMMAR` file (the external oracle for this layer).
   "generator". Needs full-tree ingestion (internal `<T>` nodes, hence the
   node-level atom inventory already surveyed). Target: the two known-unreachable
   properties a 9-case fixture can't produce.
-- **[Layer 3/4/5/7] Untouched this session.** The `~/projects/` backtester,
-  reward-manifold scalarization, graph-trust, and news-attribution layers were
-  not opened; per the handoff they depend on lower-layer traction and/or a shared
-  external-fitness build. Layers 4 and 5 remain "likely one problem"; Layers 3
-  and 7 "likely one build". No findings to report there yet — recorded as
-  genuinely open rather than assumed.
+- **[Layer 3] Harden the backtester into a real oracle** — add the three
+  measured-missing properties (walk-forward/OOS splits, multiple-comparisons
+  correction, null-model baseline), then the deterministic prefilter and the
+  export-boundary artifact (Layer 3/3.5). Located in `~/projects`, so gated on
+  explicit confirmation before code is written there.
+- **[Layer 4] Blocked on Layer 3, by design.** The externally-checked fix (fit
+  the combination against held-out oracle outcomes) cannot proceed until a
+  trustworthy oracle exists. Do not add fixed corroboration/novelty weights in
+  the interim — that is the trap. Revisit once Layer 3 has the three properties;
+  check then whether the same fitted combination answers Layer 5 (graph-trust).
+- **[Layer 5/7/8] Untouched.** Graph-trust, news-attribution logging, and the
+  entropy/calibration metric were not opened. Per the handoff, Layer 5 likely
+  shares Layer 4's solution; Layer 7's calibration likely shares Layer 3's build.
+  Recorded as genuinely open, not assumed.
