@@ -376,13 +376,31 @@ After the survey above, the owner granted confirmation to build in `~/projects`
   (p = 0.36). The intended falsification behaviour, demonstrated on real data:
   a strong full-sample number is not a validated edge.
 
-- **[structural] Integration gap, partially bridged.** `bars.py` handles the
-  bars→returns half. The remaining half: real strategies must emit their *own*
-  per-period returns (the `results/*.json` store only summary stats — PnL/win-
-  rate/expectancy, no returns series), so `strategy-core` still needs extending
-  before the live engine feeds the suite. Also still open: a price-level
-  random-strategy Monte-Carlo null (complements the returns-level sign-flip null;
-  needs the engine + bar data). Both documented in the module README.
+- **[checked] Integration gap closed and verified against a live engine.**
+  `strategy-core`'s `run_backtest` (commit `09cfd9b` in agentic-qr) now captures
+  `result.stats_returns` (the engine's own Sharpe/Sortino/vol, previously
+  discarded), extracts the per-period returns series via
+  `engine.portfolio.analyzer.returns()` (equity-curve fallback:
+  `generate_account_report(VENUE)['total']`), and runs the validation suite,
+  attaching a `ValidationCertificate` to every completed backtest — all guarded
+  so it cannot break the backtest. Verified by installing NautilusTrader 1.231
+  and running the real `spy_daily_dip_hold_5` backtest: **the suite's full-sample
+  Sharpe (`0.4196274976589618`) matches nautilus's own engine Sharpe
+  (`0.4196274976589617`) to 15 significant figures** — an independent
+  cross-check of the pure-stdlib metric against a battle-tested engine, on real
+  data. The strategy correctly gets `passed: false` (null p = 0.44 — edge not
+  distinguishable from random timing). So the loop backtest → returns → validated
+  certificate now runs end-to-end.
+- **[measured] The earlier "72% of results are import failures" is a stale
+  environment artifact, not a code defect.** With `nautilus_trader` 1.231
+  installed in a venv, the engine runs cleanly; the failures in `results/*.json`
+  were from an environment that lacked the dependency. The engine code was fine;
+  the environment wasn't. (`.venv/` is gitignored.)
+- **[stipulated] Still open:** a price-level random-strategy Monte-Carlo null is
+  now built (`random_strategy_pvalue`) but not yet wired into `run_backtest`'s
+  certificate (it needs the market returns series alongside the strategy's); and
+  `validate_batch` FDR should be applied across a *run* of many candidate
+  strategies, not one at a time. Both are follow-ons, documented.
 
 ## Layer 9 — `agentic-qr` identified as `~/projects` itself
 
