@@ -284,15 +284,27 @@ combinator set reproduces the gold category. Tool: `ccg-reconstruct`.
   small because only `Category`, `CCG`, `Lexicon`, `Pipeline` touch `Cat` (Stage 2
   and DRT work on `Term`/`DRS`).
 
-- **[stipulated] `catTy PP = tyGQ`.** The core type map must be total, so `PP` is
-  provisionally typed like an argument-position `NP` (a case-marking `PP/NP`
-  preposition then types `tyGQ -> tyGQ`, a transparent identity function).
-  *This is deliberately more committal than the ingestion classifier*
-  (`ccatToTy` still returns `AmbiguousAtomType "PP"` so PP-bearing corpus entries
-  are flagged for human review). The two coexist by design; overturning either is
-  a logged act. Alternative considered: `PP -> (e->t)` (predicative reading) —
-  rejected as the default because the dominant corpus use of `PP` is the
-  argument-marking `PP/NP` preposition, but this stays open to revision.
+- **[stipulated, now empirically supported] `catTy PP = tyGQ`.** The core type
+  map must be total, so `PP` is typed like an argument-position `NP` (a
+  case-marking `PP/NP` preposition then types `tyGQ -> tyGQ`, a transparent
+  identity function). *This is deliberately more committal than the ingestion
+  classifier* (`ccatToTy` still returns `AmbiguousAtomType "PP"` so PP-bearing
+  corpus entries are flagged for human review); the two coexist by design.
+
+  **The choice was checked against the corpus, not just asserted**
+  (`docs/ccgbank-pp-role-survey.py`, over the 6,039 PP-bearing lexicon entries /
+  45,384 corpus tokens, 0 parse failures): weighted by frequency, PP occurs as
+  **RESULT 49.2%** (a preposition's output, `PP/NP`), **ARGUMENT 48.5%** (a
+  complement a head selects, `(S\NP)/PP`), **MODIFIER 2.3%** (`PP/PP`), **BARE
+  0.1%** — i.e. **97.7% argument-like and 0% predicate**. This is the structural
+  reason: CCGbank routes adjunct/predicative PPs through prepositions whose
+  *result* is a modifier category like `(S\NP)\(S\NP)`, never through the `PP`
+  atom, so `PP` is uniformly an argument constituent. That supports `tyGQ` over
+  the `e->t` (predicative) alternative — which would have been a systematically
+  wrong default had PP actually been predicative-dominant, but the data shows it
+  is not. The 2.3% `PP/PP` modifiers type-check under `tyGQ` (`tyGQ -> tyGQ`).
+  Still `[stipulated]` (a semantic-type choice is not corpus-derivable the way a
+  category is), and still open to revision, but no longer a bare guess.
 
 - **[measured] The type-changing rule class is a small, closed, learnable
   inventory that generalises — measured train/test to avoid self-agreement.**
@@ -426,13 +438,29 @@ After the survey above, the owner granted confirmation to build in `~/projects`
   `generate_account_report(VENUE)['total']`), and runs the validation suite,
   attaching a `ValidationCertificate` to every completed backtest — all guarded
   so it cannot break the backtest. Verified by installing NautilusTrader 1.231
-  and running the real `spy_daily_dip_hold_5` backtest: **the suite's full-sample
-  Sharpe (`0.4196274976589618`) matches nautilus's own engine Sharpe
-  (`0.4196274976589617`) to 15 significant figures** — an independent
-  cross-check of the pure-stdlib metric against a battle-tested engine, on real
-  data. The strategy correctly gets `passed: false` (null p = 0.44 — edge not
-  distinguishable from random timing). So the loop backtest → returns → validated
-  certificate now runs end-to-end.
+  and running the real `spy_daily_dip_hold_5` backtest: the loop backtest →
+  returns → validated certificate runs end-to-end, and the strategy correctly
+  gets `passed: false` (null p = 0.44 — edge not distinguishable from random
+  timing).
+
+  **Correction — the Sharpe agreement is a convention cross-check, not
+  independent verification.** An earlier revision of this entry (and the
+  agentic-qr commit `09cfd9b` message) said the suite's Sharpe
+  (`0.4196274976589618`) "matches nautilus's own (`...617`) to 15 significant
+  figures" as an *independent* cross-check. That over-claimed. The suite consumes
+  `engine.portfolio.analyzer.returns()` — **Nautilus's own returns array** — so
+  both numbers share their input; only the Sharpe *formula* is separately
+  written. A probe (`scratchpad/sharpe_probe.py`) confirms the ~15.6-digit match
+  (reldiff 2.65e-16, ~1 ULP) is fully explained by *same input + same convention*:
+  a population-variance variant of my formula diverges from Nautilus at ~2 digits
+  (reldiff 7.7e-3), and reversed summation is bit-identical (`math.fsum` is
+  order-independent). So the check establishes something real but narrow — my
+  Sharpe **convention** (sample n−1 std, ×√252) matches Nautilus's, and a wrong
+  convention *would* have been caught — but it does **not** independently verify
+  the returns computation or execution accounting, because the returns array is
+  Nautilus's, not independently derived. A genuinely independent end-to-end check
+  would require recomputing the strategy's returns from fills without Nautilus;
+  that remains open.
 - **[measured] The earlier "72% of results are import failures" is a stale
   environment artifact, not a code defect.** With `nautilus_trader` 1.231
   installed in a venv, the engine runs cleanly; the failures in `results/*.json`

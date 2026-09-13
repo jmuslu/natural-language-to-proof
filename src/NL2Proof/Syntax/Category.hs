@@ -98,6 +98,15 @@ isAtomic _             = False
 -- \"PP\"@ so a human reviews PP-bearing corpus entries before they are trusted.
 -- The two coexist on purpose: the classifier flags PP for scrutiny; the running
 -- parser needs a concrete, provisional type to compose at all.
+--
+-- The choice is /supported by the corpus/, not merely asserted: a frequency
+-- survey of every PP-bearing category (@docs\/ccgbank-pp-role-survey.py@) finds
+-- @PP@ is __97.7% argument-like__ (a preposition's result, or a complement a head
+-- selects) and __0% predicate__ — CCGbank routes adjunct\/predicative PPs through
+-- prepositions whose /result/ is a modifier category like @(S\\NP)\\(S\\NP)@,
+-- never through the @PP@ atom. So @tyGQ@ (argument-like) is the empirically
+-- justified default over @e -> t@ (predicative). Still stipulated (a semantic
+-- type is not corpus-derivable the way a category is) and open to revision.
 catTy :: Cat -> Ty
 catTy S             = TyT
 catTy NP            = tyGQ
