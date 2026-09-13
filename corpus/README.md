@@ -6,16 +6,32 @@ into checkable-and-consistent vs. common-but-inconsistent, to test whether the
 epistemic ingestion layer (main handoff Layers 6–8) can tell the two apart —
 **before** it is pointed at anything larger or unsupervised.
 
-## The one rule that shapes everything here
+## The rule that shapes everything here (corrected)
 
-An agent may **structure** this corpus (normalise fields, decompose per-claim,
-track confounds) — that is retrieval/formatting, the safe side of the
-determinism boundary both handoffs draw. An agent must **never** decide whether a
-claim is factually consistent. So in every record, each claim's
-`checkable_reference` and `consistency_verdict` are **null**, and
-`verification_status` is `not_performed`. Those get filled by the owner or an
-external, checkable reference — not by an agent's read of whether something
-"sounds right." Reputation/fluency is not verification; that is the whole point.
+The "an agent must never decide whether a claim is factually consistent"
+constraint is scoped to the **live, autonomous** system — not to bootstrapping.
+During development the agent should do the verification work, as a **proposer**
+(the Layer 6 proposer/never-decider role): check each claim against an external,
+checkable reference and *propose* a verdict, with the reference and reasoning
+attached and `verdict_source = "agent_proposed"`, subject to owner/external
+confirmation before the autonomous system trusts it. What stays forbidden is the
+*bad* kind of deciding — substituting the agent's own read of whether something
+"sounds right" for an actual external check. Reputation/fluency is not
+verification; a cited external reference is.
+
+Two layers, kept physically separate by provenance:
+
+- **structure** (`records/`, owner-labeled + agent-structured): sources, claims,
+  domains, confounds. Each claim's `consistency_verdict`/`checkable_reference` are
+  null *here* — this layer asserts no verdicts.
+- **agent-proposed verification** (`verdicts_agent_proposed.json`): reference-backed
+  verdicts (`consistent`/`inconsistent`/`unresolved`), each with the reference and
+  reasoning, marked `pending_owner_confirmation`. `unresolved` is used honestly and
+  often (specific current statistics, self-reported track records, future events
+  are not guessed).
+
+An earlier version of this README said the agent "must never" fill verdicts and
+left them all null; that over-read the live-system rule and is corrected here.
 
 ## Layout
 
@@ -63,6 +79,46 @@ and adds the fields the handoff calls for:
   `claim_type`, and the three null verification slots above.
 - **`provenance`** — records `label_source: owner` vs `structure_source: agent`,
   making the determinism boundary auditable in the data itself.
+
+## The epistemic graph (`epistemic_graph.py`, `build_graph.py`, `graph.json`)
+
+The corpus is not just a flat list of records — it is a **graph**, and
+information propagates **both ways** along it. `build_graph.py` assembles it from
+the records + agent-proposed verdicts:
+
+- **Nodes:** `source`, `claim`, `domain`, `reference` (an external check),
+  `owner_label` (the owner's per-source judgment), and — once real backtests
+  exist — `outcome`.
+- **Edges:** `source --asserts--> claim`, `claim --in_domain--> domain`
+  (structural); `reference/owner_label --supports|contradicts--> claim/source`
+  (external checks that originate trust); `claim --corroborates--> claim`
+  (amplifier); and, for reverse propagation, `claim --feeds--> outcome` with
+  `outcome --implicates--> claim` once the outcome is checked.
+
+Two disciplines are built into the propagation (`epistemic_graph.propagate`),
+both directly from the main handoff:
+
+1. **Trust originates only from external checks** (Layer 8 Version A). References,
+   owner labels and outcomes are the only trust *sources*; corroboration between
+   claims can amplify externally-rooted trust but a mutually-corroborating cluster
+   with **no** external check stays at zero. The echo chamber gets nothing. (On
+   the current corpus, 30 of 48 claims have no external check yet and sit at
+   trust 0 — correctly.)
+2. **Information propagates both ways.** Forward: support/corroboration flow to
+   claims and (descriptively) to sources. Backward: an oracle-checked `outcome`
+   implicates the claims that fed it (`implicate_from_outcome`) — the same shape
+   as `Genealogy.hs`'s retraction propagation, which is how a future Layer-5
+   trust-update mechanism (kept open, not brute-forced here) plugs in.
+
+Both `epistemic_graph.py` and `confound_check.py` validate themselves on
+synthetic ground truth first (`python3 corpus/epistemic_graph.py`), the same
+"prove the checker on known answers" discipline as the Layer 3 suite.
+
+A concrete finding the graph already surfaces: a per-claim verdict can diverge
+from the owner's global label. Source 002's individual claims (market efficiency,
+null-baseline methodology, standard ML fixes) are individually consistent, yet
+the owner's firm "inconsistent" label about the *strategy* pulls the source's
+net trust negative. The graph shows the tension rather than falsely resolving it.
 
 ## What the corpus is for (and what a good result is *not*)
 

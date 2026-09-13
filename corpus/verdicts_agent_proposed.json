@@ -1,0 +1,237 @@
+{
+  "verdict_source": "agent_proposed",
+  "status": "pending_owner_confirmation",
+  "note": "Reference-backed proposals made during bootstrapping; the live autonomous system must not treat these as final without owner or external confirmation.",
+  "tally": {
+    "consistent": 16,
+    "unresolved": 6,
+    "inconsistent": 3
+  },
+  "verdicts": [
+    {
+      "claim_id": "001-1-a",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "standard corporate-finance definition (P/E = price/EPS = market cap/net income)",
+      "reasoning": "Identity holds: net income / shares = EPS, market cap / shares = price, so market cap / net income = price/EPS = P/E.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-1-c",
+      "verdict": "unresolved",
+      "confidence": "low",
+      "checkable_reference": "presenter heuristic (R-squared > 0.8 threshold)",
+      "reasoning": "An R^2 > 0.8 'confidence' threshold for a P/E-vs-growth regression is a stipulated rule of thumb, not a checkable fact.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-2-a",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "standard enterprise-value definition",
+      "reasoning": "EV = market cap + total debt + preferred stock + minority interest - cash & equivalents is the textbook definition.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-2-b",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "standard EBITDA definition",
+      "reasoning": "EBITDA = EBIT + D&A = operating income + depreciation & amortization.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-2-c",
+      "verdict": "consistent",
+      "confidence": "medium",
+      "checkable_reference": "microstructure/valuation rationale for EV/EBITDA",
+      "reasoning": "EV/EBITDA is capital-structure-neutral (numerator includes debt, denominator is pre-interest), so cross-capital-structure comparison is the standard rationale.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-3-c",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "Federal Reserve H.4.1 balance-sheet history",
+      "reasoning": "Fed balance sheet expanded in 2008 (QE1) and 2020 (COVID QE); contracted in 2018-2019 and from mid-2022 (QT). Matches the claim.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-3-d",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "Federal Reserve policy-rate history",
+      "reasoning": "Fed funds rose in 2004 (hiking cycle) and 2022 (hiking cycle); cut sharply in 2008 (to ~0) and 2020 (to ~0). Matches.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-4-b-target",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "FOMC longer-run inflation objective; ISM methodology",
+      "reasoning": "Fed's 2% inflation target and ISM PMI 50 = expansion/contraction line are both correct.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-4-b-cci",
+      "verdict": "inconsistent",
+      "confidence": "medium",
+      "checkable_reference": "Conference Board Consumer Confidence Index methodology (1985=100 base)",
+      "reasoning": "The claim treats CCI=100 as a 'neutral' level; 100 is the 1985 base-year index value, not a neutral/expansion line. Minor but a real definitional error.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-4-c",
+      "verdict": "consistent",
+      "confidence": "medium",
+      "checkable_reference": "BEA GDP-by-industry shares",
+      "reasoning": "Services are roughly ~70-80% of US GDP and manufacturing ~10-11%, consistent with the ~70% / ~10-12% figures.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-4-d",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "FOMC communications on preferred inflation gauge",
+      "reasoning": "The Fed's preferred gauge is core PCE, not core CPI. Correct.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-7-f",
+      "verdict": "inconsistent",
+      "confidence": "medium",
+      "checkable_reference": "spelling of Kevin Warsh; Fed leadership as of knowledge cutoff",
+      "reasoning": "Name is given as 'Kevin Worsh'; the person is Kevin Warsh. Whether he is the 'new Fed chair' is a 2026 event beyond confident verification and is separately unresolved.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "001-7-g",
+      "verdict": "inconsistent",
+      "confidence": "medium",
+      "checkable_reference": "BofA US High Yield Index option-adjusted spread history (FRED: BAMLH0A0HYM2)",
+      "reasoning": "Claim calls 8-10% a 'normal' junk spread; historically the normal/calm HY OAS is ~3-5%, with 8-10% already elevated and 15-20%+ in a crisis (2008 ~20%, 2020 ~11%). The 'normal 8-10%' figure is too high.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "002-b",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "semi-strong efficient-market hypothesis (mainstream finance)",
+      "reasoning": "That exploitable patterns in public price/sentiment data are largely arbitraged away by faster institutional actors is the standard semi-strong-EMH position.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "002-c",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "null-baseline / random-portfolio benchmarking (sound methodology)",
+      "reasoning": "Comparing a model against both buy-and-hold and a band of random portfolios, and requiring it to beat the noise band, is a legitimate null-baseline test (the same discipline as the Layer 3 suite).",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "002-e",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "standard ML practice (early stopping)",
+      "reasoning": "Halting after N epochs without validation improvement is textbook early stopping and reduces overfitting/compute.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "002-f",
+      "verdict": "consistent",
+      "confidence": "medium",
+      "checkable_reference": "regression vs classification target choice",
+      "reasoning": "Predicting next-day log return (continuous, rankable) rather than binary direction is a reasonable target change; captures magnitude the binary target ignores.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "003-f",
+      "verdict": "consistent",
+      "confidence": "medium",
+      "checkable_reference": "market-microstructure theory (tick-constrained spreads, queue priority)",
+      "reasoning": "When the minimum tick prevents spread compression, competition shifts to queue priority/time rather than price \u2014 a real, documented microstructure phenomenon.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "003-g",
+      "verdict": "consistent",
+      "confidence": "medium",
+      "checkable_reference": "arithmetic check of the stated figures",
+      "reasoning": "8 bps/day * 365 = 2920 bps = 29.2%/year (simple, uncompounded) \u2014 the arithmetic is internally consistent. The INPUTS (1 fill/hour, 8 round trips/day) are unverified assumptions, left unresolved separately.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "003-a",
+      "verdict": "unresolved",
+      "confidence": "n/a",
+      "checkable_reference": "primary backtest data (not available)",
+      "reasoning": "~29%/year unleveraged is a specific historical-performance claim requiring the actual backtest/returns to check; not verifiable from the free article portion.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "003-b",
+      "verdict": "unresolved",
+      "confidence": "n/a",
+      "checkable_reference": "primary backtest data (not available)",
+      "reasoning": "The >200% leveraged figure sits behind the paywall and needs the underlying data.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "004-e",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "modern portfolio theory (diversification of uncorrelated signals)",
+      "reasoning": "Combining low-correlation return streams reduces portfolio variance for a given expected return \u2014 the standard Markowitz diversification result. Structurally sound without external data.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "004-a",
+      "verdict": "unresolved",
+      "confidence": "n/a",
+      "checkable_reference": "cited industry survey (exabel.com) \u2014 primary source not fetched",
+      "reasoning": "The 71% figure is attributed to a survey; verifying it needs the primary survey, not the article's paraphrase.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "004-b",
+      "verdict": "unresolved",
+      "confidence": "low",
+      "checkable_reference": "alternative-data market-size forecasts (definition-dependent)",
+      "reasoning": "Alt-data market-size estimates vary widely by definition and vendor; '>$15B in 2025' is plausible for some definitions but not confirmable without the specific source.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "004-d",
+      "verdict": "unresolved",
+      "confidence": "n/a",
+      "checkable_reference": "unsourced in the captured portion",
+      "reasoning": "The 36mo->18mo alpha-half-life figure is unsourced even in the article's own free portion; needs a primary reference.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    }
+  ]
+}
