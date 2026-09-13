@@ -12,8 +12,10 @@
 module Main (main) where
 
 import Harness
-import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>))
-import NL2Proof.Syntax.Category (Cat(..), catTy)
+import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>), Term(Con))
+import NL2Proof.Syntax.Category (Cat(..), catTy, catUnify)
+import NL2Proof.Syntax.CCG (Sign(..), fwdApp)
+import NL2Proof.Provenance (Prov(ProvLex), SourceId(SourceId), Span(Span))
 import NL2Proof.Syntax.CCGBank
 import NL2Proof.Syntax.CCGRules
 import NL2Proof.Syntax.CCGDeriv
@@ -21,7 +23,7 @@ import NL2Proof.Syntax.CCGDeriv
 main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
-   ++ unifyChecks ++ ruleChecks ++ derivChecks)
+   ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -249,6 +251,32 @@ derivChecks =
             , AutoLeaf "NP" "baz"
             ]
         ]
+
+--------------------------------------------------------------------------------
+-- Core parser migration: feature unification in the real CCG.hs rules
+--------------------------------------------------------------------------------
+
+-- Demonstrates the capability the migration adds: the core combinatory rules now
+-- combine across a feature mismatch (a verb selecting NP accepting an NP[nb]
+-- object) that exact-equality (`==`, the pre-migration behaviour) rejected --
+-- while still discriminating genuinely different features.
+migrationChecks :: [Check]
+migrationChecks =
+  [ expect "catUnify: NP accepts NP[nb] (underspecification wildcard)"
+      (catUnify NP (Feature "nb" NP))
+  , expect "exact equality rejected it (what the core rules used before)"
+      (NP /= Feature "nb" NP)
+  , expect "core fwdApp now fires across the feature mismatch"
+      (length (fwdApp verb obj) == 1)
+  , expectEq "and yields the functor's result category"
+      [Feature "dcl" S :\ NP] (map sCat (fwdApp verb obj))
+  , expect "features still discriminate: S[dcl] does not unify with S[b]"
+      (not (catUnify (Feature "dcl" S) (Feature "b" S)))
+  ]
+  where
+    p    = ProvLex (SourceId "t") (Span 0 1) "w"
+    verb = Sign ((Feature "dcl" S :\ NP) :/ NP) (Con "verb" TyT) p  -- (S[dcl]\NP)/NP
+    obj  = Sign (Feature "nb" NP) (Con "obj" TyT) p                 -- NP[nb]
 
 --------------------------------------------------------------------------------
 -- helpers

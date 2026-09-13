@@ -75,13 +75,13 @@ type Rule = Sign -> Sign -> [Sign]
 -- | Forward application, @X\/Y  Y  =>  X@.
 fwdApp :: Rule
 fwdApp (Sign (res :/ arg) f p1) (Sign c x p2)
-  | arg == c = [Sign res (App f x) (provRule ">" [p1, p2])]
+  | catUnify arg c = [Sign res (App f x) (provRule ">" [p1, p2])]
 fwdApp _ _ = []
 
 -- | Backward application, @Y  X\\Y  =>  X@.
 bwdApp :: Rule
 bwdApp (Sign c x p2) (Sign (res :\ arg) f p1)
-  | arg == c = [Sign res (App f x) (provRule "<" [p2, p1])]
+  | catUnify arg c = [Sign res (App f x) (provRule "<" [p2, p1])]
 bwdApp _ _ = []
 
 -- | Forward composition, @X\/Y  Y\/Z  =>  X\/Z@.
@@ -92,7 +92,7 @@ bwdApp _ _ = []
 -- because leaving it defined-but-unused documents the choice.
 fwdComp :: Rule
 fwdComp (Sign (x :/ y) f p1) (Sign (y' :/ z) g p2)
-  | y == y' =
+  | catUnify y y' =
       [ Sign (x :/ z)
              (Lam v (catTy z) (App f (App g (Var v))))
              (provRule ">B" [p1, p2])
@@ -104,7 +104,7 @@ fwdComp _ _ = []
 -- | Backward composition, @Y\\Z  X\\Y  =>  X\\Z@. Also not enabled by default.
 bwdComp :: Rule
 bwdComp (Sign (y' :\ z) g p2) (Sign (x :\ y) f p1)
-  | y == y' =
+  | catUnify y y' =
       [ Sign (x :\ z)
              (Lam v (catTy z) (App f (App g (Var v))))
              (provRule "<B" [p2, p1])
@@ -164,7 +164,7 @@ lexicalSpans lexicon src l =
 -- being lazy in its values.
 parseWith :: [Rule] -> Int -> M.Map (Int, Int) [Sign] -> Cat -> [Sign]
 parseWith rules n lexSpans goal =
-  [ s | s <- M.findWithDefault [] (0, n) table, sCat s == goal ]
+  [ s | s <- M.findWithDefault [] (0, n) table, catUnify (sCat s) goal ]
   where
     table :: M.Map (Int, Int) [Sign]
     table =
