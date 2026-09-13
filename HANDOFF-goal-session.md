@@ -225,6 +225,35 @@ structurally, and needs the same treatment:
   classification, so an LLM-guessed entry doesn't quietly inherit the same
   trust level as a CCGbank-attested one just because it also type-checks.
 
+**The end-state goal for this pass-through is zero, not "tagged and
+tolerated indefinitely."** Provenance tagging above is the right treatment
+for the *current* bridge state, but it shouldn't be mistaken for the
+target architecture. The deterministic linguistic engine is meant to
+eventually be a complete substitute for LLM judgment in this pipeline —
+not a system that always keeps a flagged, lower-trust LLM fallback path
+running alongside it. Every category/meaning currently routed through an
+LLM guess is scaffolding for a present gap, to be replaced by something the
+deterministic pipeline resolves directly (more corpus coverage, an
+extended `Cat`, a designed rule) as the project matures — not a permanent
+fixture that stays load-bearing forever.
+
+**The organizing principle for where agents belong at all, going
+forward**: agents are non-deterministic, so they should never be doing the
+actual reasoning or verification work the deterministic core exists to do
+— that's the one thing this project can't outsource to something
+probabilistic without undoing its own premise. But agents are genuinely
+well suited to work where non-determinism doesn't compound into an error —
+retrieval, search, data collection, formatting, organizing — precisely
+because those tasks don't feed a claim's truth value the way a category or
+meaning guess does. Keep that boundary explicit rather than letting agent
+convenience creep from the safe side of it into the reasoning side: the
+CCGbank ingestion, the corpus-labeling work (see the companion handoff),
+and the corpus-collection work already done this session are all correctly
+on the safe side (data in, structure applied, nothing about a claim's
+truth decided by the agent) — the LLM category pass-through above is the
+one piece currently sitting on the wrong side, and the goal is to migrate
+it, not to make peace with it being there indefinitely.
+
 ## Layer 3 — the oracle question, and a real candidate that already exists
 
 Stage 3 needs an external oracle for the RL loop to close at all — nothing
@@ -360,6 +389,51 @@ testing/validation technique choices (cross-validation schemes, resampling,
 model-selection criteria) — a good, standard reference for filling out what
 "statistically mature" actually means in Layer 3's suite, rather than
 reinventing validation methodology from scratch.
+
+**A global OOS pass/fail conflates two different failure shapes, and the
+distinction is a real gap in the current suite.** A strategy can be
+mediocre everywhere — flat, noisy, indistinguishable from nothing in any
+condition — or it can have genuine, strong edge in specific market
+conditions and nothing (or negative edge) elsewhere. Averaged across a
+whole out-of-sample window, both can produce the same unimpressive
+top-line number, and the current suite's single verdict throws away the
+difference. The second case is arguably the more valuable finding — not
+"is this strategy good" but "under what conditions does this mechanism
+actually work" — and discarding it as a failed strategy loses real signal.
+Symmetrically, the sharper falsification test for "there's nothing here" is
+not a single global p-value — it's a strategy that shows **no**
+regime-conditional structure at all, uniformly mediocre across every
+independently defined condition, with no interesting split anywhere.
+
+**The trap in implementing this, which would quietly undo everything else
+in this layer**: if "does it have a good regime" is operationalized as
+scanning the strategy's own rolling Sharpe for a window that looks good,
+that is the multiple-comparisons problem from earlier in this section,
+just relocated from parameter/gate space to time-window space. Any noisy
+series — including pure random returns — will contain *some* rolling
+window with a good Sharpe by chance; searching enough windows guarantees
+finding one regardless of whether any real edge exists. A rolling-Sharpe
+plot with a flattering bump proves nothing on its own, the same way a
+combinatorially-discovered gate proves nothing on its own before ablation
+and null-baseline testing.
+
+**What makes it rigorous instead**: the regime label has to be defined
+*independently of the strategy's own performance*, before its returns are
+examined — never discovered by searching the returns themselves for a
+flattering segment. A regime computed from something else entirely (an
+HMM state on price/volatility features, a VIX bucket, a macro or calendar
+split) qualifies; a regime defined as "whichever window had the best
+Sharpe" does not, no matter how it's dressed up statistically. And per
+Layer 3.5's own filtering-vs-smoothing point: the regime label should be
+forward-computable in real time (alpha, not gamma) — a "regime" only
+visible in hindsight isn't one anything could have traded on, so it can't
+license treating a historical segment as validated edge. Once the regime
+label is defined this way, test performance conditional on it with the
+same multiple-comparisons correction already required elsewhere in this
+layer, since testing across several regime bins is exactly the kind of
+multiplicity that needs it — a good result in one bin out of many regimes
+tested is no more automatically meaningful than a good result from one gate
+configuration out of many tried.
 
 ## Layer 4 — the reward manifold has a structural gap, not just a missing weight
 
