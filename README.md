@@ -256,9 +256,13 @@ fails the build instead of silently succeeding.
 
 `cabal test all` runs all four suites: the discrete core, candidate generation,
 the substrate, and CCGbank ingestion. The `tools/` executables (`ccgbank-report`,
-`ccg-grammar-coverage`, `ccg-reconstruct`, `ccg-typechange-coverage`) are
-research drivers over the CCGbank corpus — run e.g. `cabal run ccgbank-report`;
-they read `~/ccgbank/` at runtime and commit no corpus data.
+`ccg-grammar-coverage`, `ccg-reconstruct`, `ccg-typechange-coverage`,
+`ccg-parse-coverage`, `ccg-lexicon-ingest`) are research drivers over the CCGbank
+corpus — run e.g. `cabal run ccgbank-report`; they read `~/ccgbank/` at runtime and
+commit no corpus data. `ccg-parse-coverage` measures whole-sentence bottom-up parse
+coverage: it folds the combinators and the learned type-change inventory into one
+CKY parse and reports how often the grammar derives a real sentence's gold root from
+its gold supertags (99.1% on a section-00 sample).
 
 <details>
 <summary>If cabal complains about <code>root.json</code> signatures</summary>

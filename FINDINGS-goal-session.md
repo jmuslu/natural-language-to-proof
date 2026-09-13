@@ -920,10 +920,23 @@ database … rust forks of sqlite" — pointed straight at it.
   (non-skeleton) meanings — the LLM-proposed path with its own provenance.
 - **[Layer 1/2] Done: type-changing rule class, measured train/test** as a
   learnable inventory (`CCGTypeChange`, `ccg-typechange-coverage`; 0.01%
-  held-out residue). Remaining: fold combinators + the induced type-change
-  inventory into one parser path so real sentences parse end-to-end (not just
-  node-classify), and decide whether type-raising should be a generalising
-  combinator rather than a memorised unary rule.
+  held-out residue).
+- **[Layer 1/2 — resolved, this session] Combinators + type-change folded into one
+  whole-sentence parser.** `CCGParse` runs a CKY chart over a real sentence's gold
+  supertags, folding `CCGRules.combine` (application, composition, coordination,
+  punctuation) with the learned type-change inventory (unary + binary) into one
+  parse path, and asks whether the grammar derives a category unifying with the gold
+  root. `ccg-parse-coverage` induces the type-change rules from a disjoint train
+  split (every 5th tree is test) so they are not fit to the scored sentences.
+  **[measured]** on 40 files of section 00: **105/106 sentences (≤40 words) parse to
+  the gold root = 99.1%.** Scope stated honestly: this is the *combination* half of
+  parsing (supertagging + combination) given gold supertags — it isolates the
+  combinatory question from lexical ambiguity, and is neither the local gold-pair
+  coverage `ccg-grammar-coverage` measures nor the gold-tree reconstruction
+  `ccg-reconstruct` needs. Remaining on this thread: from-words parsing needs a
+  supertagger over the ingested lexicon (lexical ambiguity + a beam); and whether
+  type-raising should be a generalising combinator rather than a memorised unary
+  rule is still open.
 - **[Layer 2] Done: `.auto` derivation parser + reconstruction** (`CCGDeriv`,
   `ccg-reconstruct`, ~96% of real sentences). Remaining: use the reconstructed
   sentences as an actual test-case *fixture* feeding the DRT/SDRT stages, to hit
