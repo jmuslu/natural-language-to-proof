@@ -149,8 +149,17 @@ next event class to test, and its calibration must be walk-forward in time.
    external dates (the research tools), reference-backed, owner-confirmable. (E.g.
    recover record 005's true publication date, currently a conservative `captured`
    fallback.)
-4. **Event-study driver**: align an event set's `knowable_time`s to forward price
-   windows and run the *existing* validation suite (nulls + FDR) — no new statistics.
+4. **[driver built, proven on synthetic ground truth]** **Event-study driver**:
+   `agentic-qr:shared/backtesting/validation/event_study.py`. `align_to_next_bar`
+   maps each event's `knowable_time` to the first bar *strictly after* it (no
+   lookahead; events past the series end are dropped, not clamped); `event_study`
+   measures the mean forward (optionally market-adjusted) abnormal return and tests
+   it against a **random-timing null** (same window at random dates) and a sign-flip
+   null. Proven on synthetic ground truth (`test_event_study.py`, 6 checks: injected
+   effect detected and beats the null; pure no-effect does not fire; a market-wide
+   move is removed by market adjustment). Across event classes, gate with the
+   existing Benjamini-Hochberg. Still needs a real event set + price series to run
+   live (the medical use case).
 5. Only then, the medical-timeline ↔ market use case end to end, with the as-of
    discipline and the traps above enforced and logged.
 
