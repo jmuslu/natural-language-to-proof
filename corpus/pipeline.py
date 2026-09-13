@@ -12,7 +12,9 @@ across both repos can be seen operating as one loop:
               manifold (calibration vs a mean null; learning curve vs #checks).
   D. RETRIEVE semantic retrieval, and directed exploration (the frontier of what to
      + EXPLORE check next, and cross-domain bridge hypotheses) -- all proposals.
-  E. ORACLE   (other repo, private) the statistical validation suite that turns a
+  E. TEMPORAL as-of retrieval (a fact informs a query at T only if knowable_time<=T;
+              no lookahead) + the dated external-event store (TEMPORAL.md).
+  F. ORACLE   (other repo, private) the statistical validation suite that turns a
               proposed signal into an external verdict, which flows back to B.
 
 The through-line: each stage either produces something externally checkable or
@@ -145,8 +147,36 @@ def stage_retrieve_explore(brain: Brain) -> dict:
     return {"stage": "retrieve_explore", "status": "ok", "agenda_items": ag["count"]}
 
 
+def stage_temporal(brain: Brain) -> dict:
+    banner("E", "TEMPORAL -- as-of retrieval (no lookahead) + the dated event store")
+    q = "is a paper loss a real loss even if I do not sell?"
+    # record 005 (the mark-to-market source) published 2024-04-17; ask before vs after
+    before = brain.answer(q, as_of="2024-03-01")
+    after = brain.answer(q, as_of="2024-06-01")
+    print(f"  answer as-of 2024-03-01 (before source 005 published): stance "
+          f"{before['stance']} ({before.get('n_relevant', 0)} relevant facts knowable)")
+    print(f"  answer as-of 2024-06-01 (after 005 published 2024-04-17): stance "
+          f"{after['stance']} ({after.get('n_relevant', 0)} relevant facts knowable)")
+    print("  => the brain answers 'what did we know as of T' -- knowable_time <= T only.")
+    ev = ROOT / "corpus" / "events"
+    n_events = 0
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(ev))
+        import build_events  # type: ignore
+        events = build_events.load_events()
+        n_events = len(events)
+        for e in events[:3]:
+            print(f"  event {e['event_id']} [{e['ticker']}] knowable {e['knowable_time']}"
+                  f" (event {e['event_time']}): {e['description'][:52]}")
+        print("  => events carry attested knowable_time; feed event_study.align_to_next_bar")
+    except Exception as e:  # noqa: BLE001
+        print(f"  [skip] event store: {e}")
+    return {"stage": "temporal", "status": "ok", "events": n_events}
+
+
 def stage_oracle_note() -> None:
-    banner("E", "ORACLE -- external validation closes the loop (agentic-qr, private)")
+    banner("F", "ORACLE -- external validation closes the loop (agentic-qr, private)")
     print("  A frontier proposal (Stage D) that is operationalised as a trading signal")
     print("  is validated by shared/backtesting/validation: walk-forward OOS, sign-flip")
     print("  and random-timing nulls, Benjamini-Hochberg FDR, regime-conditional Sharpe,")
@@ -169,7 +199,8 @@ def main() -> None:
     r_brain, brain = stage_brain()
     results.append(r_brain)
     results.append(stage_retrieve_explore(brain))
-    stage_oracle_note()
+    results.append(stage_temporal(brain))
+    stage_oracle_note()  # narrative note, printed last as the loop-closer
     print(f"\n{'='*72}\n  RUN COMPLETE -- "
           + ", ".join(f"{r['stage']}:{r['status']}" for r in results)
           + "\n" + "=" * 72)
