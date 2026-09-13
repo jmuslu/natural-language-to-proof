@@ -787,8 +787,12 @@ against the handoff and brought up to its requirements.
   index is published to `agentic-qr:shared/corpus/claims_index.json`. So every
   backtest now stamps retrieval-backed, author-confirmable `claim_refs`, and the
   ingestion side reverse-propagates real outcomes to them. Retrieval only (safe
-  side) — a proposer, never a truth decision. The Layer-5 trust-*mechanism*
-  choice stays open and not-to-be-brute-forced.
+  side) — a proposer, never a truth decision. *Update:* the Layer-5 trust-mechanism
+  is no longer deferred — its parameters are now fit against external calibration
+  (`corpus/fit_graph.py`, see the Layer 5 section above); run-level FDR is wired
+  into `strategy-core`'s batch loop; and the researcher now anchors its notes to
+  corpus claims (`claim_match`), closing the last ungated agent-output path's first
+  gate hook.
 - **[Thread 2 — corpus grown to 5; confound honestly still red, not gamed]**
   Collected a real source via WebFetch (White Coat Investor, ~1100-word article,
   consistent bucket; raw provenance note outside the repo). Schema v2 gained

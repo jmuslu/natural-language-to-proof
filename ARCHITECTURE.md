@@ -1117,9 +1117,13 @@ altitude, and the pieces are wired to each other by **provenance** and by
 The end-to-end feedback loop, stated once: a claim (corpus) → cited by a
 hypothesis (`claim_refs`, proposed by retrieval, author-confirmable) → a strategy
 → a backtest → the validation certificate (external check) → reverse-propagated to
-the claim's trust, and aggregated over many outcomes into calibration. The one
-gap still open is the researcher-notes→claim link (Layer 9) and wiring run-level
-FDR into the batch runner; both are named in `FINDINGS-goal-session.md`. Every
+the claim's trust, and aggregated over many outcomes into calibration. The two
+edges that were most recently only-partial are now wired: run-level FDR runs
+inside the batch loop (`strategy-core` `run_pending`), and the researcher anchors
+each note to corpus claims (`claim_match`, a retrieval proposer) so the one
+previously-ungated agent-output path is traceable into the graph that verifies it.
+Remaining open pieces are named in `FINDINGS-goal-session.md` (e.g. the
+`conj`/punctuation type-system limit, growing the corpus toward balance). Every
 edge in that loop either is an external check or carries provenance to one —
 which is the whole point, and why the pieces are one system rather than four.
 
