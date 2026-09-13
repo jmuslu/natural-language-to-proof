@@ -41,7 +41,8 @@ module NL2Proof.Syntax.CCGBank
     -- * Semantic type (feature-erasing), with the atoms that need scrutiny
   , TyIssue(..)
   , ccatToTy
-    -- * Projection into the existing bare 'Cat'
+    -- * Projection into the core 'Cat'
+  , ccatToCat
   , toBareCat
     -- * Representability classification
   , CatProfile(..)
@@ -249,6 +250,26 @@ ccatToTy (CSlash _ res arg _) = do
 --------------------------------------------------------------------------------
 -- Projection into the existing bare Cat
 --------------------------------------------------------------------------------
+
+-- | Project a CCGbank category into the /feature-bearing/ core 'Cat': feature
+-- brackets become 'Feature' wrappers and @PP@ maps to the 'PP' atom. Returns
+-- 'Nothing' only for atoms the core 'Cat' still lacks (@conj@, punctuation) —
+-- so, unlike 'toBareCat', this covers the S\/NP\/N\/PP + features majority of the
+-- corpus that the feature-migrated 'Cat' can now represent.
+ccatToCat :: CCat -> Maybe Cat
+ccatToCat (CAtom name fs) = do
+  base <- case name of
+    "S"  -> Just S
+    "NP" -> Just NP
+    "N"  -> Just N
+    "PP" -> Just PP
+    _    -> Nothing
+  Just (foldr (\(Feat f) c -> Feature f c) base fs)
+ccatToCat (CSlash d r a fs) = do
+  r' <- ccatToCat r
+  a' <- ccatToCat a
+  let slashed = case d of { Fwd -> r' :/ a'; Bwd -> r' :\ a' }
+  Just (foldr (\(Feat f) c -> Feature f c) slashed fs)
 
 -- | Project a CCGbank category into the repo's current 'Cat', if it uses only
 -- the atoms the current system has ({S, NP, N}). Features are erased. Returns

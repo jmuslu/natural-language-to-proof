@@ -11,20 +11,25 @@
 -- silent inconsistency the project is built to prevent.
 module Main (main) where
 
+import Data.List (isInfixOf)
+
 import Harness
 import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>), Term(Con))
 import NL2Proof.Syntax.Category (Cat(..), catTy, catUnify)
 import NL2Proof.Syntax.CCG (Sign(..), fwdApp)
+import NL2Proof.Syntax.Lexicon (Entry(entryGloss))
 import NL2Proof.Provenance (Prov(ProvLex), SourceId(SourceId), Span(Span))
 import NL2Proof.Syntax.CCGBank
 import NL2Proof.Syntax.CCGRules
 import NL2Proof.Syntax.CCGDeriv
 import NL2Proof.Syntax.CCGTypeChange
+import NL2Proof.Syntax.CCGLexicon
 
 main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
-   ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks ++ tcChecks)
+   ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks ++ tcChecks
+   ++ lexChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -313,6 +318,41 @@ tcChecks =
     plainNode = AutoTree "NP" [AutoLeaf "N" "y"]                         -- NP -> N at test
     trained   = buildRuleSet id [uNode, tcBinNode]
     rootClass norm rules node = head (classifyTree norm rules node)
+
+--------------------------------------------------------------------------------
+-- CCGbank -> provenance-tagged lexical entries
+--------------------------------------------------------------------------------
+
+lexChecks :: [Check]
+lexChecks =
+  [ expect "a transitive-verb category ingests to a Built entry, well-typed"
+      (case ingest "CCGbank" "reads" "(S[dcl]\\NP)/NP" of
+         Built pe -> skeletonWellTyped pe && peProv pe == CorpusAttested "CCGbank"
+         _ -> False)
+  , expect "a PP category is now representable (feature-migrated Cat) and well-typed"
+      (case ingest "CCGbank" "as" "PP/NP" of
+         Built pe -> skeletonWellTyped pe
+         _ -> False)
+  , expect "a featured atom ingests and its skeleton clears typeOf"
+      (case ingest "CCGbank" "walks" "S[dcl]\\NP" of
+         Built pe -> skeletonWellTyped pe
+         _ -> False)
+  , expectEq "conj is still a needed new atom, not silently built"
+      (Unrepresentable ["conj"]) (ingest "CCGbank" "and" "conj")
+  , expect "a punctuation category is Unrepresentable"
+      (case ingest "CCGbank" "," "," of Unrepresentable _ -> True; _ -> False)
+  , expect "a malformed category is Unparseable, not Built"
+      (case ingest "CCGbank" "x" "S/" of Unparseable _ -> True; _ -> False)
+  , expect "the skeleton names the word (distinct words -> distinct constants)"
+      (case (ingest "CCGbank" "reads" "(S[dcl]\\NP)/NP",
+             ingest "CCGbank" "sees" "(S[dcl]\\NP)/NP") of
+         (Built a, Built b) -> peSem a /= peSem b
+         _ -> False)
+  , expect "peToEntry carries provenance into the core entry gloss"
+      (case ingest "CCGbank" "reads" "(S[dcl]\\NP)/NP" of
+         Built pe -> "corpus-attested" `isInfixOf` entryGloss (peToEntry pe)
+         _ -> False)
+  ]
 
 --------------------------------------------------------------------------------
 -- helpers
