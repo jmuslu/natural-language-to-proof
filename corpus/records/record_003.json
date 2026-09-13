@@ -44,7 +44,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "003-b",
@@ -54,7 +55,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "003-c",
@@ -64,7 +66,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "self_reported"
     },
     {
       "claim_id": "003-d",
@@ -74,7 +77,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "003-e",
@@ -84,7 +88,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "003-f",
@@ -94,7 +99,8 @@
       "claim_type": "methodological",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "003-g",
@@ -104,7 +110,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     }
   ],
   "verification_status": "NOT PERFORMED -- data collection + structuring only; no per-claim source-checking done.",

@@ -37,15 +37,18 @@ from brain_embed import get_embedder, vec_literal
 HERE = Path(__file__).resolve().parent
 
 
-# Claim types that can receive an external FACTUAL consistency verdict (checkable
-# against a citable reference). Opinions/predictions/methodology descriptions cannot
-# get such a verdict -- they need an owner/quality judgment instead, a different axis
-# (see corpus record_schema.json `risk_quality`). Kept here, next to the exploration
-# that uses it, so "what to check next" proposes the right KIND of check.
+# What can receive an external FACTUAL consistency verdict. The precise signal is
+# `evidence_basis` (orthogonal to claim_type; see record_schema.json): only
+# `public_reference` claims are checkable against a citable source. self_reported /
+# unquantifiable / not_applicable claims need an owner/quality judgment instead (the
+# risk_quality axis), not the consistency oracle. CHECKABLE_TYPES is the coarser
+# claim_type fallback used only when evidence_basis is absent (older claims_index).
 CHECKABLE_TYPES = {"definitional", "factual_qualitative", "factual_quantitative"}
 
 
-def _is_checkable(claim_type: str) -> bool:
+def _is_checkable(claim_type: str, evidence_basis: str = "") -> bool:
+    if evidence_basis:
+        return evidence_basis == "public_reference"
     return claim_type in CHECKABLE_TYPES
 
 
@@ -92,7 +95,7 @@ class Brain:
                 continue
             facts.append((cid, c["text"], c.get("domain", ""),
                           c.get("claim_type", ""), c.get("source_id", ""),
-                          trust_by_id[cid]))
+                          trust_by_id[cid], c.get("evidence_basis", "")))
             texts.append(c["text"])
         if missing:
             print(f"[brain] {len(missing)} claim(s) had no graph trust, skipped: "
@@ -107,13 +110,13 @@ class Brain:
         cur = con.cursor()
         cur.execute(f"""CREATE TABLE facts (
             id TEXT PRIMARY KEY, text TEXT, domain TEXT, claim_type TEXT,
-            source_id TEXT, trust REAL, emb F32_BLOB({dim}))""")
+            evidence_basis TEXT, source_id TEXT, trust REAL, emb F32_BLOB({dim}))""")
         cur.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-        for (cid, text, dom, ct, sid, tr), row in zip(facts, embs):
+        for (cid, text, dom, ct, sid, tr, eb), row in zip(facts, embs):
             cur.execute(
-                "INSERT INTO facts(id,text,domain,claim_type,source_id,trust,emb)"
-                " VALUES (?,?,?,?,?,?,vector32(?))",
-                (cid, text, dom, ct, sid, tr, vec_literal(row)))
+                "INSERT INTO facts(id,text,domain,claim_type,evidence_basis,source_id,trust,emb)"
+                " VALUES (?,?,?,?,?,?,?,vector32(?))",
+                (cid, text, dom, ct, eb, sid, tr, vec_literal(row)))
         for k, v in {"embedder_id": embedder.id, "dim": str(dim),
                      "n_facts": str(len(facts)),
                      "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -145,15 +148,16 @@ class Brain:
     # ---- internal readback --------------------------------------------------
     def _all(self) -> Tuple[List[str], np.ndarray, np.ndarray, List[dict]]:
         rows = self.con.cursor().execute(
-            "SELECT id,text,domain,claim_type,source_id,trust,emb FROM facts"
+            "SELECT id,text,domain,claim_type,evidence_basis,source_id,trust,emb FROM facts"
         ).fetchall()
         ids, meta, trusts, embs = [], [], [], []
         for r in rows:
             ids.append(r[0])
             meta.append({"id": r[0], "text": r[1], "domain": r[2],
-                         "claim_type": r[3], "source_id": r[4]})
-            trusts.append(float(r[5]))
-            embs.append(np.frombuffer(r[6], dtype=np.float32))
+                         "claim_type": r[3], "evidence_basis": r[4] or "",
+                         "source_id": r[5]})
+            trusts.append(float(r[6]))
+            embs.append(np.frombuffer(r[7], dtype=np.float32))
         E = np.vstack(embs) if embs else np.zeros((0, self.dim), np.float32)
         return ids, E, np.asarray(trusts, dtype=np.float64), meta
 
@@ -375,8 +379,10 @@ class Brain:
                 score = 0.5 * isolation + var  # checked: isolation and/or contestation
                 reason = "checked_contested" if var > 0.05 else "checked_isolated"
             ctype = meta[i]["claim_type"]
+            ebasis = meta[i]["evidence_basis"]
             out.append({"id": ids[i], "text": meta[i]["text"], "domain": meta[i]["domain"],
-                        "claim_type": ctype, "externally_checkable": _is_checkable(ctype),
+                        "claim_type": ctype, "evidence_basis": ebasis,
+                        "externally_checkable": _is_checkable(ctype, ebasis),
                         "trust": float(trusts[i]), "checked": bool(checked[i]),
                         "centrality": round(centrality, 4), "isolation": round(isolation, 4),
                         "neighbor_trust_var": round(var, 4),

@@ -72,7 +72,8 @@
       "claim_type": "definitional",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-1-b",
@@ -82,7 +83,8 @@
       "claim_type": "opinion",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "unquantifiable"
     },
     {
       "claim_id": "001-1-c",
@@ -92,7 +94,8 @@
       "claim_type": "recommendation",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-1-d",
@@ -102,7 +105,8 @@
       "claim_type": "recommendation",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-2-a",
@@ -112,7 +116,8 @@
       "claim_type": "definitional",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-2-b",
@@ -122,7 +127,8 @@
       "claim_type": "definitional",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-2-c",
@@ -132,7 +138,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-2-d",
@@ -142,7 +149,8 @@
       "claim_type": "recommendation",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-3-a",
@@ -152,7 +160,8 @@
       "claim_type": "methodological",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-3-b",
@@ -162,7 +171,8 @@
       "claim_type": "methodological",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-3-c",
@@ -172,7 +182,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-3-d",
@@ -182,7 +193,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-4-a",
@@ -192,7 +204,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "unquantifiable"
     },
     {
       "claim_id": "001-4-b",
@@ -202,7 +215,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-4-c",
@@ -212,7 +226,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-4-d",
@@ -222,7 +237,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-5-a",
@@ -232,7 +248,8 @@
       "claim_type": "methodological",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-5-b",
@@ -242,7 +259,8 @@
       "claim_type": "methodological",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-5-c",
@@ -252,7 +270,8 @@
       "claim_type": "recommendation",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-6-a",
@@ -262,7 +281,8 @@
       "claim_type": "recommendation",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "not_applicable"
     },
     {
       "claim_id": "001-6-b",
@@ -272,7 +292,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "self_reported"
     },
     {
       "claim_id": "001-7-a",
@@ -282,7 +303,8 @@
       "claim_type": "prediction",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "self_reported"
     },
     {
       "claim_id": "001-7-b",
@@ -292,7 +314,8 @@
       "claim_type": "prediction",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "self_reported"
     },
     {
       "claim_id": "001-7-c",
@@ -302,7 +325,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "self_reported"
     },
     {
       "claim_id": "001-7-d",
@@ -312,7 +336,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "self_reported"
     },
     {
       "claim_id": "001-7-e",
@@ -322,7 +347,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-7-f",
@@ -332,7 +358,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "001-7-g",
@@ -342,7 +369,8 @@
       "claim_type": "factual_quantitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     }
   ],
   "verification_status": "NOT PERFORMED -- data collection + structuring only; no per-claim source-checking done.",

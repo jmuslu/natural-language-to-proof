@@ -137,14 +137,14 @@ def main() -> None:
                   "agenda item cites unknown claim ref")
             if it["kind"] == "test_bridge":
                 check(len(it["claim_refs"]) == 2, "bridge item must cite two claims")
-            # checkability routing: factual gaps -> verify_claim, others -> owner_judgment
-            from brain import CHECKABLE_TYPES
-            if it["kind"] == "verify_claim" and "claim_type" in it:
-                check(it["claim_type"] in CHECKABLE_TYPES,
-                      f"verify_claim routed a non-checkable type {it['claim_type']}")
+            # checkability routing is by evidence_basis (public_reference == checkable),
+            # orthogonal to claim_type: factual gaps -> verify_claim, others -> owner_judgment
+            if it["kind"] == "verify_claim" and "evidence_basis" in it:
+                check(it["evidence_basis"] == "public_reference",
+                      f"verify_claim routed non-public_reference {it['evidence_basis']}")
             if it["kind"] == "owner_judgment":
-                check(it["claim_type"] not in CHECKABLE_TYPES,
-                      f"owner_judgment routed a checkable type {it['claim_type']}")
+                check(it["evidence_basis"] != "public_reference",
+                      f"owner_judgment routed a public_reference claim")
 
     # --- reproducibility: hashing build is deterministic ---
     with tempfile.TemporaryDirectory() as t1, tempfile.TemporaryDirectory() as t2:

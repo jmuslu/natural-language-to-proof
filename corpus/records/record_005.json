@@ -48,7 +48,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "005-b",
@@ -58,7 +59,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "005-c",
@@ -68,7 +70,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "005-d",
@@ -78,7 +81,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     },
     {
       "claim_id": "005-e",
@@ -88,7 +92,8 @@
       "claim_type": "opinion",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "unquantifiable"
     },
     {
       "claim_id": "005-f",
@@ -98,7 +103,8 @@
       "claim_type": "factual_qualitative",
       "checkable_reference": null,
       "consistency_verdict": null,
-      "verification_status": "not_performed"
+      "verification_status": "not_performed",
+      "evidence_basis": "public_reference"
     }
   ],
   "verification_status": "NOT PERFORMED -- data collection + structuring only; no per-claim source-checking done.",

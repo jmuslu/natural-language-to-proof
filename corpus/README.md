@@ -42,6 +42,9 @@ corpus/
   build_records.py            the reproducible transformation (source data -> records)
   verify_claims.py            agent-proposed, reference-backed per-claim verdicts
                               -> verdicts_agent_proposed.json
+  add_evidence_basis.py       migration: tag each claim's evidence_basis (what would
+                              VERIFY it) — public_reference / self_reported /
+                              unquantifiable / not_applicable
   export_claims_index.py      -> claims_index.json (stable ids upstream stages cite)
   propose_claim_refs.py       deterministic retrieval: hypothesis -> candidate claim_refs
   confound_check.py           format/length confound-ablation (permutation test)
@@ -104,6 +107,14 @@ and adds the fields the handoff calls for:
 - **`claims[]`** — per-claim decomposition with attribution (`segment_id`), a
   `domain` (for the orthogonality / domain-scoping the handoff asks for), a
   `claim_type`, and the three null verification slots above.
+- **`evidence_basis`** — what would *verify* a claim, kept **orthogonal to
+  `claim_type`** (its form): `public_reference` (checkable against a citable source),
+  `self_reported` (the source's own track record/bio/results — not externally
+  verifiable however "factual" it looks), `unquantifiable` (no well-defined metric),
+  or `not_applicable` (advice/process, judged on `risk_quality`). Only
+  `public_reference` claims belong on the consistency-verify frontier — this is the
+  data (not a text heuristic) the brain routes on so "what to check next" proposes
+  the right *kind* of check.
 - **`provenance`** — records `label_source: owner` vs `structure_source: agent`,
   making the determinism boundary auditable in the data itself.
 

@@ -6,6 +6,7 @@
       "text": "P/E = market cap / net income",
       "domain": "equity_valuation",
       "claim_type": "definitional",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -13,6 +14,7 @@
       "text": "low P/E is not inherently better; future earnings growth matters more than the current multiple",
       "domain": "equity_valuation",
       "claim_type": "opinion",
+      "evidence_basis": "unquantifiable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -20,6 +22,7 @@
       "text": "recommends regression of P/E vs forward EPS growth within an industry, ~10 comparables, R-squared > 0.8 as a confidence threshold",
       "domain": "equity_valuation",
       "claim_type": "recommendation",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -27,6 +30,7 @@
       "text": "recommends forward P/E (next-FY expected earnings) over trailing P/E",
       "domain": "equity_valuation",
       "claim_type": "recommendation",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -34,6 +38,7 @@
       "text": "EV = market cap + total debt + preferred stock + minority interest - cash",
       "domain": "equity_valuation",
       "claim_type": "definitional",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -41,6 +46,7 @@
       "text": "EBITDA = operating income + depreciation & amortization",
       "domain": "equity_valuation",
       "claim_type": "definitional",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -48,6 +54,7 @@
       "text": "EV/EBITDA is useful for comparing companies regardless of capital structure, esp. capital-intensive/leveraged/manufacturing businesses",
       "domain": "equity_valuation",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -55,6 +62,7 @@
       "text": "for low-growth companies (<10% revenue growth) prefer historical EV/EBITDA; for high-growth prefer forward EV/EBITDA",
       "domain": "equity_valuation",
       "claim_type": "recommendation",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -62,6 +70,7 @@
       "text": "low rate + increasing Fed balance sheet = most-liquid regime, favors high-growth unprofitable companies",
       "domain": "monetary_policy",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -69,6 +78,7 @@
       "text": "high rate + decreasing balance sheet = least-liquid regime, favors high-margin low-valuation traditional sectors",
       "domain": "monetary_policy",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -76,6 +86,7 @@
       "text": "cites 2008 and 2020 as balance-sheet-increase episodes; 2018-2019 and 2022-present as decrease episodes",
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -83,6 +94,7 @@
       "text": "cites 2004 and 2022 as policy-rate-increase episodes; 2008 and 2020 as decrease episodes",
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -90,6 +102,7 @@
       "text": "lists 10 macro indicators (unemployment, jobless claims, NFP, YoY CPI, core CPI, MoM PPI, ISM mfg PMI, ISM non-mfg PMI, Chicago PMI, consumer confidence) as covering ~80-90% of the macro economy",
       "domain": "macro_indicators",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "unquantifiable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -97,6 +110,7 @@
       "text": "asserts specific numeric thresholds (unemployment <4% strong / 4-5.5% ok / >5.5% weak; Fed inflation target 2%; PMI neutral 50; consumer confidence neutral 100)",
       "domain": "macro_indicators",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -104,6 +118,7 @@
       "text": "asserts non-manufacturing PMI covers ~70% of the US economy, manufacturing ~10-12%",
       "domain": "macro_indicators",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -111,6 +126,7 @@
       "text": "asserts core PCE is the Fed's preferred inflation gauge over core CPI",
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -118,6 +134,7 @@
       "text": "constructs 4 hypothetical companies varying by revenue/earnings growth, forward P/E, debt/EBITDA",
       "domain": "portfolio_construction",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -125,6 +142,7 @@
       "text": "maps each hypothetical to a preferred liquidity-quadrant fit",
       "domain": "portfolio_construction",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -132,6 +150,7 @@
       "text": "explicit personal risk-sizing rules by quadrant (e.g. not >20% of cash in least-liquid quadrant, up to 100%+ leverage in most-liquid)",
       "domain": "risk_management",
       "claim_type": "recommendation",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -139,6 +158,7 @@
       "text": "5 investor-mindset principles (own principle, ignore noise, review regularly, remove emotional attachment, don't discuss positions)",
       "domain": "investor_psychology",
       "claim_type": "recommendation",
+      "evidence_basis": "not_applicable",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -146,6 +166,7 @@
       "text": "personal anecdotes: ~15 years in IB/PE, didn't invest for ~10 years before late 2019, prior video about losing $100k in one day",
       "domain": "biographical",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "self_reported",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -153,6 +174,7 @@
       "text": "self-reported buy calls (Apr 2025, Mar 2026) each coincided with VIX>30, Fed not signaling hikes, declining FINRA margin debt, a clear leading sector, and EPS/rev beats in that sector",
       "domain": "market_timing",
       "claim_type": "prediction",
+      "evidence_basis": "self_reported",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -160,6 +182,7 @@
       "text": "claims Apr 2025 call up ~75-80%, Mar 2026 call up ~20-25% / 40-45% by sub-allocation",
       "domain": "market_timing",
       "claim_type": "prediction",
+      "evidence_basis": "self_reported",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -167,6 +190,7 @@
       "text": "claims the 5-metric setup 'worked' in 1997 Asia crisis, 2011 euro crisis/US downgrade, 2018 Powell-hike panic, 2020 COVID crash",
       "domain": "market_timing",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "self_reported",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -174,6 +198,7 @@
       "text": "claims the 5-metric setup 'failed' in 2000-01 dot-com, 2002 accounting scandals, 2008 GFC, 2022 inflation, 1973 OPEC embargo",
       "domain": "market_timing",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "self_reported",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -181,6 +206,7 @@
       "text": "specific historical figures (Fed funds ~6.5%->1.75% in 2001; margin debt ~$300B->$140B in 2001; VIX ~40 in 2002, ~83 in 2020; current YoY CPI ~3.3%)",
       "domain": "market_timing",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -188,6 +214,7 @@
       "text": "names new Fed chair 'Kevin Worsh' (likely intends Kevin Warsh) commenting on rate cuts",
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -195,6 +222,7 @@
       "text": "proposes BofA US High Yield spread as a false-positive check; cites normal junk spread 8-10% vs 15-20%+ in a credit crunch",
       "domain": "credit_markets",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -202,6 +230,7 @@
       "text": "builds an LSTM trained on price history, sentiment, and technical features to predict next-day stock direction/return",
       "domain": "ml_methodology",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -209,6 +238,7 @@
       "text": "acknowledges any exploitable pattern in public price/sentiment data is likely already priced in by faster, better-capitalized institutional actors (market efficiency)",
       "domain": "market_efficiency",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -216,6 +246,7 @@
       "text": "compares the ML model against both a buy-and-hold S&P benchmark and a band of random buy/sell portfolios; the model must beat the random noise band to be considered working",
       "domain": "ml_methodology",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -223,6 +254,7 @@
       "text": "reports the model still cannot clearly beat the random-portfolio noise band",
       "domain": "ml_methodology",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "self_reported",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -230,6 +262,7 @@
       "text": "adds early stopping (halt after 10-15 epochs without validation improvement) to reduce overfitting/training time",
       "domain": "ml_methodology",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -237,6 +270,7 @@
       "text": "switches the target from binary up/down to next-day log return, to rank opportunities by expected magnitude",
       "domain": "ml_methodology",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -244,6 +278,7 @@
       "text": "adds permutation importance for feature importance and time-decayed features",
       "domain": "ml_methodology",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -251,6 +286,7 @@
       "text": "stablecoin-pair (e.g. BUSD/USDT) market making returned ~29%/year unleveraged, 2021-early 2022",
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -258,6 +294,7 @@
       "text": "with 5-10x leverage, annualized returns exceeded 200%",
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -265,6 +302,7 @@
       "text": "strategy has since decayed to ~10% unleveraged (implying it no longer clears leverage costs)",
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "self_reported",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -272,6 +310,7 @@
       "text": "typical tick spread on these pairs ~0.0001 (1 bp per round trip)",
       "domain": "market_microstructure",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -279,6 +318,7 @@
       "text": "major exchanges charge zero maker fees on stablecoin pairs regardless of fee tier",
       "domain": "market_microstructure",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -286,6 +326,7 @@
       "text": "competition is 'queue time' rather than price/skill, because the minimum tick prevents spread compression below the tick",
       "domain": "market_microstructure",
       "claim_type": "methodological",
+      "evidence_basis": "not_applicable",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -293,6 +334,7 @@
       "text": "estimates ~1 fill/hour at peak, ~16 hours/day, 8 round trips/day, 8 bps/day, ~29.2%/year unleveraged (arithmetic, not compounded)",
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -300,6 +342,7 @@
       "text": "cites an unnamed 'recent industry survey' (linked to exabel.com): 71% of investment managers say combining data from different sources is their most frustrating challenge but highest-payoff task",
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -307,6 +350,7 @@
       "text": "alternative-data market spending projected to surpass $15 billion in 2025",
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -314,6 +358,7 @@
       "text": "95% of buyers plan to increase alternative-data budgets further",
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -321,6 +366,7 @@
       "text": "alpha half-life from a novel alternative dataset dropped from ~36 months a decade ago to ~18 months today (unsourced in the free portion)",
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
+      "evidence_basis": "public_reference",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -328,6 +374,7 @@
       "text": "combining multiple low-correlation datasets reduces portfolio variance without sacrificing expected return (standard diversification/uncorrelated-signal argument)",
       "domain": "portfolio_theory",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -335,6 +382,7 @@
       "text": "promises a dataset-by-dataset breakdown of a 28-dataset library, NOT visible in the captured free portion (paywalled)",
       "domain": "alt_data",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -342,6 +390,7 @@
       "text": "a decline from $100k to $78k is a real $22k loss in current value whether or not the position is sold (mark-to-market)",
       "domain": "investing_principles",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -349,6 +398,7 @@
       "text": "selling forgoes future appreciation/income while also avoiding further potential loss (opportunity cost is symmetric)",
       "domain": "investing_principles",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -356,6 +406,7 @@
       "text": "selling changes tax status (realizes a gain/loss) but that is separate from whether value was actually lost",
       "domain": "taxation",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -363,6 +414,7 @@
       "text": "the phrase encourages anchoring to purchase price rather than market price (anchoring bias)",
       "domain": "investor_psychology",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -370,6 +422,7 @@
       "text": "believing losses aren't real until sale makes investors hold underperformers longer, risking deeper losses",
       "domain": "investor_psychology",
       "claim_type": "opinion",
+      "evidence_basis": "unquantifiable",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -377,6 +430,7 @@
       "text": "the mindset discourages tax-loss harvesting that could cut taxes while keeping market exposure",
       "domain": "taxation",
       "claim_type": "factual_qualitative",
+      "evidence_basis": "public_reference",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     }

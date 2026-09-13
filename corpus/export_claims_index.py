@@ -25,6 +25,7 @@ def main():
                 "text": c["claim_text"],
                 "domain": c["domain"],
                 "claim_type": c["claim_type"],
+                "evidence_basis": c.get("evidence_basis", "public_reference"),
                 "source_id": rec["record_id"],
                 "source_title": rec["title"],
             }
