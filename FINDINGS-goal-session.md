@@ -571,12 +571,47 @@ against the handoff and brought up to its requirements.
   risk_quality split — the owner disputes not the article's facts but its
   risk-adjusted quality (leverage front-loading tail risk); collapsing that into
   consistent/inconsistent would corrupt the axis the suite is meant to test.
-- **[checked] The determinism boundary is enforced in the data.** A validation
-  pass confirms **every** claim's `consistency_verdict` and `checkable_reference`
-  is null across all four records, and `provenance` records `label_source: owner`
-  vs `structure_source: agent`. The agent decomposed 002's transcript into 7
-  claims (structuring) but decided no claim's truth — the one thing both handoffs
-  forbid an agent from doing here.
+- **[checked] Provenance layers are physically separate.** The structural layer
+  (`records/`) asserts no verdicts — every claim's `consistency_verdict`/
+  `checkable_reference` is null there, with `provenance` recording
+  `label_source: owner` vs `structure_source: agent`.
+
+- **[correction] The "agent never fills verdicts" framing was an over-read of the
+  live-system rule — corrected.** An earlier revision of this section (and the
+  corpus README) treated leaving all verdicts null as the standing discipline. The
+  owner clarified: "an agent must never decide consistency" is scoped to the
+  **live, autonomous** system, not bootstrapping. During development the agent
+  *should* verify, as a **proposer** — check each claim against an external,
+  checkable reference and propose a verdict, cited, `verdict_source:
+  agent_proposed`, pending owner/external confirmation. The forbidden move (the
+  agent's own "sounds right" substituting for an external check) still stands.
+- **[measured] Agent-proposed verification pass** (`corpus/verify_claims.py` →
+  `verdicts_agent_proposed.json`): 25 reference-backed verdicts — **16 consistent,
+  3 inconsistent, 6 unresolved**. The three inconsistencies are real, checkable
+  errors, not vibes: "normal junk spread 8-10%" (BofA HY OAS normal is ~3-5%),
+  consumer-confidence 100 called "neutral" (it is the 1985 base value), and "Kevin
+  Worsh" (misspells Warsh). `unresolved` is used honestly for specific current
+  statistics, self-reported track records, and future events. Divergence worth
+  noting: record 002's *individual claims* (market efficiency, null-baseline
+  methodology, standard ML fixes) are individually consistent even though the
+  owner's global label calls the *strategy* inconsistent — exactly why per-claim
+  decomposition matters.
+- **[checked] The corpus is a bidirectional epistemic graph, echo-chamber-guarded.**
+  `corpus/epistemic_graph.py` + `build_graph.py` → `graph.json`: 88 nodes / 117
+  edges (source/claim/domain/reference/owner_label; `outcome` reserved). Two
+  handoff disciplines are enforced and self-tested: (1) **trust originates only
+  from external checks** (Layer 8 Version A) — a corroborating cluster with no
+  external check stays at 0 (30 of 48 claims sit at trust 0 correctly), and
+  corroboration only *amplifies* externally-rooted trust; (2) **information
+  propagates both ways** — forward support/corroboration, and backward
+  `implicate_from_outcome` walks `feeds` edges so a checked outcome implicates the
+  claims that fed it (the `Genealogy` retraction shape; the future Layer-5 trust
+  *mechanism* plugs in here, kept open, not brute-forced). A sign double-negative
+  was caught by sanity-checking output against a known label (source 002 read
+  +1.0 while owner-firm-inconsistent) and fixed: external-check nodes carry a
+  positive reliability *seed*, the edge sign carries the verdict; 002 now reads
+  -0.429 (its consistent per-claim statements vs the owner's negative global
+  judgment, held in visible tension rather than falsely resolved).
 - **[measured] The confound is real and visible at n=4, which is itself the
   finding.** Word counts: 001=22,394, 002=1,338, 003=532, 004=453 — a 42× spread.
   The two not-inconsistent items (003 ambiguous, 004 tentatively consistent) are
