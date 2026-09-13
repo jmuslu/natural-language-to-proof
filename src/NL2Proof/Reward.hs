@@ -117,6 +117,10 @@ module NL2Proof.Reward
   , rwYield
   , rwGroundedShare
   , rwSourceCoverage
+    -- * Vector-valued reward (defer scalarization)
+  , rewardCoordinates
+  , dominates
+  , paretoFrontier
     -- * Weights
   , Weights(..)
   , defaultWeights
@@ -321,6 +325,51 @@ rwSourceCoverage :: Reward -> Maybe Double
 rwSourceCoverage r
   | rwSourceSpan r == 0 = Nothing
   | otherwise = Just (fromIntegral (rwGroundedSpan r) / fromIntegral (rwSourceSpan r))
+
+--------------------------------------------------------------------------------
+-- Vector-valued reward: the Pareto frontier over the coordinates
+--------------------------------------------------------------------------------
+
+-- $vectorReward
+-- 'rwScore' is one linear collapse of the coordinates, and it deliberately omits
+-- 'rwCorroborated' and 'rwNovel' — because those two are anti-correlated by
+-- construction (a heavily corroborated claim is near-definitionally already
+-- implied by the base; a genuinely novel claim structurally cannot be
+-- corroborated yet), so any fixed positive weight on both picks a corner and the
+-- policy farms whichever coordinate is cheaper. The honest object is therefore
+-- not a bigger weighted sum but the /vector/ of coordinates and the Pareto
+-- frontier over it: compare candidates by dominance, and defer scalarization
+-- (the "train toward the frontier" direction, and the precedent for treating a
+-- coordinate as non-tunable that 'wUncovered' already sets). This takes no
+-- position on how corroboration trades against novelty — that is exactly the
+-- choice a scalar would smuggle in, and the choice this leaves to an external
+-- fitness function (the same one Layer 5's graph-trust question needs).
+
+-- | The value-bearing reward coordinates, oriented so higher is better on every
+-- axis (refuted enters negated). Includes 'rwCorroborated' and 'rwNovel', which
+-- 'rwScore' omits. Zero-valued coordinates ('rwUncovered', 'rwUngrounded') are
+-- excluded: they carry no value by design, so they must not enter a dominance
+-- comparison.
+rewardCoordinates :: Reward -> [Double]
+rewardCoordinates r =
+  map fromIntegral
+    [ rwConfirmed r, rwEntailed r, negate (rwRefuted r), rwCorroborated r, rwNovel r ]
+
+-- | Pareto dominance: @a@ dominates @b@ iff it is at least as good on every
+-- reward coordinate and strictly better on at least one. A corroboration-heavy
+-- and a novelty-heavy reward are /incomparable/ (neither dominates) — the correct
+-- treatment of two objectives that trade off, and the thing a linear sum
+-- destroys by forcing a ranking.
+dominates :: Reward -> Reward -> Bool
+dominates a b = and (zipWith (>=) ca cb) && or (zipWith (>) ca cb)
+  where { ca = rewardCoordinates a; cb = rewardCoordinates b }
+
+-- | The non-dominated set — the reward Pareto frontier over a candidate pool.
+-- Scalarization is deferred: everything here is a legitimate optimum for /some/
+-- trade-off between the coordinates, and choosing among them is the external
+-- decision the design refuses to bake into a weight.
+paretoFrontier :: [Reward] -> [Reward]
+paretoFrontier rs = [ r | r <- rs, not (any (`dominates` r) rs) ]
 
 --------------------------------------------------------------------------------
 -- Admissibility

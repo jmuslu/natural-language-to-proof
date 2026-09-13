@@ -651,8 +651,36 @@ allChecks =
     , fusionChecks
     , selfAgreementChecks
     , scalarBlindSpotChecks
+    , paretoChecks
     , endToEndChecks
     ]
+
+-- | The vector-valued reward: corroboration and novelty are anti-correlated, so
+-- the Pareto frontier (not a scalar) is the honest object. These checks pin that
+-- the two axes are treated as a trade-off, not summed away.
+paretoChecks :: [Check]
+paretoChecks =
+  [ expect "corroboration-heavy and novelty-heavy rewards are Pareto-incomparable"
+      (not (dominates corrHeavy novHeavy) && not (dominates novHeavy corrHeavy))
+  , expect "a strictly-better reward dominates a worse one"
+      (dominates balanced dominated)
+  , expect "the frontier keeps the anti-correlated pair and drops the dominated point"
+      (let fr = paretoFrontier [dominated, balanced, corrHeavy, novHeavy]
+       in notElem dominated fr && all (`elem` fr) [balanced, corrHeavy, novHeavy])
+  , expect "rwScore is blind to corroboration/novelty (the omission the vector fixes)"
+      (rwScore corrHeavy == rwScore novHeavy)
+  , expect "corroboration-heavy is not dominated by the balanced reward either"
+      (not (dominates balanced corrHeavy))
+  ]
+  where
+    -- confirmed entailed refuted uncov ungr off corrob novel  spans... rwScore
+    mkR c e rf co nv =
+      Reward c e rf 0 0 0 co nv 0 0 0
+             (fromIntegral c * 1.0 + fromIntegral e * 0.5 - fromIntegral rf)
+    corrHeavy = mkR 3 0 0 9 0
+    novHeavy  = mkR 3 0 0 0 9
+    balanced  = mkR 3 0 0 4 4
+    dominated = mkR 2 0 0 3 3
 
 main :: IO ()
 main = runChecks "substrate" allChecks
