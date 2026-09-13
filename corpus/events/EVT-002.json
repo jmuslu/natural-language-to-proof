@@ -24,5 +24,7 @@
     "structure_source": "agent",
     "fetched_via": "web (investor.biogen.com, eisai.com, cnbc.com) via agent tools",
     "fetched_at": "2026-09-13"
-  }
+  },
+  "disclosure_timing": "pre_market",
+  "disclosure_timing_source": "Biogen/Eisai discontinuation press release issued pre-market 2019-03-21 (widely reported; the stock gapped down at the open). Disclosure-timing, not price-derived."
 }

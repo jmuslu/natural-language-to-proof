@@ -24,5 +24,7 @@
     "structure_source": "agent",
     "fetched_via": "ClinicalTrials.gov + merck.com (agent tools)",
     "fetched_at": "2026-09-13"
-  }
+  },
+  "disclosure_timing": "pre_market",
+  "disclosure_timing_source": "Merck press release timestamped 2018-04-09 05:45 EDT (verified) -- before the open."
 }

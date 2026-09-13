@@ -170,17 +170,24 @@ next event class to test, and its calibration must be walk-forward in time.
    `insufficient`, not given a p-value). Proven end-to-end on a synthetic calendar
    keyed to the *real* event dates. **The only input the system still lacks is a real
    price series** — supply `{ticker: {date: level}}` and it runs.
-5. **[seeded]** the medical-timeline ↔ market use case end to end. A dated event
-   store now exists (`corpus/events/`, schema + `build_events.py`) with its first
-   real, externally-attested event: **EVT-001 = KEYNOTE-042** (Merck/MRK; pembrolizumab
-   met its primary OS endpoint). Its stamps were verified via the ClinicalTrials.gov
-   and Merck tools and illustrate the core point — `knowable_time` (2018-04-09, the
-   pre-market topline press release) *precedes* `event_time` (2018-09-04, the registry
-   primary completion), so an event study must use the disclosure date, not the
-   completion date. `build_events.py --selftest` proves the as-of filter enforces no
-   lookahead. What remains to close the loop live: a price series for the ticker, then
-   `event_study.align_to_next_bar(knowable_time) → forward window → nulls + FDR`, and
-   reverse-propagation of the certified result into the graph/brain.
+5. **[LIVE — ran on real market data]** the medical-timeline ↔ market use case, end
+   to end. A dated event store (`corpus/events/`, 7 externally-verified events across
+   MRK/BIIB/SRPT/VRTX/LLY/NVO, with `knowable_time` AND `disclosure_timing`) feeds
+   `agentic-qr:shared/backtesting/event_study_live.py`, which pulls real
+   split/dividend-adjusted daily bars from **Alpaca (SIP feed)**, aligns each event to
+   its *actionable session* by `disclosure_timing` (pre-market/intraday → same session;
+   after-close → next; no lookahead), signs the market-adjusted forward return by the
+   event's expected direction, pools, and tests against a random-timing null. Result:
+   every event moved in its expected direction at 1 day; pooled mean signed abnormal
+   **+17.55%**, random-timing **p = 0.0002** — and the famous cases reproduce exactly
+   (BIIB −29% on the 2019 discontinuation, SRPT ≈ −26% the day after its adcom). See
+   `agentic-qr:shared/backtesting/EVENT_STUDY_LIVE_RESULT.md`. This validates the whole
+   temporal→price pipeline on real data. The core temporal point held on real prices:
+   `knowable_time` can precede `event_time` (KEYNOTE-042), and `disclosure_timing`
+   decides which session's bar captures the reaction — get it wrong and a pre-market
+   crash is missed. Honest limits: n = 7, hand-selected famous events, timing
+   timestamp-verified only for MRK; next is a systematic universe + timestamp
+   verification, then reverse-propagating certified outcomes into the graph/brain.
 
 The through-line, unchanged: the system does not decide *when* something was true or
 knowable any more than it decides *whether* it is true — both come from external,

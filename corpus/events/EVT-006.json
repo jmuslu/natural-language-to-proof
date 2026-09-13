@@ -24,5 +24,7 @@
     "structure_source": "agent",
     "fetched_via": "web (investor.lilly.com, prnewswire.com) via agent tools",
     "fetched_at": "2026-09-13"
-  }
+  },
+  "disclosure_timing": "pre_market",
+  "disclosure_timing_source": "Lilly SURMOUNT-1 topline press release 2022-04-28, released pre-market (Lilly convention for material topline data; date verified, exact time not timestamp-checked)."
 }
