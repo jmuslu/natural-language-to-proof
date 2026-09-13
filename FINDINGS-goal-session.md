@@ -824,10 +824,37 @@ database … rust forks of sqlite" — pointed straight at it.
 - **[checked] Wired as one operational loop.** `pipeline.py` runs the whole chain
   as real invocations: Haskell CCGbank ingest (now a `--json` artifact handoff;
   83,468 well-typed skeletons, 0 ill-typed) → graph → brain build+calibrate →
-  retrieve/explore/answer → the oracle loop-closure. `brain_test.py` = 109 offline
+  retrieve/explore/answer → the oracle loop-closure. `brain_test.py` = 161 offline
   checks (trust copied verbatim, retrieval/neighbour/bridge/answer contracts, the
-  licensing gate, reproducibility). `brain_map.py` renders it as an interactive
-  semantic-trust map. Both repos' suites green; agentic-qr validation 36/36.
+  licensing gate, agenda routing, reproducibility). `brain_map.py` renders it as an
+  interactive semantic-trust map. `brain_agenda.py` exports the exploration as a
+  ranked research agenda (candidate hypotheses with `claim_refs`), consumed by
+  agentic-qr `shared/corpus/brain_agenda_intake.py` — the loop's upstream half.
+  Both repos' suites green; agentic-qr validation 36/36.
+- **[checked, real external verification] The loop cycled on real data.** Driven by
+  the brain's own frontier (`explore --mode gaps` → agenda `verify_claim`), the
+  highest-leverage *factually-checkable* unchecked claim (`001-7-e`, historical
+  figures) was verified against external sources (Federal Reserve H.15: Fed funds
+  6.5%→1.75% across 11 cuts in 2001, confirmed; Cboe VIX: all-time-high close 82.69
+  on 2020-03-16 ≈ "~83", confirmed; NYSE/FINRA margin debt: magnitude right but the
+  "in 2001" timing imprecise — peak 2000, trough 2002) → a reference-backed
+  `consistent`/medium verdict (`verdicts_agent_proposed.json`, pending owner
+  confirmation) → graph → brain. Honest outcome: **one check does not move the
+  full-field calibration out of noise** (skill ≈ 0, as the learning curve predicted
+  — "confidence accrues over many"); it correctly moved that one claim from
+  unchecked to checked. The mechanism is demonstrated on real verification, not a
+  fabricated outcome.
+- **[measured, limitation] `CHECKABLE_TYPES` (factual-in-form) overstates external
+  checkability.** Routing "what to check next" by `claim_type` is a good first cut,
+  but of the 10 unchecked factual-typed claims, most are **self-reported** (personal
+  bio, own track record across past crises, own model/strategy performance) —
+  factual in form yet not verifiable against any public reference — or contain
+  unquantifiable assertions (e.g. "these 10 indicators cover ~80-90% of the macro
+  economy"). Forcing a `consistent`/`inconsistent` verdict on those would be exactly
+  the substitute-my-read-for-a-check failure the discipline forbids; the honest
+  verdict is `unresolved`, which does not anchor trust. Sharpening this needs a
+  schema `evidence_basis` field (public-reference vs self-reported vs unquantifiable)
+  rather than a text heuristic — logged as the next refinement, not hidden.
 
 ## Open items, by layer (for the next pass)
 

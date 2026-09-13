@@ -1,20 +1,20 @@
 {
   "summary": {
-    "nodes": 102,
-    "edges": 134,
+    "nodes": 103,
+    "edges": 135,
     "by_kind": {
       "source": 5,
       "claim": 54,
       "domain": 17,
       "owner_label": 2,
-      "reference": 24
+      "reference": 25
     }
   },
   "nodes": [
     {
       "id": "source:001",
       "kind": "source",
-      "trust": 0.2036,
+      "trust": 0.225,
       "seed": null,
       "attrs": {
         "title": "Full course on stock investing (2 hours)",
@@ -347,7 +347,7 @@
     {
       "id": "claim:001-7-e",
       "kind": "claim",
-      "trust": 0.0,
+      "trust": 0.6,
       "seed": null,
       "attrs": {
         "text": "specific historical figures (Fed funds ~6.5%->1.75% in 2001; margin debt ~$300B->$140B in 2001; VIX ~40 in 2002, ~83 in 2020; current YoY CPI ~3.3%)",
@@ -908,6 +908,17 @@
       "attrs": {
         "reference": "BofA US High Yield Index option-adjusted spread history (FRED: BAMLH0A0HYM2)",
         "verdict": "inconsistent",
+        "verdict_source": "agent_proposed"
+      }
+    },
+    {
+      "id": "ref:001-7-e",
+      "kind": "reference",
+      "trust": 0.6,
+      "seed": 0.6,
+      "attrs": {
+        "reference": "Federal Reserve H.15 policy-rate history; Cboe VIX historical series; FINRA/NYSE margin-debt history",
+        "verdict": "consistent",
         "verdict_source": "agent_proposed"
       }
     },
@@ -1775,6 +1786,12 @@
       "src": "ref:001-7-g",
       "dst": "claim:001-7-g",
       "kind": "contradicts",
+      "weight": 1.0
+    },
+    {
+      "src": "ref:001-7-e",
+      "dst": "claim:001-7-e",
+      "kind": "supports",
       "weight": 1.0
     },
     {

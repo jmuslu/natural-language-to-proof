@@ -3,7 +3,7 @@
     "embedder_id": "model2vec:minishlab/potion-base-8M-d256",
     "dim": 256,
     "n_facts": 54,
-    "trust_mean": 0.2889,
+    "trust_mean": 0.3,
     "trust_min": -0.6,
     "trust_max": 0.9,
     "domains": 17
@@ -11,72 +11,72 @@
   "calibration": {
     "k": 7,
     "n_predicted": 54,
-    "mae": 0.3977,
-    "mae_baseline": 0.405,
-    "skill": 0.0181,
-    "pearson_r": 0.0986,
-    "sign_agreement": 0.3704,
+    "mae": 0.4103,
+    "mae_baseline": 0.4075,
+    "skill": -0.0069,
+    "pearson_r": 0.0288,
+    "sign_agreement": 0.4074,
     "preregistered_k": 7,
-    "frac_unchecked": 0.5741,
-    "n_checked": 23,
+    "frac_unchecked": 0.5556,
+    "n_checked": 24,
     "sweep": [
       {
         "k": 3,
         "n_predicted": 54,
-        "mae": 0.3706,
-        "mae_baseline": 0.405,
-        "skill": 0.085,
-        "pearson_r": 0.2121,
-        "sign_agreement": 0.5556
+        "mae": 0.4025,
+        "mae_baseline": 0.4075,
+        "skill": 0.0123,
+        "pearson_r": 0.1065,
+        "sign_agreement": 0.5185
       },
       {
         "k": 5,
         "n_predicted": 54,
-        "mae": 0.3828,
-        "mae_baseline": 0.405,
-        "skill": 0.0549,
-        "pearson_r": 0.2219,
-        "sign_agreement": 0.3704
+        "mae": 0.3941,
+        "mae_baseline": 0.4075,
+        "skill": 0.033,
+        "pearson_r": 0.1619,
+        "sign_agreement": 0.4074
       },
       {
         "k": 7,
         "n_predicted": 54,
-        "mae": 0.3977,
-        "mae_baseline": 0.405,
-        "skill": 0.0181,
-        "pearson_r": 0.0986,
-        "sign_agreement": 0.3704
+        "mae": 0.4103,
+        "mae_baseline": 0.4075,
+        "skill": -0.0069,
+        "pearson_r": 0.0288,
+        "sign_agreement": 0.4074
       },
       {
         "k": 8,
         "n_predicted": 54,
-        "mae": 0.3966,
-        "mae_baseline": 0.405,
-        "skill": 0.0207,
-        "pearson_r": 0.1061,
-        "sign_agreement": 0.3889
+        "mae": 0.4102,
+        "mae_baseline": 0.4075,
+        "skill": -0.0065,
+        "pearson_r": 0.034,
+        "sign_agreement": 0.4074
       },
       {
         "k": 12,
         "n_predicted": 54,
-        "mae": 0.408,
-        "mae_baseline": 0.405,
-        "skill": -0.0074,
-        "pearson_r": -0.0389,
-        "sign_agreement": 0.3889
+        "mae": 0.4185,
+        "mae_baseline": 0.4075,
+        "skill": -0.0268,
+        "pearson_r": -0.107,
+        "sign_agreement": 0.4074
       }
     ],
     "checked_only": {
       "k": 7,
-      "n_predicted": 23,
-      "mae": 0.2581,
-      "mae_baseline": 0.3024,
-      "skill": 0.1465,
-      "pearson_r": 0.2377,
-      "sign_agreement": 0.913
+      "n_predicted": 24,
+      "mae": 0.2551,
+      "mae_baseline": 0.2935,
+      "skill": 0.1307,
+      "pearson_r": 0.2577,
+      "sign_agreement": 0.9167
     },
     "licensed": false,
-    "verdict": "skill=0.0181, pearson_r=0.0986, sign_agreement=0.3704: within noise of the mean baseline -- trust is not semantically smooth (it is earned per-claim by external check), so the brain does NOT impute trust from topic"
+    "verdict": "skill=-0.0069, pearson_r=0.0288, sign_agreement=0.4074: within noise of the mean baseline -- trust is not semantically smooth (it is earned per-claim by external check), so the brain does NOT impute trust from topic"
   },
   "inputs": {
     "claims_index": "claims_index.json",

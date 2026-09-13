@@ -65,6 +65,9 @@ VERDICTS = [
       "Name is given as 'Kevin Worsh'; the person is Kevin Warsh. Whether he is the 'new Fed chair' is a 2026 event beyond confident verification and is separately unresolved."),
     v("001-7-g", "inconsistent", "medium", "BofA US High Yield Index option-adjusted spread history (FRED: BAMLH0A0HYM2)",
       "Claim calls 8-10% a 'normal' junk spread; historically the normal/calm HY OAS is ~3-5%, with 8-10% already elevated and 15-20%+ in a crisis (2008 ~20%, 2020 ~11%). The 'normal 8-10%' figure is too high."),
+    v("001-7-e", "consistent", "medium",
+      "Federal Reserve H.15 policy-rate history; Cboe VIX historical series; FINRA/NYSE margin-debt history",
+      "Composite of historical figures, checked against external sources. Fed funds ~6.5%->1.75% in 2001: correct (11 FOMC cuts through 2001, target 1.75% by Dec 2001). VIX ~83 in 2020: correct (all-time high close 82.69 on 2020-03-16). VIX ~40 in 2002: approximately right (peaked ~40-45 in 2002). Margin debt ~$300B->$140B: magnitude roughly right (NYSE margin debt peaked ~$278B in early 2000 and fell to ~$130-140B by 2002) but the 'in 2001' timing is imprecise -- the peak was 2000 and the trough 2002, so the decline spanned 2000-2002. 'Current YoY CPI ~3.3%' is relative to the recording date and not independently verifiable as a fixed fact. Net: the checkable historical figures are consistent in magnitude and direction, with a minor margin-debt timing imprecision; hence consistent at medium confidence."),
 
     # ---- record 002: LSTM predictor (claims mostly sound; owner's global label is about the strategy) ----
     v("002-b", "consistent", "high", "semi-strong efficient-market hypothesis (mainstream finance)",
