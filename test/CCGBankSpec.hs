@@ -24,8 +24,9 @@ import NL2Proof.Syntax.CCGBank
 import NL2Proof.Syntax.CCGRules
 import NL2Proof.Syntax.CCGDeriv
 import NL2Proof.Syntax.CCGTypeChange
-import NL2Proof.Syntax.CCGParse (Rules(..), chartParse, chartParseMulti)
-import NL2Proof.Syntax.CCGSupertag (buildTagModel, supertag, isOOV, oracleIncluded)
+import NL2Proof.Syntax.CCGParse (Rules(..), chartParse, chartParseMulti, chartParseScored)
+import NL2Proof.Syntax.CCGSupertag
+  (buildTagModel, supertag, supertagScored, isOOV, oracleIncluded)
 import NL2Proof.Syntax.CCGLexicon
 
 main :: IO ()
@@ -361,6 +362,14 @@ supertagChecks =
       (any (`unifiable` pc "S[dcl]")
            (Set.toList (chartParseMulti 200 (Rules [] [])
               [ supertag tm 2 "the", supertag tm 2 "dog", supertag tm 2 "barks" ])))
+  , expect "beta beam keeps the dominant tag; drops the rarer one at beta=0.6"
+      (map fst (supertagScored tm 0.6 5 "the") == [pc "NP/N"])
+  , expect "scored chart: 'the dog barks' parses to S[dcl] with a real score"
+      (any (\(c, s) -> c `unifiable` pc "S[dcl]" && s < 0)   -- log-probs are negative
+           (chartParseScored 40 (Rules [] [])
+              [ supertagScored tm 0.0 5 "the"
+              , supertagScored tm 0.0 5 "dog"
+              , supertagScored tm 0.0 5 "barks" ]))
   ]
   where
     tm = buildTagModel

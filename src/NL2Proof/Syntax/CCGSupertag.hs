@@ -17,6 +17,7 @@ module NL2Proof.Syntax.CCGSupertag
   , leafPairs
   , buildTagModel
   , supertag
+  , supertagScored
   , isOOV
   , oracleIncluded
   ) where
@@ -55,6 +56,22 @@ supertag :: TagModel -> Int -> String -> [CCat]
 supertag tm k w = case M.lookup w (tmWord tm) of
   Just cs -> take k (map fst cs)
   Nothing -> take k (map fst (tmPrior tm))
+
+-- | Adaptive-beam supertags with scores: keep the categories whose count is within
+-- a factor @beta@ of the word's most frequent category (the standard CCG β-beam --
+-- fewer tags for confident words, more for ambiguous ones), capped at @kmax@, each
+-- paired with its log-probability @log(count / word_total)@. OOV backs off to the
+-- global prior. Scores let the chart run a Viterbi beam over derivations instead of
+-- an arbitrary cap.
+supertagScored :: TagModel -> Double -> Int -> String -> [(CCat, Double)]
+supertagScored tm beta kmax w =
+  case M.findWithDefault (tmPrior tm) w (tmWord tm) of
+    [] -> []
+    cs@((_, mx) : _) ->      -- cs is sorted desc by count, so mx is the max
+      let total  = fromIntegral (sum (map snd cs)) :: Double
+          thresh = beta * fromIntegral mx
+      in take kmax [ (c, log (fromIntegral n / total))
+                   | (c, n) <- cs, fromIntegral n >= thresh, total > 0 ]
 
 isOOV :: TagModel -> String -> Bool
 isOOV tm w = not (M.member w (tmWord tm))

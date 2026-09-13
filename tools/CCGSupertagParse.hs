@@ -20,13 +20,14 @@ import System.Environment (getArgs)
 import System.IO (hPutStrLn, stderr)
 
 import NL2Proof.Syntax.CCGDeriv (AutoNode, parseAuto)
-import NL2Proof.Syntax.CCGParse (Rules, rulesFrom, rootCat, chartParseMulti)
+import NL2Proof.Syntax.CCGParse (Rules, rulesFrom, rootCat, chartParseScored)
 import NL2Proof.Syntax.CCGRules (unifiable)
 import NL2Proof.Syntax.CCGSupertag
-  (TagModel, buildTagModel, leafPairs, supertag, isOOV, oracleIncluded)
+  (TagModel, buildTagModel, leafPairs, supertagScored, isOOV)
 
-catCap :: Int
-catCap = 200
+-- Parser configuration bundled so `score` stays readable.
+data Cfg = Cfg { cBeta :: Double, cKmax :: Int, cBeam :: Int, cMaxLen :: Int
+               , cParse :: Bool, cMaxTest :: Int }  -- cMaxTest 0 = no cap
 
 data Acc = Acc
   { aSents      :: !Int   -- test sentences within the length bound
@@ -48,24 +49,24 @@ readTrees f = do
   let keep line = not (null line) && take 3 line /= "ID=" && not (all (`elem` " \t\r") line)
   pure [ t | line <- lines s, keep line, Right t <- [parseAuto line] ]
 
-score :: Int -> Int -> TagModel -> Rules -> Acc -> AutoNode -> Acc
-score k maxLen tm rules acc tree =
+score :: Cfg -> TagModel -> Rules -> Acc -> AutoNode -> Acc
+score cfg tm rules acc tree =
   let pairs = leafPairs tree
       ws    = map fst pairs
-      golds = map snd pairs
       n     = length ws
-  in if n == 0 || n > maxLen
-       then acc { aTooLong = aTooLong acc + (if n > maxLen then 1 else 0) }
+  in if n == 0 || n > cMaxLen cfg
+       then acc { aTooLong = aTooLong acc + (if n > cMaxLen cfg then 1 else 0) }
        else
-         let cells       = map (supertag tm k) ws
+         let scored      = map (supertagScored tm (cBeta cfg) (cKmax cfg)) ws
+             cats        = map (map fst) scored
              oovs        = length (filter (isOOV tm) ws)
-             wordOK      = length [ () | (w, g) <- pairs, oracleIncluded tm k w g ]
+             wordOK      = length [ () | (g, cs) <- zip (map snd pairs) cats, g `elem` cs ]
              allCovered  = wordOK == n
-             tags        = sum (map length cells)
-             parsedRoot  = case rootCat tree of
+             tags        = sum (map length cats)
+             parsedRoot  = cParse cfg && case rootCat tree of
                Nothing -> False
-               Just rc -> any (`unifiable` rc)
-                              (foldr (:) [] (chartParseMulti catCap rules cells))
+               Just rc -> any (\(c, _) -> c `unifiable` rc)
+                              (chartParseScored (cBeam cfg) rules scored)
          in acc { aSents = aSents acc + 1
                 , aWords = aWords acc + n
                 , aOOV = aOOV acc + oovs
@@ -89,22 +90,26 @@ avg x tot =
 main :: IO ()
 main = do
   argv <- getArgs
-  let (files, k, maxLen) = parseArgs argv
+  let (files, cfg) = parseArgs argv
   if null files
-    then hPutStrLn stderr "usage: ccg-supertag-parse FILE.auto [...] [--k N] [--max-len N]"
+    then hPutStrLn stderr ("usage: ccg-supertag-parse FILE.auto [...] "
+                           ++ "[--beta B] [--k N] [--beam N] [--max-len N] [--no-parse]")
     else do
       trees <- concat <$> mapM readTrees files
-      let idx   = zip [0 :: Int ..] trees
-          test  = [ t | (i, t) <- idx, i `mod` 5 == 0 ]
-          train = [ t | (i, t) <- idx, i `mod` 5 /= 0 ]
-          tm    = buildTagModel (concatMap leafPairs train)
+      let idx    = zip [0 :: Int ..] trees
+          test0  = [ t | (i, t) <- idx, i `mod` 5 == 0 ]
+          test   = if cMaxTest cfg > 0 then take (cMaxTest cfg) test0 else test0
+          train  = [ t | (i, t) <- idx, i `mod` 5 /= 0 ]
+          tm     = buildTagModel (concatMap leafPairs train)
           rules = rulesFrom train
-          acc   = foldl' (score k maxLen tm rules) emptyAcc test
+          acc   = foldl' (score cfg tm rules) emptyAcc test
       hPutStrLn stderr ("loaded " ++ show (length trees) ++ " trees from "
                         ++ show (length files) ++ " file(s)")
-      putStrLn "== from-words parse coverage (supertagger + chart, external check) =="
-      putStrLn ("k (tags/word)                : " ++ show k)
-      putStrLn ("max sentence length (words)  : " ++ show maxLen)
+      putStrLn "== from-words parse coverage (supertagger + scored beam chart, external check) =="
+      putStrLn ("beta (adaptive tag beam)     : " ++ show (cBeta cfg))
+      putStrLn ("kmax (tags/word cap)         : " ++ show (cKmax cfg))
+      putStrLn ("chart beam (cats/cell)       : " ++ show (cBeam cfg))
+      putStrLn ("max sentence length (words)  : " ++ show (cMaxLen cfg))
       putStrLn ("train / test trees           : " ++ show (length train)
                 ++ " / " ++ show (length test))
       putStrLn ""
@@ -115,16 +120,22 @@ main = do
       putStrLn ("avg supertag ambiguity       : " ++ avg (aTags acc) (aWords acc)
                 ++ " tags/word")
       putStrLn ""
-      putStrLn ("oracle inclusion @k (word)   : " ++ pct (aWordOracle acc) (aWords acc)
+      putStrLn ("oracle inclusion (word)      : " ++ pct (aWordOracle acc) (aWords acc)
                 ++ "   <- ceiling: gold tag offered")
-      putStrLn ("oracle inclusion @k (sent)   : " ++ pct (aSentOracle acc) (aSents acc)
+      putStrLn ("oracle inclusion (sent)      : " ++ pct (aSentOracle acc) (aSents acc)
                 ++ "   <- all words covered")
-      putStrLn ("from-words parse to gold root: " ++ show (aParsed acc)
-                ++ " (" ++ pct (aParsed acc) (aSents acc) ++ " of sentences)")
+      if cParse cfg
+        then putStrLn ("from-words parse to gold root: " ++ show (aParsed acc)
+                       ++ " (" ++ pct (aParsed acc) (aSents acc) ++ " of sentences)")
+        else putStrLn "from-words parse to gold root: (skipped, --no-parse)"
   where
-    parseArgs = go [] 4 25
+    parseArgs args = go args (Cfg 0.01 20 40 25 True 0)
       where
-        go fs k m ("--k" : v : rest)       = case reads v of [(x,"")] -> go fs x m rest; _ -> go fs k m rest
-        go fs k m ("--max-len" : v : rest) = case reads v of [(x,"")] -> go fs k x rest; _ -> go fs k m rest
-        go fs k m (x : rest)               = go (fs ++ [x]) k m rest
-        go fs k m []                       = (fs, k, m)
+        go ("--beta" : v : rest) c     = case reads v of [(x,"")] -> go rest c{cBeta=x};    _ -> go rest c
+        go ("--k" : v : rest) c        = case reads v of [(x,"")] -> go rest c{cKmax=x};    _ -> go rest c
+        go ("--beam" : v : rest) c     = case reads v of [(x,"")] -> go rest c{cBeam=x};    _ -> go rest c
+        go ("--max-len" : v : rest) c  = case reads v of [(x,"")] -> go rest c{cMaxLen=x};  _ -> go rest c
+        go ("--max-test" : v : rest) c = case reads v of [(x,"")] -> go rest c{cMaxTest=x}; _ -> go rest c
+        go ("--no-parse" : rest) c     = go rest c{cParse=False}
+        go (x : rest) c                = let (fs, c') = go rest c in (x : fs, c')
+        go [] c                        = ([], c)

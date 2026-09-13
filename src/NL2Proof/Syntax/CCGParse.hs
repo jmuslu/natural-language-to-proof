@@ -22,9 +22,12 @@ module NL2Proof.Syntax.CCGParse
   , rootCat
   , chartParse
   , chartParseMulti
+  , chartParseScored
   , derivesRoot
   ) where
 
+import Data.List (sortBy)
+import Data.Ord (comparing, Down(..))
 -- Lazy Data.Map (not .Strict): the CKY table is defined by lazy self-reference
 -- (cells read the table at smaller spans), which a value-strict fromList would turn
 -- into a black hole (<<loop>>). Same reason CCG.hs uses the lazy map.
@@ -111,6 +114,55 @@ chartParseMulti cap rules cellsIn =
                      [ to | (fr, to) <- rUnary rules
                           , c <- Set.toList s, unifiable c fr ])
           in if Set.size s' == Set.size s || Set.size s' >= cap then s' else fixpoint s'
+
+-- | Scored (Viterbi) CKY with a real beam. Each word carries scored candidate
+-- categories (log-probabilities from the supertagger); a derivation's score is the
+-- sum of its parts, unary type-change costs a fixed penalty, and each cell keeps only
+-- the top-@beam@ categories by score. Unlike the arbitrary @cap@ of 'chartParseMulti',
+-- the beam retains the *most probable* categories, so it makes parsing both faster
+-- and more accurate on ambiguous, longer sentences. Returns the whole-span categories
+-- with their best scores, highest first.
+chartParseScored :: Int -> Rules -> [[(CCat, Double)]] -> [(CCat, Double)]
+chartParseScored beam rules cellsIn =
+  sortByScore (M.toList (M.findWithDefault M.empty (0, n) table))
+  where
+    n = length cellsIn
+    leafArr = M.fromList (zip [0 ..] cellsIn)
+    unaryPenalty = 1.0
+
+    sortByScore = sortBy (comparing (Down . snd))
+    beamCell m = M.fromList (take beam (sortByScore (M.toList m)))
+
+    table :: M.Map (Int, Int) (M.Map CCat Double)
+    table = M.fromList
+      [ ((i, j), cell i j)
+      | len <- [1 .. n], i <- [0 .. n - len], let j = i + len ]
+
+    cell i j
+      | j == i + 1 = beamCell (closeUnary (M.fromListWith max (leafArr M.! i)))
+      | otherwise  = beamCell $ closeUnary $ M.fromListWith max
+          [ (p, sl + sr)
+          | k <- [i + 1 .. j - 1]
+          , (l, sl) <- M.toList (M.findWithDefault M.empty (i, k) table)
+          , (r, sr) <- M.toList (M.findWithDefault M.empty (k, j) table)
+          , p <- combine l r
+                 ++ [ pc | (lc, rc, pc) <- rBinTC rules, unifiable l lc, unifiable r rc ]
+          ]
+
+    -- unary closure keeping the best score per category. Type-change rules are a
+    -- finite set of concrete (from,to) pairs and each step subtracts a penalty, so
+    -- the reachable set is finite and scores are monotone non-increasing: once a
+    -- category is present its score cannot improve, so size-stability terminates.
+    closeUnary m0 = go (0 :: Int) m0
+      where
+        go it m
+          | it > 6 = m
+          | otherwise =
+              let adds = M.fromListWith max
+                    [ (to, s - unaryPenalty)
+                    | (fr, to) <- rUnary rules, (c, s) <- M.toList m, unifiable c fr ]
+                  m' = M.unionWith max m adds
+              in if M.size m' == M.size m then m' else go (it + 1) m'
 
 -- | Does the sentence derive a category unifying with its gold root?
 -- 'Nothing' if leaves or root could not be parsed (sentence skipped).
