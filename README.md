@@ -470,7 +470,13 @@ In order, and the order matters.
    in a domain with no oracle.
 2. **Plug in one real oracle** and replace a whitelist with it. The seam is
    `Verify.Oracle.Oracle`; the toy oracles in the suite exist only to exercise
-   the plumbing.
+   the plumbing. *Partly underway for the trading domain, not yet wired into this
+   seam — see `FINDINGS-goal-session.md`.* A real statistical oracle for trading
+   signals (walk-forward/OOS, permutation + random-timing nulls,
+   multiple-comparisons correction, regime-conditional evaluation) is now built
+   and hardened in `agentic-qr` and runs on every backtest; what remains here is
+   routing a real oracle into `nl2proof`'s own `Verify.Oracle` seam rather than
+   the toy ones.
 3. **Build a generator over the lexicon and the CCG rules.** *Substantially
    underway — see `FINDINGS-goal-session.md`.* CCGbank (LDC2005T13) is now the
    corpus: `Syntax/CCGBank` parses and classifies its feature-annotated
@@ -495,3 +501,13 @@ Not next, and deliberately: growing the lexicon toward arbitrary text. That is a
 separate and separately unbounded problem from the truth problem, and the current
 type system (`Ty = TyE | TyT`) has no events, times or degrees, so real-world
 prose is out of reach for reasons a bigger lexicon does not touch.
+
+## Companion track: the adversarial epistemic corpus
+
+`corpus/` holds a small, deliberately-labeled corpus (YouTube + articles) for
+testing whether the epistemic ingestion layer can tell checkable-and-consistent
+from common-but-inconsistent sources, per `HANDOFF-corpus-adversarial.md`. It is
+data + structure only: an agent decomposes claims and tracks confounds, but never
+decides a claim's factual consistency (every verdict slot is null, filled by the
+owner or an external reference). See `corpus/README.md`. Raw transcripts stay
+outside the repo at `~/corpus/raw/`, the same way CCGbank does.
