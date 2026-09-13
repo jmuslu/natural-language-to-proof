@@ -43,6 +43,7 @@ library
                       NL2Proof.Syntax.CCGRules
                       NL2Proof.Syntax.CCGDeriv
                       NL2Proof.Syntax.CCGTypeChange
+                      NL2Proof.Syntax.CCGParse
                       NL2Proof.Syntax.CCGLexicon
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
@@ -124,6 +125,16 @@ executable ccg-typechange-coverage
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
 
+executable ccg-parse-coverage
+    -- Whole-sentence bottom-up parse coverage: folds combinators + the learned
+    -- type-change inventory into one CKY parse and measures, on held-out test
+    -- sentences given gold supertags, how often the grammar derives the gold root.
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          CCGParseCoverage.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
 test-suite nl2proof-test
     import:           warnings
     type:             exitcode-stdio-1.0
@@ -166,4 +177,4 @@ test-suite nl2proof-ccgbank-test
     main-is:          CCGBankSpec.hs
     other-modules:    Harness
     default-language: Haskell2010
-    build-depends:    base, nl2proof
+    build-depends:    base, containers, nl2proof

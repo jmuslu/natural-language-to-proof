@@ -12,6 +12,7 @@
 module Main (main) where
 
 import Data.List (isInfixOf)
+import qualified Data.Set as Set
 
 import Harness
 import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>), Term(Con))
@@ -23,13 +24,14 @@ import NL2Proof.Syntax.CCGBank
 import NL2Proof.Syntax.CCGRules
 import NL2Proof.Syntax.CCGDeriv
 import NL2Proof.Syntax.CCGTypeChange
+import NL2Proof.Syntax.CCGParse (Rules(..), chartParse)
 import NL2Proof.Syntax.CCGLexicon
 
 main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
    ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks ++ tcChecks
-   ++ lexChecks)
+   ++ sentenceParseChecks ++ lexChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -322,6 +324,26 @@ tcChecks =
 --------------------------------------------------------------------------------
 -- CCGbank -> provenance-tagged lexical entries
 --------------------------------------------------------------------------------
+
+-- | Whole-sentence bottom-up parsing (CCGParse): the folded combinators +
+-- type-change path derives a sentence from its supertags. These use only the
+-- combinators (empty type-change rule set) since the cases are basic; the real
+-- coverage number over the corpus is measured by `ccg-parse-coverage`.
+sentenceParseChecks :: [Check]
+sentenceParseChecks =
+  [ expect "application: NP + (S[dcl]\\NP) parses to S[dcl]"
+      (derivesTo ["NP", "S[dcl]\\NP"] "S[dcl]")
+  , expect "coordination: NP conj NP parses to NP"
+      (derivesTo ["NP", "conj", "NP"] "NP")
+  , expect "transitive chain: NP (S[dcl]\\NP)/NP NP parses to S[dcl]"
+      (derivesTo ["NP", "(S[dcl]\\NP)/NP", "NP"] "S[dcl]")
+  , expect "two bare NPs do NOT parse to a sentence"
+      (not (derivesTo ["NP", "NP"] "S[dcl]"))
+  ]
+  where
+    derivesTo ws goal =
+      let got = chartParse 200 (Rules [] []) (map pc ws)
+      in any (`unifiable` pc goal) (Set.toList got)
 
 lexChecks :: [Check]
 lexChecks =
