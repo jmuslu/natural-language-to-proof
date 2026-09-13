@@ -361,6 +361,56 @@ backtester's statistical maturity "wasn't established" — now it is, measured.
   real work located in `~/projects`, so it is gated on explicit confirmation
   rather than done here.
 
+## Layer 3.5 — regime-conditional evaluation (real edge vs. uniformly mediocre)
+
+Built in `agentic-qr:shared/backtesting/validation/regime.py` (commit `b3954c8`),
+answering a point the owner raised: a global out-of-sample pass/fail conflates two
+very different failures, and the more valuable question is often *when* a
+mechanism works, not a global yes/no.
+
+- **[structural] The distinction, and the trap next to it.** A strategy can be
+  *uniformly mediocre* (real "nothing here") or have *genuine edge concentrated in
+  specific conditions* (a real, identifiable mechanism) — and averaged over the
+  whole sample the second looks like the first. Surfacing the second is valuable.
+  But operationalising "does it have a good regime" as "scan the strategy's own
+  rolling Sharpe for a flattering window" is **the multiple-comparisons problem
+  relocated to time-window space**: any series, including pure noise, has some
+  good window, so finding one is evidence of nothing. This is the same failure the
+  whole suite exists to prevent (cf. Layer 3's gate-search independence), moved to
+  time.
+
+- **[checked] The sound design.** Regime labels must be defined *independently of
+  the strategy's P&L*, *before* looking at performance, and ideally
+  forward-computable (filtering, not smoothing — a hindsight-only regime is not
+  tradeable; this is the same alpha/gamma, filtered/smoothed distinction Layer 3.5
+  of the handoff draws). `regime.py` **requires the caller to supply the labels
+  and never derives them from the returns it scores** — the independence is
+  structural, not a convention. Then:
+  - `regime_structure_pvalue` tests whether the spread of per-regime Sharpes
+    exceeds a **cyclic rotation** of the label series against the returns (which
+    preserves both autocorrelations and the regime block structure, breaking only
+    alignment). A high p-value is the *sharper falsification* the owner pointed
+    at: uniformly mediocre across every independently-defined regime — stronger
+    evidence of "nothing here" than a global null p-value.
+  - `regime_conditional_report` gives per-regime null p-values with BH-FDR across
+    the bins (one test per regime = multiplicity), and a verdict:
+    `concentrated-edge` / `regime-dependent-but-no-clear-edge` /
+    `no-regime-structure`.
+  - `rolling_sharpe` is diagnostic/visualisation **only**, explicitly not a pass
+    criterion.
+  Tests (29 total in the suite) demonstrate the distinction directly: **on the
+  same noise, a rolling scan finds a flattering window (>1.0 Sharpe) while the
+  rotation-null structure test against fixed labels correctly finds no
+  structure** — the trap and its remedy, side by side. Real regime-concentrated
+  edge is detected as `concentrated-edge`; uniform noise as `no-regime-structure`.
+
+- **[stipulated] Still needed for the real pipeline:** the independently-defined,
+  forward-computable regime labels themselves (a VIX bucket, an HMM state, a
+  macro/calendar split) are the caller's responsibility and are not yet produced
+  by `strategy-core`/`quant-lib`; the module enforces that they be external but
+  cannot manufacture them. Wiring a real label source in is the next step for this
+  layer.
+
 ## Layer 4 — the reward manifold gap, verified against current code
 
 - **[measured] The handoff's `rwScore` claim is accurate.** `Reward.hs:245-249`:
