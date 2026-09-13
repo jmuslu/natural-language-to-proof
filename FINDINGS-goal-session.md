@@ -933,10 +933,14 @@ database … rust forks of sqlite" — pointed straight at it.
   parsing (supertagging + combination) given gold supertags — it isolates the
   combinatory question from lexical ambiguity, and is neither the local gold-pair
   coverage `ccg-grammar-coverage` measures nor the gold-tree reconstruction
-  `ccg-reconstruct` needs. Remaining on this thread: from-words parsing needs a
-  supertagger over the ingested lexicon (lexical ambiguity + a beam); and whether
-  type-raising should be a generalising combinator rather than a memorised unary
-  rule is still open.
+  `ccg-reconstruct` needs. **[perf, honest]** the per-cell category-set cap bounds
+  the correctness-relevant blow-up, but a 40-word sentence still builds a large
+  chart with heavy composition ambiguity, so run the tool in section-sized batches
+  (~40 files); a single very long sentence can dominate runtime. Remaining on this
+  thread: from-words parsing needs a supertagger over the ingested lexicon (lexical
+  ambiguity + a beam); a runtime beam/packed-forest would fix the long-sentence
+  cost; and whether type-raising should be a generalising combinator rather than a
+  memorised unary rule is still open.
 - **[Layer 2] Done: `.auto` derivation parser + reconstruction** (`CCGDeriv`,
   `ccg-reconstruct`, ~96% of real sentences). Remaining: use the reconstructed
   sentences as an actual test-case *fixture* feeding the DRT/SDRT stages, to hit
