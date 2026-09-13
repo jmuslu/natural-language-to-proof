@@ -28,6 +28,7 @@
     "is_adversarial_bucket": false,
     "reasoning": "Owner's own words: 'this one looks decent.' Provisional -- recorded as tentative rather than upgraded to a firm verdict on the owner's behalf."
   },
+  "agent_label": null,
   "risk_quality": {
     "assessed": false,
     "assessment": null,

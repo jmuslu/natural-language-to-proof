@@ -27,6 +27,7 @@
     "is_adversarial_bucket": false,
     "reasoning": "Owner left this record unlabeled -- collected as data only. A held-out, as-yet-unlabeled example, not assigned to either bucket."
   },
+  "agent_label": null,
   "risk_quality": {
     "assessed": false,
     "assessment": null,

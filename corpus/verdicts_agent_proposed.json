@@ -3,7 +3,7 @@
   "status": "pending_owner_confirmation",
   "note": "Reference-backed proposals made during bootstrapping; the live autonomous system must not treat these as final without owner or external confirmation.",
   "tally": {
-    "consistent": 16,
+    "consistent": 21,
     "unresolved": 6,
     "inconsistent": 3
   },
@@ -230,6 +230,51 @@
       "confidence": "n/a",
       "checkable_reference": "unsourced in the captured portion",
       "reasoning": "The 36mo->18mo alpha-half-life figure is unsourced even in the article's own free portion; needs a primary reference.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "005-a",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "mark-to-market accounting; definition of unrealized loss",
+      "reasoning": "Current value is the market value; a 100k->78k decline is a real 22k reduction in current value whether or not realized. Standard.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "005-b",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "opportunity cost (standard microeconomics/finance)",
+      "reasoning": "Holding vs selling both have costs: selling forgoes upside/income, holding risks further loss. The symmetry is correct.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "005-c",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "tax realization rules (realized vs unrealized)",
+      "reasoning": "Selling realizes a gain/loss for tax purposes; the tax event is distinct from whether economic value changed. Correct.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "005-d",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "anchoring bias (behavioral finance, Tversky & Kahneman)",
+      "reasoning": "Anchoring to purchase price rather than current market price is a well-documented cognitive bias; the article's use is apt.",
+      "verdict_source": "agent_proposed",
+      "verification_status": "agent_proposed_pending_owner_confirmation"
+    },
+    {
+      "claim_id": "005-f",
+      "verdict": "consistent",
+      "confidence": "high",
+      "checkable_reference": "tax-loss harvesting (established strategy)",
+      "reasoning": "Tax-loss harvesting realizes losses to offset gains while maintaining exposure (subject to wash-sale rules); the mindset does discourage it. Correct.",
       "verdict_source": "agent_proposed",
       "verification_status": "agent_proposed_pending_owner_confirmation"
     }

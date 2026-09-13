@@ -95,6 +95,18 @@ VERDICTS = [
       "Alt-data market-size estimates vary widely by definition and vendor; '>$15B in 2025' is plausible for some definitions but not confirmable without the specific source."),
     v("004-d", "unresolved", "n/a", "unsourced in the captured portion",
       "The 36mo->18mo alpha-half-life figure is unsourced even in the article's own free portion; needs a primary reference."),
+
+    # ---- record 005: "you don't lose until you sell" is bunk (agent-collected) ----
+    v("005-a", "consistent", "high", "mark-to-market accounting; definition of unrealized loss",
+      "Current value is the market value; a 100k->78k decline is a real 22k reduction in current value whether or not realized. Standard."),
+    v("005-b", "consistent", "high", "opportunity cost (standard microeconomics/finance)",
+      "Holding vs selling both have costs: selling forgoes upside/income, holding risks further loss. The symmetry is correct."),
+    v("005-c", "consistent", "high", "tax realization rules (realized vs unrealized)",
+      "Selling realizes a gain/loss for tax purposes; the tax event is distinct from whether economic value changed. Correct."),
+    v("005-d", "consistent", "high", "anchoring bias (behavioral finance, Tversky & Kahneman)",
+      "Anchoring to purchase price rather than current market price is a well-documented cognitive bias; the article's use is apt."),
+    v("005-f", "consistent", "high", "tax-loss harvesting (established strategy)",
+      "Tax-loss harvesting realizes losses to offset gains while maintaining exposure (subject to wash-sale rules); the mindset does discourage it. Correct."),
 ]
 
 

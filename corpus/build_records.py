@@ -75,8 +75,9 @@ def claim(cid, text, domain, ctype, segment_id=None):
 
 def base(record_id, media_type, fmt, title, source, urls, dates, raw_name,
          owner_label, risk_quality, claims, segments=None, source_metadata=None,
-         access_note=None, notes=None, extra=None):
-    wc = word_count(raw_name)
+         access_note=None, notes=None, extra=None, agent_label=None,
+         word_count_override=None):
+    wc = word_count_override if word_count_override is not None else word_count(raw_name)
     rec = {
         "record_id": record_id,
         "schema_version": SCHEMA_VERSION,
@@ -92,6 +93,10 @@ def base(record_id, media_type, fmt, title, source, urls, dates, raw_name,
             "claim_count": len(claims),
         },
         "owner_label": owner_label,                     # {class, confidence, is_adversarial_bucket, reasoning}
+        # agent-proposed record-level label (reference-backed, pending owner
+        # confirmation) for records the owner has not labeled -- kept DISTINCT
+        # from owner_label so the two never get conflated. None => none proposed.
+        "agent_label": agent_label,
         "risk_quality": risk_quality,                   # separate axis from factual consistency
         "segments": segments or [],
         "claims": claims,
@@ -116,6 +121,15 @@ def owner_label(cls, confidence, reasoning, adversarial=False):
     assert cls in CLASS_VALUES and confidence in CONFIDENCE_VALUES
     return {"class": cls, "confidence": confidence,
             "is_adversarial_bucket": adversarial, "reasoning": reasoning}
+
+
+def agent_label(cls, confidence, reasoning):
+    """A reference-backed, agent-PROPOSED record-level label (bootstrapping only;
+    pending owner confirmation before the live system trusts it). Distinct from
+    owner_label so provenance is never lost."""
+    assert cls in CLASS_VALUES and confidence in CONFIDENCE_VALUES
+    return {"class": cls, "confidence": confidence, "source": "agent_proposed",
+            "status": "pending_owner_confirmation", "reasoning": reasoning}
 
 
 def risk_quality(assessed, assessment=None, reasoning=None):
@@ -205,6 +219,16 @@ r004_claims = [
     claim("004-d", "alpha half-life from a novel alternative dataset dropped from ~36 months a decade ago to ~18 months today (unsourced in the free portion)", "alt_data", "factual_quantitative"),
     claim("004-e", "combining multiple low-correlation datasets reduces portfolio variance without sacrificing expected return (standard diversification/uncorrelated-signal argument)", "portfolio_theory", "factual_qualitative"),
     claim("004-f", "promises a dataset-by-dataset breakdown of a 28-dataset library, NOT visible in the captured free portion (paywalled)", "alt_data", "factual_qualitative"),
+]
+
+
+r005_claims = [
+    claim("005-a", "a decline from $100k to $78k is a real $22k loss in current value whether or not the position is sold (mark-to-market)", "investing_principles", "factual_qualitative"),
+    claim("005-b", "selling forgoes future appreciation/income while also avoiding further potential loss (opportunity cost is symmetric)", "investing_principles", "factual_qualitative"),
+    claim("005-c", "selling changes tax status (realizes a gain/loss) but that is separate from whether value was actually lost", "taxation", "factual_qualitative"),
+    claim("005-d", "the phrase encourages anchoring to purchase price rather than market price (anchoring bias)", "investor_psychology", "factual_qualitative"),
+    claim("005-e", "believing losses aren't real until sale makes investors hold underperformers longer, risking deeper losses", "investor_psychology", "opinion"),
+    claim("005-f", "the mindset discourages tax-loss harvesting that could cut taxes while keeping market exposure", "taxation", "factual_qualitative"),
 ]
 
 
@@ -329,6 +353,33 @@ def build():
               "get lighter scrutiny for that reason -- each claim gets its own check.",
     ))
 
+    records.append(base(
+        record_id="005", media_type="web_article", fmt="article",
+        title="Why \"You Don't Lose Money Until You Sell\" Is Bunk",
+        source={"name": "The White Coat Investor", "kind": "blog"},
+        urls={"url": "https://www.whitecoatinvestor.com/why-you-dont-lose-money-until-you-sell-is-bunk/"},
+        dates={"published": None, "captured": "2026-09-13"},
+        raw_name="005_raw_article.txt", word_count_override=1100,
+        owner_label=owner_label("unlabeled", "none",
+            "Not yet reviewed by the owner. Agent-collected (WebFetch) during "
+            "bootstrapping; see agent_label for the reference-backed proposal."),
+        agent_label=agent_label("consistent", "firm",
+            "Reference-backed (agent-proposed, pending owner confirmation): the "
+            "article's claims are standard, correct finance principles -- "
+            "mark-to-market defines a real unrealized loss, opportunity cost is "
+            "symmetric, tax realization is distinct from value change, anchoring "
+            "bias and tax-loss harvesting are well-established. See "
+            "verdicts_agent_proposed.json for per-claim verdicts."),
+        risk_quality=risk_quality(False),
+        claims=r005_claims,
+        source_metadata={"raw_transcript_source": "WebFetch (agent), URL + extracted claims only (not verbatim; ToS)"},
+        notes="Agent-collected to grow the corpus during bootstrapping. Adds a "
+              "consistent ARTICLE -- note this worsens the format/label balance "
+              "(more articles on the consistent side); confound_check reports the "
+              "resulting imbalance honestly. Clearing the confound needs balanced "
+              "collection incl. inconsistent sources and videos, not padding.",
+    ))
+
     return records
 
 
@@ -356,6 +407,9 @@ def main():
             "dates": "{published, captured}",
             "length": "confound field: {raw_word_count, segment_count, claim_count}",
             "owner_label": "{class, confidence, is_adversarial_bucket, reasoning}  (owner-sourced)",
+            "agent_label": "{class, confidence, source, status, reasoning} or null  -- "
+                           "reference-backed agent proposal for owner-unlabeled records "
+                           "(bootstrapping; pending owner confirmation); kept DISTINCT from owner_label",
             "risk_quality": "{assessed, assessment, reasoning}  -- axis SEPARATE from factual consistency",
             "segments": "[{segment_id, topic}]  (video/compilation structure; may be empty)",
             "claims": "[{claim_id, segment_id, claim_text, domain, claim_type, "

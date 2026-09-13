@@ -1,13 +1,13 @@
 {
   "summary": {
-    "nodes": 88,
-    "edges": 117,
+    "nodes": 102,
+    "edges": 134,
     "by_kind": {
-      "source": 4,
-      "claim": 48,
-      "domain": 15,
+      "source": 5,
+      "claim": 54,
+      "domain": 17,
       "owner_label": 2,
-      "reference": 19
+      "reference": 24
     }
   },
   "nodes": [
@@ -691,6 +691,95 @@
       }
     },
     {
+      "id": "source:005",
+      "kind": "source",
+      "trust": 0.75,
+      "seed": null,
+      "attrs": {
+        "title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk",
+        "format": "article",
+        "length_words": 1100
+      }
+    },
+    {
+      "id": "claim:005-a",
+      "kind": "claim",
+      "trust": 0.9,
+      "seed": null,
+      "attrs": {
+        "text": "a decline from $100k to $78k is a real $22k loss in current value whether or not the position is sold (mark-to-market)",
+        "claim_type": "factual_qualitative"
+      }
+    },
+    {
+      "id": "domain:investing_principles",
+      "kind": "domain",
+      "trust": 0.0,
+      "seed": null,
+      "attrs": {
+        "name": "investing_principles"
+      }
+    },
+    {
+      "id": "claim:005-b",
+      "kind": "claim",
+      "trust": 0.9,
+      "seed": null,
+      "attrs": {
+        "text": "selling forgoes future appreciation/income while also avoiding further potential loss (opportunity cost is symmetric)",
+        "claim_type": "factual_qualitative"
+      }
+    },
+    {
+      "id": "claim:005-c",
+      "kind": "claim",
+      "trust": 0.9,
+      "seed": null,
+      "attrs": {
+        "text": "selling changes tax status (realizes a gain/loss) but that is separate from whether value was actually lost",
+        "claim_type": "factual_qualitative"
+      }
+    },
+    {
+      "id": "domain:taxation",
+      "kind": "domain",
+      "trust": 0.0,
+      "seed": null,
+      "attrs": {
+        "name": "taxation"
+      }
+    },
+    {
+      "id": "claim:005-d",
+      "kind": "claim",
+      "trust": 0.9,
+      "seed": null,
+      "attrs": {
+        "text": "the phrase encourages anchoring to purchase price rather than market price (anchoring bias)",
+        "claim_type": "factual_qualitative"
+      }
+    },
+    {
+      "id": "claim:005-e",
+      "kind": "claim",
+      "trust": 0.0,
+      "seed": null,
+      "attrs": {
+        "text": "believing losses aren't real until sale makes investors hold underperformers longer, risking deeper losses",
+        "claim_type": "opinion"
+      }
+    },
+    {
+      "id": "claim:005-f",
+      "kind": "claim",
+      "trust": 0.9,
+      "seed": null,
+      "attrs": {
+        "text": "the mindset discourages tax-loss harvesting that could cut taxes while keeping market exposure",
+        "claim_type": "factual_qualitative"
+      }
+    },
+    {
       "id": "ref:001-1-a",
       "kind": "reference",
       "trust": 0.9,
@@ -895,6 +984,61 @@
       "seed": 0.9,
       "attrs": {
         "reference": "modern portfolio theory (diversification of uncorrelated signals)",
+        "verdict": "consistent",
+        "verdict_source": "agent_proposed"
+      }
+    },
+    {
+      "id": "ref:005-a",
+      "kind": "reference",
+      "trust": 0.9,
+      "seed": 0.9,
+      "attrs": {
+        "reference": "mark-to-market accounting; definition of unrealized loss",
+        "verdict": "consistent",
+        "verdict_source": "agent_proposed"
+      }
+    },
+    {
+      "id": "ref:005-b",
+      "kind": "reference",
+      "trust": 0.9,
+      "seed": 0.9,
+      "attrs": {
+        "reference": "opportunity cost (standard microeconomics/finance)",
+        "verdict": "consistent",
+        "verdict_source": "agent_proposed"
+      }
+    },
+    {
+      "id": "ref:005-c",
+      "kind": "reference",
+      "trust": 0.9,
+      "seed": 0.9,
+      "attrs": {
+        "reference": "tax realization rules (realized vs unrealized)",
+        "verdict": "consistent",
+        "verdict_source": "agent_proposed"
+      }
+    },
+    {
+      "id": "ref:005-d",
+      "kind": "reference",
+      "trust": 0.9,
+      "seed": 0.9,
+      "attrs": {
+        "reference": "anchoring bias (behavioral finance, Tversky & Kahneman)",
+        "verdict": "consistent",
+        "verdict_source": "agent_proposed"
+      }
+    },
+    {
+      "id": "ref:005-f",
+      "kind": "reference",
+      "trust": 0.9,
+      "seed": 0.9,
+      "attrs": {
+        "reference": "tax-loss harvesting (established strategy)",
         "verdict": "consistent",
         "verdict_source": "agent_proposed"
       }
@@ -1490,6 +1634,78 @@
       "weight": 1.0
     },
     {
+      "src": "source:005",
+      "dst": "claim:005-a",
+      "kind": "asserts",
+      "weight": 1.0
+    },
+    {
+      "src": "claim:005-a",
+      "dst": "domain:investing_principles",
+      "kind": "in_domain",
+      "weight": 1.0
+    },
+    {
+      "src": "source:005",
+      "dst": "claim:005-b",
+      "kind": "asserts",
+      "weight": 1.0
+    },
+    {
+      "src": "claim:005-b",
+      "dst": "domain:investing_principles",
+      "kind": "in_domain",
+      "weight": 1.0
+    },
+    {
+      "src": "source:005",
+      "dst": "claim:005-c",
+      "kind": "asserts",
+      "weight": 1.0
+    },
+    {
+      "src": "claim:005-c",
+      "dst": "domain:taxation",
+      "kind": "in_domain",
+      "weight": 1.0
+    },
+    {
+      "src": "source:005",
+      "dst": "claim:005-d",
+      "kind": "asserts",
+      "weight": 1.0
+    },
+    {
+      "src": "claim:005-d",
+      "dst": "domain:investor_psychology",
+      "kind": "in_domain",
+      "weight": 1.0
+    },
+    {
+      "src": "source:005",
+      "dst": "claim:005-e",
+      "kind": "asserts",
+      "weight": 1.0
+    },
+    {
+      "src": "claim:005-e",
+      "dst": "domain:investor_psychology",
+      "kind": "in_domain",
+      "weight": 1.0
+    },
+    {
+      "src": "source:005",
+      "dst": "claim:005-f",
+      "kind": "asserts",
+      "weight": 1.0
+    },
+    {
+      "src": "claim:005-f",
+      "dst": "domain:taxation",
+      "kind": "in_domain",
+      "weight": 1.0
+    },
+    {
       "src": "ref:001-1-a",
       "dst": "claim:001-1-a",
       "kind": "supports",
@@ -1600,6 +1816,36 @@
     {
       "src": "ref:004-e",
       "dst": "claim:004-e",
+      "kind": "supports",
+      "weight": 1.0
+    },
+    {
+      "src": "ref:005-a",
+      "dst": "claim:005-a",
+      "kind": "supports",
+      "weight": 1.0
+    },
+    {
+      "src": "ref:005-b",
+      "dst": "claim:005-b",
+      "kind": "supports",
+      "weight": 1.0
+    },
+    {
+      "src": "ref:005-c",
+      "dst": "claim:005-c",
+      "kind": "supports",
+      "weight": 1.0
+    },
+    {
+      "src": "ref:005-d",
+      "dst": "claim:005-d",
+      "kind": "supports",
+      "weight": 1.0
+    },
+    {
+      "src": "ref:005-f",
+      "dst": "claim:005-f",
       "kind": "supports",
       "weight": 1.0
     }

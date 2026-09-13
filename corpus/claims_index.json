@@ -1,6 +1,6 @@
 {
   "note": "Stable claim ids for citation by upstream stages (hypothesis claim_refs, backtest attribution.claim_refs). Generated from corpus/records; regenerate with export_claims_index.py.",
-  "count": 48,
+  "count": 54,
   "claims": {
     "001-1-a": {
       "text": "P/E = market cap / net income",
@@ -337,6 +337,48 @@
       "claim_type": "factual_qualitative",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
+    },
+    "005-a": {
+      "text": "a decline from $100k to $78k is a real $22k loss in current value whether or not the position is sold (mark-to-market)",
+      "domain": "investing_principles",
+      "claim_type": "factual_qualitative",
+      "source_id": "005",
+      "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
+    },
+    "005-b": {
+      "text": "selling forgoes future appreciation/income while also avoiding further potential loss (opportunity cost is symmetric)",
+      "domain": "investing_principles",
+      "claim_type": "factual_qualitative",
+      "source_id": "005",
+      "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
+    },
+    "005-c": {
+      "text": "selling changes tax status (realizes a gain/loss) but that is separate from whether value was actually lost",
+      "domain": "taxation",
+      "claim_type": "factual_qualitative",
+      "source_id": "005",
+      "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
+    },
+    "005-d": {
+      "text": "the phrase encourages anchoring to purchase price rather than market price (anchoring bias)",
+      "domain": "investor_psychology",
+      "claim_type": "factual_qualitative",
+      "source_id": "005",
+      "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
+    },
+    "005-e": {
+      "text": "believing losses aren't real until sale makes investors hold underperformers longer, risking deeper losses",
+      "domain": "investor_psychology",
+      "claim_type": "opinion",
+      "source_id": "005",
+      "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
+    },
+    "005-f": {
+      "text": "the mindset discourages tax-loss harvesting that could cut taxes while keeping market exposure",
+      "domain": "taxation",
+      "claim_type": "factual_qualitative",
+      "source_id": "005",
+      "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     }
   }
 }

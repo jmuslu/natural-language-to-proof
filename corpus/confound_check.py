@@ -48,10 +48,22 @@ def load_records(records_dir):
     recs = []
     for f in sorted(glob.glob(os.path.join(records_dir, "*.json"))):
         d = json.load(open(f))
+        owner_cls = d["owner_label"]["class"]
+        bucket = BUCKET.get(owner_cls)
+        provenance = "owner" if bucket else None
+        cls = owner_cls
+        # fall back to an agent-proposed label when the owner hasn't labeled it,
+        # tracked distinctly so owner-labeled records stay the gold standard.
+        if bucket is None and d.get("agent_label"):
+            a_cls = d["agent_label"]["class"]
+            a_bucket = BUCKET.get(a_cls)
+            if a_bucket:
+                bucket, provenance, cls = a_bucket, "agent", a_cls
         recs.append({
             "id": d["record_id"],
-            "cls": d["owner_label"]["class"],
-            "bucket": BUCKET.get(d["owner_label"]["class"]),
+            "cls": cls,
+            "bucket": bucket,
+            "label_provenance": provenance,
             "format": d["format"],
             "length": d["length"]["raw_word_count"],
         })
@@ -139,7 +151,9 @@ def analyze(recs, n_perm=5000, seed=0):
         "n_pos": sum(1 for r in labeled if r["bucket"] == "pos"),
         "n_neg": sum(1 for r in labeled if r["bucket"] == "neg"),
         "n_ambiguous": sum(1 for r in recs if r["cls"] == "ambiguous"),
-        "n_unlabeled": sum(1 for r in recs if r["cls"] == "unlabeled"),
+        "n_unlabeled": sum(1 for r in recs if r["bucket"] is None and r["cls"] not in ("ambiguous",)),
+        "n_owner_labeled": sum(1 for r in labeled if r["label_provenance"] == "owner"),
+        "n_agent_labeled": sum(1 for r in labeled if r["label_provenance"] == "agent"),
         "confounds": {},
         "ready": False,
         "verdict": "",
@@ -178,7 +192,9 @@ def analyze(recs, n_perm=5000, seed=0):
 def selftest():
     """Validate the checker on synthetic ground truth (it must not certify itself)."""
     def rec(i, cls, fmt, length):
-        return {"id": str(i), "cls": cls, "bucket": BUCKET.get(cls), "format": fmt, "length": length}
+        b = BUCKET.get(cls)
+        return {"id": str(i), "cls": cls, "bucket": b,
+                "label_provenance": "owner" if b else None, "format": fmt, "length": length}
 
     # A) format perfectly predicts label -> must be flagged confounded (when ready)
     conf = ([rec(i, "consistent", "article", 400 + i) for i in range(4)]
@@ -216,6 +232,9 @@ def main():
     print(f"records: {result['n_total']}  (labeled-binary: {result['n_labeled_binary']} "
           f"= pos {result['n_pos']} / neg {result['n_neg']}; "
           f"ambiguous {result['n_ambiguous']}; unlabeled {result['n_unlabeled']})")
+    print(f"label provenance: owner {result['n_owner_labeled']} / "
+          f"agent-proposed {result['n_agent_labeled']} "
+          f"(owner labels are the gold standard; agent-proposed are provisional)")
     for feat, c in result["confounds"].items():
         print(f"  {feat:8}: {c}")
     print()

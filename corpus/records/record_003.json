@@ -28,6 +28,7 @@
     "is_adversarial_bucket": false,
     "reasoning": "Owner's own words: 'not sure if this is really all that good but it's not blatantly wrong... in the metrics of actual alpha its probably bad because its just frontloading disproportionate risk for a relatively low gain compared to the risk.' The owner is not disputing the article's facts; the concern is a risk-adjusted-return quality judgment -- recorded on the separate risk_quality axis, not forced into consistent/inconsistent."
   },
+  "agent_label": null,
   "risk_quality": {
     "assessed": true,
     "assessment": "poor-risk-adjusted",

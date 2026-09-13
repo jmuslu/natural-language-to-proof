@@ -38,6 +38,7 @@
     "dates": "{published, captured}",
     "length": "confound field: {raw_word_count, segment_count, claim_count}",
     "owner_label": "{class, confidence, is_adversarial_bucket, reasoning}  (owner-sourced)",
+    "agent_label": "{class, confidence, source, status, reasoning} or null  -- reference-backed agent proposal for owner-unlabeled records (bootstrapping; pending owner confirmation); kept DISTINCT from owner_label",
     "risk_quality": "{assessed, assessment, reasoning}  -- axis SEPARATE from factual consistency",
     "segments": "[{segment_id, topic}]  (video/compilation structure; may be empty)",
     "claims": "[{claim_id, segment_id, claim_text, domain, claim_type, checkable_reference:null, consistency_verdict:null, verification_status}]",

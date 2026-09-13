@@ -26,6 +26,7 @@
     "is_adversarial_bucket": true,
     "reasoning": "Deliberately chosen as the adversarial/bad-bucket example. The approach (LSTM/tree ML on price history, sentiment, technical features to predict next-day returns) is undermined by market efficiency: any exploitable pattern in public price/sentiment data is already priced in by faster, better-capitalized institutional actors. The incremental fixes (early stopping, log-return targets, permutation importance, time-decayed features) are legitimate ML engineering but do not address why the strategy can't work -- the model backtests against random-portfolio noise bands and reportedly still can't clear them."
   },
+  "agent_label": null,
   "risk_quality": {
     "assessed": false,
     "assessment": null,
