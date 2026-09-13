@@ -44,6 +44,7 @@ library
                       NL2Proof.Syntax.CCGDeriv
                       NL2Proof.Syntax.CCGTypeChange
                       NL2Proof.Syntax.CCGParse
+                      NL2Proof.Syntax.CCGSupertag
                       NL2Proof.Syntax.CCGLexicon
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
@@ -132,6 +133,16 @@ executable ccg-parse-coverage
     import:           warnings
     hs-source-dirs:   tools
     main-is:          CCGParseCoverage.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+executable ccg-supertag-parse
+    -- From-words parsing: a frequency supertagger (trained on the train split)
+    -- offers each word its top-k categories, the chart combines them. Reports OOV,
+    -- oracle inclusion@k (the ceiling), and from-words parse-to-gold-root coverage.
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          CCGSupertagParse.hs
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
 

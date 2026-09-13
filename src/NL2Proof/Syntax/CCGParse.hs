@@ -21,6 +21,7 @@ module NL2Proof.Syntax.CCGParse
   , leafCats
   , rootCat
   , chartParse
+  , chartParseMulti
   , derivesRoot
   ) where
 
@@ -65,16 +66,23 @@ leafCats = traverse parse1 . collect
 rootCat :: AutoNode -> Maybe CCat
 rootCat n = either (const Nothing) Just (parseCCGCat (nodeCat n))
 
--- | CKY over the gold supertags, returning every category derivable for the whole
--- span. @cap@ bounds categories per cell so unary closure (type-raising can chain)
--- and spurious composition ambiguity cannot blow up; the Set only grows, so closure
--- terminates. Cells are @Set CCat@ (dedupe), keyed by @(from,to)@ word boundaries.
+-- | CKY over one category per word (the gold supertags). See 'chartParseMulti'.
 chartParse :: Int -> Rules -> [CCat] -> Set.Set CCat
-chartParse cap rules leaves =
+chartParse cap rules = chartParseMulti cap rules . map (: [])
+
+-- | CKY over a /set of candidate categories per word/, returning every category
+-- derivable for the whole span. Passing singletons recovers gold-supertag parsing
+-- ('chartParse'); passing a supertagger's top-k per word gives from-words parsing.
+-- @cap@ bounds categories per cell so lexical ambiguity, unary closure (type-raising
+-- can chain) and spurious composition ambiguity cannot blow up; the Set only grows,
+-- so closure terminates. Cells are @Set CCat@ (dedupe), keyed by @(from,to)@ word
+-- boundaries.
+chartParseMulti :: Int -> Rules -> [[CCat]] -> Set.Set CCat
+chartParseMulti cap rules cellsIn =
   M.findWithDefault Set.empty (0, n) table
   where
-    n = length leaves
-    leafArr = M.fromList (zip [0 ..] leaves)
+    n = length cellsIn
+    leafArr = M.fromList (zip [0 ..] cellsIn)
 
     table :: M.Map (Int, Int) (Set.Set CCat)
     table = M.fromList
@@ -82,7 +90,7 @@ chartParse cap rules leaves =
       | len <- [1 .. n], i <- [0 .. n - len], let j = i + len ]
 
     cell i j
-      | j == i + 1 = closeUnary (Set.singleton (leafArr M.! i))
+      | j == i + 1 = closeUnary (capSet (Set.fromList (leafArr M.! i)))
       | otherwise  = closeUnary $ capSet $ Set.fromList
           [ p
           | k <- [i + 1 .. j - 1]

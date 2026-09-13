@@ -24,14 +24,15 @@ import NL2Proof.Syntax.CCGBank
 import NL2Proof.Syntax.CCGRules
 import NL2Proof.Syntax.CCGDeriv
 import NL2Proof.Syntax.CCGTypeChange
-import NL2Proof.Syntax.CCGParse (Rules(..), chartParse)
+import NL2Proof.Syntax.CCGParse (Rules(..), chartParse, chartParseMulti)
+import NL2Proof.Syntax.CCGSupertag (buildTagModel, supertag, isOOV, oracleIncluded)
 import NL2Proof.Syntax.CCGLexicon
 
 main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
    ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks ++ tcChecks
-   ++ sentenceParseChecks ++ lexChecks)
+   ++ sentenceParseChecks ++ supertagChecks ++ lexChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -344,6 +345,27 @@ sentenceParseChecks =
     derivesTo ws goal =
       let got = chartParse 200 (Rules [] []) (map pc ws)
       in any (`unifiable` pc goal) (Set.toList got)
+
+-- | The frequency supertagger and from-words parsing (CCGSupertag + chartParseMulti).
+supertagChecks :: [Check]
+supertagChecks =
+  [ expect "supertag returns a known word's most frequent category first"
+      (supertag tm 1 "the" == [pc "NP/N"])
+  , expect "supertag backs off to the global prior for an OOV word (non-empty)"
+      (not (null (supertag tm 4 "zzznotaword")))
+  , expect "isOOV distinguishes seen from unseen words"
+      (isOOV tm "zzznotaword" && not (isOOV tm "the"))
+  , expect "oracle inclusion: the gold category is offered in top-k"
+      (oracleIncluded tm 1 "barks" (pc "S[dcl]\\NP"))
+  , expect "from-words: 'the dog barks' (top-k candidates) parses to S[dcl]"
+      (any (`unifiable` pc "S[dcl]")
+           (Set.toList (chartParseMulti 200 (Rules [] [])
+              [ supertag tm 2 "the", supertag tm 2 "dog", supertag tm 2 "barks" ])))
+  ]
+  where
+    tm = buildTagModel
+      [ ("the", pc "NP/N"), ("the", pc "NP/N"), ("the", pc "NP[nb]/N")
+      , ("dog", pc "N"), ("dog", pc "N"), ("barks", pc "S[dcl]\\NP") ]
 
 lexChecks :: [Check]
 lexChecks =
