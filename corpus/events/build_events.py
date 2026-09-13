@@ -67,14 +67,14 @@ def main():
     if "--selftest" in sys.argv:
         assert not errs, f"validation errors: {errs}"
         assert events, "no events to test"
+        import datetime as _dt
         e0 = events[0]
         kt = e0["knowable_time"]
-        # no lookahead: the event is invisible the day before it became knowable
-        day_before = (int(kt[:4]), kt)  # cheap: compare strings
         assert as_of_events("1900-01-01", events) == [], "as-of before all events leaked one"
         assert e0 in as_of_events(kt, events), "event not visible on its knowable date"
-        # a date strictly before knowable_time must exclude it
-        before = kt[:8] + f"{max(1, int(kt[8:]) - 1):02d}"
+        # no lookahead: the event is invisible the day before it became knowable.
+        # Use real date arithmetic (string slicing breaks on the 1st of a month).
+        before = (_dt.date.fromisoformat(kt) - _dt.timedelta(days=1)).isoformat()
         assert e0 not in as_of_events(before, events), "event visible before it was knowable!"
         print(f"build_events selftest: PASS ({len(events)} events valid; "
               "as-of filter enforces no lookahead)")

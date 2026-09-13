@@ -187,6 +187,11 @@ class Brain:
         merely on-topic. `ann=True` uses the DiskANN index (approximate, for scale);
         default is exact brute-force cosine. `as_of` restricts to facts knowable by
         that date (knowable_time <= as_of; no lookahead -- see TEMPORAL.md).
+
+        Note: with `ann=True` the DiskANN index selects neighbours before the as_of
+        filter is applied (post-hoc JOIN), so an as_of query may return fewer than `k`
+        facts; the default exact path applies the filter in-query and is exact. Prefer
+        the exact path when combining as_of with a hard result count.
         """
         qv = self._embed_query(query)
         cur = self.con.cursor()
@@ -571,11 +576,13 @@ class Brain:
                 mae, maeb = float(np.mean(errs)), float(np.mean(base_errs))
                 if maeb > 1e-9:
                     skills.append(1.0 - mae / maeb)
-            curve.append({"m": int(m), "mean_skill": round(float(np.mean(skills)), 4),
+            mean_skill = round(float(np.mean(skills)), 4) if skills else None
+            curve.append({"m": int(m), "mean_skill": mean_skill,
                           "n_samples": len(skills)})
+        pts = [c["mean_skill"] for c in curve if c["mean_skill"] is not None]
         return {"checked_n": int(nc), "k": k, "repeats": repeats, "curve": curve,
-                "monotone_up": all(curve[i]["mean_skill"] <= curve[i + 1]["mean_skill"] + 1e-9
-                                   for i in range(len(curve) - 1)) if len(curve) > 1 else None}
+                "monotone_up": all(pts[i] <= pts[i + 1] + 1e-9 for i in range(len(pts) - 1))
+                               if len(pts) > 1 else None}
 
     def stats(self) -> dict:
         ids, E, trusts, meta = self._all()
