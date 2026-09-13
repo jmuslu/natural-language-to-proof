@@ -632,8 +632,30 @@ against the handoff and brought up to its requirements.
   silently removed — recommend `git rm --cached files.zip` (keeping it locally) to
   match the CCGbank-outside-the-repo pattern, but that is the owner's call since
   the handoff frames placement as an open question.
+- **[checked] Reverse propagation / Layer 7 demonstrated end-to-end on the real
+  corpus** (`corpus/reverse_propagation_demo.py`, synthetic attribution +
+  outcome, clearly labelled). Claims 003-a/003-b (crypto return figures) are
+  `unresolved` by direct checking (trust 0); once a strategy that leaned on them
+  is backtested, the oracle-checked outcome propagates backward to implicate them
+  — an otherwise-unverifiable claim acquires a delayed, indirect verdict. A single
+  outcome is deliberately weak (implicate edge weight 0.3 → −0.3); confidence
+  accrues as independent outcomes accumulate (5 → saturates), which is the
+  calibration-over-many-instances signal Layer 7 asks for, not a single P&L
+  verdict. **The un-built prerequisite is real attribution logging** — recording
+  which claims a strategy used at generation time — which the handoff flags as
+  "not free the way exact derivation dependency is in `Genealogy.hs`." The graph
+  consumes it the moment it exists.
 
 ## Open items, by layer (for the next pass)
+
+- **[Layer 5/7 — now partly bridged] Attribution logging is the next real build.**
+  The epistemic graph (`corpus/epistemic_graph.py`) and its reverse-propagation
+  are done and self-tested; what turns the reverse-propagation demo into a live
+  signal is recording `strategy → used → claim` links at generation time (in
+  `agentic-qr`'s strategy pipeline), so a real backtest outcome implicates real
+  claims. The Layer-5 trust-*mechanism* choice (edge-weight vs edge-existence vs
+  node propagation) stays open and not-to-be-brute-forced; the graph provides the
+  structure a chosen mechanism plugs into.
 
 - **[Layer 1/2] Done: core parser migrated to feature unification** (additive
   `Cat` extension + `catUnify`, fragment preserved at 386/386). Remaining: turn
