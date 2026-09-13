@@ -545,6 +545,38 @@ After the survey above, the owner granted confirmation to build in `~/projects`
   secrets, and venvs are ignored (bulk data stays untracked); the validation
   module is correctly tracked.
 
+- **[measured] Agent-boundary survey — the separation to preserve.** `agentic-qr`
+  communicates over a **file-based message bus** (`/vault/bus/` with per-agent
+  inbox/outbox: `strategy-core-inbox`, `quant-lib-inbox/outbox`,
+  `librarian_to_researcher.json`, `researcher_out_*`, `pipeline_complete_*`).
+  Agents have narrow roles: intake (discord/telegram → classifier → dispatcher),
+  verbose (librarian gathers context → researcher writes notes), caveman
+  (pipelines ingest data, quant-lib builds catalogs), strategy-core (swe:
+  hypothesis → strategy → backtest → result). This is real, deliberate
+  separation on the safe (retrieval/data/formatting) side — the "strong
+  separations worth preserving" the handoff names. Keep the bus pattern.
+- **[structural] Where the deterministic gate exists, and the one place it
+  doesn't.** Two of the three agent-output paths now pass a real gate: (a)
+  strategies (LLM-generated code) are gated by the **validation certificate**
+  (out-of-sample + both nulls) before a result is trustworthy; (b) claims are
+  gated by the **corpus/epistemic graph** (external-reference verdicts +
+  reverse-propagated backtest outcomes). The **ungated path** is the researcher's
+  free-text LLM notes → `shared/knowledge` → hypotheses: LLM-produced claims
+  become load-bearing without passing a deterministic gate. Closing it is the
+  Layer 9 task — route researcher-derived claims through the corpus/epistemic
+  graph so they carry provenance and get checked; Thread 1's `claim_refs`
+  auto-proposal (hypothesis ↔ corpus claim ids) is the first hook for that.
+- **[resolved-direction] The integration is a data boundary with `nl2proof`'s
+  core as the gate.** The handoff left open whether `agentic-qr` calls into
+  `nl2proof` (service boundary) or replicates its discipline. The concrete shape
+  that emerged this session is the former in *data* form: `agentic-qr` agents
+  emit **provenance-tagged data** (backtest results with an `attribution` block +
+  `claim_refs`, published `claims_index.json`), and `nl2proof`'s deterministic
+  core (the validation suite, the epistemic graph's `ingest_outcomes`) consumes
+  and gates it. No shared call path yet, but a real, typed data contract — the
+  "route through `nl2proof` rather than re-implement in parallel" reading, now
+  instantiated.
+
 ## Corpus-adversarial track (Layers 6–8) — records structured to schema v2
 
 Companion track per `HANDOFF-corpus-adversarial.md`: a small labeled corpus
