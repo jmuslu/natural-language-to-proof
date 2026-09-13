@@ -811,12 +811,16 @@ against the handoff and brought up to its requirements.
   `ccg-reconstruct`, ~96% of real sentences). Remaining: use the reconstructed
   sentences as an actual test-case *fixture* feeding the DRT/SDRT stages, to hit
   the two known-unreachable properties a 9-case fixture can't produce.
-- **[Layer 3] Suite built; two things remain.** The three properties now exist
-  (`agentic-qr:shared/backtesting/validation/`, commit `aeee8d5`). Remaining:
-  (a) extend `strategy-core` to emit a per-period returns series so the live
-  engine can feed the suite (the recorded integration gap), and (b) add the
-  deterministic prefilter + price-level random-strategy Monte-Carlo null
-  (Layer 3/3.5). Both are `~/projects` work (confirmation now granted).
+- **[Layer 3] Statistical suite now complete end-to-end.** Built and wired:
+  walk-forward/OOS, **both** nulls (sign-flip + random-timing, the latter now in
+  the live certificate), regime-conditional evaluation, the single-signal
+  certificate, **run-level Benjamini-Hochberg** (`apply_run_fdr`), calibration
+  (`calibration.py`), and the **export boundary** (`export_boundary.py`, gated on
+  full validation). `strategy-core` emits the returns series + attribution and runs
+  it all per backtest. Remaining (smaller): a deterministic prefilter to narrow a
+  large candidate space before the per-signal gates, and wiring `apply_run_fdr`
+  into the multi-hypothesis run loop (the primitive + post-processor exist; the
+  batch runner call site doesn't yet).
 - **[Layer 4] Now unblockable via the Layer 3 suite, once returns flow.** The
   externally-checked fix (fit the corroboration/novelty combination against
   held-out oracle outcomes) needs oracle-checked outcomes; the validation suite +
