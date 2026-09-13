@@ -936,11 +936,23 @@ database … rust forks of sqlite" — pointed straight at it.
   `ccg-reconstruct` needs. **[perf, honest]** the per-cell category-set cap bounds
   the correctness-relevant blow-up, but a 40-word sentence still builds a large
   chart with heavy composition ambiguity, so run the tool in section-sized batches
-  (~40 files); a single very long sentence can dominate runtime. Remaining on this
-  thread: from-words parsing needs a supertagger over the ingested lexicon (lexical
-  ambiguity + a beam); a runtime beam/packed-forest would fix the long-sentence
-  cost; and whether type-raising should be a generalising combinator rather than a
-  memorised unary rule is still open.
+  (~40 files); a single very long sentence can dominate runtime.
+- **[Layer 1/2 — resolved, this session] From-words parsing via a supertagger.**
+  `CCGSupertag` is a frequency/unigram supertagger (the standard lexical baseline,
+  labelled as such): per word it offers its top-k attested categories, most-frequent
+  first, with unigram backoff for OOV, trained on the train split only (leakage-free).
+  `chartParseMulti` generalises the CKY to a candidate *set* per word (gold-supertag
+  parsing is the singleton case). `ccg-supertag-parse` reports the numbers kept
+  distinct: **[measured]** on 40 files of section 00 (train 444, k=4, ≤25 words):
+  per-word **oracle inclusion 85.1%** (the tagger offers the gold tag — the ceiling),
+  2.44 tags/word, **OOV 16.3%** (inflated by the tiny train set; drops with the full
+  train sections), and **70.1% of sentences reach the gold root category from raw
+  words.** Stated honestly: reaching the correct root category is weaker than
+  reconstructing the exact gold derivation (bounded by the 7.5% sentence-level oracle
+  here), and the two are never conflated. Remaining: a runtime beam / packed forest
+  for the long-sentence cost; a stronger (feature/neural) supertagger to raise the
+  oracle ceiling and cut ambiguity; and whether type-raising should be a generalising
+  combinator rather than a memorised unary rule.
 - **[Layer 2] Done: `.auto` derivation parser + reconstruction** (`CCGDeriv`,
   `ccg-reconstruct`, ~96% of real sentences). Remaining: use the reconstructed
   sentences as an actual test-case *fixture* feeding the DRT/SDRT stages, to hit

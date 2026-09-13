@@ -269,6 +269,19 @@ Chart cells, by increasing length. Only application is enabled.
 > first-order. Quantifiers survive, abstraction does not.
 > *Why it matters:* every downstream layer can assume a first-order formula and
 > none of them need to handle `Lam`.
+>
+> **P3.6 [measured]** The same CKY, scaled to real sentences. `CCGParse` runs the
+> chart over whole CCGbank sentences with the full rule set (application *and*
+> composition, coordination, punctuation, and the learned type-change inventory
+> folded in — the opposite of the P3.4 application-only fragment default, and it
+> pays for that with the spurious ambiguity P3.4 warns of, which the per-cell cap
+> bounds). Given gold supertags, **99.1%** of a section-00 sample derive a category
+> unifying with the gold root; driven from raw words by a frequency supertagger
+> (`CCGSupertag`), **~70%** reach the gold root on a small-training sample, with
+> per-word oracle inclusion 85% the stated ceiling. This is the external check on the
+> grammar as a whole — the corpus decides, not the system — and the from-words number
+> is honestly separated from exact-derivation match (which the sentence-level supertag
+> oracle bounds far lower). See `FINDINGS-goal-session.md`, Layer 1/2.
 
 ### Normalization and α-equivalence are two different quotients
 

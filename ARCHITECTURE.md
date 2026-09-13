@@ -402,6 +402,8 @@ src/NL2Proof/
     CCGRules.hs        feature-unifying combinators over CCGbank categories
     CCGDeriv.hs        parse .auto derivation trees; reconstruction check
     CCGTypeChange.hs   type-changing rule class, learned + measured train/test
+    CCGParse.hs        whole-sentence bottom-up CKY: folds combinators + type-change
+    CCGSupertag.hs     frequency supertagger (from-words parsing, top-k per word)
     CCGLexicon.hs      CCGbank (word,category) -> provenance-tagged Entry + skeleton
   DRT/                 boxes, accessibility, discourse threading, canonical form
   Collapse/Class.hs    Selection: chosen reading + the rejected fiber
@@ -415,7 +417,8 @@ src/NL2Proof/
   Reward.hs            stage 4: the RL signal, and its admissibility check
 app/Main.hs            demo
 tools/                 research drivers over the CCGbank corpus (representability,
-                       GRAMMAR coverage, .auto reconstruction, type-change train/test)
+                       GRAMMAR coverage, .auto reconstruction, type-change train/test,
+                       whole-sentence + from-words parse coverage)
 test/Harness.hs        assert scaffolding, no framework dependency
 test/Spec.hs           stage 1
 test/Stage2Spec.hs     candidate generation and ranking
@@ -1091,7 +1094,12 @@ altitude, and the pieces are wired to each other by **provenance** and by
   (`CCGLexicon`) — the category is *corpus-attested*, the meaning skeleton is
   *synthesised and flagged as such*, and the type gate is honestly weak (every
   `{e,t}` type is inhabited), so faithfulness is carried by provenance, not
-  pretended by type-checking.
+  pretended by type-checking. The ingested grammar now also *parses whole real
+  sentences*: `CCGParse` folds the combinators and the learned type-change inventory
+  into one CKY chart (99.1% derive their gold root from gold supertags), and
+  `CCGSupertag` drives it from raw words (a frequency supertagger; ~70% from-words
+  root coverage on a small-training sample) — each measured against the corpus, never
+  against the system's own metric.
 - **The oracle (Layer 3).** The trading validation suite
   (`agentic-qr:shared/backtesting/validation`) is the concrete external oracle:
   walk-forward/OOS, two nulls, regime-conditional evaluation, single-signal
