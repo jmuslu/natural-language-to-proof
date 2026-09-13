@@ -9,10 +9,12 @@
 -- every representable corpus category. A non-zero "ill-typed" count would be a
 -- real bug in the synthesiser.
 --
--- Usage: @ccg-lexicon-ingest [PATH]@ (defaults to the 00-24 lexicon).
+-- Usage: @ccg-lexicon-ingest [--json] [PATH]@ (defaults to the 00-24 lexicon).
+-- With @--json@ it emits a machine-readable artifact (the same measured numbers)
+-- so downstream stages consume a real handoff rather than scraping the report.
 module Main (main) where
 
-import Data.List (foldl', sortBy)
+import Data.List (foldl', intercalate, sortBy)
 import qualified Data.Map.Strict as M
 import Data.Ord (comparing, Down(..))
 import System.Environment (getArgs)
@@ -55,16 +57,47 @@ pct _ 0 = "n/a"
 pct k tot = let t = round (1000 * fromIntegral k / fromIntegral tot :: Double) :: Int
             in show (fromIntegral t / 10 :: Double) ++ "%"
 
+-- | Minimal JSON string escaper (atom keys include ':' ',' '"').
+jstr :: String -> String
+jstr s = '"' : concatMap esc s ++ "\""
+  where esc '"' = "\\\""; esc '\\' = "\\\\"; esc c = [c]
+
+jsonReport :: FilePath -> Int -> Int -> Acc -> String
+jsonReport path nT tokT a = "{\n"
+  ++ f "source" (jstr path) ++ ",\n"
+  ++ f "distinct_entries" (show nT) ++ ",\n"
+  ++ f "token_occurrences" (show tokT) ++ ",\n"
+  ++ f "built" (show (aBuilt a)) ++ ",\n"
+  ++ f "built_pct_types" (pctNum (aBuilt a) nT) ++ ",\n"
+  ++ f "built_pct_tokens" (pctNum (aBuiltTok a) tokT) ++ ",\n"
+  ++ f "unrepresentable" (show (aUnrep a)) ++ ",\n"
+  ++ f "unparseable" (show (aBad a)) ++ ",\n"
+  ++ f "ill_typed" (show (aIllTyped a)) ++ ",\n"
+  ++ "  \"atoms_blocking\": {" ++ atoms ++ "}\n}"
+  where
+    f k v = "  " ++ jstr k ++ ": " ++ v
+    atoms = intercalate ", "
+      [ jstr at ++ ": " ++ show n
+      | (at, n) <- sortBy (comparing (Down . snd)) (M.toList (aNewAtoms a)) ]
+    pctNum _ 0 = "null"
+    pctNum k tot = let t = round (1000 * fromIntegral k / fromIntegral tot :: Double) :: Int
+                   in show (fromIntegral t / 10 :: Double)
+
 main :: IO ()
 main = do
   args <- getArgs
-  let path = case args of (p : _) -> p; [] -> defaultPath
+  let jsonMode = "--json" `elem` args
+      path = case filter (/= "--json") args of (p : _) -> p; [] -> defaultPath
   contents <- readFile path
   let entries = [e | Just e <- map parseLine (lines contents)]
       a = foldl' step emptyAcc entries
       nT = length entries
       tokT = sum [c | (_, _, c) <- entries]
   hPutStrLn stderr ("ingested " ++ show nT ++ " lexicon entries from " ++ path)
+  if jsonMode then putStrLn (jsonReport path nT tokT a) else humanReport path nT tokT a
+
+humanReport :: FilePath -> Int -> Int -> Acc -> IO ()
+humanReport _path nT tokT a = do
   putStrLn "== CCGbank lexicon ingestion (provenance-tagged entries, verified skeletons) =="
   putStrLn ("distinct (word,category) entries : " ++ show nT)
   putStrLn ("total corpus token occurrences    : " ++ show tokT)

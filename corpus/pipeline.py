@@ -25,7 +25,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -49,23 +48,18 @@ def stage_ingest() -> dict:
         if not exe or not Path(exe).exists():
             print("  [skip] ingest binary not built (run `cabal build ccg-lexicon-ingest`)")
             return {"stage": "ingest", "status": "skipped"}
-        r = subprocess.run([exe], capture_output=True, text=True, timeout=180)
-        out = r.stdout
-        def grab(pat):
-            m = re.search(pat, out)
-            return m.group(1) if m else "?"
-        built = grab(r"built \(representable, corpus-attested\) : ([\d,]+ \([^)]*\))")
-        illtyped = grab(r"ill-typed skeleton \(MUST be 0\): (\d+)")
-        total = grab(r"distinct \(word,category\) entries : ([\d,]+)")
-        print(f"  distinct (word,category) entries : {total}")
-        print(f"  built well-typed, corpus-attested: {built}")
-        print(f"  ill-typed skeletons (MUST be 0)  : {illtyped}"
+        # consume the machine-readable artifact (a real handoff, not stdout-scraping)
+        r = subprocess.run([exe, "--json"], capture_output=True, text=True, timeout=180)
+        d = json.loads(r.stdout)
+        ok = d["ill_typed"] == 0
+        print(f"  distinct (word,category) entries : {d['distinct_entries']:,}")
+        print(f"  built well-typed, corpus-attested: {d['built']:,} "
+              f"({d['built_pct_types']}% types, {d['built_pct_tokens']}% tokens)")
+        print(f"  ill-typed skeletons (MUST be 0)  : {d['ill_typed']}"
               f"   <- external check: mechanical type-check")
-        ok = illtyped == "0"
         print(f"  => ingestion {'SOUND' if ok else 'BROKEN'}: skeletons are type-checked, "
               "provenance-tagged, ready to become claims.")
-        return {"stage": "ingest", "status": "ok" if ok else "broken",
-                "total": total, "built": built, "ill_typed": illtyped}
+        return {"stage": "ingest", "status": "ok" if ok else "broken", **d}
     except Exception as e:  # noqa: BLE001
         print(f"  [skip] ingest unavailable: {type(e).__name__}: {e}")
         return {"stage": "ingest", "status": "skipped", "error": str(e)}
