@@ -542,4 +542,12 @@ supports semantic retrieval, directed exploration (`explore_frontier`,
 `bridge_hypotheses`), query-driven synthesis (`answer`), and grades itself against
 the graph's real trust (`calibrate` — honestly returning *not licensed* to impute
 trust from topic on the current corpus). `corpus/pipeline.py` runs the whole chain
-end-to-end (Haskell ingest → graph → brain → retrieve/explore → oracle loop).
+end-to-end (Haskell ingest → graph → brain → retrieve/explore → temporal → oracle loop).
+
+A **temporal layer** threads no-lookahead time through the system (`TEMPORAL.md`): every
+fact carries a `knowable_time` (when it became externally available), and the brain's
+`retrieve`/`answer` take an `as_of` date so it answers *what was knowable then*. A dated
+**event store** (`corpus/events/`, externally-verified clinical-trial/approval events
+with bitemporal stamps) feeds an **event-study** oracle in agentic-qr (align
+`knowable_time` → forward price windows, random-timing + sign-flip nulls, BH-FDR); it is
+wired end-to-end and needs only a real price series to run live.
