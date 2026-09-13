@@ -943,5 +943,13 @@ above; this section was pruned of the duplicated "done" write-ups it had accrete
     templates* into the parser so *reconstructed* sentences flow into the discourse
     stages (and can hit the SDRT/accessibility properties the 9-case fragment can't).
     Sub-path (b) (LLM-proposed `Term`) still future.
+  - **[measured, scoping] The scale-up blocker is precise.** The core Cat parser
+    (`CCG.parse`) uses `allRules = [fwdApp, bwdApp, fwdComp, bwdComp]` — application +
+    composition ONLY, no type-raising / coordination / type-change — so it reaches only
+    the simplest real sentences, while the CCat chart (`CCGParse`) that *does* parse
+    real sentences (99% to gold root) carries no semantics. The scale-up therefore
+    needs one of: (i) semantic (Term-carrying) coordination + type-change added to the
+    core Cat parser, or (ii) semantics attached to the CCat chart. Both are sizeable;
+    this is the honest remaining boundary, not a small tool.
 - **[Layer 8] News-attribution logging / entropy-reduction metric** — noted in the
   handoff, shares Layer 3's calibration build; not yet opened.
