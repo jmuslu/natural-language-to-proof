@@ -496,19 +496,23 @@ In order, and the order matters.
    routing a real oracle into `nl2proof`'s own `Verify.Oracle` seam rather than
    the toy ones.
 3. **Build a generator over the lexicon and the CCG rules.** *Substantially
-   underway — see `FINDINGS-goal-session.md`.* CCGbank (LDC2005T13) is now the
-   corpus: `Syntax/CCGBank` parses and classifies its feature-annotated
-   categories (66.5% of the 83,540-entry lexicon representable in the current
-   `Cat` as-is), `Syntax/CCGRules` supplies feature-unifying combinators
-   (reproducing 99.8% of GRAMMAR rule firings), `Syntax/CCGDeriv` parses `.auto`
-   derivations (~96% of real sentences reconstruct end-to-end), and
+   built — see `FINDINGS-goal-session.md`.* CCGbank (LDC2005T13) is the corpus:
+   `Syntax/CCGBank` parses and classifies its feature-annotated categories;
+   `Syntax/CCGLexicon` turns `(word, category)` pairs into provenance-tagged
+   `Entry` values (**99.9% of the 83,540-entry lexicon** built as corpus-attested,
+   well-typed entries after the feature migration; 0 ill-typed skeletons);
+   `Syntax/CCGRules` supplies feature-unifying combinators (99.8% of GRAMMAR rule
+   firings); `Syntax/CCGDeriv` parses `.auto` derivations (~96% reconstruct);
    `Syntax/CCGTypeChange` learns the type-changing rule class train/test (0.01%
-   held-out residue). The core parser (`Syntax/CCG`) now combines by feature
-   unification rather than exact equality. Still to do: turn `(word, category)`
-   pairs into provenance-tagged `Entry` values and feed real sentences through
-   the DRT/SDRT stages as test cases — the nine-case corpus has already hidden
-   two real defects (an inert SDRT frontier, an unsound DRS merge), so a green
-   suite still means "no case exercises this".
+   residue); `Syntax/CCGParse` folds combinators + type-change into one CKY that
+   parses whole sentences (99.1% derive the gold root from gold supertags); and
+   `Syntax/CCGSupertag` drives it from raw words (a frequency β-beam supertagger;
+   ~70–87% from-words root coverage). The core parser (`Syntax/CCG`) combines by
+   feature unification. Still to do: a schematic/polymorphic `conj` for the
+   coordination-function tail, and feeding real reconstructed sentences through the
+   DRT/SDRT stages as test cases — the nine-case corpus has already hidden two real
+   defects (an inert SDRT frontier, an unsound DRS merge), so a green suite still
+   means "no case exercises this".
 4. **Drop the one-edge marginalisation truncation** in `Stage2.Threading`. It is
    the common cause of four separate symptoms; `fullMarginalAt` measures the gap
    but does not close it.

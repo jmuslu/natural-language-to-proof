@@ -884,125 +884,39 @@ with market movements and propagating the result through the graph, brain, and o
   embargo/leak, multiple-comparisons over event classes) and a 5-step build order, is
   in `TEMPORAL.md`. **Not yet built** — this is the documented design.
 
-## Open items, by layer (for the next pass)
 
-- **[Layer 5/7 — loop closed, incl. the upstream half (Thread 1)] `claim_refs`
-  now auto-populate at generation time.** `corpus/propose_claim_refs.py`
-  (deterministic token/domain retrieval over `claims_index.json`, selftested) is
-  the proposer; agentic-qr `strategy-core._build_attribution` uses it —
-  author-supplied `claim_refs` take precedence, else retrieval proposes them,
-  tagged `claim_refs_source: author | agent_proposed_retrieval | none`. The
-  index is published to `agentic-qr:shared/corpus/claims_index.json`. So every
-  backtest now stamps retrieval-backed, author-confirmable `claim_refs`, and the
-  ingestion side reverse-propagates real outcomes to them. Retrieval only (safe
-  side) — a proposer, never a truth decision. *Update:* the Layer-5 trust-mechanism
-  is no longer deferred — its parameters are now fit against external calibration
-  (`corpus/fit_graph.py`, see the Layer 5 section above); run-level FDR is wired
-  into `strategy-core`'s batch loop; and the researcher now anchors its notes to
-  corpus claims (`claim_match`), closing the last ungated agent-output path's first
-  gate hook.
-- **[Thread 2 — corpus grown to 5; confound honestly still red, not gamed]**
-  Collected a real source via WebFetch (White Coat Investor, ~1100-word article,
-  consistent bucket; raw provenance note outside the repo). Schema v2 gained
-  `agent_label` — a reference-backed, agent-*proposed* record label distinct from
-  `owner_label` (owner remains the gold standard) — so owner-unlabeled records can
-  be grown and balance-measured during bootstrapping; `confound_check` uses it as
-  a provisional fallback and reports the owner/agent provenance split. **Outcome
-  (honest):** corpus 4→5 (pos 2 / neg 1); `confound_check` still returns NOT READY
-  (needs ≥3 per bucket) and still flags format confounded (every pos is an
-  article, the one neg is a video). Adding a consistent article grew pos but
-  *worsened* the format skew — exactly why the remaining need is **balanced**
-  collection (inconsistent sources + videos, the latter needing transcript
-  tooling), not padding. Padding to pass the count would be the gaming move the
-  project forbids, so the check is correctly left red.
+## Open items (current, deduplicated)
 
-- **[Layer 1/2] Done: core parser migrated to feature unification** (additive
-  `Cat` extension + `catUnify`, fragment preserved at 386/386).
-- **[Layer 2] Done (Thread 3): CCGbank → provenance-tagged lexical entries.**
-  `NL2Proof.Syntax.CCGLexicon`: `Provenance` (HandWritten | CorpusAttested |
-  LLMProposed), `ProvEntry`, `skeletonFor` (the canonical type-correct meaning
-  skeleton `Con word (catTy cat)` — a usable placeholder of the right type,
-  honestly *not* faithful predicate-argument semantics), and `ingest` →
-  Built / Unrepresentable / Unparseable. `CCGBank.ccatToCat` projects into the
-  feature-bearing core `Cat` (features→`Feature`, `PP`→`PP`). **[measured]** over
-  the real 83,540-entry lexicon: **83,468 (99.9% types / 87.8% tokens) built as
-  corpus-attested entries; 0 ill-typed skeletons**; 2 unparseable. The feature
-  migration lifted representability from 66.5% (bare {S,NP,N}) to 99.9%.
-  `skeletonWellTyped` is retained as the typeOf gate but is *explicitly weak*
-  (every `{e,t}` type is inhabited, so it verifies the synthesiser, not meaning
-  faithfulness — the structural point logged earlier). `PP`'s type stays `tyGQ`
-  (`[stipulated]`, survey-supported at 97.7% argument-like).
-- **[measured→resolved, this session] The `conj` tail is not "unrepresentable" —
-  most of it is rule-handled.** The 70 previously counted as unrepresentable split
-  honestly into two populations once `ingest` consults `CCGRules.isCoordinator`:
-  **40 are handled by the coordination rule** (bare `conj` ×33, coordinating comma
-  ×6, semicolon ×1) — no monomorphic lexical type, but `CCGRules.combine` genuinely
-  parses them via the two-step rule (`conj X => X[conj]`, then `X X[conj] => X`;
-  tested), so a new `RuleHandled "coordination"` outcome records "handled
-  structurally, not lexically" rather than miscounting it as "cannot represent"
-  (7.5% of tokens). The remaining **30 are genuinely unrepresentable**: conj-
-  *function* categories (`conj/conj`, `conj\conj`, and three complex ones) that
-  would need a `conj` category/schema, plus true punctuation (`.` `:` LRB RRB) with
-  no rule. Remaining, therefore, narrowed: a schematic/polymorphic `conj` category
-  for the conj-function tail, punctuation absorption, and — for faithful
-  (non-skeleton) meanings — the LLM-proposed path with its own provenance.
-- **[Layer 1/2] Done: type-changing rule class, measured train/test** as a
-  learnable inventory (`CCGTypeChange`, `ccg-typechange-coverage`; 0.01%
-  held-out residue).
-- **[Layer 1/2 — resolved, this session] Combinators + type-change folded into one
-  whole-sentence parser.** `CCGParse` runs a CKY chart over a real sentence's gold
-  supertags, folding `CCGRules.combine` (application, composition, coordination,
-  punctuation) with the learned type-change inventory (unary + binary) into one
-  parse path, and asks whether the grammar derives a category unifying with the gold
-  root. `ccg-parse-coverage` induces the type-change rules from a disjoint train
-  split (every 5th tree is test) so they are not fit to the scored sentences.
-  **[measured]** on 40 files of section 00: **105/106 sentences (≤40 words) parse to
-  the gold root = 99.1%.** Scope stated honestly: this is the *combination* half of
-  parsing (supertagging + combination) given gold supertags — it isolates the
-  combinatory question from lexical ambiguity, and is neither the local gold-pair
-  coverage `ccg-grammar-coverage` measures nor the gold-tree reconstruction
-  `ccg-reconstruct` needs. **[perf, honest]** the per-cell category-set cap bounds
-  the correctness-relevant blow-up, but a 40-word sentence still builds a large
-  chart with heavy composition ambiguity, so run the tool in section-sized batches
-  (~40 files); a single very long sentence can dominate runtime.
-- **[Layer 1/2 — resolved, this session] From-words parsing via a supertagger.**
-  `CCGSupertag` is a frequency/unigram supertagger (the standard lexical baseline,
-  labelled as such): per word it offers its top-k attested categories, most-frequent
-  first, with unigram backoff for OOV, trained on the train split only (leakage-free).
-  `chartParseMulti` generalises the CKY to a candidate *set* per word (gold-supertag
-  parsing is the singleton case). `ccg-supertag-parse` reports the numbers kept
-  distinct: **[measured]** on 40 files of section 00 (train 444, k=4, ≤25 words):
-  per-word **oracle inclusion 85.1%** (the tagger offers the gold tag — the ceiling),
-  2.44 tags/word, **OOV 16.3%** (inflated by the tiny train set; drops with the full
-  train sections), and **70.1% of sentences reach the gold root category from raw
-  words.** Stated honestly: reaching the correct root category is weaker than
-  reconstructing the exact gold derivation (bounded by the 7.5% sentence-level oracle
-  here), and the two are never conflated. Remaining: a runtime beam / packed forest
-  for the long-sentence cost; a stronger (feature/neural) supertagger to raise the
-  oracle ceiling and cut ambiguity; and whether type-raising should be a generalising
-  combinator rather than a memorised unary rule.
-- **[Layer 2] Done: `.auto` derivation parser + reconstruction** (`CCGDeriv`,
-  `ccg-reconstruct`, ~96% of real sentences). Remaining: use the reconstructed
-  sentences as an actual test-case *fixture* feeding the DRT/SDRT stages, to hit
-  the two known-unreachable properties a 9-case fixture can't produce.
-- **[Layer 3] Statistical suite now complete end-to-end.** Built and wired:
-  walk-forward/OOS, **both** nulls (sign-flip + random-timing, the latter now in
-  the live certificate), regime-conditional evaluation, the single-signal
-  certificate, **run-level Benjamini-Hochberg** (`apply_run_fdr`), calibration
-  (`calibration.py`), and the **export boundary** (`export_boundary.py`, gated on
-  full validation). `strategy-core` emits the returns series + attribution and runs
-  it all per backtest. Remaining (smaller): a deterministic prefilter to narrow a
-  large candidate space before the per-signal gates, and wiring `apply_run_fdr`
-  into the multi-hypothesis run loop (the primitive + post-processor exist; the
-  batch runner call site doesn't yet).
-- **[Layer 4] Now unblockable via the Layer 3 suite, once returns flow.** The
-  externally-checked fix (fit the corroboration/novelty combination against
-  held-out oracle outcomes) needs oracle-checked outcomes; the validation suite +
-  its `ValidationCertificate` is the mechanism that produces them, once
-  `strategy-core` emits returns. Still do **not** add fixed corroboration/novelty
-  weights in the interim — that remains the trap. When revisiting, check whether
-  the same fitted combination answers Layer 5 (graph-trust).
-- **[Layer 5/7/8] Untouched.** Graph-trust, news-attribution logging, and the
-  entropy/calibration metric were not opened. Per the handoff, Layer 5 likely
-  shares Layer 4's solution; Layer 7's calibration likely shares Layer 3's build.
-  Recorded as genuinely open, not assumed.
+Concise list of what is *actually* open. Resolved work lives in the Layer sections
+above; this section was pruned of the duplicated "done" write-ups it had accreted.
+
+- **[corpus] Grow it, balanced.** Still 5 records; `confound_check` correctly returns
+  NOT READY (needs ≥3 per bucket and format/length are confounded). Needs *inconsistent*
+  sources and *videos* (transcript tooling), not padding. Blocked on source material,
+  not code. The new research/PDF tools make dated, checkable sources (trials, journals)
+  a realistic way to grow it.
+- **[ingestion] Polymorphic `conj` function tail + punctuation.** 30 entries remain
+  genuinely unrepresentable: `conj/conj` etc. need a schematic/polymorphic `conj`
+  category; `.` `:` LRB RRB need a punctuation-absorption rule. Open design question:
+  should type-raising be a generalising combinator rather than a memorised unary rule.
+- **[parser] Scale + a stronger supertagger.** From-words parsing works (~70–87%
+  parse-to-gold-root; larger training + β-beam help) but is heavy on long sentences —
+  wants a runtime beam / packed forest. The frequency supertagger is the lexical
+  baseline; a feature/neural tagger would raise the oracle ceiling and cut ambiguity.
+- **[brain] Corpus-size-limited.** Trust-imputation is honestly *not licensed* on the
+  full field (57%→ now fewer unchecked, but still) until more external checks land;
+  the learning curve shows it improves as they do. Feed it more verdicts (frontier-
+  driven) rather than tune it.
+- **[temporal] Steps 3–5 of `TEMPORAL.md`.** As-of retrieval + stamps are done (steps
+  1–2); one source date externally verified (step 3, partial). Remaining: walk-forward
+  (temporal-split) `calibrate`; `event_time` on the dated claims; the event-study
+  driver (align `knowable_time` → forward price windows through the *existing* oracle
+  nulls + FDR); then the medical-timeline ↔ market use case end to end.
+- **[meaning] LLM-proposed meaning path with provenance.** The skeleton meanings are
+  honestly not faithful predicate-argument semantics; a provenance-tagged
+  `LLMProposed` path is still future.
+- **[fixture] Reconstructed AUTO sentences as a DRT/SDRT test fixture** — feed real
+  parsed sentences into the discourse stages to hit properties the 9-case fragment
+  cannot produce.
+- **[Layer 8] News-attribution logging / entropy-reduction metric** — noted in the
+  handoff, shares Layer 3's calibration build; not yet opened.
