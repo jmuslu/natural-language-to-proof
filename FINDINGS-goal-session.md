@@ -925,5 +925,15 @@ above; this section was pruned of the duplicated "done" write-ups it had accrete
   (b) an actual LLM-proposed `Term` tagged `LLMProposed`, gated by `typeOf`. Both are
   the genuinely-hard faithful-semantics frontier the handoff flags as not
   mechanically derivable; neither should be faked.
+  - **[done, this session] Sub-path (a) built.** `CCGLexicon.templateSkeletonFor`
+    gives real predicate-argument meanings for the common content-word shapes — noun
+    `λx.w(x)`, proper NP `λP.P(w)`, intransitive `λQ.Q(λx.w(x))`, transitive
+    `λQo Qs.Qs(λx.Qo(λy.w(x,y)))` (GQ args, since `catTy NP = tyGQ`), intersective
+    adjective `λP x.w(x)∧P(x)` — with an opaque fallback for every other category. Each
+    inhabits exactly `catTy cat` (checked). Explicitly **stipulated**, not faithful,
+    and **additive** (ingestion still uses opaque `skeletonFor`; templates are opt-in).
+    The DRT fixture is now **unblocked**: remaining step is to run reconstructed
+    sentences with template meanings through `toDRS` and assert non-degenerate
+    referents/conditions. Sub-path (b) (LLM-proposed `Term`) still future.
 - **[Layer 8] News-attribution logging / entropy-reduction metric** — noted in the
   handoff, shares Layer 3's calibration build; not yet opened.

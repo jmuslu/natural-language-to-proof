@@ -15,7 +15,7 @@ import Data.List (isInfixOf)
 import qualified Data.Set as Set
 
 import Harness
-import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>), Term(Con))
+import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>), Term(..), typeOf)
 import NL2Proof.Syntax.Category (Cat(..), catTy, catUnify)
 import NL2Proof.Syntax.CCG (Sign(..), fwdApp)
 import NL2Proof.Syntax.Lexicon (Entry(entryGloss))
@@ -33,7 +33,7 @@ main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
    ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks ++ tcChecks
-   ++ sentenceParseChecks ++ supertagChecks ++ lexChecks)
+   ++ sentenceParseChecks ++ supertagChecks ++ templateChecks ++ lexChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -375,6 +375,34 @@ supertagChecks =
     tm = buildTagModel
       [ ("the", pc "NP/N"), ("the", pc "NP/N"), ("the", pc "NP[nb]/N")
       , ("dog", pc "N"), ("dog", pc "N"), ("barks", pc "S[dcl]\\NP") ]
+
+-- | Canonical Montague templates (CCGLexicon.templateSkeletonFor): each templated
+-- shape inhabits exactly catTy (so it composes like any entry), carries real
+-- predicate-argument structure (not an opaque constant), and untemplated shapes fall
+-- back honestly. This is what makes reconstructed sentences DRT-connectable.
+templateChecks :: [Check]
+templateChecks =
+  [ wellTyped "noun N" N
+  , wellTyped "proper NP" NP
+  , wellTyped "intransitive S\\NP" (S :\ NP)
+  , wellTyped "transitive (S\\NP)/NP" ((S :\ NP) :/ NP)
+  , wellTyped "adjective N/N" (N :/ N)
+  , wellTyped "adjective N\\N" (N :\ N)
+  , expect "templated shapes have lambda structure, not an opaque constant"
+      (all (isLam . templateSkeletonFor "w") [N, NP, S :\ NP, (S :\ NP) :/ NP, N :/ N])
+  , expect "an untemplated shape (PP) falls back to the opaque constant"
+      (case templateSkeletonFor "w" PP of Con _ _ -> True; _ -> False)
+  , expect "features are erased for selection (S[dcl]\\NP[nb] -> intransitive template)"
+      (isLam (templateSkeletonFor "w" (Feature "dcl" S :\ Feature "nb" NP)))
+  , expect "the transitive template differs from the opaque skeleton"
+      (templateSkeletonFor "reads" ((S :\ NP) :/ NP)
+        /= skeletonFor "reads" ((S :\ NP) :/ NP))
+  ]
+  where
+    wellTyped name cat = expect (name ++ " template inhabits catTy")
+      (typeOf [] (templateSkeletonFor "w" cat) == Right (catTy cat))
+    isLam (Lam {}) = True
+    isLam _        = False
 
 lexChecks :: [Check]
 lexChecks =

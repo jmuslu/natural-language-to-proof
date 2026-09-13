@@ -25,6 +25,7 @@ module NL2Proof.Syntax.CCGLexicon
   ( Provenance(..)
   , ProvEntry(..)
   , skeletonFor
+  , templateSkeletonFor
   , corpusEntry
   , peToEntry
   , skeletonWellTyped
@@ -34,8 +35,10 @@ module NL2Proof.Syntax.CCGLexicon
 
 import Data.List (nub)
 
-import NL2Proof.Semantics.Lambda (Term(Con), typeOf)
-import NL2Proof.Syntax.Category (Cat, catTy)
+import NL2Proof.Semantics.Lambda
+  ( Term(..), Ty(TyE, TyT), (~>), tyPred1, tyGQ, entity, pred1, typeOf )
+import NL2Proof.Syntax.Category
+  ( Cat(S, NP, N, Feature, (:/), (:\)), catTy )
 import NL2Proof.Syntax.Lexicon (Entry(..))
 import NL2Proof.Syntax.CCGBank (parseCCGCat, ccatToCat, atomsOf)
 import NL2Proof.Syntax.CCGRules (isCoordinator)
@@ -70,6 +73,54 @@ data ProvEntry = ProvEntry
 -- what the word means.
 skeletonFor :: String -> Cat -> Term
 skeletonFor word cat = Con word (catTy cat)
+
+-- | A /richer/ canonical meaning for the common content-word category shapes: a
+-- first-order Montague template with actual predicate-argument structure, rather
+-- than the opaque constant 'skeletonFor' produces.
+--
+-- This is a __stipulated default, not a faithful meaning__ (the same honesty caveat
+-- as 'skeletonFor', TRACE S2): it assumes the standard intersective / neo-Montague
+-- reading, which is right for a plain transitive verb or intersective adjective and
+-- wrong for many real words. It exists so the DRT/SDRT stages can be exercised on
+-- reconstructed sentences: 'toDRS' consumes a 'Term', and an opaque constant yields a
+-- degenerate DRS with no variables or predicates for anaphora/accessibility to act
+-- on, whereas these templates yield real discourse referents and conditions. It does
+-- NOT replace 'skeletonFor' -- ingestion still uses the opaque skeleton by default;
+-- this is opt-in for the meaning/DRT experiment. Only the common shapes are templated
+-- (noun, proper NP, intransitive/transitive verb, intersective adjective); every
+-- other category falls back to the opaque constant, honestly untemplated.
+--
+-- Recall @catTy NP == tyGQ@, so arguments are generalized quantifiers and the verb
+-- templates quantify in; each template inhabits exactly @catTy cat@ (checked in the
+-- suite), so it composes under the parser like any other entry.
+templateSkeletonFor :: String -> Cat -> Term
+templateSkeletonFor w cat = case eraseFeat cat of
+  N                 -> Lam "x" TyE (App (pred1 w) (Var "x"))                 -- λx. w(x)
+  NP                -> Lam "p" tyPred1 (App (Var "p") (entity w))            -- λP. P(w)
+  (S :\ NP)         -> Lam "q" tyGQ (App (Var "q") (pred1 w))               -- λQ. Q(λx. w(x))
+  ((S :\ NP) :/ NP) -> transitive                                            -- λQo Qs. Qs(λx. Qo(λy. w(x,y)))
+  (N :/ N)          -> adjective                                             -- λP x. w(x) ∧ P(x)
+  (N :\ N)          -> adjective
+  _                 -> skeletonFor w cat                                     -- honest fallback
+  where
+    transitive =
+      Lam "qo" tyGQ (Lam "qs" tyGQ
+        (App (Var "qs")
+          (Lam "x" TyE
+            (App (Var "qo")
+              (Lam "y" TyE
+                (App (App (Con w (TyE ~> TyE ~> TyT)) (Var "x")) (Var "y")))))))
+    adjective =
+      Lam "p" tyPred1 (Lam "x" TyE
+        (TAnd (App (pred1 w) (Var "x")) (App (Var "p") (Var "x"))))
+
+-- | Erase all feature wrappers so template selection matches on the bare shape
+-- (@catTy@ already erases features, so the template's type is unaffected).
+eraseFeat :: Cat -> Cat
+eraseFeat (Feature _ c) = eraseFeat c
+eraseFeat (a :/ b)      = eraseFeat a :/ eraseFeat b
+eraseFeat (a :\ b)      = eraseFeat a :\ eraseFeat b
+eraseFeat c             = c
 
 -- | Build a corpus-attested provenance entry for a @(word, category)@ pair.
 corpusEntry :: String -> Cat -> String -> ProvEntry
