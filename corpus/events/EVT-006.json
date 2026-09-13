@@ -1,0 +1,28 @@
+{
+  "event_id": "EVT-006",
+  "description": "Eli Lilly announced topline SURMOUNT-1 (Phase 3) results: tirzepatide achieved up to 22.5% weight loss at 72 weeks vs placebo in adults with obesity/overweight without diabetes, meeting co-primary endpoints.",
+  "source": {
+    "registry": "company press release",
+    "id": "SURMOUNT-1 (NCT04184622)",
+    "url": "https://investor.lilly.com/news-releases/news-release-details/lillys-tirzepatide-delivered-225-weight-loss-adults-obesity-or",
+    "verified": "Lilly investor press release + PRNewswire, verified 2026-09-13"
+  },
+  "sponsor": "Eli Lilly and Company",
+  "ticker": "LLY",
+  "event_type": "phase3_topline_positive",
+  "event_time": "2022-04-28",
+  "event_time_source": "SURMOUNT-1 topline results (the reported readout)",
+  "knowable_time": "2022-04-28",
+  "knowable_time_source": "Lilly topline press release 2022-04-28 (the disclosure). Verified 2026-09-13.",
+  "note_on_stamps": "A topline announcement: the reported result and its disclosure coincide (event_time == knowable_time).",
+  "outcome": {
+    "trial_result": "positive",
+    "note": "Met co-primary endpoints (up to 22.5% weight loss). The trial result, not a claim about the stock reaction."
+  },
+  "evidence_basis": "public_reference",
+  "provenance": {
+    "structure_source": "agent",
+    "fetched_via": "web (investor.lilly.com, prnewswire.com) via agent tools",
+    "fetched_at": "2026-09-13"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "event_id": "EVT-007",
+  "description": "Novo Nordisk announced topline SELECT (Phase 3 cardiovascular outcomes) results: semaglutide 2.4 mg reduced major adverse cardiovascular events (MACE) by 20% vs placebo in adults with overweight/obesity and established CVD, no prior diabetes (17,604 participants).",
+  "source": {
+    "registry": "company announcement",
+    "id": "SELECT (NCT03574597)",
+    "url": "https://www.novonordisk.com/news-and-media/news-and-ir-materials/news-details.html?id=166301",
+    "verified": "Novo Nordisk company announcement + GlobeNewswire, verified 2026-09-13"
+  },
+  "sponsor": "Novo Nordisk A/S",
+  "ticker": "NVO",
+  "event_type": "phase3_topline_positive",
+  "event_time": "2023-08-08",
+  "event_time_source": "SELECT topline results (the reported readout)",
+  "knowable_time": "2023-08-08",
+  "knowable_time_source": "Novo Nordisk topline company announcement 2023-08-08 (the disclosure). Verified 2026-09-13.",
+  "note_on_stamps": "Topline announcement: event_time == knowable_time.",
+  "outcome": {
+    "trial_result": "positive",
+    "note": "Met primary endpoint (20% MACE reduction). The trial result, not a claim about the stock reaction."
+  },
+  "evidence_basis": "public_reference",
+  "provenance": {
+    "structure_source": "agent",
+    "fetched_via": "web (novonordisk.com, globenewswire.com) via agent tools",
+    "fetched_at": "2026-09-13"
+  }
+}
