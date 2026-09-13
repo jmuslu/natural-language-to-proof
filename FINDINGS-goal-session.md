@@ -932,8 +932,16 @@ above; this section was pruned of the duplicated "done" write-ups it had accrete
     adjective `λP x.w(x)∧P(x)` — with an opaque fallback for every other category. Each
     inhabits exactly `catTy cat` (checked). Explicitly **stipulated**, not faithful,
     and **additive** (ingestion still uses opaque `skeletonFor`; templates are opt-in).
-    The DRT fixture is now **unblocked**: remaining step is to run reconstructed
-    sentences with template meanings through `toDRS` and assert non-degenerate
-    referents/conditions. Sub-path (b) (LLM-proposed `Term`) still future.
+    An indefinite **determiner** template was added (`NP/N -> λP Q. ∃x. P(x) ∧ Q(x)`),
+    which is what introduces discourse referents.
+  - **[done, this session] DRT fixture demonstrated.** "a dog barks" composed from
+    templates (det + noun + intransitive verb) normalizes to `∃x. dog(x) ∧ barks(x)`
+    and `toDRS` yields a non-degenerate DRS — a universe with a discourse referent and
+    two predicate conditions (`CCGBankSpec` drtChecks). The opaque skeleton cannot do
+    this (no `∃`, no variables). So the template→parse→DRS path is proven end-to-end at
+    the unit level; the remaining scale-up is wiring a full CCGbank lexicon *built with
+    templates* into the parser so *reconstructed* sentences flow into the discourse
+    stages (and can hit the SDRT/accessibility properties the 9-case fragment can't).
+    Sub-path (b) (LLM-proposed `Term`) still future.
 - **[Layer 8] News-attribution logging / entropy-reduction metric** — noted in the
   handoff, shares Layer 3's calibration build; not yet opened.

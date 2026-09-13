@@ -101,6 +101,7 @@ templateSkeletonFor w cat = case eraseFeat cat of
   ((S :\ NP) :/ NP) -> transitive                                            -- λQo Qs. Qs(λx. Qo(λy. w(x,y)))
   (N :/ N)          -> adjective                                             -- λP x. w(x) ∧ P(x)
   (N :\ N)          -> adjective
+  (NP :/ N)         -> determiner                                            -- λP Q. ∃x. P(x) ∧ Q(x)  (indefinite default)
   _                 -> skeletonFor w cat                                     -- honest fallback
   where
     transitive =
@@ -113,6 +114,13 @@ templateSkeletonFor w cat = case eraseFeat cat of
     adjective =
       Lam "p" tyPred1 (Lam "x" TyE
         (TAnd (App (pred1 w) (Var "x")) (App (Var "p") (Var "x"))))
+    -- indefinite default for a determiner NP/N: introduces a discourse referent, so
+    -- composed sentences yield DRSs with real universes (what DRT needs). Definites /
+    -- universals differ; templating every NP/N as indefinite is the stipulation.
+    determiner =
+      Lam "p" tyPred1 (Lam "q" tyPred1
+        (TExists "x" TyE
+          (TAnd (App (Var "p") (Var "x")) (App (Var "q") (Var "x")))))
 
 -- | Erase all feature wrappers so template selection matches on the bare shape
 -- (@catTy@ already erases features, so the template's type is unaffected).

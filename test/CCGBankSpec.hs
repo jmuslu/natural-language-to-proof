@@ -15,7 +15,11 @@ import Data.List (isInfixOf)
 import qualified Data.Set as Set
 
 import Harness
-import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>), Term(..), typeOf)
+import qualified Data.Map as M
+
+import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>), Term(..), typeOf, normalize)
+import NL2Proof.DRT.Build (toDRS)
+import NL2Proof.DRT.Types (DRS(..))
 import NL2Proof.Syntax.Category (Cat(..), catTy, catUnify)
 import NL2Proof.Syntax.CCG (Sign(..), fwdApp)
 import NL2Proof.Syntax.Lexicon (Entry(entryGloss))
@@ -33,7 +37,8 @@ main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
    ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks ++ tcChecks
-   ++ sentenceParseChecks ++ supertagChecks ++ templateChecks ++ lexChecks)
+   ++ sentenceParseChecks ++ supertagChecks ++ templateChecks ++ drtChecks
+   ++ lexChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -403,6 +408,32 @@ templateChecks =
       (typeOf [] (templateSkeletonFor "w" cat) == Right (catTy cat))
     isLam (Lam {}) = True
     isLam _        = False
+
+-- | The DRT-fixture unblock, demonstrated: template meanings compose into a
+-- non-degenerate DRS. "a dog barks" -> (indefinite det) a + (noun) dog + (intransitive)
+-- barks -> normalize -> ∃x. dog(x) ∧ barks(x) -> toDRS yields a universe with a
+-- discourse referent and two predicate conditions. The opaque skeleton could not do
+-- this (no ∃, no variable structure). This is what makes real reconstructed sentences
+-- DRT-connectable.
+drtChecks :: [Check]
+drtChecks =
+  [ expect "indefinite determiner template (NP/N) inhabits catTy"
+      (typeOf [] det == Right (catTy (NP :/ N)))
+  , expect "'a dog barks' composes to a proposition (type t)"
+      (typeOf [] sentence == Right TyT)
+  , expect "its DRS has a discourse referent (non-degenerate universe)"
+      (not (null (drsUniverse drs)))
+  , expect "its DRS has >= 2 predicate conditions (dog, barks)"
+      (length (drsConds drs) >= 2)
+  ]
+  where
+    det      = templateSkeletonFor "a" (NP :/ N)
+    dog      = templateSkeletonFor "dog" N
+    barks    = templateSkeletonFor "barks" (S :\ NP)
+    -- "a" (NP/N) forward-applies to "dog" (N) -> NP; "barks" (S\NP) backward-applies to it
+    sentence = normalize (App barks (App det dog))
+    fb       = ProvLex (SourceId "fixture") (Span 0 0) ""
+    drs      = toDRS M.empty fb sentence
 
 lexChecks :: [Check]
 lexChecks =
