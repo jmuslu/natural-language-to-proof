@@ -1515,6 +1515,20 @@ chain of 50, same shape
 > Layers 4/7/8). `rwScore` is retained but is one blind scalarization among the
 > coordinates, not "the reward".
 
+> **P13.13 [measured]** That external fitness function is no longer only deferred
+> to — it is realised and measured, in the fact brain (`corpus/brain*.py`, Layer
+> 10). Trust from the epistemic graph is embedded into a vector store and the
+> manifold is graded exactly as this section demands: leave-one-out prediction vs a
+> mean-trust null, never internal coherence. The measured verdict is a **null**,
+> and an informative one — semantic proximity does not predict trust
+> (`corr(sim,|Δtrust|) = −0.035`), because trust is earned per-claim by external
+> check, so the brain refuses to impute it from topic. This is the same exclusion
+> P13.12's table makes (internal consistency measures self-agreement), now observed
+> on real data rather than argued. What *does* hold: on the externally-checked
+> subset a weak real signal appears and a learning curve shows it strengthening as
+> checks accumulate — i.e. the fitness function improves as the oracle feeds it,
+> which is the loop this document has been describing, closed.
+
 ### Analysis: the two admissible sources, and why only two
 
 Reward may come from oracle confirmation, or from mechanical entailment over an

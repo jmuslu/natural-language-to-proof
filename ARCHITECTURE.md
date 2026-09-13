@@ -1079,7 +1079,8 @@ must be able to send it to zero rather than merely low.
 
 What has been built across recent sessions can look like scope drift — CCGbank
 lexicon growth, an adversarial news/article corpus, a trading-strategy validation
-suite, an epistemic graph. It is one system, held together by the single
+suite, an epistemic graph, a vector brain over the facts. It is one system, held
+together by the single
 throughline this document opens with: *nothing internal to the system counts as
 evidence; only an external check does.* Each piece is that rule at a different
 altitude, and the pieces are wired to each other by **provenance** and by
@@ -1113,6 +1114,17 @@ altitude, and the pieces are wired to each other by **provenance** and by
   propagates to the claims a strategy leaned on, via `attribution.claim_refs`, the
   same reverse shape as `Genealogy`'s retraction propagation). A single outcome is
   weak; confidence accrues by calibration over many.
+- **The brain (Layer 10).** `corpus/brain*.py` embeds the graph's claims into a
+  **libSQL vector store** (the Rust fork of SQLite, native vector search) so the
+  facts become retrievable and *explorable by meaning*. The discipline is one
+  separation: embeddings position facts, they never create trust — trust is copied
+  verbatim from the graph. It grades itself the way this document demands
+  (`calibrate`: leave-one-out vs a mean null, not internal coherence) and reports
+  an honest null — trust is not semantically smooth, so it refuses to impute it —
+  while a learning curve shows synthetic inference strengthening as external checks
+  accumulate. Its outputs (retrieval, `explore_frontier`, `bridge_hypotheses`,
+  `answer`) are proposals for the next external check; the frontier feeds new
+  hypotheses back to the top of the loop.
 
 The end-to-end feedback loop, stated once: a claim (corpus) → cited by a
 hypothesis (`claim_refs`, proposed by retrieval, author-confirmable) → a strategy
@@ -1125,7 +1137,7 @@ previously-ungated agent-output path is traceable into the graph that verifies i
 Remaining open pieces are named in `FINDINGS-goal-session.md` (e.g. the
 `conj`/punctuation type-system limit, growing the corpus toward balance). Every
 edge in that loop either is an external check or carries provenance to one —
-which is the whole point, and why the pieces are one system rather than four.
+which is the whole point, and why the pieces are one system rather than five.
 
 ## Non-goals / guardrails
 

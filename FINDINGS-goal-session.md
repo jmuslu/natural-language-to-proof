@@ -776,6 +776,59 @@ against the handoff and brought up to its requirements.
   are now the *same solved shape*: a weight-free structure (frontier / graph)
   whose parameters are chosen by external calibration, not internal metric.
 
+## Layer 10 — the fact brain (retrieval + exploration over the trust field)
+
+The goal named the missing piece: ingestion → oracle → a "brain within the facts
+that makes retrieval and furthermore exploration possible … a synthetic sort of
+artificial inference." Built as `corpus/brain*.py`, a **libSQL vector store** (the
+Rust fork of SQLite, native `F32_BLOB` / `vector_distance_cos` / DiskANN
+`vector_top_k`) over the epistemic graph. The owner's steer — "add a vector
+database … rust forks of sqlite" — pointed straight at it.
+
+- **[structural] One separation carries the discipline: embeddings position facts,
+  they never create trust.** Each claim becomes a node — text embedded to a unit
+  vector (model2vec `potion-base-8M`, 256-d, deterministic; a hashing fallback
+  keeps it offline-functional) plus its trust copied **verbatim** from `graph.json`.
+  The brain reads the externally-anchored trust field; it never writes to it. So it
+  can *propose* (retrieval, inference, exploration) while external checks *dispose*.
+- **[measured] Naive trust-imputation is NOT licensed on this corpus — and the
+  brain says so itself.** `calibrate()` does leave-one-out prediction of a claim's
+  trust from its semantic neighbours, graded against the graph's real trust vs a
+  mean-trust null at a pre-registered `k=round(√n)` (the same skill-vs-null shape as
+  the Layer 3 oracle). Result: skill ≈ 0.02, pearson ≈ 0.10 — within noise.
+  `corr(sim, |Δtrust|) = −0.035`: **trust is not semantically smooth**, because it
+  is earned per-claim by external check, and 57% of claims are unchecked (trust 0).
+  The brain therefore refuses to impute trust from topic. This is the discipline
+  working, not a defect — the same refusal shape as P13.12's excluded signals.
+- **[measured] But the field carries real signal where it is checked, and densifies
+  toward licensed.** Restricted to the 23 checked claims: skill 0.15, pearson 0.24,
+  sign-agreement 0.91. `learning_curve()` (real trust only, nothing fabricated)
+  shows interpolation skill rising monotonically +0.04 → +0.16 as the known set
+  grows 5 → 20. So accumulating external checks — the frontier `explore_frontier`
+  proposes — progressively licenses synthetic inference. This is the concrete
+  instance of the "external fitness function" P13.12 defers the reward-frontier
+  choice to: calibration against oracle-checked outcomes, now running on the brain.
+- **[structural] Directed exploration = the actionable output.** `explore_frontier
+  --mode gaps` ranks unchecked-but-central claims (highest-leverage next checks),
+  `--mode contested` ranks checked claims whose neighbours disagree, and
+  `bridge_hypotheses` proposes syntheses between two trusted claims in *different*
+  domains at mid semantic distance (e.g. mark-to-market loss ↔ tax realization).
+  All proposals for an external check, never verdicts.
+- **[structural] `answer` is the capstone (retrieval + inference + exploration).**
+  For a question it reports a stance = similarity-weighted trust of the *checked*
+  relevant facts only, gated by query-local licensing (≥2 checked AND ≥60% of
+  relevant facts checked), cites every fact with its trust, and proposes the one
+  external check that would most resolve the question. On a 43%-checked corpus most
+  questions honestly return `insufficiently_checked` — which makes the proposed
+  next-check the payoff, and is the honest refusal to overclaim.
+- **[checked] Wired as one operational loop.** `pipeline.py` runs the whole chain
+  as real invocations: Haskell CCGbank ingest (now a `--json` artifact handoff;
+  83,468 well-typed skeletons, 0 ill-typed) → graph → brain build+calibrate →
+  retrieve/explore/answer → the oracle loop-closure. `brain_test.py` = 109 offline
+  checks (trust copied verbatim, retrieval/neighbour/bridge/answer contracts, the
+  licensing gate, reproducibility). `brain_map.py` renders it as an interactive
+  semantic-trust map. Both repos' suites green; agentic-qr validation 36/36.
+
 ## Open items, by layer (for the next pass)
 
 - **[Layer 5/7 — loop closed, incl. the upstream half (Thread 1)] `claim_refs`

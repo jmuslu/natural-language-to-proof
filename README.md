@@ -520,3 +520,13 @@ data + structure only: an agent decomposes claims and tracks confounds, but neve
 decides a claim's factual consistency (every verdict slot is null, filled by the
 owner or an external reference). See `corpus/README.md`. Raw transcripts stay
 outside the repo at `~/corpus/raw/`, the same way CCGbank does.
+
+The corpus now also carries a **fact brain** (`corpus/brain*.py`): a libSQL vector
+store (the Rust fork of SQLite, native vector search) that embeds the epistemic
+graph's claims so they are retrievable and *explorable by meaning*. Embeddings
+position facts; trust is copied verbatim from the graph (external checks only). It
+supports semantic retrieval, directed exploration (`explore_frontier`,
+`bridge_hypotheses`), query-driven synthesis (`answer`), and grades itself against
+the graph's real trust (`calibrate` — honestly returning *not licensed* to impute
+trust from topic on the current corpus). `corpus/pipeline.py` runs the whole chain
+end-to-end (Haskell ingest → graph → brain → retrieve/explore → oracle loop).
