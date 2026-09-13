@@ -64,6 +64,16 @@ def main():
     schema = _schema()
     events = load_events()
     errs = validate(events, schema)
+    if "--export" in sys.argv:
+        # flat list for cross-repo consumption by the oracle's event-study driver
+        out = sys.argv[sys.argv.index("--export") + 1]
+        assert not errs, f"refusing to export an invalid store: {errs}"
+        with open(out, "w") as fh:
+            json.dump({"note": "Dated events for the event study; every date externally "
+                               "attested. Consumed by agentic-qr run_event_study.",
+                       "count": len(events), "events": events}, fh, indent=2)
+        print(f"exported {len(events)} events -> {out}")
+        return
     if "--selftest" in sys.argv:
         assert not errs, f"validation errors: {errs}"
         assert events, "no events to test"
