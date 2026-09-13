@@ -1,0 +1,28 @@
+{
+  "event_id": "EVT-001",
+  "description": "KEYNOTE-042 (Phase 3): pembrolizumab monotherapy vs platinum chemotherapy met its primary overall-survival endpoint as first-line therapy in PD-L1-positive (TPS >= 1%) advanced/metastatic NSCLC.",
+  "source": {
+    "registry": "ClinicalTrials.gov",
+    "id": "NCT02220894",
+    "url": "https://clinicaltrials.gov/study/NCT02220894",
+    "verified": "fetched via ClinicalTrials.gov 2026-09-13; has_results=true"
+  },
+  "sponsor": "Merck Sharp & Dohme LLC",
+  "ticker": "MRK",
+  "event_type": "phase3_topline_positive",
+  "event_time": "2018-09-04",
+  "event_time_source": "ClinicalTrials.gov primary_completion_date (registry milestone; data maturation)",
+  "knowable_time": "2018-04-09",
+  "knowable_time_source": "Merck press release 'KEYTRUDA Monotherapy Met Primary Endpoint in Phase 3 KEYNOTE-042', 2018-04-09 05:45 EDT (pre-market; actionable at that day's open). Verified from merck.com 2026-09-13.",
+  "note_on_stamps": "knowable_time (2018-04-09, interim topline disclosure) PRECEDES event_time (2018-09-04, registry primary completion) -- a real case of the two diverging. The event study must use knowable_time; using the completion date would understate what the market already knew.",
+  "outcome": {
+    "trial_result": "positive",
+    "note": "Met primary OS endpoint (interim analysis). Full data presented at ASCO, June 2018 (Lancet 2019). This is the trial's result, NOT a claim about the stock reaction."
+  },
+  "evidence_basis": "public_reference",
+  "provenance": {
+    "structure_source": "agent",
+    "fetched_via": "ClinicalTrials.gov + merck.com (agent tools)",
+    "fetched_at": "2026-09-13"
+  }
+}

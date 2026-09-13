@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "description": "Dated external events (clinical-trial readouts, approvals, filings, publications) for the temporal / event-study track. Each event carries the bitemporal stamps TEMPORAL.md requires, every date externally attested. This store is DISTINCT from the finance adversarial corpus (records/): it feeds the event-study driver (agentic-qr event_study.py), which aligns knowable_time to forward price windows under the no-lookahead discipline.",
+  "controlled_vocabularies": {
+    "event_type": [
+      "phase3_topline_positive",
+      "phase3_topline_negative",
+      "phase3_topline_mixed",
+      "regulatory_approval",
+      "regulatory_crl",
+      "trial_discontinuation",
+      "publication",
+      "filing"
+    ],
+    "evidence_basis": ["public_reference", "self_reported", "unquantifiable"],
+    "trial_result": ["positive", "negative", "mixed", "na"]
+  },
+  "fields": {
+    "event_id": "stable id, EVT-NNN",
+    "description": "one line: what happened",
+    "source": "{registry, id, url, verified} -- the attesting external source",
+    "sponsor": "organization",
+    "ticker": "public-company ticker whose price the event may move (nullable)",
+    "event_type": "controlled vocabulary above",
+    "event_time": "ISO date the underlying result held / registry milestone (with event_time_source)",
+    "knowable_time": "ISO date the event became MARKET-actionable (disclosure); the load-bearing stamp for as-of / no-lookahead. May PRECEDE event_time when an interim topline is disclosed before registry completion. (with knowable_time_source)",
+    "outcome": "{trial_result, note} -- the trial's own result, NOT a market claim",
+    "evidence_basis": "public_reference when dates are externally attested",
+    "provenance": "{structure_source: agent, fetched_via, fetched_at}"
+  },
+  "discipline": "The event study uses knowable_time, mapped to the next tradeable bar (a pre-market release like 05:45 EDT is actionable at that day's open). event_time and knowable_time are recorded separately and may differ; conflating them is the classic lookahead bug. No price data or market claim is asserted here -- only the externally-attested event and its timing."
+}

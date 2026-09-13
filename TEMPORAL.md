@@ -160,8 +160,17 @@ next event class to test, and its calibration must be walk-forward in time.
    move is removed by market adjustment). Across event classes, gate with the
    existing Benjamini-Hochberg. Still needs a real event set + price series to run
    live (the medical use case).
-5. Only then, the medical-timeline ↔ market use case end to end, with the as-of
-   discipline and the traps above enforced and logged.
+5. **[seeded]** the medical-timeline ↔ market use case end to end. A dated event
+   store now exists (`corpus/events/`, schema + `build_events.py`) with its first
+   real, externally-attested event: **EVT-001 = KEYNOTE-042** (Merck/MRK; pembrolizumab
+   met its primary OS endpoint). Its stamps were verified via the ClinicalTrials.gov
+   and Merck tools and illustrate the core point — `knowable_time` (2018-04-09, the
+   pre-market topline press release) *precedes* `event_time` (2018-09-04, the registry
+   primary completion), so an event study must use the disclosure date, not the
+   completion date. `build_events.py --selftest` proves the as-of filter enforces no
+   lookahead. What remains to close the loop live: a price series for the ticker, then
+   `event_study.align_to_next_bar(knowable_time) → forward window → nulls + FDR`, and
+   reverse-propagation of the certified result into the graph/brain.
 
 The through-line, unchanged: the system does not decide *when* something was true or
 knowable any more than it decides *whether* it is true — both come from external,

@@ -68,6 +68,10 @@ corpus/
   brain_manifest.json         committed calibration record (embedder, dim, skill)
   requirements-brain.txt      brain deps (libsql-experimental, numpy, model2vec)
   README.md                   this file
+  events/                     dated external-event store for the temporal /
+                              event-study track (event_schema.json, EVT-NNN.json,
+                              build_events.py) — bitemporal stamps, every date
+                              externally attested; DISTINCT from the finance records/
 ~/corpus/raw/                 raw full transcripts/articles — OUTSIDE the repo
 ```
 
