@@ -56,7 +56,7 @@ corpus/
   brain.py                    the fact brain: libSQL vector store + retrieval,
                               synthetic inference, calibration, directed exploration
   brain_build.py              (re)build brain.db + brain_manifest.json from the graph
-  brain_query.py              CLI: retrieve / infer / neighbors / explore / bridges
+  brain_query.py              CLI: retrieve / infer / neighbors / explore / bridges / answer
   brain_test.py               offline test suite for the brain (102 checks)
   pipeline.py                 end-to-end operational driver (ingest→graph→brain→
                               retrieve/explore→oracle), narrated
@@ -202,6 +202,18 @@ Four capabilities, and the honest limits the brain reports on itself:
   between two trusted claims in *different* domains at mid semantic distance (e.g.
   mark-to-market loss ↔ tax realization). Every output is a **proposal for an
   external check, never a verdict.**
+- **Query-driven synthesis** (`answer`) — the capstone that ties the three
+  together. For a question it retrieves the relevant facts (above a relevance
+  floor), splits them into supporting / cautioning / still-unchecked by their
+  external trust, and reports a stance that is the similarity-weighted trust of the
+  *checked* relevant facts **only** — a single fact or a relevant-but-unchecked
+  majority yields `insufficiently_checked`, not false confidence. It cites every
+  fact with its trust, states how well-checked this corner of the corpus is
+  (`checked_fraction`, a query-local calibration), and proposes the one external
+  check that would most resolve the question. On this 43%-checked corpus most
+  questions honestly land at `insufficiently_checked`, which is what makes the
+  proposed-next-check the real payoff. It never claims ground truth — only what the
+  externally-checked corpus implies.
 
 `brain_test.py` (102 checks, offline via the hashing embedder) is the external
 check on the brain *code*: trust copied verbatim, retrieval/neighbour/bridge

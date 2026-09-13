@@ -129,6 +129,15 @@ def stage_retrieve_explore(brain: Brain) -> dict:
         print(f"      {p['a_domain']} <-> {p['b_domain']} (sim {p['similarity']:.2f}):")
         print(f"        A: {p['a_text'][:60]}")
         print(f"        B: {p['b_text'][:60]}")
+    print("  synthesis (answer: retrieval + inference + exploration, cited & gated):")
+    for aq in ("can machine learning reliably beat the market?",
+               "is a paper loss a real loss even if I do not sell?"):
+        a = brain.answer(aq)
+        print(f"      Q: {aq}")
+        print(f"        stance: {a['stance']}  (checked {a['n_checked']}/{a['n_relevant']} "
+              f"relevant, licensed_locally={a['licensed_locally']})")
+        if a.get("proposed_next_check"):
+            print(f"        next external check -> {a['proposed_next_check']['text'][:56]}")
     print("  => every item above is a PROPOSAL for an external check, never a verdict.")
     return {"stage": "retrieve_explore", "status": "ok"}
 

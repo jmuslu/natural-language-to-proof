@@ -31,7 +31,7 @@ def _p(obj) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["retrieve", "infer", "neighbors", "explore",
-                                    "bridges", "stats"])
+                                    "bridges", "answer", "stats"])
     ap.add_argument("arg", nargs="?", default="")
     ap.add_argument("-k", type=int, default=5)
     ap.add_argument("--mode", choices=["all", "gaps", "contested"], default="all",
@@ -41,7 +41,7 @@ def main() -> None:
     ap.add_argument("--db", default=DB)
     args = ap.parse_args()
 
-    needs_embedder = args.cmd in ("retrieve", "infer")
+    needs_embedder = args.cmd in ("retrieve", "infer", "answer")
     brain = Brain.open(args.db, load_embedder=needs_embedder)
 
     if args.cmd == "retrieve":
@@ -57,6 +57,8 @@ def main() -> None:
         _p([{"id": f.id, "similarity": round(f.similarity, 4),
              "trust": round(f.trust, 4), "domain": f.domain, "text": f.text}
             for f in facts])
+    elif args.cmd == "answer":
+        _p(brain.answer(args.arg, k=max(args.k, 8)))
     elif args.cmd == "explore":
         _p(brain.explore_frontier(k=args.k, mode=args.mode))
     elif args.cmd == "bridges":

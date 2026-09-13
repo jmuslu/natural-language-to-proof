@@ -71,6 +71,29 @@ def main() -> None:
         check("imputation_licensed" in inf and "caveat" in inf, "inference missing caveat")
         check(isinstance(inf["predicted_trust"], float), "predicted_trust not float")
 
+        # --- answer: grounded synthesis obeys the discipline ---
+        ans = b.answer(meta[3]["text"], k=8)  # a claim's own text -> guaranteed matches
+        allowed = {"supported_by_checked_evidence", "contradicted_or_cautioned",
+                   "mixed_or_weak", "insufficiently_checked", "unknown_no_checked_evidence",
+                   "no_relevant_facts"}
+        check(ans["stance"] in allowed, f"bad stance {ans['stance']}")
+        check("caveat" in ans, "answer missing caveat")
+        if ans["stance"] != "no_relevant_facts":
+            check(all(f["trust"] > 0 for f in ans["supporting"]), "supporting not all trust>0")
+            check(all(f["trust"] < 0 for f in ans["cautioning"]), "cautioning not all trust<0")
+            check(all(f["trust"] == 0 for f in ans["unchecked_relevant"]), "unchecked not all 0")
+            cited = ans["supporting"] + ans["cautioning"] + ans["unchecked_relevant"]
+            check(all(f["similarity"] >= ans["min_sim"] for f in cited),
+                  "a cited fact is below the relevance floor")
+            if ans["licensed_locally"]:
+                check(ans["n_checked"] >= 2 and ans["checked_fraction"] >= 0.6,
+                      "licensed_locally without >=2 checked and majority")
+        # a query that matches nothing returns the honest empty stance
+        none_ans = b.answer("zzqx wuvt gibberish nonexistent token cluster", k=8)
+        check(none_ans["stance"] in ("no_relevant_facts", "unknown_no_checked_evidence",
+                                     "insufficiently_checked"),
+              f"nonsense query gave {none_ans['stance']}")
+
         # --- calibration: honest verdict + frac_unchecked matches the field ---
         cal = b.calibrate()
         exp_unchecked = round(float(np.mean(trusts == 0.0)), 4)

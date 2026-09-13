@@ -407,6 +407,88 @@ class Brain:
         pairs.sort(key=lambda d: -d["score"])
         return pairs[:k]
 
+    def answer(self, question: str, k: int = 8, min_sim: float = 0.25) -> dict:
+        """Query-driven synthesis: what do the EXTERNALLY-CHECKED facts say here?
+
+        The capstone that ties retrieval + inference + exploration together. It
+        retrieves the semantically relevant facts, drops those below `min_sim` (a
+        relevance gate so the stance is not driven by loosely-related facts; the
+        default suits the model2vec embedder's similarity scale), splits the rest by
+        external trust into supporting / cautioning / still-unchecked, and reports a
+        stance that is the similarity-weighted trust of the *checked* relevant facts
+        only. Crucially it never claims the answer is true: it reports what the
+        checked corpus supports, how well-checked this corner of the corpus is
+        (`checked_fraction` -- a query-local calibration), and the single external
+        check that would most resolve the question (the most central unchecked
+        relevant fact). Every element cites claim ids and trust. Proposal, not verdict.
+        """
+        retrieved = self.retrieve(question, k=k)  # by similarity
+        facts = [f for f in retrieved if f.similarity >= min_sim]
+        if not facts:
+            return {"question": question, "stance": "no_relevant_facts",
+                    "min_sim": min_sim, "n_retrieved": len(retrieved),
+                    "caveat": (f"nothing cleared the relevance floor ({min_sim}); "
+                               "the corpus has no sufficiently on-topic facts")}
+
+        def cite(f: "Fact") -> dict:
+            return {"id": f.id, "similarity": round(f.similarity, 4),
+                    "trust": round(f.trust, 4), "domain": f.domain, "text": f.text}
+
+        support = [f for f in facts if f.trust > 0]
+        caution = [f for f in facts if f.trust < 0]
+        unchecked = [f for f in facts if f.trust == 0.0]
+        checked = support + caution
+        checked_frac = round(len(checked) / len(facts), 4)
+
+        if checked:
+            wsum = sum(f.similarity for f in checked) or 1.0
+            stance_score = round(sum(f.similarity * f.trust for f in checked) / wsum, 4)
+        else:
+            stance_score = None
+
+        # query-local licensing: a stance is only meaningful if this corner of the
+        # corpus is actually checked. Mirror the global honesty at the query level.
+        # A single fact is not a body of evidence, and a large mass of relevant but
+        # UNCHECKED facts (which by discipline cannot drive the stance) means the
+        # question is genuinely under-checked -- so require >=2 checked facts AND a
+        # clear checked majority. On a 43%-checked corpus most questions land here,
+        # which is the honest state, and makes `proposed_next_check` the real payoff.
+        licensed_locally = bool(len(checked) >= 2 and checked_frac >= 0.6
+                                and stance_score is not None)
+        if stance_score is None:
+            stance = "unknown_no_checked_evidence"
+        elif not licensed_locally:
+            stance = "insufficiently_checked"
+        elif stance_score >= 0.3:
+            stance = "supported_by_checked_evidence"
+        elif stance_score <= -0.3:
+            stance = "contradicted_or_cautioned"
+        else:
+            stance = "mixed_or_weak"
+
+        # the most informative next external check for THIS question: the most
+        # central unchecked relevant fact (verifying it resolves the biggest gap).
+        next_check = None
+        if unchecked:
+            frontier = self.explore_frontier(k=200, mode="gaps")
+            rank = {d["id"]: d for d in frontier}
+            best = max(unchecked, key=lambda f: rank.get(f.id, {}).get("centrality", 0.0))
+            nc = rank.get(best.id, {})
+            next_check = {"id": best.id, "text": best.text, "domain": best.domain,
+                          "centrality": nc.get("centrality"),
+                          "why": "unchecked and central to this question"}
+
+        return {"question": question, "stance": stance, "stance_score": stance_score,
+                "checked_fraction": checked_frac, "licensed_locally": licensed_locally,
+                "min_sim": min_sim, "n_relevant": len(facts), "n_checked": len(checked),
+                "supporting": [cite(f) for f in support],
+                "cautioning": [cite(f) for f in caution],
+                "unchecked_relevant": [cite(f) for f in unchecked],
+                "proposed_next_check": next_check,
+                "caveat": ("stance reflects what externally-CHECKED corpus facts imply, "
+                           "weighted by relevance -- NOT a claim of ground truth. "
+                           "Unchecked facts are shown but excluded from the stance.")}
+
     def learning_curve(self, sizes: Sequence[int] = (5, 10, 15, 20),
                        k: int = 5, repeats: int = 40, seed: int = 0) -> dict:
         """Empirical payoff of the feedback loop: does inference improve as more
