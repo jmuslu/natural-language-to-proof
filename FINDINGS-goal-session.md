@@ -434,6 +434,32 @@ mechanism works, not a global yes/no.
   as blocked-with-reason, not attempted. (The anti-correlation argument itself is
   the handoff's reasoning, `[conjectured]` — it is not something the code proves.)
 
+- **[checked] Vector-valued reward built — the non-trap step that does NOT wait on
+  Layer 3.** The blocked part is only the *scalarization* (how to combine the
+  anti-correlated coordinates), which needs the external fitness function. But the
+  handoff's other sanctioned direction — "don't collapse to a scalar; train toward
+  the frontier, defer scalarization" — needs no oracle and is now implemented:
+  `Reward.rewardCoordinates` exposes the value-bearing coordinates *including*
+  `rwCorroborated`/`rwNovel` (oriented higher-is-better, refuted negated),
+  `dominates` is Pareto dominance, `paretoFrontier` is the non-dominated set.
+  Corroboration-heavy and novelty-heavy rewards come out **incomparable** (neither
+  dominates), which is the correct treatment of a genuine trade-off and exactly
+  what a linear sum destroys. `rwScore` is left untouched (its suite invariants
+  hold); the frontier is additive and takes **no** position on the trade-off —
+  that choice stays for the external fitness function. Substrate suite +5
+  (now 114) pins the incomparability, the frontier membership, and that `rwScore`
+  is blind to corroboration/novelty.
+- **[conjectured→supported] Layers 4 and 5 are the same problem, and both now have
+  their structure with the mechanism deferred to external checks.** Layer 4's
+  frontier defers "how to combine anti-correlated coordinates" to an external
+  fitness function; Layer 5's epistemic graph (`corpus/epistemic_graph.py`)
+  propagates trust *only* from external checks and leaves the trust-update
+  *mechanism* (edge-weight vs existence vs node propagation) open. Same shape: a
+  weight-free structure now, the combination/mechanism chosen later by something
+  externally checked (the validation suite / calibration), never by an internal
+  metric. Solving one — an externally-fit combination of trade-off signals —
+  should answer both.
+
 ## Layer 3 continuation — statistical validation suite built (`~/projects` confirmation granted)
 
 After the survey above, the owner granted confirmation to build in `~/projects`
