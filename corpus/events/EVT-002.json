@@ -1,0 +1,28 @@
+{
+  "event_id": "EVT-002",
+  "description": "Biogen and Eisai discontinued the Phase 3 ENGAGE and EMERGE trials of aducanumab in Alzheimer's disease after a pre-specified futility analysis predicted the trials were unlikely to meet their primary endpoint.",
+  "source": {
+    "registry": "company press release",
+    "id": "ENGAGE (NCT02477800) / EMERGE (NCT02484547)",
+    "url": "https://investors.biogen.com/news-releases/news-release-details/biogen-and-eisai-discontinue-phase-3-engage-and-emerge-trials",
+    "verified": "Biogen investor press release + Eisai news + CNBC/CNN coverage, verified 2026-09-13"
+  },
+  "sponsor": "Biogen / Eisai",
+  "ticker": "BIIB",
+  "event_type": "trial_discontinuation",
+  "event_time": "2018-12-26",
+  "event_time_source": "futility-analysis data cutoff cited in the press release (the date the futility signal held in the data)",
+  "knowable_time": "2019-03-21",
+  "knowable_time_source": "Biogen/Eisai discontinuation press release, 2019-03-21 (pre-market; BIIB fell ~29% that session). Verified 2026-09-13.",
+  "note_on_stamps": "knowable_time (2019-03-21 disclosure) is AFTER event_time (2018-12-26 futility data cutoff) -- the ordinary case, and the mirror image of EVT-001 where an interim topline was disclosed before registry completion. The two orderings together show why the stamps must be recorded separately.",
+  "outcome": {
+    "trial_result": "negative",
+    "note": "Discontinued for futility on the interim dataset. (The program was later revived in Oct 2019 on a larger dataset and controversially approved in 2021 -- see EVT-003 -- a real example of a revision to what was 'known', which bitemporal storage is meant to capture.)"
+  },
+  "evidence_basis": "public_reference",
+  "provenance": {
+    "structure_source": "agent",
+    "fetched_via": "web (investor.biogen.com, eisai.com, cnbc.com) via agent tools",
+    "fetched_at": "2026-09-13"
+  }
+}
