@@ -157,9 +157,13 @@ next event class to test, and its calibration must be walk-forward in time.
    it against a **random-timing null** (same window at random dates) and a sign-flip
    null. Proven on synthetic ground truth (`test_event_study.py`, 6 checks: injected
    effect detected and beats the null; pure no-effect does not fire; a market-wide
-   move is removed by market adjustment). Across event classes, gate with the
-   existing Benjamini-Hochberg. Still needs a real event set + price series to run
-   live (the medical use case).
+   move is removed by market adjustment). The **driver** `run_event_study`
+   (`event_study_driver.py`) glues it to the event store: groups events by ticker,
+   aligns each `knowable_time` to the next bar, runs the study per ticker, and gates
+   with Benjamini-Hochberg across tested tickers (a ticker with `< min_events` is
+   `insufficient`, not given a p-value). Proven end-to-end on a synthetic calendar
+   keyed to the *real* event dates. **The only input the system still lacks is a real
+   price series** — supply `{ticker: {date: level}}` and it runs.
 5. **[seeded]** the medical-timeline ↔ market use case end to end. A dated event
    store now exists (`corpus/events/`, schema + `build_events.py`) with its first
    real, externally-attested event: **EVT-001 = KEYNOTE-042** (Merck/MRK; pembrolizumab
