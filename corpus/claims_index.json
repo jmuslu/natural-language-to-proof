@@ -7,6 +7,9 @@
       "domain": "equity_valuation",
       "claim_type": "definitional",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -15,6 +18,9 @@
       "domain": "equity_valuation",
       "claim_type": "opinion",
       "evidence_basis": "unquantifiable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -23,6 +29,9 @@
       "domain": "equity_valuation",
       "claim_type": "recommendation",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -31,6 +40,9 @@
       "domain": "equity_valuation",
       "claim_type": "recommendation",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -39,6 +51,9 @@
       "domain": "equity_valuation",
       "claim_type": "definitional",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -47,6 +62,9 @@
       "domain": "equity_valuation",
       "claim_type": "definitional",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -55,6 +73,9 @@
       "domain": "equity_valuation",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -63,6 +84,9 @@
       "domain": "equity_valuation",
       "claim_type": "recommendation",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -71,6 +95,9 @@
       "domain": "monetary_policy",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -79,6 +106,9 @@
       "domain": "monetary_policy",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -87,6 +117,9 @@
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -95,6 +128,9 @@
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -103,6 +139,9 @@
       "domain": "macro_indicators",
       "claim_type": "factual_quantitative",
       "evidence_basis": "unquantifiable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -111,6 +150,9 @@
       "domain": "macro_indicators",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -119,6 +161,9 @@
       "domain": "macro_indicators",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -127,6 +172,9 @@
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -135,6 +183,9 @@
       "domain": "portfolio_construction",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -143,6 +194,9 @@
       "domain": "portfolio_construction",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -151,6 +205,9 @@
       "domain": "risk_management",
       "claim_type": "recommendation",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -159,6 +216,9 @@
       "domain": "investor_psychology",
       "claim_type": "recommendation",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -167,6 +227,9 @@
       "domain": "biographical",
       "claim_type": "factual_qualitative",
       "evidence_basis": "self_reported",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -175,6 +238,9 @@
       "domain": "market_timing",
       "claim_type": "prediction",
       "evidence_basis": "self_reported",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -183,6 +249,9 @@
       "domain": "market_timing",
       "claim_type": "prediction",
       "evidence_basis": "self_reported",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -191,6 +260,9 @@
       "domain": "market_timing",
       "claim_type": "factual_qualitative",
       "evidence_basis": "self_reported",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -199,6 +271,9 @@
       "domain": "market_timing",
       "claim_type": "factual_qualitative",
       "evidence_basis": "self_reported",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -207,6 +282,9 @@
       "domain": "market_timing",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -215,6 +293,9 @@
       "domain": "monetary_policy",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -223,6 +304,9 @@
       "domain": "credit_markets",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-07-04",
+      "event_time": null,
+      "ingestion_time": "2026-07-04",
       "source_id": "001",
       "source_title": "Full course on stock investing (2 hours)"
     },
@@ -231,6 +315,9 @@
       "domain": "ml_methodology",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2025-10-10",
+      "event_time": null,
+      "ingestion_time": "2025-10-10",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -239,6 +326,9 @@
       "domain": "market_efficiency",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2025-10-10",
+      "event_time": null,
+      "ingestion_time": "2025-10-10",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -247,6 +337,9 @@
       "domain": "ml_methodology",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2025-10-10",
+      "event_time": null,
+      "ingestion_time": "2025-10-10",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -255,6 +348,9 @@
       "domain": "ml_methodology",
       "claim_type": "factual_qualitative",
       "evidence_basis": "self_reported",
+      "knowable_time": "2025-10-10",
+      "event_time": null,
+      "ingestion_time": "2025-10-10",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -263,6 +359,9 @@
       "domain": "ml_methodology",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2025-10-10",
+      "event_time": null,
+      "ingestion_time": "2025-10-10",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -271,6 +370,9 @@
       "domain": "ml_methodology",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2025-10-10",
+      "event_time": null,
+      "ingestion_time": "2025-10-10",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -279,6 +381,9 @@
       "domain": "ml_methodology",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2025-10-10",
+      "event_time": null,
+      "ingestion_time": "2025-10-10",
       "source_id": "002",
       "source_title": "Letting My Viewers Fix My Stock Prediction Program | Python LSTM Stock Predictor"
     },
@@ -287,6 +392,9 @@
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-05-03",
+      "event_time": null,
+      "ingestion_time": "2026-05-03",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -295,6 +403,9 @@
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-05-03",
+      "event_time": null,
+      "ingestion_time": "2026-05-03",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -303,6 +414,9 @@
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
       "evidence_basis": "self_reported",
+      "knowable_time": "2026-05-03",
+      "event_time": null,
+      "ingestion_time": "2026-05-03",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -311,6 +425,9 @@
       "domain": "market_microstructure",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-05-03",
+      "event_time": null,
+      "ingestion_time": "2026-05-03",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -319,6 +436,9 @@
       "domain": "market_microstructure",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-05-03",
+      "event_time": null,
+      "ingestion_time": "2026-05-03",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -327,6 +447,9 @@
       "domain": "market_microstructure",
       "claim_type": "methodological",
       "evidence_basis": "not_applicable",
+      "knowable_time": "2026-05-03",
+      "event_time": null,
+      "ingestion_time": "2026-05-03",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -335,6 +458,9 @@
       "domain": "crypto_market_making",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-05-03",
+      "event_time": null,
+      "ingestion_time": "2026-05-03",
       "source_id": "003",
       "source_title": "The Dumbest Strategy That Returned 200% a Year"
     },
@@ -343,6 +469,9 @@
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-03-29",
+      "event_time": null,
+      "ingestion_time": "2026-03-29",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -351,6 +480,9 @@
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-03-29",
+      "event_time": null,
+      "ingestion_time": "2026-03-29",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -359,6 +491,9 @@
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-03-29",
+      "event_time": null,
+      "ingestion_time": "2026-03-29",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -367,6 +502,9 @@
       "domain": "alt_data",
       "claim_type": "factual_quantitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-03-29",
+      "event_time": null,
+      "ingestion_time": "2026-03-29",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -375,6 +513,9 @@
       "domain": "portfolio_theory",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-03-29",
+      "event_time": null,
+      "ingestion_time": "2026-03-29",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -383,6 +524,9 @@
       "domain": "alt_data",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-03-29",
+      "event_time": null,
+      "ingestion_time": "2026-03-29",
       "source_id": "004",
       "source_title": "28 Datasets, One Edge: Building Multi-Signal Trading Strategies"
     },
@@ -391,6 +535,9 @@
       "domain": "investing_principles",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-09-13",
+      "event_time": null,
+      "ingestion_time": "2026-09-13",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -399,6 +546,9 @@
       "domain": "investing_principles",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-09-13",
+      "event_time": null,
+      "ingestion_time": "2026-09-13",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -407,6 +557,9 @@
       "domain": "taxation",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-09-13",
+      "event_time": null,
+      "ingestion_time": "2026-09-13",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -415,6 +568,9 @@
       "domain": "investor_psychology",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-09-13",
+      "event_time": null,
+      "ingestion_time": "2026-09-13",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -423,6 +579,9 @@
       "domain": "investor_psychology",
       "claim_type": "opinion",
       "evidence_basis": "unquantifiable",
+      "knowable_time": "2026-09-13",
+      "event_time": null,
+      "ingestion_time": "2026-09-13",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     },
@@ -431,6 +590,9 @@
       "domain": "taxation",
       "claim_type": "factual_qualitative",
       "evidence_basis": "public_reference",
+      "knowable_time": "2026-09-13",
+      "event_time": null,
+      "ingestion_time": "2026-09-13",
       "source_id": "005",
       "source_title": "Why \"You Don't Lose Money Until You Sell\" Is Bunk"
     }

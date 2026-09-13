@@ -37,6 +37,8 @@ def main() -> None:
     ap.add_argument("--mode", choices=["all", "gaps", "contested"], default="all",
                     help="explore: which frontier to show")
     ap.add_argument("--trust-weighted", action="store_true")
+    ap.add_argument("--as-of", default=None,
+                    help="only use facts knowable by this ISO date (no lookahead)")
     ap.add_argument("--ann", action="store_true", help="use the DiskANN index")
     ap.add_argument("--db", default=DB)
     args = ap.parse_args()
@@ -45,20 +47,20 @@ def main() -> None:
     brain = Brain.open(args.db, load_embedder=needs_embedder)
 
     if args.cmd == "retrieve":
-        facts = brain.retrieve(args.arg, k=args.k,
-                               trust_weighted=args.trust_weighted, ann=args.ann)
+        facts = brain.retrieve(args.arg, k=args.k, trust_weighted=args.trust_weighted,
+                               ann=args.ann, as_of=args.as_of)
         _p([{"id": f.id, "similarity": round(f.similarity, 4),
              "trust": round(f.trust, 4), "domain": f.domain, "text": f.text}
             for f in facts])
     elif args.cmd == "infer":
-        _p(brain.infer_trust(args.arg, k=max(args.k, 8)))
+        _p(brain.infer_trust(args.arg, k=max(args.k, 8), as_of=args.as_of))
     elif args.cmd == "neighbors":
         facts = brain.neighbors(args.arg, k=args.k)
         _p([{"id": f.id, "similarity": round(f.similarity, 4),
              "trust": round(f.trust, 4), "domain": f.domain, "text": f.text}
             for f in facts])
     elif args.cmd == "answer":
-        _p(brain.answer(args.arg, k=max(args.k, 8)))
+        _p(brain.answer(args.arg, k=max(args.k, 8), as_of=args.as_of))
     elif args.cmd == "explore":
         _p(brain.explore_frontier(k=args.k, mode=args.mode))
     elif args.cmd == "bridges":

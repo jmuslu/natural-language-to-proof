@@ -95,7 +95,8 @@ class Brain:
                 continue
             facts.append((cid, c["text"], c.get("domain", ""),
                           c.get("claim_type", ""), c.get("source_id", ""),
-                          trust_by_id[cid], c.get("evidence_basis", "")))
+                          trust_by_id[cid], c.get("evidence_basis", ""),
+                          c.get("knowable_time"), c.get("event_time")))
             texts.append(c["text"])
         if missing:
             print(f"[brain] {len(missing)} claim(s) had no graph trust, skipped: "
@@ -110,13 +111,15 @@ class Brain:
         cur = con.cursor()
         cur.execute(f"""CREATE TABLE facts (
             id TEXT PRIMARY KEY, text TEXT, domain TEXT, claim_type TEXT,
-            evidence_basis TEXT, source_id TEXT, trust REAL, emb F32_BLOB({dim}))""")
+            evidence_basis TEXT, source_id TEXT, trust REAL,
+            knowable_time TEXT, event_time TEXT, emb F32_BLOB({dim}))""")
         cur.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-        for (cid, text, dom, ct, sid, tr, eb), row in zip(facts, embs):
+        for (cid, text, dom, ct, sid, tr, eb, kt, et), row in zip(facts, embs):
             cur.execute(
-                "INSERT INTO facts(id,text,domain,claim_type,evidence_basis,source_id,trust,emb)"
-                " VALUES (?,?,?,?,?,?,?,vector32(?))",
-                (cid, text, dom, ct, eb, sid, tr, vec_literal(row)))
+                "INSERT INTO facts(id,text,domain,claim_type,evidence_basis,source_id,"
+                "trust,knowable_time,event_time,emb)"
+                " VALUES (?,?,?,?,?,?,?,?,?,vector32(?))",
+                (cid, text, dom, ct, eb, sid, tr, kt, et, vec_literal(row)))
         for k, v in {"embedder_id": embedder.id, "dim": str(dim),
                      "n_facts": str(len(facts)),
                      "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -146,18 +149,26 @@ class Brain:
         return cls(con, dim, embedder, eid)
 
     # ---- internal readback --------------------------------------------------
-    def _all(self) -> Tuple[List[str], np.ndarray, np.ndarray, List[dict]]:
+    def _all(self, as_of: Optional[str] = None
+             ) -> Tuple[List[str], np.ndarray, np.ndarray, List[dict]]:
+        """All facts, optionally filtered to those knowable as of a date (no
+        lookahead): a fact is visible only if knowable_time <= as_of. A fact with an
+        unknown knowable_time is excluded under an as-of query (we cannot prove it was
+        knowable) -- the conservative, no-lookahead-safe choice. See TEMPORAL.md."""
         rows = self.con.cursor().execute(
-            "SELECT id,text,domain,claim_type,evidence_basis,source_id,trust,emb FROM facts"
+            "SELECT id,text,domain,claim_type,evidence_basis,source_id,trust,"
+            "knowable_time,event_time,emb FROM facts"
         ).fetchall()
         ids, meta, trusts, embs = [], [], [], []
         for r in rows:
+            if as_of is not None and (r[7] is None or r[7] > as_of):
+                continue
             ids.append(r[0])
             meta.append({"id": r[0], "text": r[1], "domain": r[2],
                          "claim_type": r[3], "evidence_basis": r[4] or "",
-                         "source_id": r[5]})
+                         "source_id": r[5], "knowable_time": r[7], "event_time": r[8]})
             trusts.append(float(r[6]))
-            embs.append(np.frombuffer(r[7], dtype=np.float32))
+            embs.append(np.frombuffer(r[9], dtype=np.float32))
         E = np.vstack(embs) if embs else np.zeros((0, self.dim), np.float32)
         return ids, E, np.asarray(trusts, dtype=np.float64), meta
 
@@ -168,29 +179,36 @@ class Brain:
 
     # ---- retrieval ----------------------------------------------------------
     def retrieve(self, query: str, k: int = 5, *, trust_weighted: bool = False,
-                 ann: bool = False) -> List[Fact]:
+                 ann: bool = False, as_of: Optional[str] = None) -> List[Fact]:
         """Semantic nearest facts to `query`, each carrying its external trust.
 
         `trust_weighted=True` re-ranks by similarity*(0.5+0.5*trust) so a query
         surfaces facts that are both on-topic and externally credible rather than
         merely on-topic. `ann=True` uses the DiskANN index (approximate, for scale);
-        default is exact brute-force cosine.
+        default is exact brute-force cosine. `as_of` restricts to facts knowable by
+        that date (knowable_time <= as_of; no lookahead -- see TEMPORAL.md).
         """
         qv = self._embed_query(query)
         cur = self.con.cursor()
+        qlit = vec_literal(qv)
+        kk = max(k * 3, k)
         if ann:
+            where = "" if as_of is None else \
+                " WHERE f.knowable_time IS NOT NULL AND f.knowable_time <= ?"
+            params = (qlit, qlit, kk) + ((as_of,) if as_of is not None else ())
             rows = cur.execute(
                 "SELECT f.id,f.text,f.domain,f.claim_type,f.source_id,f.trust,"
                 " vector_distance_cos(f.emb, vector32(?)) AS dist "
                 "FROM vector_top_k('facts_ann', vector32(?), ?) AS v "
-                "JOIN facts f ON f.id=v.id ORDER BY dist",
-                (vec_literal(qv), vec_literal(qv), max(k * 3, k))).fetchall()
+                "JOIN facts f ON f.id=v.id" + where + " ORDER BY dist", params).fetchall()
         else:
+            where = "" if as_of is None else \
+                " WHERE knowable_time IS NOT NULL AND knowable_time <= ?"
+            params = (qlit,) + ((as_of,) if as_of is not None else ()) + (kk,)
             rows = cur.execute(
                 "SELECT id,text,domain,claim_type,source_id,trust,"
                 " vector_distance_cos(emb, vector32(?)) AS dist "
-                "FROM facts ORDER BY dist LIMIT ?",
-                (vec_literal(qv), max(k * 3, k))).fetchall()
+                "FROM facts" + where + " ORDER BY dist LIMIT ?", params).fetchall()
         facts = [Fact(r[0], r[1], r[2], r[3], r[4], float(r[5]),
                       similarity=1.0 - float(r[6])) for r in rows]
         if trust_weighted:
@@ -228,7 +246,8 @@ class Brain:
             return float("nan"), 0.0
         return float((w * trusts[order]).sum() / mass), mass
 
-    def infer_trust(self, query: str, k: int = 8, *, with_caveat: bool = True) -> dict:
+    def infer_trust(self, query: str, k: int = 8, *, with_caveat: bool = True,
+                    as_of: Optional[str] = None) -> dict:
         """CONJECTURE a trust for arbitrary text from its nearest facts' trust.
 
         This is synthetic inference: it interpolates the externally-anchored trust
@@ -239,7 +258,7 @@ class Brain:
         confirm or refute, never a decision.
         """
         qv = self._embed_query(query)
-        ids, E, trusts, meta = self._all()
+        ids, E, trusts, meta = self._all(as_of=as_of)
         sims = E @ qv
         pred, mass = self._predict_from(sims, trusts, k)
         order = np.argsort(-sims)[:k]
@@ -427,7 +446,8 @@ class Brain:
         pairs.sort(key=lambda d: -d["score"])
         return pairs[:k]
 
-    def answer(self, question: str, k: int = 8, min_sim: float = 0.25) -> dict:
+    def answer(self, question: str, k: int = 8, min_sim: float = 0.25,
+               as_of: Optional[str] = None) -> dict:
         """Query-driven synthesis: what do the EXTERNALLY-CHECKED facts say here?
 
         The capstone that ties retrieval + inference + exploration together. It
@@ -442,7 +462,7 @@ class Brain:
         check that would most resolve the question (the most central unchecked
         relevant fact). Every element cites claim ids and trust. Proposal, not verdict.
         """
-        retrieved = self.retrieve(question, k=k)  # by similarity
+        retrieved = self.retrieve(question, k=k, as_of=as_of)  # by similarity, as-of
         facts = [f for f in retrieved if f.similarity >= min_sim]
         if not facts:
             return {"question": question, "stance": "no_relevant_facts",
@@ -500,7 +520,8 @@ class Brain:
 
         return {"question": question, "stance": stance, "stance_score": stance_score,
                 "checked_fraction": checked_frac, "licensed_locally": licensed_locally,
-                "min_sim": min_sim, "n_relevant": len(facts), "n_checked": len(checked),
+                "min_sim": min_sim, "as_of": as_of,
+                "n_relevant": len(facts), "n_checked": len(checked),
                 "supporting": [cite(f) for f in support],
                 "cautioning": [cite(f) for f in caution],
                 "unchecked_relevant": [cite(f) for f in unchecked],

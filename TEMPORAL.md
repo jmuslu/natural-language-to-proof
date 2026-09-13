@@ -135,12 +135,20 @@ next event class to test, and its calibration must be walk-forward in time.
 
 ## 5. What to build first (incremental, each externally checkable)
 
-1. **Schema**: add `event_time` / `knowable_time` / `ingestion_time` to the claim
-   schema (nullable; required for temporal claims), attested via `evidence_basis`.
-2. **As-of filter** in the brain (one predicate before vector search) + an `as_of`
-   flag on `answer`/`retrieve`; add a temporal-split option to `calibrate`.
+1. **[done]** **Schema + stamps**: claims carry `event_time` (the date the claim is
+   *about*, nullable) in `record_schema.json`; `export_claims_index.py` derives
+   `knowable_time` (= source `dates.published`, falling back to `captured` — a
+   conservative, never-leaks-the-future bound) and `ingestion_time`, and publishes all
+   three into `claims_index.json`. The brain stores them.
+2. **[done]** **As-of filter** in the brain: `retrieve` / `answer` / `infer_trust`
+   and `_all` take `as_of`; a fact is visible only if `knowable_time <= as_of`
+   (unknown `knowable_time` is excluded — conservative). `brain_query.py --as-of`
+   exposes it; `brain_test.py` asserts no lookahead. A temporal (walk-forward) split
+   for `calibrate` is still pending.
 3. **Temporal-consistency verdicts**: verify a handful of dated claims against attested
-   external dates (the research tools), reference-backed, owner-confirmable.
+   external dates (the research tools), reference-backed, owner-confirmable. (E.g.
+   recover record 005's true publication date, currently a conservative `captured`
+   fallback.)
 4. **Event-study driver**: align an event set's `knowable_time`s to forward price
    windows and run the *existing* validation suite (nulls + FDR) — no new statistics.
 5. Only then, the medical-timeline ↔ market use case end to end, with the as-of

@@ -94,6 +94,30 @@ def main() -> None:
                                      "insufficiently_checked"),
               f"nonsense query gave {none_ans['stance']}")
 
+        # --- temporal: knowable_time stored; as-of retrieval has no lookahead ---
+        check(all("knowable_time" in m for m in meta), "facts missing knowable_time")
+        # every fact carries a knowable_time (from its source's publication date)
+        kts = [m["knowable_time"] for m in meta if m["knowable_time"]]
+        check(len(kts) == len(meta), "some fact has no knowable_time")
+        latest = max(kts)
+        earliest = min(kts)
+        probe_q = meta[0]["text"]
+        # as-of before the earliest source: nothing is knowable yet
+        before = b.retrieve(probe_q, k=10, as_of="1900-01-01")
+        check(before == [], "as-of before all sources leaked a fact (lookahead!)")
+        # as-of at the latest date: everything visible; equals no-filter count
+        allf = b.retrieve(probe_q, k=54)
+        asof_all = b.retrieve(probe_q, k=54, as_of=latest)
+        check(len(asof_all) == len(allf), "as-of at latest date should see all facts")
+        # every fact returned under an as-of query is genuinely knowable by then
+        mid = b.retrieve(probe_q, k=54, as_of=earliest)
+        check(all(f.id for f in mid), "as-of query returned malformed facts")
+        idkt = {m["id"]: m["knowable_time"] for m in meta}
+        check(all(idkt[f.id] <= earliest for f in mid), "as-of returned a future fact")
+        # answer carries the as_of it was given
+        ans_t = b.answer(probe_q, as_of=latest)
+        check(ans_t.get("as_of") == latest, "answer did not record as_of")
+
         # --- calibration: honest verdict + frac_unchecked matches the field ---
         cal = b.calibrate()
         exp_unchecked = round(float(np.mean(trusts == 0.0)), 4)
