@@ -337,10 +337,15 @@ lexChecks =
       (case ingest "CCGbank" "walks" "S[dcl]\\NP" of
          Built pe -> skeletonWellTyped pe
          _ -> False)
-  , expectEq "conj is still a needed new atom, not silently built"
-      (Unrepresentable ["conj"]) (ingest "CCGbank" "and" "conj")
-  , expect "a punctuation category is Unrepresentable"
-      (case ingest "CCGbank" "," "," of Unrepresentable _ -> True; _ -> False)
+  , expectEq "a bare conj coordinator is rule-handled, not lexically built"
+      (RuleHandled "coordination") (ingest "CCGbank" "and" "conj")
+  , expectEq "a comma acting as a coordinator is rule-handled too"
+      (RuleHandled "coordination") (ingest "CCGbank" "," ",")
+  , expect "a conj-function category (conj/conj) stays Unrepresentable (no rule for it)"
+      (case ingest "CCGbank" "and/or" "conj/conj" of
+         Unrepresentable atoms -> "conj" `elem` atoms; _ -> False)
+  , expect "genuine punctuation (period) is Unrepresentable, not a coordinator"
+      (case ingest "CCGbank" "." "." of Unrepresentable _ -> True; _ -> False)
   , expect "a malformed category is Unparseable, not Built"
       (case ingest "CCGbank" "x" "S/" of Unparseable _ -> True; _ -> False)
   , expect "the skeleton names the word (distinct words -> distinct constants)"

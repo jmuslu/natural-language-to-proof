@@ -871,16 +871,26 @@ database … rust forks of sqlite" — pointed straight at it.
   Built / Unrepresentable / Unparseable. `CCGBank.ccatToCat` projects into the
   feature-bearing core `Cat` (features→`Feature`, `PP`→`PP`). **[measured]** over
   the real 83,540-entry lexicon: **83,468 (99.9% types / 87.8% tokens) built as
-  corpus-attested entries; 0 ill-typed skeletons**; 70 unrepresentable (conj +
-  punctuation — 0.1% of types but 12.2% of tokens, i.e. few in variety, frequent
-  in use); 2 unparseable. The feature migration lifted representability from 66.5%
-  (bare {S,NP,N}) to 99.9%. `skeletonWellTyped` is retained as the typeOf gate but
-  is *explicitly weak* (every `{e,t}` type is inhabited, so it verifies the
-  synthesiser, not meaning faithfulness — the structural point logged earlier).
-  Remaining: the `conj`/punctuation atoms (a coordination + punctuation rule
-  class), and — for faithful (non-skeleton) meanings — the LLM-proposed path with
-  its own provenance, still future. `PP`'s type stays `tyGQ` (`[stipulated]`,
-  survey-supported at 97.7% argument-like).
+  corpus-attested entries; 0 ill-typed skeletons**; 2 unparseable. The feature
+  migration lifted representability from 66.5% (bare {S,NP,N}) to 99.9%.
+  `skeletonWellTyped` is retained as the typeOf gate but is *explicitly weak*
+  (every `{e,t}` type is inhabited, so it verifies the synthesiser, not meaning
+  faithfulness — the structural point logged earlier). `PP`'s type stays `tyGQ`
+  (`[stipulated]`, survey-supported at 97.7% argument-like).
+- **[measured→resolved, this session] The `conj` tail is not "unrepresentable" —
+  most of it is rule-handled.** The 70 previously counted as unrepresentable split
+  honestly into two populations once `ingest` consults `CCGRules.isCoordinator`:
+  **40 are handled by the coordination rule** (bare `conj` ×33, coordinating comma
+  ×6, semicolon ×1) — no monomorphic lexical type, but `CCGRules.combine` genuinely
+  parses them via the two-step rule (`conj X => X[conj]`, then `X X[conj] => X`;
+  tested), so a new `RuleHandled "coordination"` outcome records "handled
+  structurally, not lexically" rather than miscounting it as "cannot represent"
+  (7.5% of tokens). The remaining **30 are genuinely unrepresentable**: conj-
+  *function* categories (`conj/conj`, `conj\conj`, and three complex ones) that
+  would need a `conj` category/schema, plus true punctuation (`.` `:` LRB RRB) with
+  no rule. Remaining, therefore, narrowed: a schematic/polymorphic `conj` category
+  for the conj-function tail, punctuation absorption, and — for faithful
+  (non-skeleton) meanings — the LLM-proposed path with its own provenance.
 - **[Layer 1/2] Done: type-changing rule class, measured train/test** as a
   learnable inventory (`CCGTypeChange`, `ccg-typechange-coverage`; 0.01%
   held-out residue). Remaining: fold combinators + the induced type-change

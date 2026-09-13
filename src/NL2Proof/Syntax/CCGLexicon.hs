@@ -38,6 +38,7 @@ import NL2Proof.Semantics.Lambda (Term(Con), typeOf)
 import NL2Proof.Syntax.Category (Cat, catTy)
 import NL2Proof.Syntax.Lexicon (Entry(..))
 import NL2Proof.Syntax.CCGBank (parseCCGCat, ccatToCat, atomsOf)
+import NL2Proof.Syntax.CCGRules (isCoordinator)
 
 -- | Where a lexical entry's category came from. The three-way split the handoff
 -- requires, kept from collapsing into one undifferentiated count.
@@ -95,7 +96,17 @@ skeletonWellTyped pe = typeOf [] (peSem pe) == Right (catTy (peCat pe))
 -- be imported together.)
 data IngestResult
   = Built ProvEntry          -- ^ representable in the core 'Cat'; entry built
-  | Unrepresentable [String] -- ^ mentions atoms the core 'Cat' lacks (conj, punctuation)
+  | RuleHandled String       -- ^ not a lexical /type/ but handled by a combinatory
+                             --   rule (the mechanism, e.g. @"coordination"@). A bare
+                             --   @conj@\/comma\/semicolon coordinator has no
+                             --   monomorphic skeleton, yet 'CCGRules.combine' parses
+                             --   it via the two-step coordination rule
+                             --   (@conj X => X[conj]@, then @X X[conj] => X@). Kept
+                             --   distinct from 'Unrepresentable' so "handled
+                             --   structurally, not lexically" is not miscounted as
+                             --   "cannot represent".
+  | Unrepresentable [String] -- ^ mentions atoms with neither a core 'Cat' type nor a
+                             --   rule (conj-/function/ categories, @.@ @:@ LRB RRB)
   | Unparseable String       -- ^ the category string does not parse
   deriving (Eq, Show)
 
@@ -109,4 +120,6 @@ ingest src word catStr =
     Left e     -> Unparseable e
     Right ccat -> case ccatToCat ccat of
       Just cat -> Built (corpusEntry word cat src)
-      Nothing  -> Unrepresentable (nub (filter (`notElem` ["S", "NP", "N", "PP"]) (atomsOf ccat)))
+      Nothing
+        | isCoordinator ccat -> RuleHandled "coordination"
+        | otherwise -> Unrepresentable (nub (filter (`notElem` ["S", "NP", "N", "PP"]) (atomsOf ccat)))

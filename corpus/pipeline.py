@@ -55,6 +55,8 @@ def stage_ingest() -> dict:
         print(f"  distinct (word,category) entries : {d['distinct_entries']:,}")
         print(f"  built well-typed, corpus-attested: {d['built']:,} "
               f"({d['built_pct_types']}% types, {d['built_pct_tokens']}% tokens)")
+        print(f"  rule-handled (coordination)      : {d.get('rule_handled', 0)} "
+              "(no lexical type, but the tested coordination rule parses them)")
         print(f"  ill-typed skeletons (MUST be 0)  : {d['ill_typed']}"
               f"   <- external check: mechanical type-check")
         print(f"  => ingestion {'SOUND' if ok else 'BROKEN'}: skeletons are type-checked, "

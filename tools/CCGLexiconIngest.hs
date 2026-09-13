@@ -27,6 +27,7 @@ defaultPath = "/home/gram/ccgbank/ccgbank_1_1/data/LEX/CCGbank.00-24.lexicon"
 
 data Acc = Acc
   { aBuilt :: !Int,  aBuiltTok :: !Int
+  , aRule  :: !Int,  aRuleTok  :: !Int  -- handled by a combinatory rule (coordination)
   , aUnrep :: !Int,  aUnrepTok :: !Int
   , aBad   :: !Int,  aBadTok   :: !Int
   , aIllTyped :: !Int              -- Built entries whose skeleton fails typeOf (should be 0)
@@ -34,13 +35,15 @@ data Acc = Acc
   }
 
 emptyAcc :: Acc
-emptyAcc = Acc 0 0 0 0 0 0 0 M.empty
+emptyAcc = Acc 0 0 0 0 0 0 0 0 0 M.empty
 
 step :: Acc -> (String, String, Int) -> Acc
 step acc (word, cat, cnt) = case ingest "CCGbank" word cat of
   Built pe ->
     acc { aBuilt = aBuilt acc + 1, aBuiltTok = aBuiltTok acc + cnt
         , aIllTyped = aIllTyped acc + (if skeletonWellTyped pe then 0 else 1) }
+  RuleHandled _ ->
+    acc { aRule = aRule acc + 1, aRuleTok = aRuleTok acc + cnt }
   Unrepresentable atoms ->
     acc { aUnrep = aUnrep acc + 1, aUnrepTok = aUnrepTok acc + cnt
         , aNewAtoms = foldr (\a -> M.insertWith (+) a 1) (aNewAtoms acc) atoms }
@@ -70,6 +73,8 @@ jsonReport path nT tokT a = "{\n"
   ++ f "built" (show (aBuilt a)) ++ ",\n"
   ++ f "built_pct_types" (pctNum (aBuilt a) nT) ++ ",\n"
   ++ f "built_pct_tokens" (pctNum (aBuiltTok a) tokT) ++ ",\n"
+  ++ f "rule_handled" (show (aRule a)) ++ ",\n"
+  ++ f "rule_handled_pct_types" (pctNum (aRule a) nT) ++ ",\n"
   ++ f "unrepresentable" (show (aUnrep a)) ++ ",\n"
   ++ f "unparseable" (show (aBad a)) ++ ",\n"
   ++ f "ill_typed" (show (aIllTyped a)) ++ ",\n"
@@ -104,7 +109,9 @@ humanReport _path nT tokT a = do
   putStrLn ""
   putStrLn ("built (representable, corpus-attested) : " ++ show (aBuilt a)
             ++ " (" ++ pct (aBuilt a) nT ++ " types, " ++ pct (aBuiltTok a) tokT ++ " tokens)")
-  putStrLn ("unrepresentable (conj/punct atoms)     : " ++ show (aUnrep a)
+  putStrLn ("rule-handled (coordination, not lexical): " ++ show (aRule a)
+            ++ " (" ++ pct (aRule a) nT ++ " types, " ++ pct (aRuleTok a) tokT ++ " tokens)")
+  putStrLn ("unrepresentable (conj-fn/punct atoms)   : " ++ show (aUnrep a)
             ++ " (" ++ pct (aUnrep a) nT ++ " types, " ++ pct (aUnrepTok a) tokT ++ " tokens)")
   putStrLn ("unparseable                             : " ++ show (aBad a)
             ++ " (" ++ pct (aBad a) nT ++ " types)")
