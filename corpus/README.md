@@ -49,6 +49,8 @@ corpus/
   build_graph.py              assemble the graph from records + verdicts -> graph.json
   ingest_outcomes.py          reverse-propagate real backtest outcomes into the graph
   reverse_propagation_demo.py worked Layer-7 example on the real corpus
+  fit_graph.py                Layer-5: fit trust-update parameters vs held-out
+                              external calibration (never internal coherence)
   README.md                   this file
 ~/corpus/raw/                 raw full transcripts/articles — OUTSIDE the repo
 ```

@@ -753,6 +753,29 @@ against the handoff and brought up to its requirements.
   can *choose* a point on that frontier (or a graph-trust parameterisation for
   Layer 5) without self-reference — once enough resolved instances exist.
 
+## Layer 5 — the graph-trust mechanism, now fit against external calibration
+
+- **[override] The deferral is lifted.** The mechanism was held open (don't
+  brute-force which shape is correct). The owner lifted that this session — the
+  scaffolding (external oracle, calibration, the graph structure) has matured
+  enough — so the mechanism is now in scope. The standing rule that does *not*
+  lift: a mechanism is graded only by an **external** fitness function, never the
+  system's own internal metric.
+- **[checked] Parameter-fit within the fixed topology, graded by held-out
+  calibration** (`corpus/fit_graph.py`; `epistemic_graph.propagate` gained a
+  `threshold` = inert-below-threshold gate). This is exactly the handoff's allowed
+  move (search *parameter values* — `corroboration_gain`, `threshold` — within one
+  fixed topology) and none of the forbidden one (searching *which mechanism shape*
+  by internal coherence). The fitness is `discrimination`: among claims with a
+  known external outcome, do the ones the graph trusts more resolve true more
+  often? Fitting is train/test split, so the reported number is generalisation.
+  Self-test: on an anchored graph the fitted parameters generalise to held-out
+  claims (discrimination > 0.5); **on a pure echo chamber (no external anchoring)
+  no parameter setting yields any discrimination** — the mechanism cannot be fit
+  into a signal from coherence alone, which is the whole point. So Layers 4 and 5
+  are now the *same solved shape*: a weight-free structure (frontier / graph)
+  whose parameters are chosen by external calibration, not internal metric.
+
 ## Open items, by layer (for the next pass)
 
 - **[Layer 5/7 — loop closed, incl. the upstream half (Thread 1)] `claim_refs`
