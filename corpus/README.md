@@ -51,9 +51,23 @@ corpus/
   reverse_propagation_demo.py worked Layer-7 example on the real corpus
   fit_graph.py                Layer-5: fit trust-update parameters vs held-out
                               external calibration (never internal coherence)
+  brain_embed.py              pluggable, provenance-tagged embedder (model2vec /
+                              deterministic hashing fallback)
+  brain.py                    the fact brain: libSQL vector store + retrieval,
+                              synthetic inference, calibration, directed exploration
+  brain_build.py              (re)build brain.db + brain_manifest.json from the graph
+  brain_query.py              CLI: retrieve / infer / neighbors / explore / bridges
+  brain_test.py               offline test suite for the brain (102 checks)
+  pipeline.py                 end-to-end operational driver (ingest→graph→brain→
+                              retrieve/explore→oracle), narrated
+  brain_manifest.json         committed calibration record (embedder, dim, skill)
+  requirements-brain.txt      brain deps (libsql-experimental, numpy, model2vec)
   README.md                   this file
 ~/corpus/raw/                 raw full transcripts/articles — OUTSIDE the repo
 ```
+
+`brain.db` and `.venv/` are gitignored build artifacts — regenerable with
+`brain_build.py`; `brain_manifest.json` is the committed, human-readable record.
 
 **Placement decision** (`[stipulated]`). Structured records live in the repo:
 they are derived metadata and short claim statements, the actual deliverable.
@@ -143,6 +157,57 @@ from the owner's global label. Source 002's individual claims (market efficiency
 null-baseline methodology, standard ML fixes) are individually consistent, yet
 the owner's firm "inconsistent" label about the *strategy* pulls the source's
 net trust negative. The graph shows the tension rather than falsely resolving it.
+
+## The fact brain (`brain.py`, `brain_build.py`, `brain_query.py`)
+
+The graph says *how much to trust* each claim; the brain makes the claims
+**retrievable and explorable by meaning**. Each claim becomes a fact node: its
+text embedded to a unit vector (geometry) plus its trust copied **verbatim** from
+the graph (`brain_build.py` joins `claims_index` key `001-1-a` ↔ graph node
+`claim:001-1-a`). Stored in **libSQL** — the Rust fork of SQLite with native
+vector search (`F32_BLOB`, `vector_distance_cos`, DiskANN `vector_top_k`) — so
+nearest-neighbour retrieval runs as a first-class DB operation.
+
+The discipline is kept sharp by one separation: **embeddings position facts, they
+never create trust.** Trust originates only from external checks, via the graph;
+the brain reads that field and never writes to it. So the brain can *propose* —
+retrieval, inference, exploration — while external checks still *dispose*.
+
+Four capabilities, and the honest limits the brain reports on itself:
+
+- **Retrieval** (`retrieve`) — semantic k-NN over embeddings; `--trust-weighted`
+  re-ranks so results are both on-topic *and* externally credible. This is real
+  semantic recall (it pulls the ML-vs-efficiency debate together across claims),
+  a genuine step up from token-overlap `propose_claim_refs`.
+- **Synthetic inference** (`infer_trust`) — interpolates the trust field at a new
+  point from its nearest facts. It is emitted as a `conjectured` value that
+  **always carries the calibration caveat inline**, so a predicted trust never
+  travels without the verdict on whether imputation is even licensed.
+- **Calibration** (`calibrate`) — the external check *on the brain itself*.
+  Leave-one-out prediction graded against the graph's real trust, versus a
+  mean-trust null (the same "skill vs null" test the backtest oracle uses), at a
+  pre-registered `k = round(√n)`. On the current corpus it returns **not
+  licensed** (skill ≈ 0.02, pearson ≈ 0.10): trust is *not* semantically smooth,
+  because it is earned per-claim by external check, and 57% of claims are still
+  unchecked. The brain therefore **refuses to impute trust from topic** — the
+  discipline working, not a bug. Restricted to the 23 *checked* claims a real
+  weak signal appears (skill ≈ 0.15, pearson ≈ 0.24), and `learning_curve` shows
+  interpolation skill rising monotonically (+0.04 → +0.16) as the checked set
+  grows from 5 to 20 — direct, un-fabricated evidence that **accumulating
+  external checks makes synthetic inference progressively licensed.**
+- **Directed exploration** (`explore_frontier`, `bridge_hypotheses`) — active
+  inference over the manifold: `--mode gaps` surfaces unchecked-but-central claims
+  (the highest-leverage next external checks), `--mode contested` surfaces checked
+  claims whose neighbours disagree, and `bridge_hypotheses` proposes syntheses
+  between two trusted claims in *different* domains at mid semantic distance (e.g.
+  mark-to-market loss ↔ tax realization). Every output is a **proposal for an
+  external check, never a verdict.**
+
+`brain_test.py` (102 checks, offline via the hashing embedder) is the external
+check on the brain *code*: trust copied verbatim, retrieval/neighbour/bridge
+contracts, the licensing gate, and build reproducibility. `pipeline.py` runs the
+whole chain — Haskell CCGbank ingestion → graph → brain → retrieve/explore, with
+the oracle loop-closure — as one narrated operational run.
 
 ## What the corpus is for (and what a good result is *not*)
 

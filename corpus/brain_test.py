@@ -1,0 +1,111 @@
+"""Tests for the fact brain. Uses the deterministic hashing embedder so the whole
+suite runs offline with no model download -- the model2vec path is exercised
+separately by `brain_build.py`. Run: `.venv/bin/python brain_test.py`.
+
+These are external checks on the brain code: that it copies trust verbatim from the
+graph (never inventing it), that retrieval/neighbours/bridges obey their contracts,
+that calibration reports the honest licensing verdict, and that builds are
+reproducible. If any assertion trips, the brain is not behaving as documented.
+"""
+from __future__ import annotations
+
+import json
+import tempfile
+from pathlib import Path
+
+import numpy as np
+
+from brain import Brain
+
+HERE = Path(__file__).resolve().parent
+CLAIMS = str(HERE / "claims_index.json")
+GRAPH = str(HERE / "graph.json")
+_checks = 0
+
+
+def check(cond, msg):
+    global _checks
+    assert cond, "FAIL: " + msg
+    _checks += 1
+
+
+def _build(tmp) -> Brain:
+    return Brain.build(CLAIMS, GRAPH, str(Path(tmp) / "t.db"), prefer="hashing")
+
+
+def main() -> None:
+    ci = json.loads(Path(CLAIMS).read_text())["claims"]
+    graph = json.loads(Path(GRAPH).read_text())
+    trust_by_id = {n["id"].split(":", 1)[1]: float(n["trust"])
+                   for n in graph["nodes"] if n["kind"] == "claim"}
+
+    with tempfile.TemporaryDirectory() as tmp:
+        b = _build(tmp)
+        st = b.stats()
+
+        # --- build / trust provenance ---
+        check(st["n_facts"] == len(ci), f"n_facts {st['n_facts']} != {len(ci)}")
+        check(st["embedder_id"].startswith("hashing"), "expected hashing embedder")
+        ids, E, trusts, meta = b._all()
+        check(E.shape == (len(ci), st["dim"]), f"emb shape {E.shape}")
+        check(np.allclose(np.linalg.norm(E, axis=1), 1.0, atol=1e-4), "vectors not unit-norm")
+        # trust must equal the graph verbatim -- the brain never invents trust
+        for cid, tr in zip(ids, trusts):
+            check(abs(tr - trust_by_id[cid]) < 1e-9,
+                  f"trust for {cid} = {tr} != graph {trust_by_id[cid]}")
+
+        # --- retrieval: a claim's own text retrieves that claim first ---
+        probe = ids[3]
+        top = b.retrieve(meta[3]["text"], k=1)
+        check(top and top[0].id == probe, f"self-retrieval got {top[0].id if top else None} != {probe}")
+        check(0.0 <= top[0].similarity <= 1.0001, "similarity out of range")
+
+        # --- neighbours: excludes self, k distinct ---
+        nb = b.neighbors(probe, k=5)
+        check(len(nb) == 5 and probe not in {f.id for f in nb}, "neighbours bad")
+        check(len({f.id for f in nb}) == 5, "neighbours not distinct")
+
+        # --- inference: labelled conjecture, carries the licensing caveat ---
+        inf = b.infer_trust("machine learning predicts stock returns", k=8)
+        check(inf["status"] == "conjectured", "inference not labelled conjecture")
+        check("imputation_licensed" in inf and "caveat" in inf, "inference missing caveat")
+        check(isinstance(inf["predicted_trust"], float), "predicted_trust not float")
+
+        # --- calibration: honest verdict + frac_unchecked matches the field ---
+        cal = b.calibrate()
+        exp_unchecked = round(float(np.mean(trusts == 0.0)), 4)
+        check(cal["frac_unchecked"] == exp_unchecked, "frac_unchecked mismatch")
+        check(isinstance(cal["licensed"], bool), "licensed not bool")
+        check("verdict" in cal and "checked_only" in cal, "calibration missing fields")
+        # the licensing bar must actually gate: verify it agrees with the metrics
+        lic, _ = Brain._licensed(cal)
+        check(lic == cal["licensed"], "licensed flag disagrees with _licensed()")
+
+        # --- exploration frontier: modes obey their contracts ---
+        gaps = b.explore_frontier(k=6, mode="gaps")
+        check(all(not d["checked"] for d in gaps), "gaps mode returned a checked fact")
+        check(all(d["trust"] == 0.0 for d in gaps), "gaps mode fact had nonzero trust")
+        contested = b.explore_frontier(k=6, mode="contested")
+        check(all(d["checked"] for d in contested), "contested mode returned unchecked")
+        check(all(d["status"] == "proposed_to_check" for d in gaps + contested),
+              "frontier not labelled proposal")
+
+        # --- bridges: cross-domain, both endpoints trusted, mid-distance ---
+        br = b.bridge_hypotheses(k=8, trust_min=0.3, lo=0.25, hi=0.75)
+        for p in br:
+            check(p["a_domain"] != p["b_domain"], "bridge within one domain")
+            check(0.25 < p["similarity"] < 0.75, "bridge similarity outside band")
+            check(p["min_trust"] >= 0.3, "bridge endpoint below trust_min")
+            check(p["status"] == "proposed_hypothesis", "bridge not labelled proposal")
+
+    # --- reproducibility: hashing build is deterministic ---
+    with tempfile.TemporaryDirectory() as t1, tempfile.TemporaryDirectory() as t2:
+        _, E1, tr1, _ = _build(t1)._all()
+        _, E2, tr2, _ = _build(t2)._all()
+        check(np.allclose(E1, E2) and np.allclose(tr1, tr2), "hashing build not reproducible")
+
+    print(f"brain_test: PASS ({_checks} checks)")
+
+
+if __name__ == "__main__":
+    main()

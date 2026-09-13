@@ -29,3 +29,9 @@ corpus/raw/
 # Python bytecode (corpus/ tooling)
 __pycache__/
 *.pyc
+
+# Fact brain: build artifacts, regenerable from committed inputs via brain_build.py.
+# brain_manifest.json (the human-readable calibration record) IS committed.
+corpus/.venv/
+corpus/brain.db
+corpus/brain.db-*

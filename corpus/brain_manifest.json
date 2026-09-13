@@ -1,0 +1,86 @@
+{
+  "brain": {
+    "embedder_id": "model2vec:minishlab/potion-base-8M-d256",
+    "dim": 256,
+    "n_facts": 54,
+    "trust_mean": 0.2889,
+    "trust_min": -0.6,
+    "trust_max": 0.9,
+    "domains": 17
+  },
+  "calibration": {
+    "k": 7,
+    "n_predicted": 54,
+    "mae": 0.3977,
+    "mae_baseline": 0.405,
+    "skill": 0.0181,
+    "pearson_r": 0.0986,
+    "sign_agreement": 0.3704,
+    "preregistered_k": 7,
+    "frac_unchecked": 0.5741,
+    "n_checked": 23,
+    "sweep": [
+      {
+        "k": 3,
+        "n_predicted": 54,
+        "mae": 0.3706,
+        "mae_baseline": 0.405,
+        "skill": 0.085,
+        "pearson_r": 0.2121,
+        "sign_agreement": 0.5556
+      },
+      {
+        "k": 5,
+        "n_predicted": 54,
+        "mae": 0.3828,
+        "mae_baseline": 0.405,
+        "skill": 0.0549,
+        "pearson_r": 0.2219,
+        "sign_agreement": 0.3704
+      },
+      {
+        "k": 7,
+        "n_predicted": 54,
+        "mae": 0.3977,
+        "mae_baseline": 0.405,
+        "skill": 0.0181,
+        "pearson_r": 0.0986,
+        "sign_agreement": 0.3704
+      },
+      {
+        "k": 8,
+        "n_predicted": 54,
+        "mae": 0.3966,
+        "mae_baseline": 0.405,
+        "skill": 0.0207,
+        "pearson_r": 0.1061,
+        "sign_agreement": 0.3889
+      },
+      {
+        "k": 12,
+        "n_predicted": 54,
+        "mae": 0.408,
+        "mae_baseline": 0.405,
+        "skill": -0.0074,
+        "pearson_r": -0.0389,
+        "sign_agreement": 0.3889
+      }
+    ],
+    "checked_only": {
+      "k": 7,
+      "n_predicted": 23,
+      "mae": 0.2581,
+      "mae_baseline": 0.3024,
+      "skill": 0.1465,
+      "pearson_r": 0.2377,
+      "sign_agreement": 0.913
+    },
+    "licensed": false,
+    "verdict": "skill=0.0181, pearson_r=0.0986, sign_agreement=0.3704: within noise of the mean baseline -- trust is not semantically smooth (it is earned per-claim by external check), so the brain does NOT impute trust from topic"
+  },
+  "inputs": {
+    "claims_index": "claims_index.json",
+    "graph": "graph.json"
+  },
+  "note": "Trust is copied verbatim from the epistemic graph (external checks only). 'calibration.licensed' says whether semantic neighbours predict that trust well enough (honest bar in brain.Brain._licensed) to impute trust from topic. When false, the brain uses semantics for retrieval and exploration only, and refuses to impute trust."
+}
