@@ -912,11 +912,18 @@ above; this section was pruned of the duplicated "done" write-ups it had accrete
   (temporal-split) `calibrate`; `event_time` on the dated claims; the event-study
   driver (align `knowable_time` → forward price windows through the *existing* oracle
   nulls + FDR); then the medical-timeline ↔ market use case end to end.
-- **[meaning] LLM-proposed meaning path with provenance.** The skeleton meanings are
-  honestly not faithful predicate-argument semantics; a provenance-tagged
-  `LLMProposed` path is still future.
-- **[fixture] Reconstructed AUTO sentences as a DRT/SDRT test fixture** — feed real
-  parsed sentences into the discourse stages to hit properties the 9-case fragment
-  cannot produce.
+- **[meaning + fixture — coupled, this is the hard frontier] Faithful meanings gate
+  the DRT fixture.** `DRT.Build.toDRS :: ProvIndex -> Prov -> Term -> DRS` consumes a
+  lambda `Term`. The ingested skeletons are opaque `Con word (catTy cat)` (deliberately
+  not faithful, per TRACE S2), so a DRS built from a reconstructed sentence would be
+  degenerate — no predicate-argument or variable structure for anaphora/accessibility
+  to act on. Therefore **feeding reconstructed AUTO sentences into the DRT/SDRT stages
+  is blocked on richer meanings**, and the "LLM-proposed meaning path with provenance"
+  is the shared unblock. Two honest sub-paths: (a) canonical first-order Montague
+  *templates* per category shape (mechanical, a richer stipulated default than the
+  opaque constant — enough structure to exercise DRT, still not claimed faithful), or
+  (b) an actual LLM-proposed `Term` tagged `LLMProposed`, gated by `typeOf`. Both are
+  the genuinely-hard faithful-semantics frontier the handoff flags as not
+  mechanically derivable; neither should be faked.
 - **[Layer 8] News-attribution logging / entropy-reduction metric** — noted in the
   handoff, shares Layer 3's calibration build; not yet opened.

@@ -122,9 +122,15 @@ next event class to test, and its calibration must be walk-forward in time.
 - **Selection / survivorship** — testing only trials that reported, or firms still
   trading, biases the event set. Record the universe as-of, including the ones that
   later disappeared.
-- **Restatement / revision** — a result can be corrected later. Bitemporal storage
-  (valid-time + transaction-time) lets us ask "what did we believe about event E as of
-  T" even after a revision, instead of silently back-patching history.
+- **Restatement / revision** — a result can be corrected later. *What is implemented
+  today:* valid-time (`event_time`/`knowable_time`) plus a single `ingestion_time`
+  stamp per event, and evolving knowledge is captured by recording each disclosure as
+  its own dated event (e.g. aducanumab: EVT-002 discontinued 2019, EVT-003 approved
+  2021), so an as-of-`knowable_time` query already reconstructs "what was known then."
+  *What is not yet implemented:* full transaction-time versioning of a single event's
+  fields, which would let us ask "what did we *believe about event E* as of
+  transaction-time T" after a later back-correction to E itself. That is the honest
+  remaining gap between "bitemporal-capable" and the single-ingestion-stamp store here.
 - **Trading-calendar / timezone mapping** — `knowable_time → next tradeable time` is a
   real transform, not a rounding.
 - **Embargo / leak** — the true knowable_time can precede formal publication
