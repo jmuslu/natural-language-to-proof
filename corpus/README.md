@@ -87,3 +87,13 @@ any record; it is the mechanical reason the corpus must **grow and stay balanced
 across classes on both format and length** before any discrimination result is
 trustworthy rather than anecdotal. It is recorded here so the confound is
 measured, not assumed away.
+
+`confound_check.py` measures this continuously as the corpus grows: for each
+confound feature it reports a permutation p-value for whether that feature alone
+separates the adversarial buckets, and refuses a discrimination verdict until
+there are enough labeled records per bucket. It is validated on synthetic ground
+truth (`python3 corpus/confound_check.py --selftest`: it flags a corpus where
+format perfectly predicts the label, clears a balanced one, and reports NOT READY
+at tiny n) — the same "prove the checker on known answers first" discipline as the
+Layer 3 statistical suite. On the current four records it correctly returns NOT
+READY (1 pos / 1 neg once `ambiguous` and `unlabeled` are set aside).
