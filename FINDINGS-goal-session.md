@@ -723,6 +723,36 @@ against the handoff and brought up to its requirements.
   never overrides, and the noisy indirect signal is dominated by direct references
   exactly when those exist.
 
+## Layers 4/7/8 — calibration, the shared build
+
+- **[checked] Calibration module built** (`agentic-qr:shared/backtesting/validation/
+  calibration.py`, commit `3be3cbc`). The handoff asks for one object from three
+  directions — Layer 4 (fit the reward combination against held-out oracle-checked
+  outcomes), Layer 7 (measure confidence by calibration, not raw P&L), Layer 8
+  (Version-A entropy = calibration improving against real resolutions, not
+  Version-B coherence). It is one build: given many `(confidence, externally-checked
+  outcome)` pairs, is the confidence good? Provides `brier_score`,
+  `reliability_bins`, `expected_calibration_error`, `discrimination` (does higher
+  confidence predict a higher outcome rate), and a `calibration_report` verdict that
+  separates two distinct properties — **calibrated** (low ECE) vs **informative**
+  (confidence actually ranks outcomes). A system can be one without the other; the
+  Version-A signal needs both. Validated on synthetic ground truth (6 tests):
+  well-calibrated-informative scores well, overconfident is flagged miscalibrated,
+  uninformative is flagged as noise.
+- **[structural] The Version-A/B line is enforced by contract, not code.** The
+  module consumes only `(confidence, outcome)` pairs and the outcome MUST be an
+  external check (oracle resolution, backtest verdict) — never the system's own
+  coherence. That is the caller's responsibility and is stated as the boundary; it
+  is the same discipline the epistemic graph enforces structurally (trust only from
+  external checks). Together: the graph produces externally-anchored confidence,
+  the calibration module measures whether that confidence is any good — the two
+  halves of Layer 8 Version A.
+- **This is the external fitness function Layers 4 and 5 were waiting on.**
+  Layer 4's Pareto frontier defers "how to combine anti-correlated coordinates";
+  calibration against oracle-checked outcomes is exactly the external signal that
+  can *choose* a point on that frontier (or a graph-trust parameterisation for
+  Layer 5) without self-reference — once enough resolved instances exist.
+
 ## Open items, by layer (for the next pass)
 
 - **[Layer 5/7 — loop closed, incl. the upstream half (Thread 1)] `claim_refs`
