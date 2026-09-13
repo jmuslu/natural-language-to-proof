@@ -8,6 +8,8 @@
       "phase3_topline_mixed",
       "regulatory_approval",
       "regulatory_crl",
+      "advisory_committee_positive",
+      "advisory_committee_negative",
       "trial_discontinuation",
       "publication",
       "filing"

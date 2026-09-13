@@ -1,0 +1,28 @@
+{
+  "event_id": "EVT-004",
+  "description": "FDA Peripheral and Central Nervous System Drugs Advisory Committee voted AGAINST eteplirsen (Sarepta) for Duchenne muscular dystrophy -- 7-3 that the single historically-controlled study did not show it effective, and 7-6 against substantial evidence of dystrophin production likely to predict benefit.",
+  "source": {
+    "registry": "FDA advisory committee / company statement",
+    "id": "NDA 206488 (eteplirsen); FDA PCNS Drugs Advisory Committee",
+    "url": "https://www.fda.gov/advisory-committees/advisory-committee-calendar/april-25-2016-meeting-peripheral-and-central-nervous-system-drugs-advisory-committee-04242016",
+    "verified": "FDA advisory-committee calendar + Sarepta investor statement, verified 2026-09-13"
+  },
+  "sponsor": "Sarepta Therapeutics",
+  "ticker": "SRPT",
+  "event_type": "advisory_committee_negative",
+  "event_time": "2016-04-25",
+  "event_time_source": "FDA advisory committee meeting/vote date",
+  "knowable_time": "2016-04-25",
+  "knowable_time_source": "adcom outcome public the same day (Sarepta issued a statement 2016-04-25). Verified 2026-09-13.",
+  "note_on_stamps": "event_time == knowable_time (the vote and its disclosure coincide). An advisory-committee vote is a market-moving SIGNAL, not a final decision -- the FDA is not bound by it, and here it later granted accelerated approval (Sept 2016), another revision the dated-events store captures via a subsequent event.",
+  "outcome": {
+    "trial_result": "negative",
+    "note": "Advisory-committee vote against; NOT the final FDA decision. Recorded as the adcom signal, not a claim about the stock reaction."
+  },
+  "evidence_basis": "public_reference",
+  "provenance": {
+    "structure_source": "agent",
+    "fetched_via": "web (fda.gov, investorrelations.sarepta.com) via agent tools",
+    "fetched_at": "2026-09-13"
+  }
+}
