@@ -121,6 +121,23 @@ def main() -> None:
             check(p["min_trust"] >= 0.3, "bridge endpoint below trust_min")
             check(p["status"] == "proposed_hypothesis", "bridge not labelled proposal")
 
+        # --- research agenda: closes the loop, obeys the proposer discipline ---
+        from brain_agenda import build_agenda
+        ag = build_agenda(b, k_gaps=5, k_contested=3, k_bridges=5)
+        check(ag["generated_by"] == "brain", "agenda not attributed to brain")
+        check(ag["count"] == len(ag["items"]), "agenda count mismatch")
+        prios = [it["priority"] for it in ag["items"]]
+        check(prios == sorted(prios, reverse=True), "agenda not sorted by priority")
+        known = set(ids)
+        for it in ag["items"]:
+            check(it["status"] == "proposed", "agenda item not a proposal")
+            check(it["kind"] in {"verify_claim", "resolve_contested", "test_bridge"},
+                  f"bad agenda kind {it['kind']}")
+            check(it["claim_refs"] and all(r in known for r in it["claim_refs"]),
+                  "agenda item cites unknown claim ref")
+            if it["kind"] == "test_bridge":
+                check(len(it["claim_refs"]) == 2, "bridge item must cite two claims")
+
     # --- reproducibility: hashing build is deterministic ---
     with tempfile.TemporaryDirectory() as t1, tempfile.TemporaryDirectory() as t2:
         _, E1, tr1, _ = _build(t1)._all()

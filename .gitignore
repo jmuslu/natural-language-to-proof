@@ -36,3 +36,4 @@ corpus/.venv/
 corpus/brain.db
 corpus/brain.db-*
 corpus/brain_map.html
+corpus/brain_agenda.json

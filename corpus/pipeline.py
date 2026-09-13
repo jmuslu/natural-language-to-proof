@@ -133,7 +133,14 @@ def stage_retrieve_explore(brain: Brain) -> dict:
         if a.get("proposed_next_check"):
             print(f"        next external check -> {a['proposed_next_check']['text'][:56]}")
     print("  => every item above is a PROPOSAL for an external check, never a verdict.")
-    return {"stage": "retrieve_explore", "status": "ok"}
+    # the loop-closer: exploration becomes a ranked research agenda that feeds the
+    # TOP of the loop (each item carries claim_refs so outcomes reverse-propagate).
+    from brain_agenda import build_agenda
+    ag = build_agenda(brain)
+    print(f"  research agenda: {ag['count']} proposed items feed back to new hypotheses:")
+    for it in ag["items"][:3]:
+        print(f"      [{it['priority']:.2f}] {it['kind']} (refs {','.join(it['claim_refs'])})")
+    return {"stage": "retrieve_explore", "status": "ok", "agenda_items": ag["count"]}
 
 
 def stage_oracle_note() -> None:
