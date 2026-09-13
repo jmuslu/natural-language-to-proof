@@ -35,3 +35,4 @@ __pycache__/
 corpus/.venv/
 corpus/brain.db
 corpus/brain.db-*
+corpus/brain_map.html

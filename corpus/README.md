@@ -57,7 +57,9 @@ corpus/
                               synthetic inference, calibration, directed exploration
   brain_build.py              (re)build brain.db + brain_manifest.json from the graph
   brain_query.py              CLI: retrieve / infer / neighbors / explore / bridges / answer
-  brain_test.py               offline test suite for the brain (102 checks)
+  brain_test.py               offline test suite for the brain (109 checks)
+  brain_map.py                render brain.db as an interactive semantic-trust map
+                              (brain_map.html; positions=meaning, colour=trust)
   pipeline.py                 end-to-end operational driver (ingest→graph→brain→
                               retrieve/explore→oracle), narrated
   brain_manifest.json         committed calibration record (embedder, dim, skill)
