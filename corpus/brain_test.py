@@ -131,12 +131,20 @@ def main() -> None:
         known = set(ids)
         for it in ag["items"]:
             check(it["status"] == "proposed", "agenda item not a proposal")
-            check(it["kind"] in {"verify_claim", "resolve_contested", "test_bridge"},
-                  f"bad agenda kind {it['kind']}")
+            check(it["kind"] in {"verify_claim", "resolve_contested", "test_bridge",
+                                 "owner_judgment"}, f"bad agenda kind {it['kind']}")
             check(it["claim_refs"] and all(r in known for r in it["claim_refs"]),
                   "agenda item cites unknown claim ref")
             if it["kind"] == "test_bridge":
                 check(len(it["claim_refs"]) == 2, "bridge item must cite two claims")
+            # checkability routing: factual gaps -> verify_claim, others -> owner_judgment
+            from brain import CHECKABLE_TYPES
+            if it["kind"] == "verify_claim" and "claim_type" in it:
+                check(it["claim_type"] in CHECKABLE_TYPES,
+                      f"verify_claim routed a non-checkable type {it['claim_type']}")
+            if it["kind"] == "owner_judgment":
+                check(it["claim_type"] not in CHECKABLE_TYPES,
+                      f"owner_judgment routed a checkable type {it['claim_type']}")
 
     # --- reproducibility: hashing build is deterministic ---
     with tempfile.TemporaryDirectory() as t1, tempfile.TemporaryDirectory() as t2:

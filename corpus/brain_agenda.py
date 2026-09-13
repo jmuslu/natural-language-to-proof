@@ -34,13 +34,28 @@ def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
     items = []
 
     for d in brain.explore_frontier(k=k_gaps, mode="gaps"):
-        items.append({
-            "kind": "verify_claim", "claim_refs": [d["id"]],
-            "priority": round(d["centrality"], 4),
-            "question": f"Externally verify: {d['text']}",
-            "rationale": ("unchecked and central — an external check here resolves a "
-                          "dense, currently-unknown neighbourhood (highest leverage)"),
-            "domain": d["domain"], "status": "proposed"})
+        if d.get("externally_checkable", True):
+            items.append({
+                "kind": "verify_claim", "claim_refs": [d["id"]],
+                "priority": round(d["centrality"], 4),
+                "question": f"Externally verify (cite a reference): {d['text']}",
+                "rationale": ("unchecked, central, and factually checkable — a "
+                              "reference-backed verdict here resolves a dense unknown "
+                              "neighbourhood (highest leverage)"),
+                "domain": d["domain"], "claim_type": d.get("claim_type"),
+                "status": "proposed"})
+        else:
+            # central but not factually checkable (opinion/prediction/methodology):
+            # it needs an owner/quality judgment, not an external factual verdict.
+            items.append({
+                "kind": "owner_judgment", "claim_refs": [d["id"]],
+                "priority": round(d["centrality"] * 0.6, 4),  # a weaker call to action
+                "question": f"Owner/quality judgment (not factually checkable): {d['text']}",
+                "rationale": (f"central but claim_type '{d.get('claim_type')}' cannot get "
+                              "an external factual verdict; route to the owner/risk-quality "
+                              "axis rather than the consistency oracle"),
+                "domain": d["domain"], "claim_type": d.get("claim_type"),
+                "status": "proposed"})
 
     for d in brain.explore_frontier(k=k_contested, mode="contested"):
         items.append({

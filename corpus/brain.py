@@ -37,6 +37,18 @@ from brain_embed import get_embedder, vec_literal
 HERE = Path(__file__).resolve().parent
 
 
+# Claim types that can receive an external FACTUAL consistency verdict (checkable
+# against a citable reference). Opinions/predictions/methodology descriptions cannot
+# get such a verdict -- they need an owner/quality judgment instead, a different axis
+# (see corpus record_schema.json `risk_quality`). Kept here, next to the exploration
+# that uses it, so "what to check next" proposes the right KIND of check.
+CHECKABLE_TYPES = {"definitional", "factual_qualitative", "factual_quantitative"}
+
+
+def _is_checkable(claim_type: str) -> bool:
+    return claim_type in CHECKABLE_TYPES
+
+
 @dataclass
 class Fact:
     id: str
@@ -362,7 +374,9 @@ class Brain:
             else:
                 score = 0.5 * isolation + var  # checked: isolation and/or contestation
                 reason = "checked_contested" if var > 0.05 else "checked_isolated"
+            ctype = meta[i]["claim_type"]
             out.append({"id": ids[i], "text": meta[i]["text"], "domain": meta[i]["domain"],
+                        "claim_type": ctype, "externally_checkable": _is_checkable(ctype),
                         "trust": float(trusts[i]), "checked": bool(checked[i]),
                         "centrality": round(centrality, 4), "isolation": round(isolation, 4),
                         "neighbor_trust_var": round(var, 4),
