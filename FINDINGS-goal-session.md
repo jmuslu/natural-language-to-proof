@@ -667,17 +667,31 @@ against the handoff and brought up to its requirements.
 
 ## Open items, by layer (for the next pass)
 
-- **[Layer 5/7 — loop closed; one upstream gap remains] The graph, the
-  attribution slot, the claims index and the outcome-ingestion mechanism are all
-  built and verified end-to-end with a real backtest.** The single remaining gap
-  is *upstream*: the researcher/hypothesis stage must **populate** `claim_refs`
-  (and `knowledge_refs`) — currently the `attribution` block records whatever the
-  hypothesis carries, and hypotheses don't yet cite corpus claims, so real
-  results carry empty refs until a hypothesis author (or the researcher agent, as
-  a proposer) fills them from `claims_index.json`. The Layer-5 trust-*mechanism*
-  choice (edge-weight vs edge-existence vs node propagation) stays open and
-  not-to-be-brute-forced; the graph provides the structure a chosen mechanism
-  plugs into.
+- **[Layer 5/7 — loop closed, incl. the upstream half (Thread 1)] `claim_refs`
+  now auto-populate at generation time.** `corpus/propose_claim_refs.py`
+  (deterministic token/domain retrieval over `claims_index.json`, selftested) is
+  the proposer; agentic-qr `strategy-core._build_attribution` uses it —
+  author-supplied `claim_refs` take precedence, else retrieval proposes them,
+  tagged `claim_refs_source: author | agent_proposed_retrieval | none`. The
+  index is published to `agentic-qr:shared/corpus/claims_index.json`. So every
+  backtest now stamps retrieval-backed, author-confirmable `claim_refs`, and the
+  ingestion side reverse-propagates real outcomes to them. Retrieval only (safe
+  side) — a proposer, never a truth decision. The Layer-5 trust-*mechanism*
+  choice stays open and not-to-be-brute-forced.
+- **[Thread 2 — corpus grown to 5; confound honestly still red, not gamed]**
+  Collected a real source via WebFetch (White Coat Investor, ~1100-word article,
+  consistent bucket; raw provenance note outside the repo). Schema v2 gained
+  `agent_label` — a reference-backed, agent-*proposed* record label distinct from
+  `owner_label` (owner remains the gold standard) — so owner-unlabeled records can
+  be grown and balance-measured during bootstrapping; `confound_check` uses it as
+  a provisional fallback and reports the owner/agent provenance split. **Outcome
+  (honest):** corpus 4→5 (pos 2 / neg 1); `confound_check` still returns NOT READY
+  (needs ≥3 per bucket) and still flags format confounded (every pos is an
+  article, the one neg is a video). Adding a consistent article grew pos but
+  *worsened* the format skew — exactly why the remaining need is **balanced**
+  collection (inconsistent sources + videos, the latter needing transcript
+  tooling), not padding. Padding to pass the count would be the gaming move the
+  project forbids, so the check is correctly left red.
 
 - **[Layer 1/2] Done: core parser migrated to feature unification** (additive
   `Cat` extension + `catUnify`, fragment preserved at 386/386). Remaining: turn
