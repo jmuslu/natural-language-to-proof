@@ -19,11 +19,12 @@ import NL2Proof.Provenance (Prov(ProvLex), SourceId(SourceId), Span(Span))
 import NL2Proof.Syntax.CCGBank
 import NL2Proof.Syntax.CCGRules
 import NL2Proof.Syntax.CCGDeriv
+import NL2Proof.Syntax.CCGTypeChange
 
 main :: IO ()
 main = runChecks "ccgbank"
   (parseChecks ++ classifyChecks ++ tyChecks ++ agreementChecks
-   ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks)
+   ++ unifyChecks ++ ruleChecks ++ derivChecks ++ migrationChecks ++ tcChecks)
 
 --------------------------------------------------------------------------------
 -- Parsing
@@ -277,6 +278,41 @@ migrationChecks =
     p    = ProvLex (SourceId "t") (Span 0 1) "w"
     verb = Sign ((Feature "dcl" S :\ NP) :/ NP) (Con "verb" TyT) p  -- (S[dcl]\NP)/NP
     obj  = Sign (Feature "nb" NP) (Con "obj" TyT) p                 -- NP[nb]
+
+--------------------------------------------------------------------------------
+-- Type-changing rule class: induction + held-out (train/test) classification
+--------------------------------------------------------------------------------
+
+tcChecks :: [Check]
+tcChecks =
+  [ expect "unary node induces a type-change (N -> NP)"
+      (TCUnary (pc "N") (pc "NP") `elem` inducements uNode)
+  , expect "combinator-covered binary induces nothing (not a type-change)"
+      (null (inducements combNode))
+  , expect "non-combinator binary induces a type-change (, NP -> VP modifier)"
+      (TCBinary (pc ",") (pc "NP") (pc "(S\\NP)\\(S\\NP)") `elem` inducements tcBinNode)
+    -- held-out classification against a trained rule set
+  , expectEq "trained unary reclassifies as known type-change"
+      NCTypeChangeKnown (rootClass id trained uNode)
+  , expectEq "combinator node classifies as combinator (no rule needed)"
+      NCCombinator (rootClass id trained combNode)
+  , expectEq "an unseen type-change is unexplained (the honest residue)"
+      NCUnexplained (rootClass id trained (AutoTree "PP" [AutoLeaf "N" "z"]))
+    -- feature-erased generalisation: a train rule on NP[nb] should cover a test
+    -- NP node only when matching up to feature erasure, not exactly
+  , expectEq "exact match misses the feature variant"
+      NCUnexplained (rootClass id           (buildRuleSet id           [nbNode]) plainNode)
+  , expectEq "feature-erased match generalises across the feature"
+      NCTypeChangeKnown (rootClass eraseFeatures (buildRuleSet eraseFeatures [nbNode]) plainNode)
+  ]
+  where
+    uNode     = AutoTree "NP" [AutoLeaf "N" "foo"]                       -- N -> NP (unary)
+    combNode  = AutoTree "S[dcl]" [AutoLeaf "NP" "a", AutoLeaf "S[dcl]\\NP" "b"]
+    tcBinNode = AutoTree "(S\\NP)\\(S\\NP)" [AutoLeaf "," "c", AutoLeaf "NP" "d"]
+    nbNode    = AutoTree "NP[nb]" [AutoLeaf "N" "x"]                     -- NP[nb] -> N in training
+    plainNode = AutoTree "NP" [AutoLeaf "N" "y"]                         -- NP -> N at test
+    trained   = buildRuleSet id [uNode, tcBinNode]
+    rootClass norm rules node = head (classifyTree norm rules node)
 
 --------------------------------------------------------------------------------
 -- helpers

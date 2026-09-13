@@ -42,6 +42,7 @@ library
                       NL2Proof.Syntax.CCGBank
                       NL2Proof.Syntax.CCGRules
                       NL2Proof.Syntax.CCGDeriv
+                      NL2Proof.Syntax.CCGTypeChange
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
                       NL2Proof.DRT.Canonical
@@ -99,6 +100,16 @@ executable ccg-reconstruct
     import:           warnings
     hs-source-dirs:   tools
     main-is:          CCGReconstruct.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+executable ccg-typechange-coverage
+    -- Train/test measurement of the type-changing rule class: induce from train
+    -- .auto files, measure held-out coverage on test files. Guards against
+    -- corpus-memorisation by reporting generalisation, not in-sample fit.
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          CCGTypeChangeCoverage.hs
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
 
