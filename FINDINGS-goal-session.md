@@ -643,19 +643,41 @@ against the handoff and brought up to its requirements.
   calibration-over-many-instances signal Layer 7 asks for, not a single P&L
   verdict. **The un-built prerequisite is real attribution logging** — recording
   which claims a strategy used at generation time — which the handoff flags as
-  "not free the way exact derivation dependency is in `Genealogy.hs`." The graph
-  consumes it the moment it exists.
+  "not free the way exact derivation dependency is in `Genealogy.hs`."
+
+- **[checked] The live Layer 7 loop is now closed with a real oracle verdict.**
+  Three pieces built: `strategy-core` records an `attribution` block
+  (hypothesis + `claim_refs`) on every backtest result (agentic-qr `5a1d4b2`);
+  `corpus/export_claims_index.py` → `claims_index.json` gives the 48 stable claim
+  ids an upstream stage cites; `corpus/ingest_outcomes.py` reads a real result
+  (attribution.claim_refs + validation certificate, passed→+1/failed→−1) and
+  reverse-propagates into the graph. Verified end-to-end with a **real nautilus
+  backtest** (`spy_daily_dip_hold_5`, `validation.passed=False`): its result —
+  real attribution (`claim_refs` 002-b market-efficiency, 002-c null-baseline) and
+  the real verdict — ingested and propagated.
+- **[measured] Combination behaviour is correct: indirect signal is decisive only
+  where a claim has no other external check.** The failed backtest left 002-b/002-c
+  at **+0.6**, not negative, because both already carry strong external *reference*
+  support (+0.9); a single failed backtest is weak contrary evidence (−0.3) that
+  reduces but doesn't flip a well-established claim. An *unresolved* claim (003-a,
+  trust 0) fed to a failed strategy **does** go negative — the backtest is its only
+  external signal. This is the Layer 7/8 combination discipline working: reputation
+  never overrides, and the noisy indirect signal is dominated by direct references
+  exactly when those exist.
 
 ## Open items, by layer (for the next pass)
 
-- **[Layer 5/7 — now partly bridged] Attribution logging is the next real build.**
-  The epistemic graph (`corpus/epistemic_graph.py`) and its reverse-propagation
-  are done and self-tested; what turns the reverse-propagation demo into a live
-  signal is recording `strategy → used → claim` links at generation time (in
-  `agentic-qr`'s strategy pipeline), so a real backtest outcome implicates real
-  claims. The Layer-5 trust-*mechanism* choice (edge-weight vs edge-existence vs
-  node propagation) stays open and not-to-be-brute-forced; the graph provides the
-  structure a chosen mechanism plugs into.
+- **[Layer 5/7 — loop closed; one upstream gap remains] The graph, the
+  attribution slot, the claims index and the outcome-ingestion mechanism are all
+  built and verified end-to-end with a real backtest.** The single remaining gap
+  is *upstream*: the researcher/hypothesis stage must **populate** `claim_refs`
+  (and `knowledge_refs`) — currently the `attribution` block records whatever the
+  hypothesis carries, and hypotheses don't yet cite corpus claims, so real
+  results carry empty refs until a hypothesis author (or the researcher agent, as
+  a proposer) fills them from `claims_index.json`. The Layer-5 trust-*mechanism*
+  choice (edge-weight vs edge-existence vs node propagation) stays open and
+  not-to-be-brute-forced; the graph provides the structure a chosen mechanism
+  plugs into.
 
 - **[Layer 1/2] Done: core parser migrated to feature unification** (additive
   `Cat` extension + `catUnify`, fragment preserved at 386/386). Remaining: turn
