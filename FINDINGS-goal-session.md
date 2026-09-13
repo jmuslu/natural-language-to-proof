@@ -269,6 +269,48 @@ combinator set reproduces the gold category. Tool: `ccg-reconstruct`.
   corpus text; only the `ccg-reconstruct` tool touches real `.auto` files, at
   runtime, from `~/ccgbank/`. Nothing corpus-derived is committed.
 
+## Layer 1/2 continuation — core parser migration & the type-change rule class
+
+- **[checked] The core parser (`CCG.hs`) now combines by feature unification, not
+  exact equality, and the fragment is unaffected.** `Cat` was extended
+  *additively* — added `PP` and a `Feature` wrapper, keeping `S/NP/N/:/ /:\` so
+  every existing constructor and pattern match is untouched — and `fwdApp`,
+  `bwdApp`, `fwdComp`, `bwdComp`, and the parse goal filter now use `catUnify`.
+  `catUnify` is underspecification-as-wildcard, so on the feature-free fragment
+  it *is* structural equality: **stage-1 core stays 386/386**, all suites green.
+  A new test shows the capability the migration adds — the core `fwdApp` now
+  fires on a verb selecting `NP` applied to an `NP[nb]` object (rejected by `==`
+  before), while `S[dcl]` still does not unify with `S[b]`. Blast radius was
+  small because only `Category`, `CCG`, `Lexicon`, `Pipeline` touch `Cat` (Stage 2
+  and DRT work on `Term`/`DRS`).
+
+- **[stipulated] `catTy PP = tyGQ`.** The core type map must be total, so `PP` is
+  provisionally typed like an argument-position `NP` (a case-marking `PP/NP`
+  preposition then types `tyGQ -> tyGQ`, a transparent identity function).
+  *This is deliberately more committal than the ingestion classifier*
+  (`ccatToTy` still returns `AmbiguousAtomType "PP"` so PP-bearing corpus entries
+  are flagged for human review). The two coexist by design; overturning either is
+  a logged act. Alternative considered: `PP -> (e->t)` (predicative reading) —
+  rejected as the default because the dominant corpus use of `PP` is the
+  argument-marking `PP/NP` preposition, but this stays open to revision.
+
+- **[measured] The type-changing rule class is a small, closed, learnable
+  inventory that generalises — measured train/test to avoid self-agreement.**
+  `CCGTypeChange` induces type-change rules (unary `N->NP`, reduced relatives,
+  `TOP`; binary punctuation/coordination category changes) from training
+  sentences and classifies a *held-out* section, reporting combinator
+  (generalising) / type-change-known (generalising memorisation) / UNEXPLAINED
+  (genuine unseen) separately. Train sections 02–21 (39,604 sentences) → held-out
+  section 23 (2,407): **only 423 exact / 223 feature-erased rules induced**; on
+  held-out data combinators cover **87.1%**, learned type-changes **12.9%**, and
+  **UNEXPLAINED is 7 nodes exact / 1 feature-erased out of 60,717 (0.01%)**;
+  sentence reconstruction **99.7% / 100.0%**. The soundness design is the point:
+  inducing rules and scoring them on the *same* corpus would be circular
+  (trivially ~100%); the held-out split makes the ~100% genuine generalisation,
+  and the 7→1 unexplained nodes are the honest productive residue. Feature-erased
+  matching generalises better with *fewer* rules (223 < 423), showing the
+  inventory is even smaller than it first appears.
+
 ## Layer 3 — the oracle candidate (`~/projects/shared/backtesting/`), interrogated
 
 Read-only survey (no changes made to `~/projects`; the operating conventions
@@ -427,17 +469,18 @@ After the survey above, the owner granted confirmation to build in `~/projects`
 
 ## Open items, by layer (for the next pass)
 
-- **[Layer 1/2] Migrate the core parser (`CCG.hs`) to feature unification, or
-  keep the ingestion path separate.** The unification policy is now built and
-  externally validated on `CCat`, but the hand-written fragment's parser still
-  uses `==` on bare `Cat`. Decision still open: extend the core `Cat` with
-  features + `PP` and swap `==` for `unifiable` (bigger blast radius, risks the
-  386-check Stage-1 suite), vs. keep CCGbank ingestion on its own `CCat` path
-  and bridge only where needed. Either way, `PP`'s semantic type must be decided
-  before PP-bearing entries become real `Entry` values.
-- **[Layer 1/2] The type-changing rule class** (the measured ~8% gap above) —
-  implement as an explicit, separately-named rule set with its own coverage
-  measurement, not by loosening the combinators.
+- **[Layer 1/2] Done: core parser migrated to feature unification** (additive
+  `Cat` extension + `catUnify`, fragment preserved at 386/386). Remaining: turn
+  CCGbank `(word, category)` pairs into real provenance-tagged `Entry` values
+  feeding the core parser — needs a meaning skeleton per category and the
+  provenance field on `Entry`. `PP`'s semantic type is provisionally `tyGQ`
+  (`[stipulated]`), still open to revision before PP entries are trusted.
+- **[Layer 1/2] Done: type-changing rule class, measured train/test** as a
+  learnable inventory (`CCGTypeChange`, `ccg-typechange-coverage`; 0.01%
+  held-out residue). Remaining: fold combinators + the induced type-change
+  inventory into one parser path so real sentences parse end-to-end (not just
+  node-classify), and decide whether type-raising should be a generalising
+  combinator rather than a memorised unary rule.
 - **[Layer 2] Done: `.auto` derivation parser + reconstruction** (`CCGDeriv`,
   `ccg-reconstruct`, ~96% of real sentences). Remaining: use the reconstructed
   sentences as an actual test-case *fixture* feeding the DRT/SDRT stages, to hit
