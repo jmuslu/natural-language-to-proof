@@ -104,9 +104,15 @@ def stage_brain() -> tuple[dict, Brain]:
           f"pearson_r={cal['checked_only'].get('pearson_r')}")
     print("  learning curve (skill as #external-checks grows; real trust only):")
     for pt in lc["curve"]:
-        print(f"      m={pt['m']:>2}  mean_skill={pt['mean_skill']:+.4f}")
-    print(f"  monotone increasing? {lc['monotone_up']}  => accumulating external "
-          "checks makes synthetic inference progressively more licensed.")
+        ms = pt["mean_skill"]
+        print(f"      m={pt['m']:>2}  mean_skill={ms:+.4f}" if ms is not None
+              else f"      m={pt['m']:>2}  mean_skill=n/a")
+    pts = [p["mean_skill"] for p in lc["curve"] if p["mean_skill"] is not None]
+    if len(pts) >= 2:
+        trend = "rises overall" if pts[-1] > pts[0] else "does not rise"
+        strict = " and monotonically" if lc["monotone_up"] else " (not strictly monotone on this small sample)"
+        print(f"  skill {trend} ({pts[0]:+.3f} -> {pts[-1]:+.3f}){strict}  => more external "
+              "checks tend to make synthetic inference more licensed.")
     return {"stage": "brain", "status": "ok", "calibration": cal, "learning_curve": lc}, brain
 
 
