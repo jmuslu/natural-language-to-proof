@@ -78,23 +78,28 @@ anywhere. 386 checks.
 modifier–noun fusion, structural fingerprints, finite models, RSA, SDRT and
 SDRT-aware discourse threading. 239 checks.
 
-**Substrate (verification, genealogy, fusion, reward): first cut built.** 109
+**Substrate (verification, genealogy, fusion, reward): first cut built.** 114
 checks, and they assert design constraints rather than linguistic behaviour — the
-self-grounding and self-agreement checks are the load-bearing ones.
+self-grounding and self-agreement checks are the load-bearing ones. The reward is
+now also treated as a **vector** (`rewardCoordinates`/`dominates`/`paretoFrontier`)
+that exposes the anti-correlated corroboration/novelty coordinates `rwScore`
+collapses away, and defers scalarization to an external fitness function — see
+`FINDINGS-goal-session.md`, Layer 4.
 
 **CCGbank ingestion (Stage 1 scaling): underway.** Parsing and classifying
 CCGbank's feature-annotated categories, feature-unifying combinators validated
-against the corpus's own GRAMMAR, `.auto` derivation reconstruction, and a
-train/test-measured type-changing rule class. 81 checks. See
-`FINDINGS-goal-session.md` for the measured results.
+against the corpus's own GRAMMAR, `.auto` derivation reconstruction, a
+train/test-measured type-changing rule class, and provenance-tagged lexical-entry
+ingestion (99.9% of the 83,540-entry lexicon, 0 ill-typed skeletons). 89 checks.
+See `FINDINGS-goal-session.md` for the measured results.
 
 | Suite | Checks | What it pins |
 |---|---|---|
 | `test/Spec.hs` | 386 | the discrete core, and discourse-merge soundness |
 | `test/Stage2Spec.hs` | 239 | candidate generation, ranking, SDRT threading |
-| `test/SubstrateSpec.hs` | 109 | oracle boundary, grounded support, precise retraction, reward admissibility |
-| `test/CCGBankSpec.hs` | 81 | CCGbank category parsing, feature unification, `.auto` reconstruction, type-change induction |
-| **total** | **815** | |
+| `test/SubstrateSpec.hs` | 114 | oracle boundary, grounded support, precise retraction, reward admissibility + Pareto frontier |
+| `test/CCGBankSpec.hs` | 89 | CCGbank category parsing, feature unification, `.auto` reconstruction, type-change induction, entry ingestion |
+| **total** | **828** | |
 
 What the substrate has and has not:
 
@@ -422,6 +427,7 @@ src/NL2Proof/
   Syntax/CCGRules.hs   feature-unifying combinatory rules over CCGbank categories
   Syntax/CCGDeriv.hs   parse .auto derivation trees; reconstruction check
   Syntax/CCGTypeChange.hs  type-changing rule class, learned train/test
+  Syntax/CCGLexicon.hs  CCGbank (word,category) -> provenance-tagged Entry + skeleton
   DRT/Types.hs         DRS boxes, conditions, accessibility, rendering
   DRT/Build.hs         term -> DRS, anaphora resolution, discourse threading
   DRT/Canonical.hs     provenance-free view: claim identity
@@ -442,17 +448,20 @@ src/NL2Proof/
   Verify/Claims.hs     stage 2: claims with derivations retained, no dedup
   Genealogy.hs         stage 2: the DAG, grounded support, precise retraction
   Fusion.hs            stage 3: dedup of oracle-confirmed claims only
-  Reward.hs            stage 4: the RL signal and its admissibility check
+  Reward.hs            stage 4: the RL signal, its admissibility check, and the
+                       vector-valued reward (rewardCoordinates/dominates/paretoFrontier)
 app/Main.hs            demo
 tools/CCGBankReport.hs        representability of the CCGbank lexicon (over LEX)
 tools/CCGGrammarCoverage.hs   combinator coverage vs CCGbank GRAMMAR
 tools/CCGReconstruct.hs       whole-sentence reconstruction over real .auto files
 tools/CCGTypeChangeCoverage.hs  type-change coverage, held-out train/test
+tools/CCGLexiconIngest.hs     ingest the CCGbank lexicon into provenance-tagged entries
 test/Harness.hs        shared assert scaffolding, no framework dependency
 test/Spec.hs           386 discrete-core checks
 test/Stage2Spec.hs     239 candidate-generation checks
-test/SubstrateSpec.hs  109 substrate checks
-test/CCGBankSpec.hs    81 CCGbank parse / unification / reconstruction checks
+test/SubstrateSpec.hs  114 substrate checks (incl. Pareto reward frontier)
+test/CCGBankSpec.hs    89 CCGbank parse / unification / reconstruction / ingestion checks
+corpus/               the adversarial epistemic corpus + graph (see corpus/README.md)
 docs/                  standalone probes and CCGbank feature surveys (read-only)
 ```
 

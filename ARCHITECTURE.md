@@ -402,6 +402,7 @@ src/NL2Proof/
     CCGRules.hs        feature-unifying combinators over CCGbank categories
     CCGDeriv.hs        parse .auto derivation trees; reconstruction check
     CCGTypeChange.hs   type-changing rule class, learned + measured train/test
+    CCGLexicon.hs      CCGbank (word,category) -> provenance-tagged Entry + skeleton
   DRT/                 boxes, accessibility, discourse threading, canonical form
   Collapse/Class.hs    Selection: chosen reading + the rejected fiber
   Fragment.hs          the nine-case evaluation set
@@ -1074,6 +1075,54 @@ not merely dispreferred but ungrammatical. `"The monkeys gathered"` has no
 distributive reading at all. Generating it is still correct; the ranking layer
 must be able to send it to zero rather than merely low.
 
+## The connected system and its feedback loops
+
+What has been built across recent sessions can look like scope drift — CCGbank
+lexicon growth, an adversarial news/article corpus, a trading-strategy validation
+suite, an epistemic graph. It is one system, held together by the single
+throughline this document opens with: *nothing internal to the system counts as
+evidence; only an external check does.* Each piece is that rule at a different
+altitude, and the pieces are wired to each other by **provenance** and by
+**feedback loops** that all terminate at an external check. The map:
+
+- **Front end (Layers 1–2).** `typeOf` is the external-shaped gate for lexical
+  content: a `(word, category)` from CCGbank becomes a provenance-tagged `Entry`
+  (`CCGLexicon`) — the category is *corpus-attested*, the meaning skeleton is
+  *synthesised and flagged as such*, and the type gate is honestly weak (every
+  `{e,t}` type is inhabited), so faithfulness is carried by provenance, not
+  pretended by type-checking.
+- **The oracle (Layer 3).** The trading validation suite
+  (`agentic-qr:shared/backtesting/validation`) is the concrete external oracle:
+  walk-forward/OOS, two nulls, regime-conditional evaluation, single-signal
+  certificate, run-level FDR, and an export boundary that lets *only*
+  fully-validated signals cross. It is deterministic and construction-independent
+  so the thing it certifies cannot be shaped by the agents proposing signals.
+- **The reward (Layer 4).** `Reward` reports coordinates and a Pareto frontier
+  rather than a single farmed scalar; corroboration and novelty are anti-correlated
+  and left *incomparable*, with the choice among frontier points deferred to an
+  external fitness function.
+- **That fitness function (Layers 4/7/8).** `calibration.py` — does confidence
+  predict externally-checked resolution? — is the shared signal the reward's
+  frontier-selection, the news layer's confidence, and Version-A "entropy
+  reduction" all reduce to. It consumes only outcomes that came from a check.
+- **The graph and the loops (Layers 5–7).** `corpus/epistemic_graph.py` stores
+  claims/sources/references/outcomes as nodes; trust *originates only from
+  external checks* (references, owner labels, oracle outcomes), and **flows both
+  ways**: forward (a reference or corroboration lifts a claim and, descriptively,
+  its source) and backward (`implicate_from_outcome` — a backtest verdict
+  propagates to the claims a strategy leaned on, via `attribution.claim_refs`, the
+  same reverse shape as `Genealogy`'s retraction propagation). A single outcome is
+  weak; confidence accrues by calibration over many.
+
+The end-to-end feedback loop, stated once: a claim (corpus) → cited by a
+hypothesis (`claim_refs`, proposed by retrieval, author-confirmable) → a strategy
+→ a backtest → the validation certificate (external check) → reverse-propagated to
+the claim's trust, and aggregated over many outcomes into calibration. The one
+gap still open is the researcher-notes→claim link (Layer 9) and wiring run-level
+FDR into the batch runner; both are named in `FINDINGS-goal-session.md`. Every
+edge in that loop either is an external check or carries provenance to one —
+which is the whole point, and why the pieces are one system rather than four.
+
 ## Non-goals / guardrails
 
 - Do **not** treat any internal check as evidence. Typedness, canonical equality
@@ -1097,4 +1146,20 @@ must be able to send it to zero rather than merely low.
   kernels — useful for search and separability) with "avoid information loss".
   Expansion changes *where* loss can occur; it does not eliminate it.
 - Do **not** build the epistemic graph layer until an oracle-reversal use case
-  actually demands it, and then derive it from that use case.
+  actually demands it, and then derive it from that use case. *(Status: the use
+  case has since emerged — the adversarial-corpus track, `corpus/`, needs a
+  standalone verdict artifact and a reverse-propagation from oracle-checked
+  backtest outcomes to the claims that fed them. The graph __structure__ was
+  therefore derived from that use case: `corpus/epistemic_graph.py` — nodes for
+  sources/claims/references/outcomes, bidirectional edges, trust that originates
+  only from external checks, `implicate_from_outcome` for reverse propagation.
+  The trust-update __mechanism__ (edge-weight vs edge-existence vs node
+  propagation) was, until recently, deferred as the open Layer-5 question. That
+  deferral is now lifted (owner override — the surrounding scaffolding has matured
+  enough), so the mechanism is in scope. The part of the guardrail that does
+  __not__ lift: a mechanism must be chosen/evaluated against an __external__
+  fitness function — calibration against oracle-checked resolutions — never by the
+  system's own internal metric. Searching parameter values within a fixed topology
+  against that external signal is legitimate; letting internal coherence pick the
+  mechanism is still the trap. So: structure derived from a concrete use case;
+  mechanism now built, but graded only by external checks.)*

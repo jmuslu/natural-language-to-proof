@@ -37,11 +37,20 @@ left them all null; that over-read the live-system rule and is corrected here.
 
 ```
 corpus/
-  record_schema.json     schema v2 (controlled vocabularies + field docs)
-  records/record_00X.json structured records (in the repo — derived metadata + short claims)
-  build_records.py       the reproducible transformation (source data -> records)
-  README.md              this file
-~/corpus/raw/            raw full transcripts/articles — OUTSIDE the repo
+  record_schema.json          schema v2 (controlled vocabularies + field docs)
+  records/record_00X.json     structured records (derived metadata + short claims)
+  build_records.py            the reproducible transformation (source data -> records)
+  verify_claims.py            agent-proposed, reference-backed per-claim verdicts
+                              -> verdicts_agent_proposed.json
+  export_claims_index.py      -> claims_index.json (stable ids upstream stages cite)
+  propose_claim_refs.py       deterministic retrieval: hypothesis -> candidate claim_refs
+  confound_check.py           format/length confound-ablation (permutation test)
+  epistemic_graph.py          the bidirectional trust graph (echo-chamber-guarded)
+  build_graph.py              assemble the graph from records + verdicts -> graph.json
+  ingest_outcomes.py          reverse-propagate real backtest outcomes into the graph
+  reverse_propagation_demo.py worked Layer-7 example on the real corpus
+  README.md                   this file
+~/corpus/raw/                 raw full transcripts/articles — OUTSIDE the repo
 ```
 
 **Placement decision** (`[stipulated]`). Structured records live in the repo:

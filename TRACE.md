@@ -1504,6 +1504,16 @@ chain of 50, same shape
 > implied by the others. A single scalar cannot express a trade-off, only a
 > ranking, which is the general reason the coordinates are reported separately
 > rather than summed.
+>
+> **P13.12 [checked]** This is now realised in code, not only argued: `Reward`
+> exposes `rewardCoordinates` (including `rwCorroborated`/`rwNovel`, which
+> `rwScore` omits), `dominates` (Pareto dominance), and `paretoFrontier`. A
+> corroboration-heavy and a novelty-heavy reward come out **incomparable** —
+> neither dominates — so the trade-off is preserved rather than collapsed, and the
+> choice among frontier points is deferred to an external fitness function
+> (calibration against oracle-checked outcomes; see `FINDINGS-goal-session.md`,
+> Layers 4/7/8). `rwScore` is retained but is one blind scalarization among the
+> coordinates, not "the reward".
 
 ### Analysis: the two admissible sources, and why only two
 
