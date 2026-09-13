@@ -72,22 +72,29 @@ the remainder stays visible.
 ## Status
 
 **Stage 1: complete.** Deterministic Montague/CCG/DRT core, no probability
-anywhere. 366 checks.
+anywhere. 386 checks.
 
 **Stage 2 (candidate generation and ranking): in progress.** Scope permutation,
 modifier–noun fusion, structural fingerprints, finite models, RSA, SDRT and
-SDRT-aware discourse threading. 226 checks.
+SDRT-aware discourse threading. 239 checks.
 
-**Substrate (verification, genealogy, fusion, reward): first cut built.** 85
+**Substrate (verification, genealogy, fusion, reward): first cut built.** 109
 checks, and they assert design constraints rather than linguistic behaviour — the
 self-grounding and self-agreement checks are the load-bearing ones.
 
+**CCGbank ingestion (Stage 1 scaling): underway.** Parsing and classifying
+CCGbank's feature-annotated categories, feature-unifying combinators validated
+against the corpus's own GRAMMAR, `.auto` derivation reconstruction, and a
+train/test-measured type-changing rule class. 81 checks. See
+`FINDINGS-goal-session.md` for the measured results.
+
 | Suite | Checks | What it pins |
 |---|---|---|
-| `test/Spec.hs` | 366 | the discrete core, and discourse-merge soundness |
-| `test/Stage2Spec.hs` | 226 | candidate generation, ranking, SDRT threading |
-| `test/SubstrateSpec.hs` | 85 | oracle boundary, grounded support, precise retraction, reward admissibility |
-| **total** | **677** | |
+| `test/Spec.hs` | 386 | the discrete core, and discourse-merge soundness |
+| `test/Stage2Spec.hs` | 239 | candidate generation, ranking, SDRT threading |
+| `test/SubstrateSpec.hs` | 109 | oracle boundary, grounded support, precise retraction, reward admissibility |
+| `test/CCGBankSpec.hs` | 81 | CCGbank category parsing, feature unification, `.auto` reconstruction, type-change induction |
+| **total** | **815** | |
 
 What the substrate has and has not:
 
@@ -242,8 +249,11 @@ needed. That makes the build work offline, and makes the dependency-free
 constraint enforceable rather than merely stated: adding a Hackage dependency
 fails the build instead of silently succeeding.
 
-`cabal test all` runs all three suites: the discrete core, candidate
-generation, and the substrate.
+`cabal test all` runs all four suites: the discrete core, candidate generation,
+the substrate, and CCGbank ingestion. The `tools/` executables (`ccgbank-report`,
+`ccg-grammar-coverage`, `ccg-reconstruct`, `ccg-typechange-coverage`) are
+research drivers over the CCGbank corpus — run e.g. `cabal run ccgbank-report`;
+they read `~/ccgbank/` at runtime and commit no corpus data.
 
 <details>
 <summary>If cabal complains about <code>root.json</code> signatures</summary>
@@ -403,10 +413,15 @@ src/NL2Proof/
   Provenance.hs        source ids, spans, how-provenance trees, folds
   Trace.hs             Decision and Diagnostic logs
   Semantics/Lambda.hs  typed lambda calculus, type checker, normalizer
-  Syntax/Category.hs   CCG categories, category -> semantic type
+  Syntax/Category.hs   CCG categories (with features + PP), category -> type,
+                       feature unification (catUnify)
   Syntax/Lexicon.hs    the fragment's vocabulary
   Syntax/Tokenize.hs   sentence splitting, spans, the lexical lattice
-  Syntax/CCG.hs        signs, combinators, CKY parser
+  Syntax/CCG.hs        signs, combinators (feature-unifying), CKY parser
+  Syntax/CCGBank.hs    parse + classify CCGbank feature-annotated categories
+  Syntax/CCGRules.hs   feature-unifying combinatory rules over CCGbank categories
+  Syntax/CCGDeriv.hs   parse .auto derivation trees; reconstruction check
+  Syntax/CCGTypeChange.hs  type-changing rule class, learned train/test
   DRT/Types.hs         DRS boxes, conditions, accessibility, rendering
   DRT/Build.hs         term -> DRS, anaphora resolution, discourse threading
   DRT/Canonical.hs     provenance-free view: claim identity
@@ -429,12 +444,21 @@ src/NL2Proof/
   Fusion.hs            stage 3: dedup of oracle-confirmed claims only
   Reward.hs            stage 4: the RL signal and its admissibility check
 app/Main.hs            demo
+tools/CCGBankReport.hs        representability of the CCGbank lexicon (over LEX)
+tools/CCGGrammarCoverage.hs   combinator coverage vs CCGbank GRAMMAR
+tools/CCGReconstruct.hs       whole-sentence reconstruction over real .auto files
+tools/CCGTypeChangeCoverage.hs  type-change coverage, held-out train/test
 test/Harness.hs        shared assert scaffolding, no framework dependency
-test/Spec.hs           366 discrete-core checks
-test/Stage2Spec.hs     226 candidate-generation checks
-test/SubstrateSpec.hs  85 substrate checks
-docs/                  standalone probes, not wired into a suite
+test/Spec.hs           386 discrete-core checks
+test/Stage2Spec.hs     239 candidate-generation checks
+test/SubstrateSpec.hs  109 substrate checks
+test/CCGBankSpec.hs    81 CCGbank parse / unification / reconstruction checks
+docs/                  standalone probes and CCGbank feature surveys (read-only)
 ```
+
+The `tools/` executables are research drivers, not part of the library or its
+test suites. They read the CCGbank corpus from `~/ccgbank/` at runtime; no
+corpus-derived data is committed to this repository (LDC2005T13 licensing).
 
 ## Next
 
@@ -447,10 +471,20 @@ In order, and the order matters.
 2. **Plug in one real oracle** and replace a whitelist with it. The seam is
    `Verify.Oracle.Oracle`; the toy oracles in the suite exist only to exercise
    the plumbing.
-3. **Build a generator over the lexicon and the CCG rules.** The nine-case corpus
-   has now hidden two real defects — an inert SDRT frontier and an unsound DRS
-   merge — and both needed only a discriminating example, not new vocabulary. A
-   green suite currently means "no case exercises this".
+3. **Build a generator over the lexicon and the CCG rules.** *Substantially
+   underway — see `FINDINGS-goal-session.md`.* CCGbank (LDC2005T13) is now the
+   corpus: `Syntax/CCGBank` parses and classifies its feature-annotated
+   categories (66.5% of the 83,540-entry lexicon representable in the current
+   `Cat` as-is), `Syntax/CCGRules` supplies feature-unifying combinators
+   (reproducing 99.8% of GRAMMAR rule firings), `Syntax/CCGDeriv` parses `.auto`
+   derivations (~96% of real sentences reconstruct end-to-end), and
+   `Syntax/CCGTypeChange` learns the type-changing rule class train/test (0.01%
+   held-out residue). The core parser (`Syntax/CCG`) now combines by feature
+   unification rather than exact equality. Still to do: turn `(word, category)`
+   pairs into provenance-tagged `Entry` values and feed real sentences through
+   the DRT/SDRT stages as test cases — the nine-case corpus has already hidden
+   two real defects (an inert SDRT frontier, an unsound DRS merge), so a green
+   suite still means "no case exercises this".
 4. **Drop the one-edge marginalisation truncation** in `Stage2.Threading`. It is
    the common cause of four separate symptoms; `fullMarginalAt` measures the gap
    but does not close it.

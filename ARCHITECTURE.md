@@ -395,7 +395,13 @@ src/NL2Proof/
   Provenance.hs        derivation trees: how a condition was derived
   Trace.hs             Decision / Diagnostic: every collapse, logged
   Semantics/Lambda.hs  simply-typed lambda calculus, typeOf, normalize
-  Syntax/              lexical lattice, categories, lexicon, CKY parser
+  Syntax/              lexical lattice, categories, lexicon, CKY parser;
+                       feature-annotated categories now carried (S[dcl], NP[nb],
+                       PP) and combined by feature unification (catUnify)
+    CCGBank.hs         parse + classify CCGbank feature-annotated categories
+    CCGRules.hs        feature-unifying combinators over CCGbank categories
+    CCGDeriv.hs        parse .auto derivation trees; reconstruction check
+    CCGTypeChange.hs   type-changing rule class, learned + measured train/test
   DRT/                 boxes, accessibility, discourse threading, canonical form
   Collapse/Class.hs    Selection: chosen reading + the rejected fiber
   Fragment.hs          the nine-case evaluation set
@@ -407,13 +413,23 @@ src/NL2Proof/
   Fusion.hs            stage 3: dedup of oracle-confirmed claims
   Reward.hs            stage 4: the RL signal, and its admissibility check
 app/Main.hs            demo
+tools/                 research drivers over the CCGbank corpus (representability,
+                       GRAMMAR coverage, .auto reconstruction, type-change train/test)
 test/Harness.hs        assert scaffolding, no framework dependency
 test/Spec.hs           stage 1
 test/Stage2Spec.hs     candidate generation and ranking
 test/SubstrateSpec.hs  verification, genealogy, fusion, reward
-docs/                  standalone probes, not wired into a suite
+test/CCGBankSpec.hs    CCGbank category parsing, feature unification, .auto reconstruction
+docs/                  standalone probes and CCGbank feature surveys, not wired into a suite
 scripts/               no-cabal build path
 ```
+
+CCGbank (LDC2005T13) is now the corpus for scaling Stage 1 beyond the nine-case
+fragment. The corpus itself lives outside the repository (at `~/ccgbank/`) and no
+corpus-derived data is committed, for licensing reasons; the `tools/` drivers
+read it at runtime. See `FINDINGS-goal-session.md` for the measured results
+(lexicon representability, GRAMMAR coverage, reconstruction rate, and the
+held-out type-change coverage).
 
 Shared fixes land on `main` and merge down. Nothing merges between the track
 branches.
