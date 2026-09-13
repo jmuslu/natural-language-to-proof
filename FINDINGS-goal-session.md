@@ -856,6 +856,34 @@ database … rust forks of sqlite" — pointed straight at it.
   schema `evidence_basis` field (public-reference vs self-reported vs unquantifiable)
   rather than a text heuristic — logged as the next refinement, not hidden.
 
+## Layer 11 — the temporal layer (new design thread)
+
+Opened when the corpus grew a use case that makes time load-bearing: coinciding
+external event timelines (clinical-trial readouts, drug approvals, journal
+publications, SEC filings — now reachable via the research/clinical-trial/PDF tools)
+with market movements and propagating the result through the graph, brain, and oracle.
+
+- **[structural] Time is not one number.** A fact has an `event_time` (when it held),
+  a `knowable_time` (when it could first be acted on — publication/posting/filing), an
+  `ingestion_time`, and a query `as_of` time. The governing rule: a fact may inform a
+  decision at `T` only if `knowable_time ≤ T`. The classic lookahead traps are all
+  cases of using the wrong stamp (study period vs. publication date; earnings period
+  vs. release; a restated figure at its original date).
+- **[structural] LLMs don't track valid-time; the scaffolding must.** An LLM has one
+  coarse training cutoff, no per-fact valid-time, and leaks post-cutoff outcomes
+  (hindsight). The honest architecture pushes time outside the model: timestamped
+  provenance + as-of filtering + bitemporal graph — the same "external checks only"
+  move this system already makes for truth, applied to time.
+- **[structural] It threads through the existing pieces, not a new subsystem.**
+  Bitemporal provenance on claim nodes; an `as_of` filter before the brain's vector
+  search; temporal (walk-forward on `knowable_time`) calibration replacing the random
+  split; a temporal-consistency verdict kind (claimed date vs. attested date);
+  event–market alignment on `knowable_time → next tradeable time` run through the
+  *existing* oracle nulls (sign-flip, random-timing) + BH-FDR. Full reasoning,
+  including the traps (selection/survivorship, restatement, calendar/timezone,
+  embargo/leak, multiple-comparisons over event classes) and a 5-step build order, is
+  in `TEMPORAL.md`. **Not yet built** — this is the documented design.
+
 ## Open items, by layer (for the next pass)
 
 - **[Layer 5/7 — loop closed, incl. the upstream half (Thread 1)] `claim_refs`

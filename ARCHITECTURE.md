@@ -1147,6 +1147,22 @@ Remaining open pieces are named in `FINDINGS-goal-session.md` (e.g. the
 edge in that loop either is an external check or carries provenance to one —
 which is the whole point, and why the pieces are one system rather than five.
 
+## Temporal layer (design thread)
+
+Once facts carry dates — coinciding external event timelines (clinical-trial
+readouts, approvals, publications, filings) with market movements — the system
+inherits the hardest discipline in empirical finance: **no lookahead**. Time is not
+one number; a fact has an event time, a *knowable* time (when it could first be acted
+on), an ingestion time, and a query as-of time, and conflating any two is usually
+cheating. The rule that governs everything: a fact may inform a decision at `T` only
+if its `knowable_time ≤ T`. This is the "external checks only" discipline applied to
+the time axis — time is attested external metadata, never inferred by a component
+(LLMs get this wrong precisely because they track only a coarse training cutoff and
+leak future knowledge). The design — bitemporal provenance, as-of retrieval/inference
+in the brain, temporal (walk-forward) calibration, temporal-consistency verdicts, and
+event–market alignment run through the *existing* oracle nulls + FDR — is worked out
+in [`TEMPORAL.md`](TEMPORAL.md). It is a design thread, not yet built.
+
 ## Non-goals / guardrails
 
 - Do **not** treat any internal check as evidence. Typedness, canonical equality
