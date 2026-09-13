@@ -152,7 +152,8 @@ class EpistemicGraph:
                 self.nodes[nid].trust = t
 
     # -- reverse propagation (Layer 7 shape) --------------------------------
-    def implicate_from_outcome(self, outcome_id: str, verdict: float) -> list[str]:
+    def implicate_from_outcome(self, outcome_id: str, verdict: float,
+                               edge_weight: float = 0.3) -> list[str]:
         """An oracle-checked outcome implicates the claims that fed it.
 
         Records `implicates` edges (outcome -> claim) for every claim that reaches
@@ -161,6 +162,14 @@ class EpistemicGraph:
         reverse half of "information propagates both ways": a forward `feeds`
         chain (claim -> ... -> outcome) becomes a backward implication once the
         outcome is checked. The trust effect then falls out of `propagate`.
+
+        `edge_weight` is deliberately small (default 0.3): a single backtest is a
+        *noisy* signal about any upstream claim (a strategy can fail for reasons
+        unrelated to whether the claim was true), so one outcome must move a claim
+        only modestly. Confidence accrues from *many* independent outcomes — each
+        adds another `implicates` edge and the contributions sum in `propagate`
+        (saturating via the clamp) — which is the calibration-over-many-instances
+        signal the handoff's Layer 7 calls for, not a single P&L verdict.
         """
         assert self.nodes[outcome_id].kind == "outcome"
         self.nodes[outcome_id].seed = _clamp(verdict)
@@ -176,7 +185,7 @@ class EpistemicGraph:
                     seen.add(e.src)
                     if self.nodes[e.src].kind == "claim":
                         implicated.append(e.src)
-                        self.add_edge(outcome_id, e.src, "implicates", weight=1.0)
+                        self.add_edge(outcome_id, e.src, "implicates", weight=edge_weight)
                     frontier.append(e.src)
         return implicated
 
@@ -227,19 +236,31 @@ def _selftest():
     g2.propagate()
     assert g2.trust_of("c") <= -0.8 + 1e-9, g2.trust_of("c")
 
-    # 4) reverse propagation: a failed outcome implicates the claims that fed it
+    # 4) reverse propagation: a failed outcome implicates the claims that fed it,
+    #    but ONE outcome is only a modest (noisy) signal...
     g3 = EpistemicGraph()
     g3.add_node("claimA", "claim")
-    g3.add_node("stratOutcome", "outcome")
-    g3.add_edge("claimA", "stratOutcome", "feeds")
-    implicated = g3.implicate_from_outcome("stratOutcome", verdict=-1.0)
+    g3.add_node("out1", "outcome")
+    g3.add_edge("claimA", "out1", "feeds")
+    implicated = g3.implicate_from_outcome("out1", verdict=-1.0)
     assert implicated == ["claimA"], implicated
     g3.propagate()
-    assert g3.trust_of("claimA") < 0.0, g3.trust_of("claimA")
+    one = g3.trust_of("claimA")
+    assert -0.5 < one < 0.0, one          # negative but modest, not saturated
+
+    # ...and confidence accrues as independent outcomes accumulate (calibration).
+    for i in range(6):
+        g3.add_node(f"outN{i}", "outcome")
+        g3.add_edge("claimA", f"outN{i}", "feeds")
+        g3.implicate_from_outcome(f"outN{i}", verdict=-1.0)
+    g3.propagate()
+    many = g3.trust_of("claimA")
+    assert many < one, (one, many)        # more failed outcomes -> stronger negative
+    assert many <= -0.9, many             # accumulates toward saturation
 
     print("epistemic_graph selftest: PASS "
           "(echo chamber -> 0; external check roots + amplifies; contradiction -> negative; "
-          "outcome reverse-implicates claims)")
+          "one outcome = modest reverse signal, many accumulate toward saturation)")
 
 
 if __name__ == "__main__":
