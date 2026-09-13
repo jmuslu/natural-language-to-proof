@@ -545,6 +545,59 @@ After the survey above, the owner granted confirmation to build in `~/projects`
   secrets, and venvs are ignored (bulk data stays untracked); the validation
   module is correctly tracked.
 
+## Corpus-adversarial track (Layers 6–8) — records structured to schema v2
+
+Companion track per `HANDOFF-corpus-adversarial.md`: a small labeled corpus
+(YouTube + articles) to test whether the epistemic layer can tell
+checkable-and-consistent from common-but-inconsistent, *before* it faces anything
+unsupervised. The four collected records (from `files.zip`) were cross-checked
+against the handoff and brought up to its requirements.
+
+- **[measured] State found vs. requirements.** `record_schema.json` was a minimal
+  stub the records had outgrown *inconsistently*: only articles carried
+  `media_type`; only record 001 tracked a word count; 001 had segment+claim
+  structure, 003/004 had a flat `key_claims_surface`, and **002 had no claim
+  decomposition at all**; there were no `format`, `length`, `confidence`, or
+  risk/quality fields anywhere. All four correctly had `verification NOT
+  PERFORMED`.
+- **[stipulated] Schema v2** (`corpus/record_schema.json`, applied to all four via
+  the reproducible `corpus/build_records.py`) unifies video + article and adds
+  exactly the fields the handoff calls for: `format` and `length` (the two
+  confounds to track as fields, not verdicts); `owner_label = {class, confidence,
+  is_adversarial_bucket, reasoning}` with confidence factored out of the label
+  string; **`risk_quality` as an axis separate from factual consistency**;
+  and `claims[]` with per-claim attribution, `domain`, `claim_type`, and null
+  `checkable_reference`/`consistency_verdict` slots. Record 003 forced the
+  risk_quality split — the owner disputes not the article's facts but its
+  risk-adjusted quality (leverage front-loading tail risk); collapsing that into
+  consistent/inconsistent would corrupt the axis the suite is meant to test.
+- **[checked] The determinism boundary is enforced in the data.** A validation
+  pass confirms **every** claim's `consistency_verdict` and `checkable_reference`
+  is null across all four records, and `provenance` records `label_source: owner`
+  vs `structure_source: agent`. The agent decomposed 002's transcript into 7
+  claims (structuring) but decided no claim's truth — the one thing both handoffs
+  forbid an agent from doing here.
+- **[measured] The confound is real and visible at n=4, which is itself the
+  finding.** Word counts: 001=22,394, 002=1,338, 003=532, 004=453 — a 42× spread.
+  The two not-inconsistent items (003 ambiguous, 004 tentatively consistent) are
+  both *articles* and *short*; the inconsistent item (002) is a *video*; the
+  unlabeled 001 is a huge *video*. So on this set, "article" and "short" correlate
+  with "not-inconsistent" and "video" with "inconsistent/unlabeled" — any
+  discrimination signal built now would key off format/length, not epistemic
+  content (exactly the handoff's small-hand-picked-corpus risk). Concrete
+  consequence, logged not assumed: **no discrimination result should be run until
+  the corpus grows and is balanced across classes on both format and length.**
+  This is the same "ablate before you trust a result" discipline as Layer 3.5,
+  applied to corpus features.
+- **[stipulated] Placement + a flag.** Structured records in-repo (`corpus/`);
+  raw full transcripts outside at `~/corpus/raw/` (ccgbank pattern; third-party
+  ToS/copyright), `corpus/raw/` gitignored. **Flag for the owner:** `files.zip` at
+  the repo root (the owner's collection bundle) still contains the raw transcripts
+  *inside* the repo, which contradicts that discipline. Left in place rather than
+  silently removed — recommend `git rm --cached files.zip` (keeping it locally) to
+  match the CCGbank-outside-the-repo pattern, but that is the owner's call since
+  the handoff frames placement as an open question.
+
 ## Open items, by layer (for the next pass)
 
 - **[Layer 1/2] Done: core parser migrated to feature unification** (additive
