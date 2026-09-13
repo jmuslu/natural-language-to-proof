@@ -1,0 +1,50 @@
+{
+  "schema_version": "2.0",
+  "description": "Curated corpus record for the adversarial epistemic suite. Structured by an agent; factual-consistency verdicts are the owner's / an external reference's, never the agent's.",
+  "controlled_vocabularies": {
+    "owner_label.class": [
+      "unlabeled",
+      "consistent",
+      "inconsistent",
+      "ambiguous"
+    ],
+    "owner_label.confidence": [
+      "none",
+      "uncertain",
+      "tentative",
+      "firm"
+    ],
+    "claims[].claim_type": [
+      "factual_quantitative",
+      "factual_qualitative",
+      "definitional",
+      "methodological",
+      "recommendation",
+      "prediction",
+      "opinion"
+    ],
+    "format": [
+      "video_transcript",
+      "article"
+    ]
+  },
+  "fields": {
+    "record_id": "string",
+    "media_type": "youtube_video | substack_article | ...",
+    "format": "confound field: video_transcript | article",
+    "title": "string",
+    "source": "{name, kind, [publication]}",
+    "urls": "{...} format-specific url fields",
+    "dates": "{published, captured}",
+    "length": "confound field: {raw_word_count, segment_count, claim_count}",
+    "owner_label": "{class, confidence, is_adversarial_bucket, reasoning}  (owner-sourced)",
+    "risk_quality": "{assessed, assessment, reasoning}  -- axis SEPARATE from factual consistency",
+    "segments": "[{segment_id, topic}]  (video/compilation structure; may be empty)",
+    "claims": "[{claim_id, segment_id, claim_text, domain, claim_type, checkable_reference:null, consistency_verdict:null, verification_status}]",
+    "verification_status": "top-level; NOT PERFORMED at collection time",
+    "provenance": "{label_source, structure_source, raw_transcript_path, schema_version}",
+    "source_metadata": "format-specific extras (subscribers/views | author/publication)",
+    "access_note": "paywall / capture caveats",
+    "notes": "free-text"
+  }
+}

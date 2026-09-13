@@ -21,3 +21,7 @@ Thumbs.db
 # HLS
 .hie/
 hie.yaml
+
+# Corpus raw transcripts/articles stay outside the repo (third-party ToS/copyright);
+# structured records live in corpus/records, raw lives at ~/corpus/raw
+corpus/raw/
