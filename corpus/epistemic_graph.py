@@ -92,7 +92,7 @@ class EpistemicGraph:
 
     # -- propagation --------------------------------------------------------
     def propagate(self, iterations: int = 50, corroboration_gain: float = 0.25,
-                  damping: float = 1.0) -> None:
+                  damping: float = 1.0, threshold: float = 0.0) -> None:
         """Compute node trust to a fixed point.
 
         [stipulated] This is one transparent aggregation, deliberately inert by
@@ -147,7 +147,13 @@ class EpistemicGraph:
                     c = coeff.get(e.kind, 0.0)
                     if c:
                         acc += c * e.weight * self.nodes[e.src].trust
-                new[nid] = _clamp(acc) * damping
+                val = _clamp(acc) * damping
+                # threshold-gated / inert-by-default: evidence weaker than
+                # `threshold` leaves the node at 0 rather than nudging it, so weak
+                # noisy signals don't accumulate into apparent trust. (`threshold`
+                # is a fitted PARAMETER within this fixed topology -- see
+                # fit_graph.py -- not a chosen mechanism.)
+                new[nid] = val if abs(val) >= threshold else 0.0
             for nid, t in new.items():
                 self.nodes[nid].trust = t
 
