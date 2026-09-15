@@ -1,91 +1,121 @@
-"""regime_estimand.py — the estimand as a non-stationary STATE, adaptive to regime breaks.
+"""Scalar state tracking with separate jump and observation-outlier heuristics.
 
-An estimand's true value is rarely a fixed scalar: an edge drifts with regime and JUMPS at
-a transition (a bifurcation, in the dynamical-systems view). A fixed-uncertainty posterior
-lags such a jump confidently — the overconfidence failure. Here the estimand is a state
-tracked by a scalar Kalman filter whose process noise INFLATES on surprise: the innovation
-(prediction residual, standardized) is the regime-break detector, and a large innovation
-widens the state covariance before the update — so the belief adapts fast AND its
-uncertainty spikes honestly at the break.
-
-This is the same residual principle a third time: the Kalman innovation IS the residual;
-acting on it (inflating process noise) is acting on surprise — the free-energy / active-
-inference move, now for a non-stationary estimand. Dependency-free. Run: python3 regime_estimand.py
+R is observation VARIANCE; q_base is process VARIANCE per transition. The fixed
+Kalman model is a baseline. Adaptive process inflation follows large innovations
+quickly, which can help jumps but amplify isolated bad observations. Optional robust
+observation inflation damps outliers but can delay real jumps. Their covariance
+outputs are model diagnostics, not automatically calibrated uncertainty guarantees.
+Run: python3 regime_estimand.py
 """
 from __future__ import annotations
 
+import math
 import random
 
 
-def kalman(obs, R, q_base, adaptive=False, beta=4.0, thresh=1.0):
-    """Scalar Kalman over `obs` (obs = state + N(0,R)). If `adaptive`, a standardized
-    innovation above `thresh` inflates the predicted covariance (regime-break reaction).
-    Returns (estimates, covariances, surprises)."""
-    x, P = obs[0], 1.0
-    est, cov, surp = [], [], []
-    for y in obs:
-        # predict
-        P_pred = P + q_base
-        # innovation / surprise (available before the update)
-        nu = y - x
-        S = P_pred + R
-        s = (nu * nu) / S            # standardized squared innovation ~ chi2(1) if in-regime
-        surp.append(s)
-        if adaptive and s > thresh:
-            P_pred *= (1.0 + beta * (s - thresh))   # surprise inflates the state covariance
-            S = P_pred + R
-        # update
-        K = P_pred / S
-        x = x + K * nu
-        P = (1.0 - K) * P_pred
-        est.append(x); cov.append(P)
-    return est, cov, surp
+def _number(value, name):
+    try:
+        valid = type(value) in (int, float) and math.isfinite(value)
+    except OverflowError:
+        valid = False
+    if not valid:
+        raise ValueError(f"{name} must be a finite number")
+    return float(value)
+
+
+def kalman(obs, R, q_base, adaptive=False, beta=4.0, thresh=1.0, *,
+           robust=False, outlier_z=3.0, initial_mean=None, initial_variance=None):
+    """Return (estimates, state variances, standardized squared innovations).
+
+    Observation model: y_t = state_t + N(0, R); R and q_base are variances.
+    With no independent prior, the first observation initializes mean=y_0, P=R
+    exactly once (the flat-prior limit); its innovation is unavailable, represented
+    by None. Alternatively supply both initial_mean and initial_variance, describing
+    an independent state prior just before the first transition/update.
+
+    adaptive=True inflates predicted state variance when innovation^2/S > thresh.
+    robust=True inflates observation variance by max(1, innovation^2/(S*outlier_z^2)),
+    damping isolated extreme measurements. Both flags are explicit heuristics;
+    neither dominates, and combining them is not a fitted regime/outlier classifier.
+    All outputs are causal for fixed parameters. Empty observations return three
+    empty lists. Invalid or numerically overflowing inputs raise ValueError.
+    """
+    R, q_base = _number(R, "R (observation variance)"), _number(q_base, "q_base (process variance)")
+    beta, thresh = _number(beta, "beta"), _number(thresh, "thresh")
+    outlier_z = _number(outlier_z, "outlier_z")
+    if R <= 0 or q_base < 0 or beta < 0 or thresh <= 0 or outlier_z <= 0:
+        raise ValueError("positive R, thresh, outlier_z and nonnegative q_base, beta required")
+    if type(adaptive) is not bool or type(robust) is not bool:
+        raise ValueError("adaptive and robust must be bool")
+    if (initial_mean is None) != (initial_variance is None):
+        raise ValueError("supply both independent initial_mean and initial_variance, or neither")
+    if initial_mean is not None:
+        initial_mean = _number(initial_mean, "initial_mean")
+        initial_variance = _number(initial_variance, "initial_variance")
+        if initial_variance < 0:
+            raise ValueError("initial_variance must be nonnegative")
+    obs = [_number(y, "observation") for y in obs]
+    if not obs:
+        return [], [], []
+    if initial_mean is None:
+        x, P, start = obs[0], R, 1
+        estimates, variances, surprises = [x], [P], [None]
+    else:
+        x, P, start = initial_mean, initial_variance, 0
+        estimates, variances, surprises = [], [], []
+    for y in obs[start:]:
+        predicted = P + q_base
+        innovation = y - x
+        S = predicted + R
+        try:
+            surprise = innovation ** 2 / S
+            effective_R = R * max(1., surprise / outlier_z ** 2) if robust else R
+            if adaptive and surprise > thresh:
+                predicted *= 1. + beta * (surprise - thresh)
+        except (OverflowError, ZeroDivisionError) as exc:
+            raise ValueError("filter scale exceeds numerical range") from exc
+        if (not all(math.isfinite(value) for value in (predicted, effective_R, S, surprise))
+                or not math.isfinite(predicted + effective_R)):
+            raise ValueError("filter scale exceeds numerical range")
+        gain = predicted / (predicted + effective_R)
+        x += gain * innovation
+        # Joseph form avoids cancellation from (1-K)*P when the gain is near one.
+        P = (1. - gain) ** 2 * predicted + gain ** 2 * effective_R
+        if not math.isfinite(x) or not math.isfinite(P):
+            raise ValueError("filter scale exceeds numerical range")
+        estimates.append(x)
+        variances.append(P)
+        surprises.append(surprise)
+    return estimates, variances, surprises
 
 
 def _mae(est, truth, lo, hi):
-    idx = range(lo, hi)
-    return sum(abs(est[i] - truth[i]) for i in idx) / len(list(idx))
+    return sum(abs(est[i] - truth[i]) for i in range(lo, hi)) / (hi - lo)
 
 
 def _selftest():
     rng = random.Random(5)
-    T, jump_t, R_true = 120, 60, 0.15
-    # true state: slow drift, then a REGIME JUMP (+1.0) at jump_t, then drift again.
-    truth, x = [], 0.5
+    T, jump_t, noise_sd = 120, 60, .15
+    truth, x = [], .5
     for t in range(T):
-        x += rng.gauss(0, 0.02)
+        x += rng.gauss(0, .02)
         if t == jump_t:
-            x += 1.0
+            x += 1.
         truth.append(x)
-    obs = [xt + rng.gauss(0, R_true) for xt in truth]
-
-    fixed_e, fixed_P, _ = kalman(obs, R=R_true, q_base=0.001, adaptive=False)
-    adapt_e, adapt_P, surp = kalman(obs, R=R_true, q_base=0.001, adaptive=True)
-
-    # post-jump tracking error (does it catch the new regime quickly?)
-    band = (jump_t, jump_t + 12)
-    mae_fixed = _mae(fixed_e, truth, *band)
-    mae_adapt = _mae(adapt_e, truth, *band)
-    # uncertainty right after the jump (is it honestly wide, or falsely confident?)
-    P_fixed_jump = max(fixed_P[jump_t:jump_t + 3])
-    P_adapt_jump = max(adapt_P[jump_t:jump_t + 3])
-    print(f"regime jump at t={jump_t} (+1.0)")
-    print(f"  post-jump MAE   fixed {mae_fixed:.3f}   adaptive {mae_adapt:.3f}")
-    print(f"  P at jump       fixed {P_fixed_jump:.3f}   adaptive {P_adapt_jump:.3f}")
-    print(f"  surprise (std innovation^2) at jump: {max(surp[jump_t:jump_t+3]):.1f}  "
-          f"(vs ~1 in-regime; the innovation IS the regime-break residual)")
-
-    # CHECKS: the surprise-adaptive estimand (a) tracks the regime break markedly faster,
-    # and (b) is HONESTLY uncertain at the break (covariance spikes) rather than confidently
-    # wrong like the fixed-noise filter.
-    assert mae_adapt < mae_fixed * 0.7, (mae_fixed, mae_adapt)
-    assert P_adapt_jump > P_fixed_jump * 3, (P_fixed_jump, P_adapt_jump)
-    # and in the stable pre-jump regime the adaptive filter is NOT needlessly loose
-    assert _mae(adapt_e, truth, 20, 55) < 0.15
-
-    print("\nregime_estimand selftest: PASS — the estimand tracks a regime jump fast AND "
-          "widens its uncertainty honestly at the break (surprise-driven process noise), "
-          "while staying tight in the stable regime. Non-stationary, residual-adaptive.")
+    obs = [value + rng.gauss(0, noise_sd) for value in truth]
+    modes = {"fixed": {}, "adaptive": {"adaptive": True}, "robust": {"robust": True}}
+    jump_mae = {name: _mae(kalman(obs, R=noise_sd**2, q_base=.001, **kwargs)[0],
+                           truth, jump_t, jump_t+12) for name, kwargs in modes.items()}
+    outlier = [0.] * 40 + [10.] + [0.] * 39
+    outlier_response = {name: kalman(outlier, R=.04, q_base=.001, **kwargs)[0][40]
+                        for name, kwargs in modes.items()}
+    assert jump_mae["adaptive"] < jump_mae["fixed"]
+    assert abs(outlier_response["robust"]) < abs(outlier_response["fixed"])
+    assert kalman([10], R=4, q_base=0) == ([10.], [4.], [None])
+    print(f"regime_estimand selftest: PASS; generated sd={noise_sd}, filter R={noise_sd**2}")
+    print(f"  seeded jump MAE: {jump_mae}")
+    print(f"  isolated outlier response: {outlier_response}")
+    print("  Tradeoffs are scenario-specific; these checks do not establish calibrated coverage.")
 
 
 if __name__ == "__main__":

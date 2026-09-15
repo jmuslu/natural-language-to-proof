@@ -1,21 +1,14 @@
-"""reason.py — domain-general typed reasoning composition; the layers speak one type algebra.
+"""Structural type composition for the brain's proposed inferences.
 
-The categories do the work under the hood. nl2proof's Haskell core makes composition SOUND
-by a type discipline: `catTy` maps a CCG category to a semantic type (Ty = e | t | Ty~>Ty),
-and the combinators compose typed meanings only when the argument type UNIFIES — validated
-externally against CCGbank, never self-certified (see src/NL2Proof/Semantics/Lambda.hs,
-Syntax/Category.hs, Syntax/CCGRules.hs). This module lifts that SAME discipline into the
-brain's reasoning so the parser, the estimand layer, and multi-hop inference all speak one
-`Ty`: an inference is a typed object; composing inferences is combinator application under
-type unification; uncertainty composes honestly; provenance guards independence.
-
-The robustness of reasoning IS the type-soundness + honest-uncertainty + provenance — and it
-is DOMAIN-GENERAL. The trading domain is one instantiation (a claim is just a `t`-typed
-inference); it is not the point. Mirrors the `Ty` algebra exactly. Dependency-free.
+The e/t/function algebra mirrors the Haskell semantic types. Matching types
+establishes well-formed application, not entailment or the truth of a proposition.
+Confidence is metadata, not a calibrated probability; multiplication does not
+resolve dependence. Exact signed-claim/rule checking lives in reasoning.engine.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass
+import math
 
 # --- Ty: mirror of src/NL2Proof/Semantics/Lambda.hs -------------------------- #
 @dataclass(frozen=True)
@@ -51,7 +44,7 @@ def show(t: Ty) -> str:
 
 def unify(a: Ty, b: Ty) -> bool:
     """Structural type equality (the argument slot must match the function's domain).
-    This is the check that makes composition sound — the same role catTy/typeOf play."""
+    This establishes structural compatibility, not logical entailment."""
     if isinstance(a, Atom) and isinstance(b, Atom):
         return a.name == b.name
     if isinstance(a, Fn) and isinstance(b, Fn):
@@ -64,9 +57,23 @@ def unify(a: Ty, b: Ty) -> bool:
 class Inf:
     ty: Ty
     label: str
-    conf: float = 1.0                 # confidence in [0,1]; composes by product (honest decay)
+    conf: float = 1.0                 # bounded metadata; not calibrated by this module
     provenance: frozenset = frozenset()
-    grounded: bool = True             # belief gate: composing ungrounded yields ungrounded
+    grounded: bool = False            # proposals never begin as grounded by default
+
+    def __post_init__(self):
+        if not isinstance(self.ty, Ty):
+            raise TypeError("ty must be a structural type")
+        if type(self.conf) not in (int, float) or not 0 <= self.conf <= 1 or not math.isfinite(self.conf):
+            raise ValueError("confidence must be a finite number in [0,1]")
+        if type(self.grounded) is not bool:
+            raise TypeError("grounded must be a boolean")
+        if isinstance(self.provenance, (str, bytes)):
+            raise TypeError("provenance must be a collection of source identifiers")
+        provenance = frozenset(self.provenance)
+        if any(not isinstance(p, str) or not p for p in provenance):
+            raise ValueError("provenance identifiers must be nonempty strings")
+        object.__setattr__(self, "provenance", provenance)
 
     def __repr__(self):
         g = "" if self.grounded else " (ungrounded)"
@@ -79,8 +86,8 @@ class TypeError_(TypeError):
 
 def apply(f: Inf, x: Inf) -> Inf:
     """Forward/backward application: f : A~>B applied to x : A yields B. The category
-    REFUSES a type mismatch (soundness under the hood). Confidence multiplies (honest
-    degradation); provenance unions; grounding is conjunctive (two-gate)."""
+    Rejects structural mismatches. Confidence metadata multiplies, provenance unions,
+    and grounding metadata is conjunctive. This does not prove an arbitrary A entails B."""
     if not isinstance(f.ty, Fn):
         raise TypeError_(f"{f.label} is not a function ({show(f.ty)})")
     if not unify(f.ty.dom, x.ty):
@@ -100,56 +107,53 @@ def compose(f: Inf, g: Inf) -> Inf:
                f.provenance | g.provenance, f.grounded and g.grounded)
 
 
-def from_grounding(label, verdict_conf, provenance):
-    """Bridge: a grounded signal (estimand.colimit verdict) enters reasoning as a
-    `t`-typed proposition. This is how the estimand layer TALKS TO the reasoning layer."""
-    return Inf(TyT, label, verdict_conf, frozenset(provenance), grounded=True)
+def from_grounding(label, result, provenance):
+    """Adapt a checked GroundingResult supplied by a trusted caller.
+
+    Bare scores are not certificates. This adapter supplies no external check of
+    its own; the receipt/proof checker must bind the result to a specific claim.
+    Empty, refused and zero-multiplicity results remain ungrounded.
+    """
+    from estimand import GroundingResult
+    if not isinstance(result, GroundingResult):
+        raise TypeError("from_grounding requires a GroundingResult, not a bare score")
+    if isinstance(provenance, (str, bytes)):
+        raise TypeError("provenance must be a collection of source identifiers")
+    provenance = frozenset(provenance)
+    usable = (result.grounded is True and result.multiplicity > 0
+              and result.edge_weight > 0 and bool(provenance))
+    return Inf(TyT, label, abs(result.verdict), provenance, grounded=usable)
 
 
 def _selftest():
-    print("one type algebra, three domains — same apply/compose machinery:\n")
-
-    # (1) LINGUISTIC: "someone" : (e~>t)~>t (NP=tyGQ);  "sleeps" : (e~>t)~>t ~> t  (S\\NP).
-    someone = Inf(tyGQ, "someone")
-    sleeps = Inf(arrow(tyGQ, TyT), "sleeps")            # catTy(S\\NP) = catTy NP ~> catTy S
-    sent = apply(sleeps, someone)
-    print(f"  linguistic : apply(sleeps, someone) = {sent}   [type {show(sent.ty)} = a sentence]")
-    assert unify(sent.ty, TyT)
-
-    # (2) ABSTRACT REASONING: a proposition and inference rules (t ~> t). Multi-hop decays.
-    p = Inf(TyT, "P", conf=0.9, provenance=frozenset({"obsA"}))
-    r1 = Inf(arrow(TyT, TyT), "R1", conf=0.8, provenance=frozenset({"ruleA"}))
-    r2 = Inf(arrow(TyT, TyT), "R2", conf=0.85, provenance=frozenset({"ruleB"}))
-    step1 = apply(r1, p)
-    step2 = apply(r2, step1)
-    print(f"  reasoning  : {p} -R1-> {step1} -R2-> {step2}")
-    assert step2.conf < step1.conf < p.conf                # honest degradation over hops
-    assert abs(step2.conf - 0.9 * 0.8 * 0.85) < 1e-9
-
-    # (3) TRADING is just an instantiation, not special: a grounded signal is a `t`-prop.
-    sig = from_grounding("nq_signal", 0.95, {"NQ_ts"})
-    risk_rule = Inf(arrow(TyT, TyT), "deploy_if_real", conf=0.9, provenance=frozenset({"policy"}))
-    decision = apply(risk_rule, sig)
-    print(f"  trading    : apply(deploy_if_real, nq_signal) = {decision}   [no special-casing]")
-    assert unify(decision.ty, TyT) and decision.grounded
-
-    # SOUNDNESS: the category refuses an ill-typed composition (a predicate e~>t on a `t`).
-    pred = Inf(tyPred1, "red")                              # e~>t
+    from estimand import Leg, colimit
+    p = Inf(TyT, "proposal", conf=0.9)
+    r = Inf(arrow(TyT, TyT), "proposed-rule", conf=0.8)
+    out = apply(r, p)
+    assert unify(out.ty, TyT) and not out.grounded
+    assert abs(out.conf - 0.72) < 1e-12
     try:
-        apply(pred, p)                                      # applying to a `t`, not an `e`
-        assert False, "should have refused"
-    except TypeError_ as e:
-        print(f"\n  soundness  : refused — {e}")
-
-    # TWO-GATE: composing an UNGROUNDED inference yields an ungrounded (unbelievable) result.
-    ungr = Inf(TyT, "hunch", conf=0.6, grounded=False)
-    out = apply(risk_rule, ungr)
-    assert not out.grounded
-
-    print("\nreason selftest: PASS — one Ty algebra across linguistic, abstract, and trading "
-          "composition; the type functor enforces soundness (refuses mismatches); confidence "
-          "degrades honestly over hops; ungrounded stays unbelievable. Robustness of "
-          "reasoning is domain-general — trading is an instantiation, not the point.")
+        apply(Inf(tyPred1, "predicate"), p)
+        raise AssertionError("structural mismatch accepted")
+    except TypeError_:
+        pass
+    for invalid in (-0.1, 1.1, float("nan"), float("inf"), True):
+        try:
+            Inf(TyT, "invalid", conf=invalid)
+            raise AssertionError("invalid confidence accepted")
+        except ValueError:
+            pass
+    checked = colimit("fixture", [Leg("leg", "prediction", 3.0, 1.0, frozenset({"fixture"}))])
+    assert from_grounding("fixture", checked, {"fixture"}).grounded
+    assert not from_grounding("empty", colimit("empty", []), set()).grounded
+    assert not from_grounding("missing-source", checked, set()).grounded
+    try:
+        from_grounding("bare-score", 0.99, {"invented"})
+        raise AssertionError("bare score grounded")
+    except TypeError:
+        pass
+    print("reason selftest: PASS — structural composition, bounded confidence, "
+          "ungrounded defaults; exact entailment requires reasoning.engine.")
 
 
 if __name__ == "__main__":

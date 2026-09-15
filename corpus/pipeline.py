@@ -1,27 +1,13 @@
-"""End-to-end operational driver for the connected system.
+"""Receipt journal -> Haskell oracle/reward -> graph -> brain/retrieval.
 
-Runs the whole chain as REAL invocations and narrates it, so the pieces built
-across both repos can be seen operating as one loop:
+Optional CCGbank ingestion checks structural typing of lexical skeletons, not
+their semantic faithfulness. Base corpus reference scores retain their original
+proposed/owner provenance. New external receipts concern run validation only.
+Reports identify skipped stages and observed evidence; this driver does not
+establish research efficacy by successfully invoking its components.
 
-  A. INGEST   Haskell CCGbank lexicon ingestion -> provenance-tagged, well-typed
-              skeletons (external check: every built skeleton is machine type-checked;
-              ill-typed count MUST be 0).
-  B. GRAPH    build the epistemic graph from corpus records + external verdicts ->
-              trust that originates only from external checks.
-  C. BRAIN    embed the graph's claims into the libSQL vector store and grade the
-              manifold (calibration vs a mean null; learning curve vs #checks).
-  D. RETRIEVE semantic retrieval, and directed exploration (the frontier of what to
-     + EXPLORE check next, and cross-domain bridge hypotheses) -- all proposals.
-  E. TEMPORAL as-of retrieval (a fact informs a query at T only if knowable_time<=T;
-              no lookahead) + the dated external-event store (TEMPORAL.md).
-  F. ORACLE   (other repo, private) the statistical validation suite that turns a
-              proposed signal into an external verdict, which flows back to B.
-
-The through-line: each stage either produces something externally checkable or
-consumes an external check. Nothing in the loop lets a component certify itself.
-
-    python pipeline.py            # run every runnable stage, narrated
-    python pipeline.py --quick    # skip the Haskell ingest (fast, brain-only)
+    python pipeline.py --oracle-only  # journal and Haskell, no embedding runtime
+    python pipeline.py --quick        # graph/brain too, skip lexical ingestion
 """
 from __future__ import annotations
 
@@ -57,10 +43,10 @@ def stage_ingest() -> dict:
               f"({d['built_pct_types']}% types, {d['built_pct_tokens']}% tokens)")
         print(f"  rule-handled (coordination)      : {d.get('rule_handled', 0)} "
               "(no lexical type, but the tested coordination rule parses them)")
-        print(f"  ill-typed skeletons (MUST be 0)  : {d['ill_typed']}"
-              f"   <- external check: mechanical type-check")
-        print(f"  => ingestion {'SOUND' if ok else 'BROKEN'}: skeletons are type-checked, "
-              "provenance-tagged, ready to become claims.")
+        print(f"  ill-typed skeletons             : {d['ill_typed']}"
+              "   <- structural type check")
+        print(f"  => ingestion {'type check passed' if ok else 'type check failed'}; "
+              "provenance retained, semantic faithfulness unmeasured.")
         return {"stage": "ingest", "status": "ok" if ok else "broken", **d}
     except Exception as e:  # noqa: BLE001
         print(f"  [skip] ingest unavailable: {type(e).__name__}: {e}")

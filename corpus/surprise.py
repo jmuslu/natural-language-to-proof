@@ -1,117 +1,175 @@
-"""surprise.py — KL(filtering ‖ smoothing) as ONE primitive doing double duty.
+"""Causal filtering updates and explicitly retrospective HMM diagnostics.
 
-The Futures-Reversal signal is built on the divergence between the real-time (filtering,
-alpha) belief and the hindsight-refined (smoothing, gamma) belief — the information a
-belief gains from more data. That same quantity is variational free energy / expected
-information gain, one level up: it is the brain's EXPLORATION driver (active inference —
-look where the model is surprised). So the strategy's alpha mechanism and the brain's
-discovery engine are the same math at two scales; this builds it once.
+``causal_surprise_series`` uses observations through the scored time only, for
+fixed model parameters. ``retrospective_surprise_series`` compares filtering to
+full-sequence smoothing and therefore needs future data. The old ``surprise_series``
+name remains a retrospective compatibility wrapper.
 
-  * as an ALPHA feature  : KL_t spikes at regime transitions the forward pass missed;
-  * as the BRAIN's driver: argmax expected surprise = where to measure/explore next,
-    the epistemic bonus in metalearn.py's UCB.
-
-A minimal 2-state Gaussian HMM forward-backward, no deps. Run: python3 surprise.py
+Neither diagnostic establishes a profitable signal or expected experiment value.
+Realized posterior-to-predictive KL, expected information gain, and variational
+free energy are different quantities. Dependency-free Gaussian HMM, any state count.
 """
 from __future__ import annotations
 
 import math
 
-EPS = 1e-12
+
+def _finite(value, name):
+    try:
+        valid = type(value) in (int, float) and math.isfinite(value)
+    except OverflowError:
+        valid = False
+    if not valid:
+        raise ValueError(f"{name} must be a finite number")
+    return float(value)
 
 
-def _emit(x, mu, sd):
-    return math.exp(-0.5 * ((x - mu) / sd) ** 2)
+def _distribution(values, name):
+    values = [_finite(value, name) for value in values]
+    if (not values or any(value < 0 or value > 1 for value in values)
+            or not math.isclose(math.fsum(values), 1, rel_tol=0, abs_tol=1e-12)):
+        raise ValueError(f"{name} must be normalized nonnegative probabilities")
+    return values
+
+
+def _log(value):
+    return math.log(value) if value else -math.inf
+
+
+def _logsumexp(values):
+    largest = max(values)
+    if largest == -math.inf:
+        return largest
+    return largest + math.log(math.fsum(math.exp(value - largest) for value in values))
+
+
+def _normalise_logs(values):
+    normalizer = _logsumexp(values)
+    if not math.isfinite(normalizer):
+        raise ValueError("model has no numerically representable likelihood for observations")
+    return [value - normalizer for value in values], normalizer
+
+
+def _forward(obs, mus, sd, trans, pi):
+    obs = [_finite(value, "observation") for value in obs]
+    mus = [_finite(value, "state mean") for value in mus]
+    sd = _finite(sd, "observation standard deviation")
+    if not mus or sd <= 0:
+        raise ValueError("nonempty states and positive observation standard deviation required")
+    pi = _distribution(pi, "initial state distribution")
+    trans = [_distribution(row, "transition row") for row in trans]
+    states = len(mus)
+    if len(pi) != states or len(trans) != states or any(len(row) != states for row in trans):
+        raise ValueError("state means, initial distribution, and square transition matrix must agree")
+    logtrans = [[_log(value) for value in row] for row in trans]
+    constant = math.log(sd) + .5 * math.log(2 * math.pi)
+    try:
+        emissions = [[-.5 * ((value - mu) / sd) ** 2 - constant for mu in mus] for value in obs]
+    except OverflowError as exc:
+        raise ValueError("observation scale exceeds numerical range") from exc
+    if any(not math.isfinite(value) for row in emissions for value in row):
+        raise ValueError("observation scale exceeds numerical range")
+
+    trace, logfilters = [], []
+    for t, emission in enumerate(emissions):
+        predicted = ([_log(value) for value in pi] if t == 0 else
+                     [_logsumexp([logfilters[-1][j] + logtrans[j][s] for j in range(states)])
+                      for s in range(states)])
+        posterior, log_evidence = _normalise_logs([p + e for p, e in zip(predicted, emission)])
+        information_gain = math.fsum(math.exp(post) * (post - pred)
+                                     for post, pred in zip(posterior, predicted)
+                                     if post != -math.inf)
+        logfilters.append(posterior)
+        trace.append({"t": t, "predictive": [math.exp(p) for p in predicted],
+                      "posterior": [math.exp(p) for p in posterior],
+                      "information_gain_kl": max(0., information_gain),
+                      "predictive_surprisal": -log_evidence})
+    return trace, logfilters, emissions, logtrans
+
+
+def causal_surprise_series(obs, mus, sd, trans, pi):
+    """Per-time causal diagnostics, in nats, with parameters fixed before scoring.
+
+    ``predictive`` is P(state_t | observations_before_t), ``posterior`` includes
+    observation_t. ``information_gain_kl`` is KL(posterior || predictive), the
+    realized belief update. ``predictive_surprisal`` is -log predictive observation
+    density; it depends on measurement units and can be negative. Large observation
+    surprise need not reveal the state. This is not expected information gain over
+    proposed experiments. Estimating parameters using later data would leak future
+    information even though this forward pass itself is causal. ``sd`` is a standard
+    deviation, not a variance.
+    """
+    return _forward(obs, mus, sd, trans, pi)[0]
 
 
 def filter_smooth(obs, mus, sd, trans, pi):
-    """Return (filter posteriors f_t, smoothing posteriors gamma_t) for a 2-state HMM.
-    f_t uses data up to t (causal); gamma_t uses the whole sequence (hindsight)."""
-    T, S = len(obs), len(mus)
-    # forward (unnormalized) + filtering posterior
-    A = [[0.0] * S for _ in range(T)]
-    filt = [[0.0] * S for _ in range(T)]
-    for s in range(S):
-        A[0][s] = pi[s] * _emit(obs[0], mus[s], sd)
-    for t in range(1, T):
-        for s in range(S):
-            A[t][s] = _emit(obs[t], mus[s], sd) * sum(A[t - 1][s2] * trans[s2][s] for s2 in range(S))
-        # rescale to avoid underflow (does not change posteriors)
-        z = sum(A[t]) or 1.0
-        A[t] = [a / z for a in A[t]]
-    for t in range(T):
-        z = sum(A[t]) or 1.0
-        filt[t] = [a / z for a in A[t]]
-    # backward (unnormalized) + smoothing posterior
-    B = [[1.0] * S for _ in range(T)]
-    for t in range(T - 2, -1, -1):
-        for s in range(S):
-            B[t][s] = sum(trans[s][s2] * _emit(obs[t + 1], mus[s2], sd) * B[t + 1][s2]
-                          for s2 in range(S))
-        z = sum(B[t]) or 1.0
-        B[t] = [b / z for b in B[t]]
-    gamma = [[0.0] * S for _ in range(T)]
-    for t in range(T):
-        g = [A[t][s] * B[t][s] for s in range(S)]
-        z = sum(g) or 1.0
-        gamma[t] = [gi / z for gi in g]
-    return filt, gamma
+    """Return (causal filter, full-sequence smoother) state posteriors.
+
+    Forward/backward calculations stay in log space so extreme observations do not
+    turn every state probability into zero. Empty observations produce empty lists.
+    """
+    trace, logfilters, emissions, logtrans = _forward(obs, mus, sd, trans, pi)
+    if not trace:
+        return [], []
+    states = len(logfilters[0])
+    logbackward = [[0.] * states for _ in trace]
+    for t in range(len(trace) - 2, -1, -1):
+        values = [_logsumexp([logtrans[s][j] + emissions[t+1][j] + logbackward[t+1][j]
+                              for j in range(states)]) for s in range(states)]
+        logbackward[t], _ = _normalise_logs(values)
+    smoothed = []
+    for filtered, backward in zip(logfilters, logbackward):
+        row, _ = _normalise_logs([a + b for a, b in zip(filtered, backward)])
+        smoothed.append([math.exp(value) for value in row])
+    return [row["posterior"] for row in trace], smoothed
 
 
 def kl(p, q):
-    return sum(pi * math.log((pi + EPS) / (qi + EPS)) for pi, qi in zip(p, q))
+    """KL(p || q), with exact zero-support semantics (positive / zero -> infinity)."""
+    p, q = _distribution(p, "p"), _distribution(q, "q")
+    if len(p) != len(q):
+        raise ValueError("distributions must have equal length")
+    if any(left > 0 and right == 0 for left, right in zip(p, q)):
+        return math.inf
+    return max(0., math.fsum(left * (math.log(left) - math.log(right))
+                            for left, right in zip(p, q) if left > 0))
+
+
+def retrospective_surprise_series(obs, mus, sd, trans, pi):
+    """KL(filter_t || full-sequence smoother_t): a future-sensitive diagnostic.
+
+    Historical values change when future observations arrive. Do not score a
+    historical action with this full-sequence value as though it was available then.
+    """
+    filt, smooth = filter_smooth(obs, mus, sd, trans, pi)
+    return [kl(f, g) for f, g in zip(filt, smooth)]
 
 
 def surprise_series(obs, mus, sd, trans, pi):
-    """Per-step KL(filter_t ‖ smooth_t) — the information-gap / surprise signal."""
-    filt, gamma = filter_smooth(obs, mus, sd, trans, pi)
-    return [kl(f, g) for f, g in zip(filt, gamma)]
+    """Compatibility wrapper: RETROSPECTIVE; see causal_surprise_series for live use."""
+    return retrospective_surprise_series(obs, mus, sd, trans, pi)
 
 
-def where_to_explore(kls):
-    """Active inference: the most informative place to look next is argmax surprise."""
-    return max(range(len(kls)), key=lambda i: kls[i])
+def where_to_explore(scores):
+    """Index of the largest supplied diagnostic score; not an acquisition model.
+
+    Scoring a proposed experiment requires outcomes, likelihoods, and a utility.
+    Ranking realized surprise alone does not supply those missing quantities.
+    """
+    if not scores:
+        raise ValueError("at least one diagnostic score required")
+    return max(range(len(scores)), key=lambda i: scores[i])
 
 
 def _selftest():
-    # synthetic latent-regime series: quiet (mean 0) for 30 bars, then a switch to an
-    # active regime (mean 1.5). The forward pass detects the switch LATE; hindsight
-    # (smoothing) places it correctly -> KL spikes right around the transition.
-    import random
-    rng = random.Random(3)
-    mus, sd = (0.0, 1.5), 0.6
-    trans = [[0.9, 0.1], [0.1, 0.9]]
-    pi = [0.5, 0.5]
-    switch = 30
-    obs = [rng.gauss(mus[0], sd) for _ in range(switch)] + \
-          [rng.gauss(mus[1], sd) for _ in range(30)]
-
-    kls = surprise_series(obs, mus, sd, trans, pi)
-    peak = where_to_explore(kls)
-    quiet = sum(kls[5:20]) / 15                     # settled quiet interior (pre-switch)
-    trans_band = sum(kls[switch - 5:switch + 6]) / 11
-    local_switch_peak = max(kls[switch - 3:switch + 8])
-    print(f"surprise KL: global peak at t={peak}; quiet interior mean {quiet:.4f}; "
-          f"transition-band mean {trans_band:.4f}; local peak near switch {local_switch_peak:.4f}")
-
-    # FINDINGS (checked, honestly): (a) the settled quiet interior is the LEAST surprising
-    # region — the most-surprising bar is never there; (b) surprise is markedly elevated in
-    # the transition band; (c) the switch itself induces a strong local spike. Surprise does
-    # NOT reduce to a single point at the switch (noisy bars in the active regime also
-    # surprise the forward pass) — which is true to the phenomenon and to the strategy.
-    assert peak >= switch - 5, peak                      # not in the settled quiet interior
-    assert trans_band > quiet * 1.5, (trans_band, quiet)  # elevated at the transition
-    assert local_switch_peak > quiet * 2, (local_switch_peak, quiet)  # switch is a spike
-
-    print("\nDOUBLE DUTY (same KL(filter‖smooth)):")
-    print(f"  alpha feature : the tradeable structure is the surprise, concentrated in the "
-          f"active/transition region (band {trans_band/quiet:.1f}x the quiet interior)")
-    print(f"  brain driver  : spend the next measurement where surprise is highest "
-          f"(t={peak}), never in the settled quiet region — active inference")
-    print("  -> the strategy mechanism IS the exploration driver; and it is the epistemic "
-          "bonus in metalearn.py's UCB. One principle, three uses.")
-    print("\nsurprise selftest: PASS — one primitive, both duties; surprise is elevated at "
-          "regime change and the quiet region is least informative.")
+    args = ((0., 2.), .6, [[.95, .05], [.05, .95]], [.5, .5])
+    prefix, future = [0., 0., 1.], [2., 2., 2.]
+    causal = causal_surprise_series(prefix, *args)
+    assert causal == causal_surprise_series(prefix + future, *args)[:len(prefix)]
+    before = surprise_series(prefix, *args)[-1]
+    hindsight = surprise_series(prefix + future, *args)[len(prefix)-1]
+    assert before < 1e-12 and hindsight > .4
+    print(f"surprise selftest: PASS; causal prefix unchanged; hindsight KL {before:.6f} -> {hindsight:.6f}")
 
 
 if __name__ == "__main__":

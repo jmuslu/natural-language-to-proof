@@ -1,185 +1,94 @@
-# Progress: what is proven, and what is open
+# Current results and remaining work
 
-The single organized record of results and open threads across the system, by area.
-It replaces the chronological session logs (the old `FINDINGS-goal-session.md`) and the
-original directive docs (the `HANDOFF-*.md`), which stated the same layer story three
-times over. Design *reasoning* lives in `ARCHITECTURE.md` and `TRACE.md`; this file is
-the *status*: each area lists what is externally checked (with the measured number) and
-what remains genuinely open.
+Updated 2026-09-15. This is the status summary; commands and detailed evidence
+belong in the linked component guides. **Checked** means an executable contract
+or regression passed. **Measured** names an actual experiment and its scope.
+**Historical** means retained earlier measurements, not rerun in this checkpoint.
+An implementation test does not by itself establish reasoning or market efficacy.
 
-**Status tags** (from `TRACE.md`): **[proved]** theorem · **[checked]** asserted in a
-suite · **[measured]** came out of a run · **[conjectured]** believed, unverified ·
-**[structural]** the object/use is wrong and no data fixes it · **[stipulated]** chosen,
-not derived.
+## Connected system
 
-**The one discipline, stated once for the whole system:** *nothing internal to the
-system counts as evidence; only an external check does.* Typedness, provability, and
-internal coherence are admission criteria and bookkeeping — never grounding. Every
-result below is anchored to an external check or carries provenance to one; every
-proposal (retrieval, inference, exploration) is a proposal until an external check
-disposes of it.
+| Area | Current result | Evidence / remaining boundary |
+|---|---|---|
+| Run oracle → journal → Haskell → graph/brain | **Checked.** Certificates recomputed, revisions journaled, run-scoped graph entries indexed, Haskell confirmation/fusion/reward invoked. | [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md). A receipt asserts `passes_validation(run_id)`; source references remain attribution. |
+| Retraction and history | **Checked.** Exact support differences, inert duplicate replay, explicit reinstatement, stale-evidence rejection, UTC/as-of retrieval. | `test_oracle_bridge.py`, `test_grounding.py`, `test_temporal.py`. Historical journal replay recovers earlier evidence; latest-only snapshots cannot. |
+| Haskell admission boundary | **Checked.** Private positional constructors and read-only getters prevent forging Confirmed/Fused values through construction or record updates. | 899 runtime checks across five suites; six compile-failure regressions and a positive API check. |
+| Typed multi-hop proofs | **Checked.** Signed claims, exact entity bindings, conjunctions, chronological steps, bounded proof depth, unconfirmed-leaf rejection, and alternative-support withdrawal. | [REASONING.md](REASONING.md). Supplied rules are explicit assumptions; arbitrary-language extraction is separate. |
+| Receipt-backed proof leaves | **Checked.** `reasoning.ledger` binds only run-validation facts, supports scoped negative receipts, rechecks revisions, and fingerprints task/rule/evidence dependencies. | Six cross-repository regressions; rule consequences retain their assumption scope. |
+| Model loop | **Measured development run.** Pinned MiniMax M2.7, three generated episodes, one-shot/self-review/checker-feedback arms, usage recorded and independently replayed. | Full protocol and result table in [REASONING.md](REASONING.md). Held-out evaluation is ongoing. |
+| Retrieval confidence | **Historical limitation.** Existing semantic trust-imputation skill was near its mean-null baseline on the small corpus. | Remains unlicensed; oracle wiring does not establish calibrated confidence. |
 
----
+The two repositories are connected through explicit artifact interfaces. The
+language parser, corpus retrieval, typed proof search, numerical uncertainty,
+and action selection still need evaluation together on problems whose answers
+and evidence are independently specified.
 
-## 1. Front end — substrate, ingestion, parsing (`src/NL2Proof/Syntax`, `DRT`)
+## Real evidence versus fixtures
 
-- **[measured] CCGbank ingestion is sound.** 83,540 lexicon entries → **83,468 (99.9%
-  of types, 87.8% of tokens) built as provenance-tagged, well-typed skeletons; 0
-  ill-typed** (`ccg-lexicon-ingest`). The feature migration (`Cat` gained features +
-  `catUnify`) lifted representability 66.5% → 99.9%. The remaining tail is honest: **40
-  coordinator entries are rule-handled** (the tested `conj X ⇒ X[conj]` / `X X[conj] ⇒ X`
-  coordination rule), **30 genuinely unrepresentable** (conj-*function* categories +
-  punctuation), 2 unparseable.
-- **[measured] Whole-sentence parsing works.** `CCGParse` folds application, composition,
-  coordination and the learned type-change inventory into one CKY: **99.1% of a
-  section-00 sample derive the gold root from gold supertags.** `CCGSupertag` (frequency
-  β-beam) drives it from raw words: **~70% → 87% from-words root coverage** as training
-  grows (per-word oracle 85→92%, OOV 16→4.6%).
-- **[structural] The meaning skeletons are not faithful.** `skeletonFor` is an opaque
-  typed constant; `templateSkeletonFor` adds canonical first-order Montague templates
-  (noun/verb/adjective/determiner) — a *stipulated* default, explicitly not faithful,
-  enough to make DRT non-degenerate (demonstrated: "a dog barks" → ∃x.dog(x)∧barks(x) →
-  a real DRS with a referent).
-- **[open]** (a) a schematic/polymorphic `conj` for the coordination-function tail;
-  (b) **faithful meaning** — the genuinely hard frontier the substrate flags as not
-  mechanically derivable (`typeOf` on a synthesized inhabitant is a *vacuous* gate: every
-  `{e,t}` type is inhabited); an LLM-proposed `Term` path (tagged provenance, gated by
-  `typeOf`) is future; (c) **DRT scale-up** — feeding *reconstructed* sentences into the
-  discourse stages is blocked because the core `Cat` parser is application+composition
-  only (no semantic coordination/type-change), and the CCat chart that parses real
-  sentences carries no semantics; needs one or the other extended.
+- **Measured legacy recovery:** 32 result files, 9 marked completed. All lacked
+  stable run identities and validation certificates. Replay produced 32 Unknown
+  receipts, zero fused claims, and zero Haskell reward.
+- **Checked positive integration:** a planted synthetic timing series passes
+  the statistical oracle and reaches Haskell. This establishes transport and
+  validation behavior, not discovery of a profitable strategy.
+- **Historical event-study demonstration:** seven hand-selected events produced
+  approximately +17.5% mean signed one-day abnormal return, p≈.0002. Selection
+  prevents treating this as a systematic performance estimate. The original
+  methods/result artifact is in agentic-qr's `EVENT_STUDY_LIVE_RESULT.md`.
+- **Corpus limitation:** the five-record adversarial corpus confounds format and
+  label; its readiness check remains negative. Owner structure labels, proposed
+  reference verdicts, and externally audited observations have different roles.
 
-## 2. Oracle — the external check for the trading domain (`agentic-qr:shared/backtesting/validation`)
+## Research corrections
 
-- **[checked] The statistical suite is complete and construction-independent:**
-  walk-forward/OOS, sign-flip + random-timing nulls, regime-conditional evaluation
-  (rotation null on per-regime Sharpe, labels defined independently of P&L),
-  Benjamini-Hochberg run-level FDR, calibration (Brier/ECE/discrimination), and an
-  export boundary that lets *only* fully-validated signals cross. 47 tests, each proven
-  on synthetic ground truth first.
-- **[measured, accessory] Event study runs on real data.** The dated-event → price
-  pipeline (Alpaca SIP, market-adjusted, no lookahead via `disclosure_timing`) pooled
-  +17.5% mean signed abnormal at 1 day (p≈0.0002) over 7 hand-picked events, reproducing
-  the known BIIB/SRPT moves. **Deprioritized as an accessory** — it validates the wiring,
-  not system efficacy; a systematic event universe is the only thing that would make it a
-  real study, and that is not the priority.
-- **[checked]** Audited run receipts now reach `Verify.Oracle` through
-  `Verify.External`, preserving Unknown, identity, and evidence hashes. Immutable
-  confirmation/fusion types also close two verified forgery paths. See §4 and
-  [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md). This certifies the recorded run checks,
-  not economic efficacy or source-claim truth.
+The canonical [30-thread ledger](RESEARCH_THREADS.md) maps every unfinished
+research direction to code, current evidence, and a discriminating experiment.
+It replaces repeated session narratives. Key results already implemented:
 
-## 3. Reward — what may count as an RL signal (`src/NL2Proof/Reward.hs`)
+| Thread | Resolution so far |
+|---|---|
+| Spectral contraction / robustness | Exact counterexamples separate asymptotic stability, finite-hop amplification, additive noise, bias, and unit scaling. No spectral test certifies truth. |
+| Topology / estimand identity | Explicit conjugate flows retain different coordinate relaxation times. Observable/population/horizon/scale must define the target. |
+| Categorical colimit claims | Finite mediator counts show that coherence alone supplies neither existence nor uniqueness. The current grounding heuristic is not a demonstrated universal construction. |
+| Online surprise | Causal predictive/posterior KL and predictive density added; log-space HMM checked against exhaustive paths. Full-sequence smoothing remains explicitly retrospective. |
+| Nonstationarity | First observation used once; variance/standard-deviation mismatch fixed. Separate jump-adaptive and outlier-robust options expose opposing tradeoffs. |
+| Conditional discovery | An independently evaluated XOR interaction survives zero marginal effects; retain conditional search with untouched confirmation. |
+| Confidence and selection | Current prototype confidence, method selection, necessity, and numerical conversions have identified unsupported assumptions. Contract fixes and outcome-based experiments are in progress. |
 
-- **[checked] Reward is vector-valued, not a farmed scalar.** `rewardCoordinates` /
-  `dominates` / `paretoFrontier` expose corroboration and novelty as *anti-correlated,
-  incomparable* axes; the choice among frontier points is deferred to an **external**
-  fitness function (calibration against oracle-checked outcomes), never to `rwScore`.
-- **[structural] Only two reward sources are admissible:** oracle confirmation, and
-  mechanical entailment over an already-confirmed base. Well-typedness, provability in
-  isolation, and internal consistency are each excluded, for reasons in `TRACE.md` P13.
-- **[open]** fit the corroboration/novelty combination against held-out oracle outcomes
-  — likely the *same solved shape* as the graph-trust mechanism (§4).
+The initial research battery has 12 reusable cases. Nine HMM tests, eight Kalman
+tests, and thirteen battery tests passed at the causal-method checkpoint.
+Exact witnesses can settle a universal claim negatively; finite experiments
+establish behavior only under their stated generators.
 
-## 4. Epistemic graph, fact brain, and reasoning (`corpus/`)
+## Language substrate: retained evidence
 
-- **[checked] The oracle handoff executes.** `pipeline.py` reads result files,
-  re-evaluates their certificates using agentic-qr's policy, journals revisions,
-  rebuilds run-scoped graph/index entries, and invokes the Haskell
-  oracle/confirmation/genealogy/fusion/reward path. `--oracle-only` needs no
-  embedding dependencies. [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md) gives commands.
-- **[checked] Scope is explicit.** The verdict is about
-  `passes_validation(run_id)`. Source `claim_refs` are attribution edges, not
-  source-truth updates. This replaces the earlier shortcut that a
-  strategy pass/failure should confirm/refute the prose it cited.
-- **[checked] Replay and revision are operational.** Immutable journal history,
-  duplicate suppression, stable run identities, exact support differences,
-  withdrawal and explicit reinstatement. Neither stale files nor attribution
-  edits can resurrect withdrawn evidence. Changed malformed files become Unknown.
-- **[measured] The available legacy evidence is incomplete.** 32 result files
-  (9 completed) lack run IDs and validation certificates. Replaying them yields
-  32 Unknown receipts, zero fused claims and zero Haskell reward. A positive
-  transport test uses an explicitly planted synthetic timing signal; it is
-  integration evidence, not an economic result.
-- **[checked] Grounding primitives are stricter.** `retract.py` handles
-  three-valued premises and persistent verdict changes. Empty justifications
-  need oracle confirmation; cycles cannot bootstrap. `estimand.py` rejects
-  empty/null-only/unmeasured patterns, invalid uncertainty and unsupported
-  provenance. Repeated measurements cannot tighten the same posterior; correctly
-  predicted negative effects support the hypothesis. Declared provenance groups
-  are not a proof of statistical independence, and their weight is stipulated.
-- **[measured, prior corpus] Semantic trust imputation remains unlicensed.**
-  Existing corpus calibration has skill near zero against its mean null. The
-  small checked subset and learning-curve runs are diagnostic; adding receipts
-  does not establish a general improvement. Proposed reference verdicts remain
-  labeled proposals in the base graph.
-- **[research prototypes]** `reason.py`, `abstain.py`, `multihop.py`,
-  `selector.py`, `alternates.py`, `metalearn.py`, `grok.py`, `discover.py`,
-  `regime_estimand.py` and `surprise.py` contain useful typed composition,
-  selection, abstention, invariant and residual ideas. Their synthetic
-  self-tests do not establish faithful extraction, out-of-generator transfer,
-  or frontier reasoning. Several remain standalone. The earlier labels
-  "loop closed", "generalization", and "proven" exceeded the evaluation.
-- **[open, next research milestone]** A non-frontier proposer participating in
-  an externally checked multi-hop pipeline: held-out compositions/topologies,
-  direct-answer and ablation baselines, equal budgets, proof checking, repair,
-  coverage/false-acceptance measures, and a versioned residual agenda. Then
-  connect DRT alternatives, typed composition, oracle and vector reward to the
-  same measured experiment. [BRAIN.md](BRAIN.md) records this scope.
+| Measurement | Scope |
+|---|---|
+| 386 core checks | Discrete CCG/lambda/DRT operations and discourse merge |
+| 239 candidate/ranking checks | Scope, fingerprints, finite models, RSA, SDRT threading |
+| 114 substrate checks | Oracle, genealogy, fusion, reward admissibility and Pareto coordinates |
+| 116 CCGbank checks | Categories, feature unification, reconstruction, type changes, lexical ingestion, parsing |
+| 44 external-receipt checks | Strict transport, scoped oracle/fusion/reward integration, safe weakening |
+| Historical 83,468 / 83,540 lexical entries | 99.9% representable types, 87.8% token coverage; zero ill-typed skeletons. Structural representability does not establish faithful semantics. |
+| Historical 99.1% parse coverage | Section-00 sample with gold supertags; lexical baseline improved roughly 70%→87% as training increased. Neither is a general-language meaning-accuracy estimate. |
 
+Unique formal findings, code pointers, and remaining language gaps are in
+[TRACE.md](TRACE.md); operating interfaces are in [ARCHITECTURE.md](ARCHITECTURE.md).
+Open language work includes faithful lexical meaning, semantic coordination/type
+changes, larger discourse evaluation, full marginal threading, and plural scope.
 
-## 5. Temporal discipline (`TEMPORAL.md`, condensed)
+## Completion criteria for this research pass
 
-- **[structural] No lookahead, as a first-class property.** A fact may inform a decision
-  at `T` only if its `knowable_time ≤ T`; the brain's `retrieve`/`answer` take an `as_of`
-  date and answer *what was knowable then*. `knowable_time` (disclosure) is distinct from
-  `event_time` (when the thing held) and can precede it; `disclosure_timing` (pre-market
-  vs after-close) decides which session first makes a fact actionable. This is the
-  "external checks only" discipline applied to the time axis, and it is **system-general**
-  (the event-study use case in §2 is just one consumer).
+1. Resolve the original research threads with explicit contracts and reproducible
+   experiments or counterexamples. State what each finite result does and does
+   not settle; remove unsupported success claims.
+2. Evaluate the connected proposer/checker/repair pipeline on untouched
+   multi-hop compositions and failure cases, with meaningful baselines and
+   recorded actual resources. Carry useful residuals into development, then use
+   fresh evaluation data.
+3. Consolidate the documentation around current interfaces, results, and one
+   research ledger. Remove obsolete/repetitive artifacts; preserve useful
+   technical knowledge with direct code and experiment references.
 
-## 6. The adversarial epistemic corpus (`corpus/`, `corpus/README.md`)
-
-- **[checked] Structure and verdicts are kept apart by provenance.** Owner-labeled
-  structure (`records/`) asserts no verdicts; reference-backed *agent-proposed* verdicts
-  (`verdicts_agent_proposed.json`, `pending_owner_confirmation`) are the bootstrap
-  proposer role — an agent proposes against a cited external reference, never substitutes
-  its own read of what "sounds right." `unresolved` is used honestly and often.
-- **[measured] The confound is honestly still red.** With 5 records, format/length are
-  confounded with the label; `confound_check.py` correctly returns NOT READY (needs ≥3
-  balanced per bucket). Growing it needs *inconsistent* sources and *videos* — balanced
-  collection, not padding, which would be the gaming move the project forbids.
-
----
-
-## Open questions that bear on system *efficacy* (surfaced, not buried)
-
-These are the questions that decide whether the whole thing is actually good, over and
-above the per-area open items above:
-
-- **[structural] The corpus cannot falsify several things the suite appears to check**
-  (ARCHITECTURE §"Standing limitations"). Results on the nine-case fragment and the
-  5-record corpus are *lower bounds / existence proofs*, not performance claims. The
-  single most important lever on efficacy is **real data that can falsify** — a corpus
-  that can actually discriminate, and a domain with a real oracle.
-- **[structural] Faithful extraction has no oracle** (well-typed ≠ faithful; provable ≠
-  faithful). This caps what Stage 1 can *claim*, independent of coverage.
-- **Substrate design questions still open** (`TRACE.md` "Reviewing this document"):
-  **P8.5** is the RSA operator a contraction (turns a latency knob into a stopping rule)?
-  **P9.5** should content and structure ever be averaged? **P5.4** is a multiset quotient
-  of DRS wanted? **P7.7** should the ranking layer represent overlapping truth sets of a
-  coupled antichain explicitly? **P4.5** genealogy as a free category vs a fold.
-- **`Dist` is not a monad and should be** (TRACE S8) — a real structural gap in ranking.
-- **Plural predication** is a coverage gap fusion/compression will hit (ARCHITECTURE).
-
-## Origins (replacing the handoff directives)
-
-The work was originally framed as a stack of barriers — a language front end (CCG/DRT/
-Montague), an external oracle, a vector-valued reward, a graph-trust mechanism, and an
-epistemic ingestion layer — deliberately laid out as separate barriers rather than one
-hard problem, so each could be attacked with its own external check. That framing is now
-realized across the docs above; the original `HANDOFF-*.md` directives were removed once
-their content lived here and in `ARCHITECTURE.md` / `TRACE.md`. Operating conventions
-that still hold: commit/push freely in both repos; never take capital-relevant or
-externally-destructive actions without confirmation; verify against real tool output
-before logging; an agent proposes, external checks decide.
+These criteria are not yet complete. Frontier-level generalization and economic
+efficacy have not been established by the current runs.
