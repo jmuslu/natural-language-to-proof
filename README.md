@@ -5,9 +5,12 @@ evidence journal, retrieval system, and measured multi-hop proposer loop.
 [agentic-qr](https://github.com/aiqs-org/agentic-qr) supplies the statistical
 oracle and bounded model client.
 
-The research objective is reliable multi-hop reasoning from a smaller proposer.
-Frontier-level performance remains an objective to measure. Current experiments
-separate a correct answer, a valid derivation, and evidence about the world.
+The application is inductive alpha research: participant constraints and incentives
+→ positioning/flows → conditional price response → a testable signal after costs.
+Reliable multi-hop reasoning from a smaller proposer supports that objective.
+Current experiments separate a correct answer, a valid derivation under supplied
+rules, and empirical evidence. Frontier-level reasoning and financial efficacy
+remain objectives to measure.
 
 ## Start here
 
@@ -28,6 +31,7 @@ separate a correct answer, a valid derivation, and evidence about the world.
 agentic-qr result files → recomputed run receipts → append-only journal
                                                 ├→ Haskell oracle → fusion/reward
                                                 └→ graph/index → brain/retrieval
+                                                                   └→ proposed research designs
 
 bounded model client → proposed proof → typed step checker → errors/repair
                                          └→ evidence genealogy/retraction
@@ -35,7 +39,10 @@ bounded model client → proposed proof → typed step checker → errors/repair
 
 The second path uses generated finite worlds with separate trusted fact receipts
 and explicit rule assumptions. It exercises exact signed claims, conjunctions,
-entity bindings, proof depth, abstention, and repair. The language front end's
+entity bindings, proof depth, abstention, and repair. Local rule tools are compared
+with a separately labeled symbolic solver. Exploratory research preserves uncertain
+premises and counterevidence; nomination alone does not operationalize a mechanism.
+The language front end's
 CCG/DRT alternatives are a separate input path; arbitrary prose-to-faithful-rule
 extraction is still an integration and evaluation task.
 
