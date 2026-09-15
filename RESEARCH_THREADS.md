@@ -108,7 +108,7 @@ not permission to explore. IDs remain stable for future changes and experiment r
 | R16 / P1 | Matched dead ends/necessity; necessity `Leg`, ablation | **Equivalence gate implemented.** Missing margin and underpowered null fail; precise synthetic interval inside margin passes. Still require preregistration, paired removal/sham/retraining/cost/capacity/redundancy controls before a causal necessity claim. |
 | R17 / P1 | Thesis specificity/negative controls; specificity `Leg` | **Directional bound implemented.** No positive effect uses an upper confidence bound below declared tolerance; no effect uses two-sided equivalence. Both differ from predicted reversal. Missing margins and underpowered negatives cannot pass. |
 | R18 / P0 | Holdouts/all-holds/FDR/selection; QR validation | **Explicit-family mechanism.** Audit full attempt families, dependence, repeated looks, selection logs and untouched confirmation; local family checks cannot prove research completeness. |
-| R19 / P1 | Dead marginals/interaction/residual discovery; `discover.py` | **Synthetic witness.** Sparse noisy interactions plus true-null corners, hidden targets, fixed compute budget, untouched evaluation. |
+| R19 / P1 | Dead marginals/interaction/residual discovery; `discover.py`, `brain_exploration.py` | **Synthetic witness and exploratory bridge.** Uncertain/refuted premises can nominate different conditional chains; scoped counterevidence is retained. Stable designs pass into QR hypotheses without any new checked claim. Semantic nomination still requires concrete observable/contrast design and independent confirmation. |
 | R20 / P1 | Synthetic inference/abstraction/method classes; `multihop.py`, `discover.py` | **Prototype with corrected contracts.** 300 held-out synthetic candidates: screening precision/recall `1`, 97 coherent generated-response checks; source grouping remains one per candidate and no portfolio estimate is invented. Next hold out target laws/mechanisms; measure novelty, cost and later validation. |
 | R21 / P0 | HMM surprise/residuals; `surprise.py`, `online_residual.py` | **Connected causal reconstruction tested.** Progressive lagged KL, two online ridge branches, frozen forecasts, pre-update residuals and past-event thresholds have 22 tests, including an independent probability/batch-regression reference. The original progressive smoother is causal; the full-session toy leaks. Exact historical learner settings remain unavailable. Forecasting and conditional market value need separate evaluation. |
 | R22 / P1 | Free energy/model evidence/MDL | **Strong equivalence refuted.** Compare exact evidence with unequal variational gaps; any MDL link requires declared coding/model scheme. |
@@ -117,7 +117,7 @@ not permission to explore. IDs remain stable for future changes and experiment r
 | R25 / P1 | Adaptive selection/residual learning/UCB; `selector.py`, `metalearn.py`, `adaptive_evaluation.py` | **Fallible-outcome learning implemented/tested.** Signed checked losses and fixed acceptance rule replace assumed-correct heavy escalation. Independent same-law test benefits; shifted contexts fail (figures above). Next drift detection and randomized audit policy under real costs. |
 | R26 / P1 | Grokking/noisy induction/abstention; `grok.py`, `abstain.py`, `robust_concept.py` | **Repaired and noise-tolerant class search replicated.** Two fresh seeds recover same-law concepts under noisy/confidently wrong labels; irreducible outcomes trigger abstention. Changed target laws still defeat source calibration. Scope is the supplied finite hypothesis class; next shift-aware audits and broader classes. |
 | R27 / P2 | Neuromorphic/Hodgkin–Huxley/Hopf engines | **Open analogy.** Identifiable dynamical models versus HMM/simple baselines on causal holdouts. HMM state change need not be bifurcation; estimate observables before attractor/proximity claims. |
-| R28 / P1 | Proposer ceiling/diversity/reasoner–coder ladder/trajectory DAG | **Experiment scheduling connected; discovery open.** One immutable request/run/protocol per session, crash recovery, explicit-family FDR wait and independently checked result. Fourteen scheduling regressions include delayed/reordered messages and atomic result replacement; no deployment. Legacy synchronous execution still needs hard cancellation. Model comparisons are in REASONING.md; small-model long-chain proof recovery remains unsolved. |
+| R28 / P1 | Proposer ceiling/diversity/reasoner–coder ladder/trajectory DAG | **Experiment scheduling connected; discovery open.** One immutable request/run/protocol, crash recovery, explicit-family FDR wait and independent result checking. Loop workers now run in supervised POSIX process groups with bounded cleanup; timeouts or malformed execution reports end incomplete. Caller-crash cleanup and legacy direct entry points remain outside that guarantee. Model comparisons and explicit-effort controls are in REASONING.md. |
 | R29 / P0 | Knowability/events/hindsight labels; `brain.py`, event store | **Mechanism strengthened.** Offset/date/prefix/as-of tests exist. Extend cutoffs to fitting, label availability, source revisions and selector training; publication differs from observation. |
 | R30 / P0 | Financial mechanism/source fidelity; [private source](https://github.com/aiqs-org/Futures-Reversal) | **Original source located; replication incomplete.** The write-up postdates its code and requires an absent online predictor; no producing notebook or intraday sample was recovered in that repository. Keep the detailed source audit in ignored runtime storage. Reconstruct a causal residual primitive, then test the intended conditioned intraday mechanism with genuine data. Fixed daily baselines are plumbing controls; legacy figures and 32 uncertified results remain unverified. |
 
@@ -156,6 +156,31 @@ The numerical and proof experiments below support this application.
 Exact witnesses refute universal claims. Seeded experiments establish behavior
 under their specified generators. Neither is a certified market effect or a
 deployment result.
+
+### Exploration with uncertain premises
+
+`brain_exploration.py` nominates topical semantic chains under a caller-specified
+condition. Every premise retains its source, scoped check and exploratory score;
+every causal link remains `proposed_unknown`. A refuted run-validation proposition
+is counterevidence about that run, not a negated economic law or an admitted fact
+in a proof. Link ablations, conditional interactions and negative controls remain
+incomplete designs needing observables, timing, confounding assumptions, margins
+and a confirmation family. No source hypothesis becomes true through nomination.
+
+Proposal/design IDs bind the question, condition and test definitions; a separate
+context hash records evidence revisions. Unknown-to-refuted updates preserve the
+research question's identity while changing its counterevidence. The QR adapter
+rejects promoted/tampered context and converts a selected item into a stable
+proposed hypothesis without execution. Historical eligibility is applied before
+nomination, and acquisition annotations are separate from evidence.
+
+An offline conversion of the actual stored Brain produced eight exploratory
+hypotheses and 40 `design_required` tests. Its 32 premise occurrences contained
+eight scoped refutations and 24 unknowns, with zero confirmed premises or newly
+checked claims. The Brain file stayed byte-identical. This demonstrates the
+handoff of uncertain research context; it does not establish novelty, meaningful
+causal links or useful alpha. Detailed context stays in ignored
+`corpus/runtime/exploratory-agenda-20260915-v2/`.
 
 ### Online residual reconstruction
 

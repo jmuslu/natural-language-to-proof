@@ -24,13 +24,15 @@ import shutil
 from pathlib import Path
 
 from brain import Brain
+from brain_exploration import compose_discovery
 from oracle_bridge import cutoff
 
 HERE = Path(__file__).resolve().parent
 
 
 def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
-                 k_bridges: int = 5, as_of: str | None = None) -> dict:
+                 k_bridges: int = 5, as_of: str | None = None,
+                 discovery_goal: dict | None = None) -> dict:
     as_of = cutoff(as_of)
     items = []
 
@@ -97,6 +99,11 @@ def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
                           f"adjacent (sim {b['similarity']}) — candidate synthesis"),
             "domains": [b["a_domain"], b["b_domain"]], "status": "proposed"})
 
+    discoveries = []
+    if discovery_goal is not None:
+        discoveries = compose_discovery(brain, goal=discovery_goal, k=k_bridges, as_of=as_of)
+        items.extend(discoveries)
+
     items.sort(key=lambda it: -it["priority"])
     cal = brain.calibrate(as_of=as_of)
     return {
@@ -106,6 +113,9 @@ def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
                  "claim_refs record attribution to the claims an item concerns. "
                  "A backtest receipt establishes only its run-validation proposition."),
         "as_of": as_of,
+        "discovery_enabled": discovery_goal is not None,
+        "discovery_status": ("disabled" if discovery_goal is None else "proposals_available" if discoveries
+                             else "no_eligible_topical_chain"),
         "brain_state": {"n_facts": cal.get("n"), "n_checked": cal.get("n_checked"),
                         "frac_unchecked": cal.get("frac_unchecked"),
                         "imputation_licensed": cal.get("licensed")},
@@ -118,10 +128,12 @@ def main() -> None:
     ap.add_argument("--out", default=str(HERE / "brain_agenda.json"))
     ap.add_argument("--publish", default="", help="also copy the agenda to this path")
     ap.add_argument("--as-of", help="include only facts knowable by this UTC date or zoned timestamp")
+    ap.add_argument("--discovery-goal", help="explicit JSON goal with id, question, and condition_scope.description")
     args = ap.parse_args()
 
     brain = Brain.open(args.db, load_embedder=False)
-    agenda = build_agenda(brain, as_of=args.as_of)
+    goal = json.loads(Path(args.discovery_goal).read_text()) if args.discovery_goal else None
+    agenda = build_agenda(brain, as_of=args.as_of, discovery_goal=goal)
     Path(args.out).write_text(json.dumps(agenda, indent=2) + "\n")
     print(f"[brain_agenda] {agenda['count']} proposed research items -> {args.out}")
     for it in agenda["items"][:8]:
