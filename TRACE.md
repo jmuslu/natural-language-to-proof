@@ -281,7 +281,7 @@ Chart cells, by increasing length. Only application is enabled.
 > per-word oracle inclusion 85% the stated ceiling. This is the external check on the
 > grammar as a whole — the corpus decides, not the system — and the from-words number
 > is honestly separated from exact-derivation match (which the sentence-level supertag
-> oracle bounds far lower). See `FINDINGS-goal-session.md`, Layer 1/2.
+> oracle bounds far lower). See `PROGRESS.md`.
 
 ### Normalization and α-equivalence are two different quotients
 
@@ -1524,7 +1524,7 @@ chain of 50, same shape
 > corroboration-heavy and a novelty-heavy reward come out **incomparable** —
 > neither dominates — so the trade-off is preserved rather than collapsed, and the
 > choice among frontier points is deferred to an external fitness function
-> (calibration against oracle-checked outcomes; see `FINDINGS-goal-session.md`,
+> (calibration against oracle-checked outcomes; see `PROGRESS.md`,
 > Layers 4/7/8). `rwScore` is retained but is one blind scalarization among the
 > coordinates, not "the reward".
 

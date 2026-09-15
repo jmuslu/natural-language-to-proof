@@ -1,195 +1,52 @@
-# The temporal layer: valid-time, as-of correctness, and no lookahead
+# The temporal discipline: valid-time, as-of correctness, no lookahead
 
-Status: **design thread** (`[structural]` unless a claim is tagged otherwise). Opened
-when the corpus grew a use case that makes time load-bearing: coinciding external
-event timelines (clinical-trial readouts, drug approvals, journal publications, SEC
-filings) with market movements, and propagating the result through the epistemic
-graph, the brain, and the oracle. The moment facts carry dates and we ask "did X
-precede Y," the system inherits the single hardest discipline in empirical finance —
-**no lookahead** — and it must be enforced structurally, not trusted to a model.
+A design note on the one temporal rule the system needs. It is **system-general** —
+the "external checks only" discipline applied to the time axis. (The event-study use
+case that first motivated it is an implemented but *accessory* consumer; its specifics
+live in `agentic-qr:shared/backtesting/` and are not a priority here.)
 
-This document reasons about the architecture before building it, per the request. It
-is written in the same discipline as the rest of the system: time is *external,
-attested metadata*, never something a component infers about itself.
+## Time is not one number
 
-## 1. Why time is not one number
+A fact carries several times, and conflating any two is usually how lookahead (i.e.
+cheating) creeps in:
 
-A fact has several distinct times, and conflating any two of them is a bug that
-usually manifests as spurious predictive power (i.e. cheating). The model is
-**bitemporal, plus two derived stamps**:
+- **event_time** (valid time) — when the thing the claim is *about* actually held.
+- **knowable_time** (disclosure) — the earliest it could be *acted on* (publication,
+  filing, readout posting). **The load-bearing stamp.** It can *precede* event_time
+  (an interim result disclosed before the registry milestone) or follow it.
+- **ingestion_time** (transaction) — when we recorded it.
+- **as_of** — the decision moment a query is evaluated against.
 
-| Stamp | Meaning | Load-bearing for |
-|---|---|---|
-| **event_time** (valid time) | when the thing the claim is *about* actually held (trial completed 2023-06-01; earnings occurred in Q2) | causal ordering, event studies |
-| **knowable_time** (disclosure time) | the earliest a party could have *acted* on it — journal publication, results posted to ClinicalTrials.gov, 8-K filing, conference presentation | **no-lookahead** — the one that prevents cheating |
-| **ingestion_time** (transaction time) | when *our* system recorded it | auditing, reproducing "what we believed then" after later revision |
-| **decision_time** (as-of) | the moment a hypothesis/strategy is evaluated | the query-time filter |
+The rule everything serves: **a fact may inform a decision at `T` only if
+`knowable_time ≤ T`.** Not `event_time` — using when the thing *happened* instead of
+when it became *knowable* is the classic leak (study period vs. publication date;
+earnings period vs. release; a restated figure at its original date). At sub-day
+granularity a `disclosure_timing` flag (pre-market / after-close) decides which
+session first makes a fact actionable.
 
-The rule that falls out, and that everything else serves:
+## Why the scaffolding must own time, not the model
 
-> **A fact may inform a decision at time `T` only if `knowable_time ≤ T`.**
+An LLM has one coarse training cutoff, no per-fact valid-time, and *leaks* post-cutoff
+outcomes as hindsight — so it cannot be trusted to reason about "what was knowable
+when." The fix is the same move this system already makes for truth: push time outside
+the model, as external, attested provenance plus an as-of filter. Do not ask the model
+when something was true; stamp it and filter.
 
-Note it is `knowable_time`, not `event_time`. A Phase 3 trial that *completed* in June
-but whose results were *posted* in October is not usable in July, even though the
-event already "happened." The classic traps are all instances of using the wrong
-stamp: using a paper's *study period* instead of its *publication date*; using an
-earnings *period* instead of its *release*; using a restated figure at its original
-date. Each leaks the future.
+## How it threads through the existing pieces
 
-## 2. How LLMs handle this (they mostly don't)
+- **Provenance gains time.** Each claim/source carries the stamps above, from attested
+  sources (publication/filing/posting dates), same discipline as `evidence_basis`.
+- **As-of retrieval.** The brain's `retrieve`/`answer`/`infer_trust` take an `as_of`
+  date; a fact with `knowable_time > as_of` (or unknown) is invisible — so the brain
+  answers *what was knowable then*, with no lookahead. One predicate before the vector
+  search.
+- **Walk-forward calibration.** The honest version of the brain's self-grading splits
+  train/test on `knowable_time` (past → future), a strictly stronger test of predictive
+  (not merely interpolative) structure than a random split.
+- **Temporal-consistency as a new external check.** A claim asserting a timeline is
+  checkable against an external event timeline; a claimed date contradicting the
+  attested one is `inconsistent` — the temporal sibling of the reference verdicts.
 
-Worth stating plainly, because the instinct is to let the model reason about time:
-
-- An LLM has a single coarse **training cutoff** — a global knowable_time for
-  everything it saw. It has **no per-fact valid-time**: it cannot tell you when a fact
-  became true, or when it learned it.
-- It **leaks future knowledge**. A model trained through 2025 already "knows" a 2024
-  approval outcome, so asking it to "predict" a 2023 readout is hindsight, not
-  prediction — the canonical LLM-backtesting contamination.
-- It **conflates event with publication**: given "the trial showed benefit," it does
-  not separate when the benefit occurred, when it was written up, and when it was
-  indexed.
-- Systems that get this right push time **outside** the model: timestamp every
-  document, filter retrieval by an as-of date, and use temporal/bitemporal knowledge
-  graphs with valid-time edges. The model is stateless about time; the scaffolding
-  enforces it.
-
-Conclusion, and it is the same conclusion this whole system already reached about
-truth: **do not trust the model to track time.** Impose valid-time as external
-provenance and enforce as-of filtering at retrieval, inference, and evaluation. The
-temporal layer is the "external checks only" discipline applied to the time axis.
-
-## 3. Architecture: time threaded through the existing pieces
-
-Nothing here is a new subsystem; each piece is an existing one gaining a time stamp
-and an as-of filter.
-
-### 3.1 Provenance gains time (the corpus + graph)
-Every claim/source/event node carries `{event_time, knowable_time, ingestion_time}`
-(any may be an interval or carry an uncertainty flag; `knowable_time` is required for
-anything used in a temporal test). Sources are external and attested: trial posting
-dates, DOI publication dates, filing timestamps, price-bar timestamps — exactly what
-the research/clinical-trial/article tools return. This extends `evidence_basis`:
-a temporal claim is `public_reference` only if its dates are externally attested.
-
-### 3.2 As-of retrieval and inference (the brain)
-`retrieve` / `answer` / `infer_trust` gain an `as_of` parameter: facts with
-`knowable_time > as_of` are invisible. The brain can then answer *"what did we know at
-time T,"* which is the only honest basis for historical hypothesis testing. Default
-`as_of = now`. This is a filter on the fact set before the existing vector search — a
-small, local change with a large correctness payoff.
-
-### 3.3 Walk-forward becomes literally temporal (calibration + oracle)
-The brain's calibration currently uses a random train/test split. The temporal
-version splits on `knowable_time` — train on the past, test on the future — which is a
-strictly stronger, honest test of *predictive* (not merely interpolative) structure,
-and it mirrors the oracle's existing walk-forward/OOS. Same for any event-study: the
-model is fit only on data knowable before the window it is scored on.
-
-### 3.4 Temporal consistency: a new kind of external check
-A claim asserting a timeline ("approved in 2019," "readout preceded the selloff") is
-checkable against an external event timeline (ClinicalTrials.gov dates, FDA calendars,
-the price series itself). Verdict `temporally_consistent | inconsistent | unresolved`,
-reference-backed, same provenance discipline as the existing consistency verdicts. A
-claimed date that contradicts the attested date is `inconsistent`. This is the
-temporal sibling of the reference verdicts already in `verdicts_agent_proposed.json`.
-
-### 3.5 Event–market alignment (the new use case, done honestly)
-To coincide a medical event with a price move:
-1. Anchor on `knowable_time`, mapped forward to the next **tradeable** moment (a
-   readout posted after the close acts at the next open; respect the trading calendar).
-2. Measure the reaction in a forward window `[t, t+Δ]` — never a window that straddles
-   `t` backward.
-3. Test the effect against the oracle's existing nulls: **sign-flip** and especially
-   the **random-timing** null (does the reaction beat the same window placed at random
-   dates?), then **Benjamini–Hochberg FDR** across the many events tested, and the
-   **regime/rotation null** so a few flattering windows cannot carry the result.
-
-The event study is thus not a new statistical engine — it is the existing oracle suite
-pointed at event-anchored windows, which is exactly why the temporal layer belongs to
-this system rather than beside it.
-
-### 3.6 The loop, temporally grounded
-A hypothesis ("positive Phase 3 readouts precede abnormal returns") → an event set
-with attested `knowable_time`s → aligned forward price windows → oracle validation
-(nulls + FDR) → a certificate → reverse-propagation to the corpus claim, with the
-as-of discipline preserved end to end. The brain's exploration can then propose the
-next event class to test, and its calibration must be walk-forward in time.
-
-## 4. Traps to keep measured, not assumed away
-
-- **Lookahead via the wrong stamp** — the whole reason for §1; enforce `knowable_time`.
-- **Selection / survivorship** — testing only trials that reported, or firms still
-  trading, biases the event set. Record the universe as-of, including the ones that
-  later disappeared.
-- **Restatement / revision** — a result can be corrected later. *What is implemented
-  today:* valid-time (`event_time`/`knowable_time`) plus a single `ingestion_time`
-  stamp per event, and evolving knowledge is captured by recording each disclosure as
-  its own dated event (e.g. aducanumab: EVT-002 discontinued 2019, EVT-003 approved
-  2021), so an as-of-`knowable_time` query already reconstructs "what was known then."
-  *What is not yet implemented:* full transaction-time versioning of a single event's
-  fields, which would let us ask "what did we *believe about event E* as of
-  transaction-time T" after a later back-correction to E itself. That is the honest
-  remaining gap between "bitemporal-capable" and the single-ingestion-stamp store here.
-- **Trading-calendar / timezone mapping** — `knowable_time → next tradeable time` is a
-  real transform, not a rounding.
-- **Embargo / leak** — the true knowable_time can precede formal publication
-  (conference talk, rumor). Prefer the latest *defensible* knowable_time and flag the
-  uncertainty rather than pretend precision.
-- **Multiple-comparisons over event classes** — FDR across the classes tested, the
-  same way run-level FDR already gates strategy batches.
-
-## 5. What to build first (incremental, each externally checkable)
-
-1. **[done]** **Schema + stamps**: claims carry `event_time` (the date the claim is
-   *about*, nullable) in `record_schema.json`; `export_claims_index.py` derives
-   `knowable_time` (= source `dates.published`, falling back to `captured` — a
-   conservative, never-leaks-the-future bound) and `ingestion_time`, and publishes all
-   three into `claims_index.json`. The brain stores them.
-2. **[done]** **As-of filter** in the brain: `retrieve` / `answer` / `infer_trust`
-   and `_all` take `as_of`; a fact is visible only if `knowable_time <= as_of`
-   (unknown `knowable_time` is excluded — conservative). `brain_query.py --as-of`
-   exposes it; `brain_test.py` asserts no lookahead. A temporal (walk-forward) split
-   for `calibrate` is still pending.
-3. **Temporal-consistency verdicts**: verify a handful of dated claims against attested
-   external dates (the research tools), reference-backed, owner-confirmable. (E.g.
-   recover record 005's true publication date, currently a conservative `captured`
-   fallback.)
-4. **[driver built, proven on synthetic ground truth]** **Event-study driver**:
-   `agentic-qr:shared/backtesting/validation/event_study.py`. `align_to_next_bar`
-   maps each event's `knowable_time` to the first bar *strictly after* it (no
-   lookahead; events past the series end are dropped, not clamped); `event_study`
-   measures the mean forward (optionally market-adjusted) abnormal return and tests
-   it against a **random-timing null** (same window at random dates) and a sign-flip
-   null. Proven on synthetic ground truth (`test_event_study.py`, 6 checks: injected
-   effect detected and beats the null; pure no-effect does not fire; a market-wide
-   move is removed by market adjustment). The **driver** `run_event_study`
-   (`event_study_driver.py`) glues it to the event store: groups events by ticker,
-   aligns each `knowable_time` to the next bar, runs the study per ticker, and gates
-   with Benjamini-Hochberg across tested tickers (a ticker with `< min_events` is
-   `insufficient`, not given a p-value). Proven end-to-end on a synthetic calendar
-   keyed to the *real* event dates. **The only input the system still lacks is a real
-   price series** — supply `{ticker: {date: level}}` and it runs.
-5. **[LIVE — ran on real market data]** the medical-timeline ↔ market use case, end
-   to end. A dated event store (`corpus/events/`, 7 externally-verified events across
-   MRK/BIIB/SRPT/VRTX/LLY/NVO, with `knowable_time` AND `disclosure_timing`) feeds
-   `agentic-qr:shared/backtesting/event_study_live.py`, which pulls real
-   split/dividend-adjusted daily bars from **Alpaca (SIP feed)**, aligns each event to
-   its *actionable session* by `disclosure_timing` (pre-market/intraday → same session;
-   after-close → next; no lookahead), signs the market-adjusted forward return by the
-   event's expected direction, pools, and tests against a random-timing null. Result:
-   every event moved in its expected direction at 1 day; pooled mean signed abnormal
-   **+17.55%**, random-timing **p = 0.0002** — and the famous cases reproduce exactly
-   (BIIB −29% on the 2019 discontinuation, SRPT ≈ −26% the day after its adcom). See
-   `agentic-qr:shared/backtesting/EVENT_STUDY_LIVE_RESULT.md`. This validates the whole
-   temporal→price pipeline on real data. The core temporal point held on real prices:
-   `knowable_time` can precede `event_time` (KEYNOTE-042), and `disclosure_timing`
-   decides which session's bar captures the reaction — get it wrong and a pre-market
-   crash is missed. Honest limits: n = 7, hand-selected famous events, timing
-   timestamp-verified only for MRK; next is a systematic universe + timestamp
-   verification, then reverse-propagating certified outcomes into the graph/brain.
-
-The through-line, unchanged: the system does not decide *when* something was true or
-knowable any more than it decides *whether* it is true — both come from external,
-attested sources, and every temporal claim is a proposal until an external timeline
-confirms it.
+That is the whole discipline. Anything domain-specific (aligning events to price
+windows, survivorship in an event set, trading-calendar mapping) belongs to whichever
+consumer uses it, not here.

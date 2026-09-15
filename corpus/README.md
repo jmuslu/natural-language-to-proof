@@ -1,9 +1,9 @@
 # Curated corpus for the adversarial epistemic suite
 
-The labeled corpus described in `../HANDOFF-corpus-adversarial.md`: a small,
+The labeled corpus (adversarial epistemic suite): a small,
 deliberately-labeled set of sources (YouTube videos and written articles) split
 into checkable-and-consistent vs. common-but-inconsistent, to test whether the
-epistemic ingestion layer (main handoff Layers 6–8) can tell the two apart —
+epistemic ingestion layer can tell the two apart —
 **before** it is pointed at anything larger or unsupervised.
 
 ## The rule that shapes everything here (corrected)
@@ -60,7 +60,7 @@ corpus/
                               synthetic inference, calibration, directed exploration
   brain_build.py              (re)build brain.db + brain_manifest.json from the graph
   brain_query.py              CLI: retrieve / infer / neighbors / explore / bridges / answer
-  brain_test.py               offline test suite for the brain (109 checks)
+  brain_test.py               offline test suite for the brain (168 checks)
   brain_map.py                render brain.db as an interactive semantic-trust map
                               (brain_map.html; positions=meaning, colour=trust)
   pipeline.py                 end-to-end operational driver (ingest→graph→brain→
@@ -82,10 +82,10 @@ corpus/
 they are derived metadata and short claim statements, the actual deliverable.
 Raw full transcripts/articles live **outside** the repo at `~/corpus/raw/`,
 mirroring the `~/ccgbank/` pattern, because third-party transcripts/articles
-carry ToS/copyright exposure the handoff explicitly flags. `corpus/raw/` is
+carry ToS/copyright exposure the design explicitly flags. `corpus/raw/` is
 gitignored as a safety net. (The `files.zip` at the repo root — the owner's
-original collection bundle — still contains the raw transcripts; see the findings
-log for the recommendation to untrack it to follow the same discipline.)
+original collection bundle — still contains the raw transcripts and should be
+untracked to follow the same discipline.)
 
 ## Schema v2, and why it differs from the original
 
@@ -93,9 +93,9 @@ The original `record_schema.json` was a minimal stub the four collected records
 had already outgrown *inconsistently*: only articles carried `media_type`, only
 001 tracked a word count, 001/003/004 had `key_claims_surface` in three different
 shapes, and 002 had no claim decomposition at all. v2 unifies video and article
-and adds the fields the handoff calls for:
+and adds the fields the design calls for:
 
-- **`format`** and **`length`** — the two confounds the handoff says to track as
+- **`format`** and **`length`** — the two confounds the design says to track as
   fields (not verdicts): so that if a future discrimination signal correlates
   with format or sheer length, it is visible and checkable rather than silently
   baked into the labels.
@@ -109,7 +109,7 @@ and adds the fields the handoff calls for:
   quality/risk judgment, not a factual-consistency one, and collapsing them would
   corrupt the very axis the adversarial suite is meant to test.
 - **`claims[]`** — per-claim decomposition with attribution (`segment_id`), a
-  `domain` (for the orthogonality / domain-scoping the handoff asks for), a
+  `domain` (for the orthogonality / domain-scoping the design asks for), a
   `claim_type`, and the three null verification slots above.
 - **`evidence_basis`** — what would *verify* a claim, kept **orthogonal to
   `claim_type`** (its form): `public_reference` (checkable against a citable source),
@@ -138,7 +138,7 @@ the records + agent-proposed verdicts:
   `outcome --implicates--> claim` once the outcome is checked.
 
 Two disciplines are built into the propagation (`epistemic_graph.propagate`),
-both directly from the main handoff:
+both directly from the design:
 
 1. **Trust originates only from external checks** (Layer 8 Version A). References,
    owner labels and outcomes are the only trust *sources*; corroboration between
@@ -232,7 +232,7 @@ Four capabilities, and the honest limits the brain reports on itself:
   proposed-next-check the real payoff. It never claims ground truth — only what the
   externally-checked corpus implies.
 
-`brain_test.py` (102 checks, offline via the hashing embedder) is the external
+`brain_test.py` (168 checks, offline via the hashing embedder) is the external
 check on the brain *code*: trust copied verbatim, retrieval/neighbour/bridge
 contracts, the licensing gate, and build reproducibility. `pipeline.py` runs the
 whole chain — Haskell CCGbank ingestion → graph → brain → retrieve/explore, with
@@ -243,7 +243,7 @@ the oracle loop-closure — as one narrated operational run.
 The deliverable is a standalone verdict artifact + evidence that any
 discrimination signal discriminates for the **right reason** (claims check out or
 don't), not a spurious correlate (length, format, presenter confidence, writing
-style). Per the handoff this is validated the way the Layer 3 statistical suite
+style). Per the design this is validated the way the Layer 3 statistical suite
 was: synthetic/known ground truth first. It is explicitly **not** a graph
 integration (that is Layer 5, a separate later job), and a good result here is "a
 validated dataset worth handing to Layer 5 and worth growing," not "the epistemic

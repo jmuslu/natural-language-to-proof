@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build the curated-corpus records (schema v2) for the adversarial epistemic
-suite described in HANDOFF-corpus-adversarial.md.
+suite; see corpus/README.md.
 
 Reproducible: this script is the transformation, run it to regenerate
 `corpus/record_schema.json` and `corpus/records/record_00X.json` from the source

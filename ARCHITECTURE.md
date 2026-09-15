@@ -431,7 +431,7 @@ scripts/               no-cabal build path
 CCGbank (LDC2005T13) is now the corpus for scaling Stage 1 beyond the nine-case
 fragment. The corpus itself lives outside the repository (at `~/ccgbank/`) and no
 corpus-derived data is committed, for licensing reasons; the `tools/` drivers
-read it at runtime. See `FINDINGS-goal-session.md` for the measured results
+read it at runtime. See `PROGRESS.md` for the measured results
 (lexicon representability, GRAMMAR coverage, reconstruction rate, and the
 held-out type-change coverage).
 
@@ -1142,26 +1142,21 @@ edges that were most recently only-partial are now wired: run-level FDR runs
 inside the batch loop (`strategy-core` `run_pending`), and the researcher anchors
 each note to corpus claims (`claim_match`, a retrieval proposer) so the one
 previously-ungated agent-output path is traceable into the graph that verifies it.
-Remaining open pieces are named in `FINDINGS-goal-session.md` (e.g. the
+Remaining open pieces are named in `PROGRESS.md` (e.g. the
 `conj`/punctuation type-system limit, growing the corpus toward balance). Every
 edge in that loop either is an external check or carries provenance to one —
 which is the whole point, and why the pieces are one system rather than five.
 
-## Temporal layer (design thread)
+## Temporal discipline
 
-Once facts carry dates — coinciding external event timelines (clinical-trial
-readouts, approvals, publications, filings) with market movements — the system
-inherits the hardest discipline in empirical finance: **no lookahead**. Time is not
-one number; a fact has an event time, a *knowable* time (when it could first be acted
-on), an ingestion time, and a query as-of time, and conflating any two is usually
-cheating. The rule that governs everything: a fact may inform a decision at `T` only
-if its `knowable_time ≤ T`. This is the "external checks only" discipline applied to
-the time axis — time is attested external metadata, never inferred by a component
-(LLMs get this wrong precisely because they track only a coarse training cutoff and
-leak future knowledge). The design — bitemporal provenance, as-of retrieval/inference
-in the brain, temporal (walk-forward) calibration, temporal-consistency verdicts, and
-event–market alignment run through the *existing* oracle nulls + FDR — is worked out
-in [`TEMPORAL.md`](TEMPORAL.md). It is a design thread, not yet built.
+Once facts carry dates, the system inherits **no lookahead**: a fact may inform a
+decision at `T` only if its `knowable_time` (when it became externally *knowable*,
+distinct from when the thing held) is `≤ T`. This is the "external checks only"
+discipline on the time axis — time is attested provenance, never inferred by a
+component. As-of retrieval is built (the brain hides facts with `knowable_time > as_of`);
+walk-forward calibration and temporal-consistency verdicts follow the same shape. Full
+note in [`TEMPORAL.md`](TEMPORAL.md). (An event-study consumer exists in agentic-qr and
+is an accessory, not a priority here.)
 
 ## Non-goals / guardrails
 

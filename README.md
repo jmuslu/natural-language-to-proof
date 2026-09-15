@@ -8,6 +8,8 @@ reward signal without the system supplying its own grounding.
 |---|---|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | the design, the four stages, the standing limitations |
 | [TRACE.md](TRACE.md) | one scenario through every layer: the object, the state, and the checkable propositions |
+| [PROGRESS.md](PROGRESS.md) | status by area: what is proven (with the measured numbers) and what is open |
+| [TEMPORAL.md](TEMPORAL.md) | the temporal discipline (valid-time, as-of, no lookahead) |
 
 The short version:
 
@@ -84,22 +86,23 @@ self-grounding and self-agreement checks are the load-bearing ones. The reward i
 now also treated as a **vector** (`rewardCoordinates`/`dominates`/`paretoFrontier`)
 that exposes the anti-correlated corroboration/novelty coordinates `rwScore`
 collapses away, and defers scalarization to an external fitness function — see
-`FINDINGS-goal-session.md`, Layer 4.
+`PROGRESS.md`.
 
 **CCGbank ingestion (Stage 1 scaling): underway.** Parsing and classifying
 CCGbank's feature-annotated categories, feature-unifying combinators validated
 against the corpus's own GRAMMAR, `.auto` derivation reconstruction, a
 train/test-measured type-changing rule class, and provenance-tagged lexical-entry
-ingestion (99.9% of the 83,540-entry lexicon, 0 ill-typed skeletons). 89 checks.
-See `FINDINGS-goal-session.md` for the measured results.
+ingestion (99.9% of the 83,540-entry lexicon, 0 ill-typed skeletons), whole-sentence
+parsing (99.1% to the gold root from gold supertags) and a from-words frequency
+supertagger. 116 checks. See `PROGRESS.md` for the measured results.
 
 | Suite | Checks | What it pins |
 |---|---|---|
 | `test/Spec.hs` | 386 | the discrete core, and discourse-merge soundness |
 | `test/Stage2Spec.hs` | 239 | candidate generation, ranking, SDRT threading |
 | `test/SubstrateSpec.hs` | 114 | oracle boundary, grounded support, precise retraction, reward admissibility + Pareto frontier |
-| `test/CCGBankSpec.hs` | 89 | CCGbank category parsing, feature unification, `.auto` reconstruction, type-change induction, entry ingestion |
-| **total** | **828** | |
+| `test/CCGBankSpec.hs` | 116 | CCGbank parsing, feature unification, `.auto` reconstruction, type-change induction, entry ingestion, whole-sentence + from-words parsing, Montague templates → DRS |
+| **total** | **855** | |
 
 What the substrate has and has not:
 
@@ -489,14 +492,14 @@ In order, and the order matters.
 2. **Plug in one real oracle** and replace a whitelist with it. The seam is
    `Verify.Oracle.Oracle`; the toy oracles in the suite exist only to exercise
    the plumbing. *Partly underway for the trading domain, not yet wired into this
-   seam — see `FINDINGS-goal-session.md`.* A real statistical oracle for trading
+   seam — see `PROGRESS.md`.* A real statistical oracle for trading
    signals (walk-forward/OOS, permutation + random-timing nulls,
    multiple-comparisons correction, regime-conditional evaluation) is now built
    and hardened in `agentic-qr` and runs on every backtest; what remains here is
    routing a real oracle into `nl2proof`'s own `Verify.Oracle` seam rather than
    the toy ones.
 3. **Build a generator over the lexicon and the CCG rules.** *Substantially
-   built — see `FINDINGS-goal-session.md`.* CCGbank (LDC2005T13) is the corpus:
+   built — see `PROGRESS.md`.* CCGbank (LDC2005T13) is the corpus:
    `Syntax/CCGBank` parses and classifies its feature-annotated categories;
    `Syntax/CCGLexicon` turns `(word, category)` pairs into provenance-tagged
    `Entry` values (**99.9% of the 83,540-entry lexicon** built as corpus-attested,
@@ -528,11 +531,12 @@ prose is out of reach for reasons a bigger lexicon does not touch.
 
 `corpus/` holds a small, deliberately-labeled corpus (YouTube + articles) for
 testing whether the epistemic ingestion layer can tell checkable-and-consistent
-from common-but-inconsistent sources, per `HANDOFF-corpus-adversarial.md`. It is
-data + structure only: an agent decomposes claims and tracks confounds, but never
-decides a claim's factual consistency (every verdict slot is null, filled by the
-owner or an external reference). See `corpus/README.md`. Raw transcripts stay
-outside the repo at `~/corpus/raw/`, the same way CCGbank does.
+from common-but-inconsistent sources. Structure and verdicts are kept apart by
+provenance: owner-labeled records assert no verdicts, while an agent may *propose*
+reference-backed verdicts (`pending_owner_confirmation`) — it checks each claim against
+a cited external reference, never substituting its own read of what "sounds right." See
+`corpus/README.md`. Raw transcripts stay outside the repo at `~/corpus/raw/`, the same
+way CCGbank does.
 
 The corpus now also carries a **fact brain** (`corpus/brain*.py`): a libSQL vector
 store (the Rust fork of SQLite, native vector search) that embeds the epistemic
