@@ -1,10 +1,9 @@
 # Curated corpus for the adversarial epistemic suite
 
-The labeled corpus (adversarial epistemic suite): a small,
-deliberately-labeled set of sources (YouTube videos and written articles) split
-into checkable-and-consistent vs. common-but-inconsistent, to test whether the
-epistemic ingestion layer can tell the two apart —
-**before** it is pointed at anything larger or unsupervised.
+A small, deliberately-labeled set of sources (YouTube videos and written articles)
+split into checkable-and-consistent vs. common-but-inconsistent, to test whether the
+epistemic ingestion layer can tell the two apart — **before** it is pointed at anything
+larger or unsupervised.
 
 ## The rule that shapes everything here (corrected)
 
