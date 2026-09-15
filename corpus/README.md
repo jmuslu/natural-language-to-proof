@@ -158,7 +158,7 @@ synthetic ground truth first (`python3 corpus/epistemic_graph.py`), the same
 
 **Closing the loop (live, not a demo).** `export_claims_index.py` →
 `claims_index.json` publishes the stable claim ids an upstream stage cites;
-`strategy-core` records those on each backtest result as `attribution.claim_refs`;
+`caveman/strategy-core` records those on each backtest result as `attribution.claim_refs`;
 and `ingest_outcomes.py RESULT.json` reads a real result (attribution + validation
 certificate) and reverse-propagates the oracle-checked verdict to the cited
 claims. Verified end-to-end with a real nautilus backtest. A useful behaviour
