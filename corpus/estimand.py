@@ -219,36 +219,57 @@ def colimit(apex: str, legs: list[Leg]) -> GroundingResult:
     IS 'the facts don't bind, the signal isn't real'."""
     failed = tuple(l.name for l in legs if not l.binds())
     grounded = len(failed) == 0
+    multiplicity, verdict_raw = _summary(legs)
+    verdict = verdict_raw if grounded else 0.0
+    ew = edge_weight_from_multiplicity(multiplicity) if grounded else 0.0
+    note = ("grounded" if grounded else f"colimit does not exist; failed legs: {failed}")
+    return GroundingResult(grounded, multiplicity, verdict, ew, failed, note)
 
-    # multiplicity: provenance-disjoint binding evidence groups
+
+def _summary(legs: list) -> tuple:
+    """(multiplicity, pooled_verdict) shared by strict and hybrid grounding. Multiplicity
+    = provenance-disjoint groups of binding *positive* evidence; verdict = inverse-variance
+    pooled SNR of that evidence, squashed and signed."""
     binding = [l for l in legs if l.is_binding_evidence()]
-    groups: list[frozenset] = []
+    groups: list = []
     for l in binding:
         merged = set(l.provenance)
         rest = []
         for g in groups:
-            if g & l.provenance:
-                merged |= g
-            else:
-                rest.append(g)
+            (merged.__ior__(g) if g & l.provenance else rest.append(g))
         rest.append(frozenset(merged))
         groups = rest
     multiplicity = len(groups)
-
-    # verdict: pooled SNR of the binding prediction legs (inverse-variance weighted),
-    # signed; magnitude squashed. Only meaningful if grounded.
-    if grounded and binding:
-        num = sum(l.effect / (l.stderr ** 2) for l in binding)
+    if binding:
         den = sum(1.0 / (l.stderr ** 2) for l in binding)
-        pooled_mu = num / den
-        pooled_sigma = math.sqrt(1.0 / den)
-        verdict = math.tanh(pooled_mu / pooled_sigma)
+        pooled_mu = sum(l.effect / (l.stderr ** 2) for l in binding) / den
+        verdict = math.tanh(pooled_mu / math.sqrt(1.0 / den))
     else:
         verdict = 0.0
+    return multiplicity, verdict
 
+
+def colimit_hybrid(apex: str, legs: list, allow_miss: int = 1) -> GroundingResult:
+    """The alternates.py finding, operationalized: grounding where NECESSITY legs (and
+    absent-specificity legs) are a strict veto, but bind-required prediction / present-
+    specificity legs are graded by QUORUM — up to `allow_miss` may fall short of the
+    threshold without pruning the apex. So one marginal check no longer kills a real
+    signal, while an ablation that must collapse remains non-negotiable."""
+    strict_kinds = [l for l in legs
+                    if l.kind == "necessity" or (l.kind == "specificity" and not l.present)]
+    veto = tuple(l.name for l in strict_kinds if not l.binds())
+    if veto:
+        return GroundingResult(False, 0, 0.0, 0.0, veto, f"strict veto (necessity/absent): {veto}")
+    req = [l for l in legs if (l.kind == "prediction" and l.direction != 0)
+           or (l.kind == "specificity" and l.present)]   # bind-wanting legs
+    missed = tuple(l.name for l in req if not l.binds())
+    grounded = len(missed) <= allow_miss and (len(req) - len(missed)) >= 1
+    multiplicity, verdict_raw = _summary(legs)
+    verdict = verdict_raw if grounded else 0.0
     ew = edge_weight_from_multiplicity(multiplicity) if grounded else 0.0
-    note = ("grounded" if grounded else f"colimit does not exist; failed legs: {failed}")
-    return GroundingResult(grounded, multiplicity, verdict, ew, failed, note)
+    note = (f"grounded (quorum {len(req) - len(missed)}/{len(req)}, necessity strict)"
+            if grounded else f"quorum not met; missed {missed}")
+    return GroundingResult(grounded, multiplicity, verdict, ew, missed, note)
 
 
 # --------------------------------------------------------------------------- #

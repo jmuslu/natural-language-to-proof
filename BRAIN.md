@@ -187,6 +187,26 @@ the model is surprised.
      machinery first, escalate to the heavy one only near a decision boundary (small-n,
      outlier, marginal leg, nonlinearity), logging cheap↔heavy divergence as the learning
      signal. **Robustness = the repertoire + adaptive selection, not one default.**
+  7. `metalearn.py` — the brain LEARNS its own escalation thresholds from the divergence
+     residuals (a contextual bandit with UCB). Beats the fixed hand-rule on cumulative
+     regret (1.6k vs 9.0k over 12k situations) and DISCOVERS a hidden divergence corner the
+     hand-rule prunes — the KL-residual principle turned reflexively on the brain.
+  8. `surprise.py` — `KL(filtering ‖ smoothing)` as ONE primitive doing double duty: the
+     Futures-Reversal alpha mechanism AND the brain's exploration driver (active inference)
+     AND `metalearn`'s epistemic bonus. One principle, three uses.
+  9. `grok.py` — **generalization, not memorization.** The brain distills the domain-
+     agnostic invariant of "what makes a signal real" from grounded examples; a memorizer
+     stalls at base rate on held-out while the grokker snaps to 1.00 (the memorization→
+     generalization transition), recovers the exact invariant, and TRANSFERS market→
+     neuromorphic (a domain it never trained on).
+  10. `discover.py` — the full loop: grok the invariant → build a LEARNED method-class →
+     propose & screen NOVEL signals never seen (synthetic inference; precision/recall 1.00)
+     → ground the real ones via the same colimit → multi-hop to a portfolio estimate. Every
+     signal novel; reached by the generalized invariant, grounded externally.
+  Plus (agentic-qr) `shared/backtesting/grounding.py` — the measurement plane emits the
+  `grounding` block (mechanism-ablation, all-holds Stouffer sweep, cross-sectional
+  specificity, deployment/basis Sharpe) and is cross-checked against the real nl2proof
+  colimit: **loop closed end-to-end across both repos.**
 - **Remaining — measurement plane (agentic-qr) so REAL backtests emit a `grounding`
   block:** mechanism-ablation, all-holds/parameter-axis sweep with pooled meta-p,
   thesis-predicted cross-sectional specificity, deployment/support + basis-typed Sharpe,

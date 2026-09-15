@@ -115,9 +115,21 @@ disposes of it.
   guard) and **synthetic inference** (propose a signal by abstraction from a method-class;
   method trust rises across independent domains). Proven end-to-end on the real
   Futures-Reversal fixture (grounds NQ, refuses the ablation & YM controls, basis-types the
-  Sharpe 0.70→3.26) and generalized to a **neuromorphic** bifurcation-reversal signal. All
-  self-tests green. *Open:* the measurement plane (agentic-qr) must emit the `grounding`
-  block for real backtests; estimand identity/registry; non-stationary/regime estimands.
+  Sharpe 0.70→3.26) and generalized to a **neuromorphic** bifurcation-reversal signal.
+- **[built] Repertoire + tandem selection + residual meta-learning** (`alternates.py`,
+  `selector.py`, `metalearn.py`). Alternate machineries per mechanic compared fairly; a
+  selector uses them in tandem (cheap→heavy escalation near a decision boundary); a bandit
+  LEARNS the escalation thresholds from the divergence residuals, beating the hand-rule and
+  discovering a hidden divergence corner it prunes. `surprise.py`: `KL(filter‖smooth)` as
+  the shared alpha/exploration/epistemic primitive.
+- **[built] Generalization, not memorization** (`grok.py`, `discover.py`). The brain
+  distills the domain-agnostic invariant from grounded examples (memorizer stalls at base
+  rate; grokker snaps to 1.00 and TRANSFERS market→neuromorphic), then proposes+screens
+  NOVEL signals it never saw (precision/recall 1.00) and grounds the real ones. The
+  measurement plane (`agentic-qr:shared/backtesting/grounding.py`) emits the `grounding`
+  block and is cross-checked against the real colimit — **loop closed across both repos.**
+  All corpus self-tests green. *Open:* estimand identity/registry; non-stationary/regime-
+  conditional (state-space) estimands; scaling the grok invariant-induction to noisy labels.
 
 ## 5. Temporal discipline (`TEMPORAL.md`, condensed)
 
