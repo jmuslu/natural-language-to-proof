@@ -112,7 +112,7 @@ not permission to explore. IDs remain stable for future changes and experiment r
 | R20 / P1 | Synthetic inference/abstraction/method classes; `multihop.py`, `discover.py` | **Prototype with corrected contracts.** 300 held-out synthetic candidates: screening precision/recall `1`, 97 coherent generated-response checks; source grouping remains one per candidate and no portfolio estimate is invented. Next hold out target laws/mechanisms; measure novelty, cost and later validation. |
 | R21 / P0 | HMM surprise/residuals; `surprise.py`, `online_residual.py` | **Connected causal reconstruction tested.** Progressive lagged KL, two online ridge branches, frozen forecasts, pre-update residuals and past-event thresholds have 22 tests, including an independent probability/batch-regression reference. The original progressive smoother is causal; the full-session toy leaks. Exact historical learner settings remain unavailable. Forecasting and conditional market value need separate evaluation. |
 | R22 / P1 | Free energy/model evidence/MDL | **Strong equivalence refuted.** Compare exact evidence with unequal variational gaps; any MDL link requires declared coding/model scheme. |
-| R23 / P1 | Acquisition/stopping/dark-room avoidance; `where_to_explore`, agenda | **Heuristic.** Finite experiment benchmark: noise distractions, resolved questions, misspecified likelihoods, cheap/expensive actions. Compare EIG, decision improvement, cost and coverage budgets. |
+| R23 / P1 | Acquisition/stopping/dark-room avoidance; `acquisition.py`, agenda | **Finite model-based design implemented and replicated.** Eight policies across seven synthetic cases distinguish information value, decision value and cost; wrong likelihoods/priors still lose. Planning has a work cap, and historical score annotations require declared model/observation availability. Real tests with missing likelihoods/costs stay unmodeled. |
 | R24 / P1 | Gaussian/Student-t/particle/interval engines; `uncertainty_experiments.py` | **Matched model matrix executed.** Heavy tails, dependence, observation bias and prior shift have known latent targets. ESS/grid disagreement, interval coverage and cost are measured; Student-t fails badly under shifted prior. No engine is an answer key. |
 | R25 / P1 | Adaptive selection/residual learning/UCB; `selector.py`, `metalearn.py`, `adaptive_evaluation.py` | **Fallible-outcome learning implemented/tested.** Signed checked losses and fixed acceptance rule replace assumed-correct heavy escalation. Independent same-law test benefits; shifted contexts fail (figures above). Next drift detection and randomized audit policy under real costs. |
 | R26 / P1 | Grokking/noisy induction/abstention; `grok.py`, `abstain.py`, `robust_concept.py` | **Repaired and noise-tolerant class search replicated.** Two fresh seeds recover same-law concepts under noisy/confidently wrong labels; irreducible outcomes trigger abstention. Changed target laws still defeat source calibration. Scope is the supplied finite hypothesis class; next shift-aware audits and broader classes. |
@@ -189,6 +189,64 @@ observable mediators, signed transmission or a financial estimand. These are
 consumed development failures. The next refinement must separate contextual
 receipts from causal variables and supply a specific mechanism/contrast before
 calling the design operational.
+
+### Acquisition, stopping and misspecification
+
+`acquisition.py` scores explicit test IDs under a supplied finite state model,
+likelihoods, costs and terminal utilities. It compares information gain,
+information per cost, myopic net decision improvement, a past entropy-drop
+heuristic, fixed/random acquisition, stopping, and finite-horizon Bellman planning.
+Stopping acquisition still takes the model's preferred terminal decision; it is
+different from always abstaining. Work limits count states, actions and outcomes;
+exhaustion raises without returning a provisional optimum. Model branching is
+bounded. Scores never establish a mechanism or modify checked claims.
+
+Two runs use 600 independent replicates in each of seven cases, with identical
+per-action observation streams across policies and independent future payoffs.
+Seeds 45101/55101 respectively reproduce consumed development and provide a
+fresh fixed-seed replication. All cases, nulls and failures are retained. The
+likelihoods and payoff units are synthetic, not fitted market estimates.
+
+| Case | Bellman = myopic mean, seeds 45101 / 55101 | EIG mean, same seeds | Paired EIG minus Bellman, mean ± MC SE |
+|---|---:|---:|---:|
+| Calibrated model | .740 / .657 | −.220 / −.600 | −.960 ± .287 / −1.257 ± .275 |
+| Dead marginal, conditional edge | 8.963 / 8.453 | 5.703 / 5.747 | −3.260 ± .220 / −2.707 ± .226 |
+| Wrong proxy link | −.813 / −1.240 | −.197 / −.440 | .617 ± .297 / .800 ± .313 |
+| Shifted prior | −8.730 / −9.623 | −4.720 / −5.017 | 4.010 ± .303 / 4.607 ± .302 |
+
+These are realized net utilities in stipulated units. Calibrated Bellman gains
+over stopping have descriptive 95% intervals `[-.117,1.597]` and `[-.185,1.498]`:
+neither establishes superiority to stopping. The optimistic shifted-prior policy
+deploys even when acquisition stops, so stop equals Bellman's loss there; always
+abstaining is separately zero. Information gain learns more about the full state
+but can spend on payoff-irrelevant information. Costly distraction, pure null and
+one-observation cases remain in the full reports. Intervals describe Monte Carlo
+variation, not simultaneous coverage, model validity or financial performance.
+
+Bellman and myopic decision value coincide in all seven cases on both seeds.
+An independent enumeration of a separate tiny two-step policy tree gives 3.48
+versus myopic stopping at zero; that is the evidence for useful lookahead, not the
+Monte Carlo suite. All 14 case-runs used 52–831 of 50,000 planning work units.
+Fifteen tests plus independent review cover exact planning, exhaustion, temporal
+eligibility, malformed annotations and stable numerical bindings.
+
+Proposal annotations bind the full specification, posterior, test scores and
+evidence context. Historical use requires declared model availability and latest
+observation cutoff no later than the proposal; ineligible annotations contain no
+numeric priorities. Current undated scores are explicitly design-only. These
+declarations do not authenticate history or preregistration. Unrelated synthetic
+likelihoods left all 40 actual financial design tests unmodeled during adapter
+verification; no fabricated market acquisition scores were assigned.
+
+```sh
+PYTHONPATH=corpus python3 -m unittest test_acquisition -q
+python3 corpus/acquisition_evaluation.py --seed 55101 --replicates 600 \
+  --output corpus/runtime/research/acquisition-v2-seed55101-n600.json
+```
+
+Full reports are `acquisition-v2-seed45101-n600.json` and
+`acquisition-v2-seed55101-n600.json` under ignored `corpus/runtime/research/`.
+The original v1 report and its matching source snapshot remain there separately.
 
 ### Online residual reconstruction
 

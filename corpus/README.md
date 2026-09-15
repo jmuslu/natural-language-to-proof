@@ -36,6 +36,7 @@ verdict. `public_reference`, `self_reported`, `unquantifiable`, and
 | `build_graph.py`, `epistemic_graph.py` | Construct nodes, structural edges and evidence-score propagation. |
 | `oracle_bridge.py`, `ingest_outcomes.py` | Recompute run certificates, journal revisions, materialize run-validation claims. |
 | `brain_build.py`, `brain_query.py`, `brain_evidence.py` | Build the libSQL store; retrieve explicit direct evidence separately from exploratory scores and propose checks. |
+| `brain_agenda.py`, `brain_exploration.py` | Opt-in uncertain mechanism chains, preserving scoped counterevidence and incomplete discriminating test designs. |
 | `pipeline.py` | Run the receipt/Haskell/graph/brain handoff with explicit stage reports. |
 | `reasoning/` | Bounded model proposals, typed proofs, receipt bindings, experiment/replay protocol. |
 
@@ -73,6 +74,28 @@ Historical queries filter every stage by the eligible evidence set before
 ranking or calibration. Date-only cutoffs mean the end of that UTC day. Source
 event time, disclosure time and local observation time have different roles;
 see [TEMPORAL.md](../TEMPORAL.md).
+
+## Exploratory research agenda
+
+`brain_agenda.py --discovery-goal /path/goal.json` adds mechanism nominations to
+the existing agenda. The goal needs an `id`, `question` and explicit
+`condition_scope.description`; optional `claim_refs` select eligible anchors.
+Without anchors, a topical overlap is required before semantic neighbors are
+nominated. Similarity locates candidate links and never establishes causality.
+
+Uncertain premises remain available for discovery. Refuted premises retain their
+original scope as counterevidence; a proposed conditional alternative is a new
+question. Designs include link ablation, conditional interaction and negative
+controls, all marked `design_required`. Each still needs concrete observables,
+timing, contrasts and an independent confirmation protocol before execution.
+Proposal/design IDs and a separate context hash distinguish stable questions
+from changed evidence. The QR adapter preserves this context in a proposed
+hypothesis without writing a receipt or launching an experiment.
+
+`acquisition.py` can score explicit test IDs under supplied finite likelihoods,
+costs and terminal utilities. Its scores never change proposal truth. Missing
+market likelihoods/costs remain unmodeled. The measured synthetic objective
+tradeoffs and failures are recorded once in [RESEARCH_THREADS.md](../RESEARCH_THREADS.md).
 
 ## Development evidence
 
