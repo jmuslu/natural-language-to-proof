@@ -102,6 +102,40 @@ def causal_surprise_series(obs, mus, sd, trans, pi):
     return _forward(obs, mus, sd, trans, pi)[0]
 
 
+def progressive_surprise_series(obs, mus, sd, trans, pi, *, lag=1):
+    """KL(filter_{t-lag} || smoother_{t-lag|t}), available only at time t.
+
+    A backward pass revising an earlier state is causal when its endpoint is the
+    current observation. The lag is part of the target definition. At lag zero
+    the smoother equals the filter, so its KL is identically zero; it cannot be
+    substituted for a nonzero-lag learning target. Early unavailable targets are
+    None, never padded with fictitious measurements. Parameters must themselves
+    have been fitted before scoring; this function cannot authenticate that.
+    """
+    if type(lag) is not int or not 0 <= lag <= 256:
+        raise ValueError("lag must be an integer in [0,256]")
+    trace, logfilters, emissions, logtrans = _forward(obs, mus, sd, trans, pi)
+    states = len(mus)
+    rows = []
+    for t in range(len(trace)):
+        start = t-lag
+        row = {"available_at": t, "state_time": start if start >= 0 else None,
+               "lag": lag, "revision_kl": None}
+        if start >= 0:
+            backward = [0.] * states
+            for endpoint in range(t, start, -1):
+                values = [_logsumexp([logtrans[s][j] + emissions[endpoint][j] + backward[j]
+                                      for j in range(states)]) for s in range(states)]
+                backward, _ = _normalise_logs(values)
+            smoothed, _ = _normalise_logs([a+b for a,b in zip(logfilters[start], backward)])
+            # Keep tiny positive states in log space instead of clipping their support.
+            value = math.fsum(math.exp(a)*(a-g) for a,g in zip(logfilters[start], smoothed)
+                              if a != -math.inf)
+            row["revision_kl"] = max(0., value) if lag else 0.
+        rows.append(row)
+    return rows
+
+
 def filter_smooth(obs, mus, sd, trans, pi):
     """Return (causal filter, full-sequence smoother) state posteriors.
 

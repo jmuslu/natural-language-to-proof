@@ -104,13 +104,13 @@ not permission to explore. IDs remain stable for future changes and experiment r
 | R12 / P0 | Least-fixed-point grounding/retraction; Python/Haskell Genealogy | **Mechanism.** Empty/cycle/alternate-support/exact-diff tests exist. Next dependent certificate/rule revisions and persistence. Logical alternate support need not be statistically independent. |
 | R13 / P1 | Typed language/reasoning spine; `catTy`, `reason.py`, DRT | **Syntax mechanism; truth prototype.** Well-typed false rules, quantifier/scope changes and semantic identity checked against independent outcomes. |
 | R14 / P0 | Oracle→fusion→genealogy→reward | **Narrow mechanism.** Checked proposition is `passes_validation(run_id)`. Test unsupported tokens, Unknown/Refuted fusion, replay and reward novelty; attribution grants no source-theory truth. |
-| R15 / P1 | Discrete facts/graded confidence; `derived_trust`, `Inf.conf` | **Prototype scores.** Bias, repeated evidence, dependence bounds, reliability and coverage. Multiplied confidence and high SNR are not calibrated correctness. |
+| R15 / P1 | Discrete facts/graded confidence; `brain_evidence.py`, `derived_trust`, `Inf.conf` | **Direct evidence separated from exploratory scores.** Brain admits only exact observed run-receipt provenance, masks future observations, and reports retrieval coverage without answer entailment. Pending references and source judgments never supply checked labels. General confidence remains uncalibrated. |
 | R16 / P1 | Matched dead ends/necessity; necessity `Leg`, ablation | **Equivalence gate implemented.** Missing margin and underpowered null fail; precise synthetic interval inside margin passes. Still require preregistration, paired removal/sham/retraining/cost/capacity/redundancy controls before a causal necessity claim. |
 | R17 / P1 | Thesis specificity/negative controls; specificity `Leg` | **Directional bound implemented.** No positive effect uses an upper confidence bound below declared tolerance; no effect uses two-sided equivalence. Both differ from predicted reversal. Missing margins and underpowered negatives cannot pass. |
 | R18 / P0 | Holdouts/all-holds/FDR/selection; QR validation | **Explicit-family mechanism.** Audit full attempt families, dependence, repeated looks, selection logs and untouched confirmation; local family checks cannot prove research completeness. |
 | R19 / P1 | Dead marginals/interaction/residual discovery; `discover.py` | **Synthetic witness.** Sparse noisy interactions plus true-null corners, hidden targets, fixed compute budget, untouched evaluation. |
 | R20 / P1 | Synthetic inference/abstraction/method classes; `multihop.py`, `discover.py` | **Prototype with corrected contracts.** 300 held-out synthetic candidates: screening precision/recall `1`, 97 coherent generated-response checks; source grouping remains one per candidate and no portfolio estimate is invented. Next hold out target laws/mechanisms; measure novelty, cost and later validation. |
-| R21 / P0 | HMM surprise as live feature; `surprise.py` | **Causal API tested.** The full-session toy diagnostic leaks future observations; the original private strategy instead uses progressive refinement of observed prefixes and is not refuted by that test. Next: explicit online residual prediction, frozen forecasts, label maturity and chronological fitting; recovered source versus reconstruction must remain distinct. |
+| R21 / P0 | HMM surprise/residuals; `surprise.py`, `online_residual.py` | **Connected causal reconstruction tested.** Progressive lagged KL, two online ridge branches, frozen forecasts, pre-update residuals and past-event thresholds have 22 tests, including an independent probability/batch-regression reference. The original progressive smoother is causal; the full-session toy leaks. Exact historical learner settings remain unavailable. Forecasting and conditional market value need separate evaluation. |
 | R22 / P1 | Free energy/model evidence/MDL | **Strong equivalence refuted.** Compare exact evidence with unequal variational gaps; any MDL link requires declared coding/model scheme. |
 | R23 / P1 | Acquisition/stopping/dark-room avoidance; `where_to_explore`, agenda | **Heuristic.** Finite experiment benchmark: noise distractions, resolved questions, misspecified likelihoods, cheap/expensive actions. Compare EIG, decision improvement, cost and coverage budgets. |
 | R24 / P1 | Gaussian/Student-t/particle/interval engines; `uncertainty_experiments.py` | **Matched model matrix executed.** Heavy tails, dependence, observation bias and prior shift have known latent targets. ESS/grid disagreement, interval coverage and cost are measured; Student-t fails badly under shifted prior. No engine is an answer key. |
@@ -147,3 +147,25 @@ not permission to explore. IDs remain stable for future changes and experiment r
 Exact witnesses refute universal claims. Seeded experiments establish behavior
 under their specified generators. Neither is a certified market effect or a
 deployment result.
+
+### Online residual reconstruction
+
+`replay_progressive_residual` connects a supplied fixed scalar Gaussian HMM to
+the next available lagged-KL target. Three mature targets provide AR level,
+difference and second difference; the caller supplies the second branch's causal
+context features. The report records model identity, target lag, forecasts made
+before their outcomes, and residuals before current-label updates. Single-session
+replay resets the fit; this is a declared generic reconstruction, not the missing
+QuantConnect learner or the private strategy's full feature/gate implementation.
+
+```sh
+PYTHONPATH=corpus python3 -m unittest test_surprise test_online_residual -q
+python3 corpus/evaluate_online_residual.py --out corpus/runtime/research/online-residual-synthetic-score.json
+```
+
+Two fixed synthetic paths, seeds 20501/30501, each score 1,000 forecasts after
+100 observations. Blended MSE is `.016248/.014185` nats squared; persistence
+`.032725/.028700`; past mean `.016295/.014177`. The blend essentially ties the
+past mean. This diagnostic does not establish forecasting superiority or alpha.
+Training availability, real feature timing and the market effect of a conditional
+residual remain independent questions.
