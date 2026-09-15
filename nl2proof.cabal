@@ -23,6 +23,9 @@ category:           Language
 build-type:         Simple
 extra-doc-files:    README.md
                     ARCHITECTURE.md
+extra-source-files: scripts/check-oracle-boundary.sh
+                    test/compile-fail/*.hs
+                    test/compile-pass/*.hs
 
 common warnings
     ghc-options: -Wall -Wcompat -Wincomplete-record-updates
@@ -63,6 +66,7 @@ library
                       NL2Proof.Stage2.Pipeline
                       NL2Proof.Verify.Oracle
                       NL2Proof.Verify.Claims
+                      NL2Proof.Verify.External
                       NL2Proof.Genealogy
                       NL2Proof.Fusion
                       NL2Proof.Reward
@@ -186,6 +190,22 @@ test-suite nl2proof-ccgbank-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          CCGBankSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+executable external-oracle
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          ExternalOracle.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+test-suite nl2proof-external-test
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ExternalSpec.hs
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof

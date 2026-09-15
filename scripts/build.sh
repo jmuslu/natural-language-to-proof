@@ -75,6 +75,9 @@ done
 echo "== typechecking demo (-Wall)"
 ghc "${SRC_DIRS[@]}" -outputdir "$BUILD/check-demo" -fno-code -Wall "$ROOT/app/Main.hs"
 
+echo "== checking oracle token boundary"
+bash "$ROOT/scripts/check-oracle-boundary.sh"
+
 case "$TARGET" in
   compile)
     echo "== compiling native binaries into $BUILD"

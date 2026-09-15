@@ -155,18 +155,14 @@ Both `epistemic_graph.py` and `confound_check.py` validate themselves on
 synthetic ground truth first (`python3 corpus/epistemic_graph.py`), the same
 "prove the checker on known answers" discipline as the Layer 3 suite.
 
-**Closing the loop (live, not a demo).** `export_claims_index.py` →
-`claims_index.json` publishes the stable claim ids an upstream stage cites;
-`caveman/strategy-core` records those on each backtest result as `attribution.claim_refs`;
-and `ingest_outcomes.py RESULT.json` reads a real result (attribution + validation
-certificate) and reverse-propagates the oracle-checked verdict to the cited
-claims. Verified end-to-end with a real nautilus backtest. A useful behaviour
-falls out: a failed backtest on a strategy that leaned on a *well-referenced*
-claim only modestly dents it (direct references dominate the noisy indirect
-signal), whereas the same failure drives an otherwise-*unresolved* claim negative
-(the backtest is its only external check). The one remaining gap is upstream —
-hypotheses don't yet populate `claim_refs`; until they do, real results carry
-empty refs.
+**Checked run receipts.** `ingest_outcomes.py` now re-evaluates certificates using
+the companion oracle, journals their revisions and updates only the proposition
+`passes_validation(run_id)`. `attribution.claim_refs` remain structural links:
+a failed strategy does not refute every source it cited. `pipeline.py` executes
+the handoff into the graph, brain and Haskell verification/reward stages, with
+replay, withdrawal and historical cutoffs. See [ORACLE_BRIDGE.md](../ORACLE_BRIDGE.md).
+The earlier noisy source-trust propagation remains a synthetic graph mechanism;
+it is no longer the result-ingestion policy.
 
 A concrete finding the graph already surfaces: a per-claim verdict can diverge
 from the owner's global label. Source 002's individual claims (market efficiency,

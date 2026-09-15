@@ -14,6 +14,7 @@ fed it. Information moves both ways, and trust is anchored only to external chec
 import glob
 import json
 import os
+from pathlib import Path
 
 from epistemic_graph import EpistemicGraph
 
@@ -24,9 +25,9 @@ OWNER_SIGN = {"consistent": +1, "inconsistent": -1, "ambiguous": 0, "unlabeled":
 
 
 def load():
-    records = [json.load(open(f)) for f in sorted(glob.glob(os.path.join(HERE, "records", "*.json")))]
+    records = [json.loads(Path(f).read_text()) for f in sorted(glob.glob(os.path.join(HERE, "records", "*.json")))]
     vpath = os.path.join(HERE, "verdicts_agent_proposed.json")
-    verdicts = json.load(open(vpath))["verdicts"] if os.path.exists(vpath) else []
+    verdicts = json.loads(Path(vpath).read_text())["verdicts"] if os.path.exists(vpath) else []
     return records, verdicts
 
 

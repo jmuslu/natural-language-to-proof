@@ -23,24 +23,52 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Genealogy:
-    premises: dict = field(default_factory=dict)      # id -> oracle verdict (bool)
+    premises: dict = field(default_factory=dict)      # id -> True / False / None (unknown)
     justifications: list = field(default_factory=list)  # (target, frozenset(antecedents))
     claims: set = field(default_factory=set)
 
-    def add_premise(self, pid, verdict=True): self.premises[pid] = verdict
+    def __post_init__(self):
+        for verdict in self.premises.values():
+            self._check_verdict(verdict)
+
+    @staticmethod
+    def _check_verdict(verdict):
+        if verdict is not None and type(verdict) is not bool:
+            raise TypeError("oracle verdict must be True, False, or None (unknown)")
+
+    def add_premise(self, pid, verdict=None):
+        self._check_verdict(verdict)
+        self.premises[pid] = verdict
+
     def add_claim(self, cid): self.claims.add(cid)
+
     def justify(self, target, antecedents):
-        self.add_claim(target); self.justifications.append((target, frozenset(antecedents)))
+        """An empty antecedent set declares a premise, requiring an oracle verdict.
+
+        This matches Genealogy.hs: an empty justification is never a free proof.
+        Replaying the same derivation does not add another support.
+        """
+        ante = frozenset(antecedents)
+        self.add_claim(target)
+        if not ante:
+            self.premises.setdefault(target, None)
+        justification = (target, ante)
+        if justification not in self.justifications:
+            self.justifications.append(justification)
 
     def grounded(self) -> set:
         """Least fixed point: start from oracle-confirmed premises, add any claim with a
         justification whose antecedents are all grounded, iterate to convergence."""
-        g = {p for p, v in self.premises.items() if v}
+        # Recheck the public dictionary too: malformed restored state must not turn
+        # truthy strings or integers into confirmed premises.
+        for verdict in self.premises.values():
+            self._check_verdict(verdict)
+        g = {p for p, v in self.premises.items() if v is True}
         changed = True
         while changed:
             changed = False
             for target, ante in self.justifications:
-                if target not in g and ante <= g:
+                if ante and target not in g and ante <= g:
                     g.add(target); changed = True
         return g
 
@@ -52,20 +80,41 @@ class Genealogy:
             for target, ante in self.justifications:
                 if cur in ante and target not in dep:
                     dep.add(target); frontier.append(target)
-        return dep
+        return dep - {pid}
 
-    def retract(self, pid) -> dict:
-        """Flip a premise's verdict and return the PRECISE withdrawal (set difference of
-        the least fixed points), plus the naive over-retraction and the gap between them."""
+    def set_verdict(self, pid, verdict) -> dict:
+        """Persist an oracle revision and return the exact grounded-set change.
+
+        The premise must already be registered. ``None`` withdraws confirmation
+        without asserting a refutation. A derived claim may remain grounded by an
+        alternate support even if its own premise confirmation is withdrawn.
+        """
+        self._check_verdict(verdict)
+        if pid not in self.premises:
+            raise KeyError(pid)
         before = self.grounded()
-        saved = self.premises[pid]
-        self.premises[pid] = False
+        self.premises[pid] = verdict
         after = self.grounded()
-        self.premises[pid] = saved
         precise = before - after
         naive = ({pid} | self.dependents(pid)) & before
-        return {"precise": precise, "naive": naive, "over_retracted": naive - precise,
-                "survivors": (naive - precise) & self.grounded()}
+        return {"before": before, "after": after, "added": after - before,
+                "precise": precise, "naive": naive, "over_retracted": naive - precise,
+                "survivors": naive & after}
+
+    def apply_retraction(self, pid) -> dict:
+        """Persist a refuted oracle verdict; unlike ``retract``, this changes state."""
+        return self.set_verdict(pid, False)
+
+    def retract(self, pid) -> dict:
+        """Preview a retraction without changing state (the historical API).
+
+        Use ``apply_retraction`` or ``set_verdict`` to apply the revision.
+        """
+        saved = self.premises[pid]
+        try:
+            return self.apply_retraction(pid)
+        finally:
+            self.premises[pid] = saved
 
 
 def _selftest():

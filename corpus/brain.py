@@ -33,6 +33,7 @@ import numpy as np
 import libsql_experimental as libsql
 
 from brain_embed import get_embedder, vec_literal
+from oracle_bridge import cutoff
 
 HERE = Path(__file__).resolve().parent
 
@@ -79,6 +80,10 @@ class Brain:
         The join is claims_index key `001-1-a` <-> graph node `claim:001-1-a`. Only
         claims present in the graph get a trust; anything missing is skipped and
         reported rather than silently defaulted (trust must be earned externally).
+
+        Date-only knowable times mean the end of that UTC day: a publication date
+        does not establish intraday availability. Offset timestamps are normalized
+        to UTC, matching receipt-journal cutoffs. Unknown times remain unknown.
         """
         ci = json.loads(Path(claims_index_path).read_text())["claims"]
         graph = json.loads(Path(graph_path).read_text())
@@ -96,7 +101,7 @@ class Brain:
             facts.append((cid, c["text"], c.get("domain", ""),
                           c.get("claim_type", ""), c.get("source_id", ""),
                           trust_by_id[cid], c.get("evidence_basis", ""),
-                          c.get("knowable_time"), c.get("event_time")))
+                          cutoff(c.get("knowable_time")), c.get("event_time")))
             texts.append(c["text"])
         if missing:
             print(f"[brain] {len(missing)} claim(s) had no graph trust, skipped: "
@@ -155,18 +160,21 @@ class Brain:
         lookahead): a fact is visible only if knowable_time <= as_of. A fact with an
         unknown knowable_time is excluded under an as-of query (we cannot prove it was
         knowable) -- the conservative, no-lookahead-safe choice. See TEMPORAL.md."""
+        as_of = cutoff(as_of)
         rows = self.con.cursor().execute(
             "SELECT id,text,domain,claim_type,evidence_basis,source_id,trust,"
             "knowable_time,event_time,emb FROM facts"
         ).fetchall()
         ids, meta, trusts, embs = [], [], [], []
         for r in rows:
-            if as_of is not None and (r[7] is None or r[7] > as_of):
+            # Normalize on read too, for legacy DBs with dates or offset times.
+            knowable_time = cutoff(r[7])
+            if as_of is not None and (knowable_time is None or knowable_time > as_of):
                 continue
             ids.append(r[0])
             meta.append({"id": r[0], "text": r[1], "domain": r[2],
                          "claim_type": r[3], "evidence_basis": r[4] or "",
-                         "source_id": r[5], "knowable_time": r[7], "event_time": r[8]})
+                         "source_id": r[5], "knowable_time": knowable_time, "event_time": r[8]})
             trusts.append(float(r[6]))
             embs.append(np.frombuffer(r[9], dtype=np.float32))
         E = np.vstack(embs) if embs else np.zeros((0, self.dim), np.float32)
@@ -188,32 +196,40 @@ class Brain:
         default is exact brute-force cosine. `as_of` restricts to facts knowable by
         that date (knowable_time <= as_of; no lookahead -- see TEMPORAL.md).
 
-        Note: with `ann=True` the DiskANN index selects neighbours before the as_of
-        filter is applied (post-hoc JOIN), so an as_of query may return fewer than `k`
-        facts; the default exact path applies the filter in-query and is exact. Prefer
-        the exact path when combining as_of with a hard result count.
+        Historical queries rank only eligible facts with exact vector comparison,
+        including when ``ann=True``: future facts cannot influence candidate selection.
+        Dates include the full UTC day; timestamps must include their timezone.
         """
         qv = self._embed_query(query)
+        as_of = cutoff(as_of)
+        kk = max(k * 3, k)
+        if as_of is not None:
+            # Filter before ranking, including for ANN requests. Future facts must
+            # not affect candidate selection or crowd known facts out of a query.
+            ids, E, trusts, meta = self._all(as_of=as_of)
+            sims = E @ qv
+            order = np.argsort(-sims, kind="stable")[:kk]
+            facts = [Fact(ids[j], meta[j]["text"], meta[j]["domain"],
+                          meta[j]["claim_type"], meta[j]["source_id"], float(trusts[j]),
+                          similarity=float(sims[j])) for j in order]
+            if trust_weighted:
+                facts.sort(key=lambda f: -(f.similarity * (0.5 + 0.5 * f.trust)))
+            return facts[:k]
         cur = self.con.cursor()
         qlit = vec_literal(qv)
-        kk = max(k * 3, k)
         if ann:
-            where = "" if as_of is None else \
-                " WHERE f.knowable_time IS NOT NULL AND f.knowable_time <= ?"
-            params = (qlit, qlit, kk) + ((as_of,) if as_of is not None else ())
+            params = (qlit, qlit, kk)
             rows = cur.execute(
                 "SELECT f.id,f.text,f.domain,f.claim_type,f.source_id,f.trust,"
                 " vector_distance_cos(f.emb, vector32(?)) AS dist "
                 "FROM vector_top_k('facts_ann', vector32(?), ?) AS v "
-                "JOIN facts f ON f.id=v.id" + where + " ORDER BY dist", params).fetchall()
+                "JOIN facts f ON f.id=v.id ORDER BY dist", params).fetchall()
         else:
-            where = "" if as_of is None else \
-                " WHERE knowable_time IS NOT NULL AND knowable_time <= ?"
-            params = (qlit,) + ((as_of,) if as_of is not None else ()) + (kk,)
+            params = (qlit, kk)
             rows = cur.execute(
                 "SELECT id,text,domain,claim_type,source_id,trust,"
                 " vector_distance_cos(emb, vector32(?)) AS dist "
-                "FROM facts" + where + " ORDER BY dist LIMIT ?", params).fetchall()
+                "FROM facts ORDER BY dist LIMIT ?", params).fetchall()
         facts = [Fact(r[0], r[1], r[2], r[3], r[4], float(r[5]),
                       similarity=1.0 - float(r[6])) for r in rows]
         if trust_weighted:
@@ -273,7 +289,7 @@ class Brain:
                               "trust": float(trusts[j]), "text": meta[j]["text"]}
                              for j in order]}
         if with_caveat:
-            cal = self.calibrate()
+            cal = self.calibrate(as_of=as_of)
             out["imputation_licensed"] = cal.get("licensed")
             out["caveat"] = cal.get("verdict")
         return out
@@ -299,7 +315,7 @@ class Brain:
                        "(it is earned per-claim by external check), so the brain "
                        "does NOT impute trust from topic")
 
-    def calibrate(self, k: Optional[int] = None) -> dict:
+    def calibrate(self, k: Optional[int] = None, *, as_of: Optional[str] = None) -> dict:
         """External check on the brain: does semantic structure predict trust?
 
         Leave-one-out -- predict each fact's trust from its neighbours (excluding
@@ -311,8 +327,10 @@ class Brain:
         skill is NOT enough. We also report `frac_unchecked` (claims at trust==0, not
         yet externally checked) and a `checked_only` re-run over trust!=0 claims,
         because a field dominated by unknowns is the usual reason imputation fails.
+        With ``as_of``, both reference facts and calibration labels are limited
+        to that historical snapshot.
         """
-        ids, E, trusts, _ = self._all()
+        ids, E, trusts, _ = self._all(as_of=as_of)
         n = len(ids)
         if n < 3:
             return {"status": "insufficient", "n": n}
@@ -356,7 +374,8 @@ class Brain:
         return headline
 
     # ---- directed exploration (proposals) ----------------------------------
-    def explore_frontier(self, k: int = 5, knn: int = 8, mode: str = "all") -> List[dict]:
+    def explore_frontier(self, k: int = 5, knn: int = 8, mode: str = "all", *,
+                         as_of: Optional[str] = None) -> List[dict]:
         """Rank stored facts by how informative an external check on them would be.
 
         Active-inference flavour, tuned to what this trust field actually looks like
@@ -375,8 +394,9 @@ class Brain:
         makes up most of the corpus). `reason` names which applies. Output is a
         PROPOSED to-check list -- what an external checker should look at next --
         never a judgement on the facts.
+        With ``as_of``, future facts contribute neither candidates nor centrality.
         """
-        ids, E, trusts, meta = self._all()
+        ids, E, trusts, meta = self._all(as_of=as_of)
         n = len(ids)
         S = E @ E.T
         np.fill_diagonal(S, -np.inf)
@@ -420,7 +440,8 @@ class Brain:
         return out[:k]
 
     def bridge_hypotheses(self, k: int = 5, *, trust_min: float = 0.3,
-                          lo: float = 0.25, hi: float = 0.75) -> List[dict]:
+                          lo: float = 0.25, hi: float = 0.75,
+                          as_of: Optional[str] = None) -> List[dict]:
         """Propose syntheses: two credible facts, different domains, mid-distance.
 
         Both endpoints must be externally trusted (>= trust_min); they must sit in
@@ -429,7 +450,7 @@ class Brain:
         forming and then checking -- the generative, exploratory edge of the brain.
         Proposals only; forming/deciding the hypothesis is downstream and external.
         """
-        ids, E, trusts, meta = self._all()
+        ids, E, trusts, meta = self._all(as_of=as_of)
         n = len(ids)
         pairs = []
         for i in range(n):
@@ -515,7 +536,7 @@ class Brain:
         # central unchecked relevant fact (verifying it resolves the biggest gap).
         next_check = None
         if unchecked:
-            frontier = self.explore_frontier(k=200, mode="gaps")
+            frontier = self.explore_frontier(k=200, mode="gaps", as_of=as_of)
             rank = {d["id"]: d for d in frontier}
             best = max(unchecked, key=lambda f: rank.get(f.id, {}).get("centrality", 0.0))
             nc = rank.get(best.id, {})
@@ -536,7 +557,8 @@ class Brain:
                            "Unchecked facts are shown but excluded from the stance.")}
 
     def learning_curve(self, sizes: Sequence[int] = (5, 10, 15, 20),
-                       k: int = 5, repeats: int = 40, seed: int = 0) -> dict:
+                       k: int = 5, repeats: int = 40, seed: int = 0, *,
+                       as_of: Optional[str] = None) -> dict:
         """Empirical payoff of the feedback loop: does inference improve as more
         claims get externally checked?
 
@@ -549,7 +571,7 @@ class Brain:
         inference progressively more licensed. No trust is invented; unknown claims
         are simply excluded, exactly as they are in the live field.
         """
-        ids, E, trusts, _ = self._all()
+        ids, E, trusts, _ = self._all(as_of=as_of)
         checked = np.where(trusts != 0.0)[0]
         if len(checked) < max(sizes) + 1:
             sizes = tuple(s for s in sizes if s < len(checked))
@@ -584,8 +606,8 @@ class Brain:
                 "monotone_up": all(pts[i] <= pts[i + 1] + 1e-9 for i in range(len(pts) - 1))
                                if len(pts) > 1 else None}
 
-    def stats(self) -> dict:
-        ids, E, trusts, meta = self._all()
+    def stats(self, *, as_of: Optional[str] = None) -> dict:
+        ids, E, trusts, meta = self._all(as_of=as_of)
         doms = {}
         for m, t in zip(meta, trusts):
             doms.setdefault(m["domain"], []).append(t)

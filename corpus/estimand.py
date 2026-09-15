@@ -12,9 +12,11 @@ ESTIMAND updates a posterior over a quantity that carries:
   * support — deployment fraction, sample size n, and data provenance.
 
 From this, trust becomes a DERIVED property of the posterior (signed SNR), and the
-reverse-propagation edge weight is DERIVED from *multiplicity* — how many
-provenance-independent patterns bind an apex — instead of a flat 0.3. Grounding is a
-colimit: an apex is grounded iff its pattern of externally-checked legs coheres.
+reverse-propagation edge weight is a heuristic of *multiplicity* — how many
+disjoint declared provenance groups bind an apex — instead of a flat 0.3.
+Provenance labels do not establish statistical independence. These local
+calculations describe coherence; ingestion must separately verify external checks
+before a result can alter belief.
 
 This module governs BELIEF only. It never prunes exploration (see nl2proof/BRAIN.md:
 the two gates). Dependency-free (math only). Run `python3 estimand.py` for the self-test.
@@ -29,6 +31,35 @@ Z_SIGNIF = 1.64      # one-sided ~5% — a leg "binds" when |effect|/stderr >= t
 Z_COLLAPSE = 1.0     # a necessity leg (ablation/ungated) must fall BELOW this
 
 
+def _finite(value, name, *, positive=False):
+    try:
+        valid = type(value) in (int, float) and math.isfinite(value)
+    except OverflowError:
+        valid = False
+    if not valid:
+        raise ValueError(f"{name} must be a finite number")
+    if positive and value <= 0:
+        raise ValueError(f"{name} must be positive")
+
+
+def _label(value, name):
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{name} must be a nonempty string")
+
+
+def _provenance(value):
+    if not isinstance(value, (set, frozenset, list, tuple)):
+        raise ValueError("provenance must be a collection of nonempty string tags")
+    for tag in value:
+        _label(tag, "provenance tag")
+    return frozenset(value)
+
+
+def _sample_size(value):
+    if type(value) is not int or value <= 0:
+        raise ValueError("n must be a positive integer")
+
+
 # --------------------------------------------------------------------------- #
 # Quantities: a posterior/prior over a scalar, with its full type.
 # --------------------------------------------------------------------------- #
@@ -41,8 +72,26 @@ class Quantity:
     support: dict = field(default_factory=dict)   # {deployment, n, provenance:set}
     assumptions: tuple = ()           # coercions applied, each carrying its licence
 
+    def __post_init__(self):
+        _finite(self.value, "value")
+        _finite(self.sigma, "sigma", positive=True)
+        _label(self.units, "units")
+        _label(self.basis, "basis")
+        if not isinstance(self.support, dict):
+            raise ValueError("support must be a dictionary")
+        support = dict(self.support)
+        if "provenance" in support:
+            support["provenance"] = _provenance(support["provenance"])
+        if "n" in support:
+            _sample_size(support["n"])
+        if "deployment" in support:
+            _finite(support["deployment"], "deployment", positive=True)
+            if support["deployment"] > 1:
+                raise ValueError("deployment must be at most 1")
+        object.__setattr__(self, "support", support)
+
     def snr(self) -> float:
-        return self.value / self.sigma if self.sigma > 0 else math.copysign(math.inf, self.value)
+        return self.value / self.sigma
 
 
 def commensurable(a: Quantity, b: Quantity) -> bool:
@@ -63,7 +112,8 @@ def to_deployed(q: Quantity, deployment_fraction: float) -> Quantity:
         raise TypeError(f"no basis coercion defined for units={q.units!r}")
     if q.basis != "calendar":
         raise TypeError(f"to_deployed expects basis=calendar, got {q.basis!r}")
-    if not (0.0 < deployment_fraction <= 1.0):
+    _finite(deployment_fraction, "deployment_fraction", positive=True)
+    if deployment_fraction > 1.0:
         raise ValueError("deployment_fraction must be in (0,1]")
     k = 1.0 / math.sqrt(deployment_fraction)
     return replace(q, value=q.value * k, sigma=q.sigma * k, basis="deployed",
@@ -82,9 +132,23 @@ class Measurement:
     n: int
     units: str
     basis: str = "raw"
-    provenance: frozenset = frozenset()   # data-source tags (for independence)
+    provenance: frozenset = frozenset()   # declared source tags, not independence proof
     deployment: Optional[float] = None
     robust: bool = True                   # small-n fat-tail widening (Student-t)
+
+    def __post_init__(self):
+        _finite(self.estimate, "estimate")
+        _finite(self.stderr, "stderr", positive=True)
+        _sample_size(self.n)
+        _label(self.units, "units")
+        _label(self.basis, "basis")
+        object.__setattr__(self, "provenance", _provenance(self.provenance))
+        if type(self.robust) is not bool:
+            raise ValueError("robust must be a boolean")
+        if self.deployment is not None:
+            _finite(self.deployment, "deployment", positive=True)
+            if self.deployment > 1:
+                raise ValueError("deployment must be at most 1")
 
     def effective_stderr(self) -> float:
         """Widen stderr for small n under a fat-tailed (Student-t, nu=n-1) view, so a
@@ -99,13 +163,7 @@ class Measurement:
 
     def t(self) -> float:
         se = self.effective_stderr()
-        return self.estimate / se if se > 0 else math.copysign(math.inf, self.estimate)
-
-
-def _jaccard(a: frozenset, b: frozenset) -> float:
-    if not a or not b:
-        return 0.0
-    return len(a & b) / len(a | b)
+        return self.estimate / se
 
 
 def update(prior: Quantity, m: Measurement,
@@ -113,26 +171,42 @@ def update(prior: Quantity, m: Measurement,
     """Conjugate (Normal-Normal) update of a prior by a measurement, gated by:
       * units+basis type-check (raises TypeError on mismatch — the membrane);
       * small-n/fat-tail widening (Measurement.effective_stderr);
-      * evidence-independence: a measurement sharing provenance with the prior's
-        evidence contributes only its INDEPENDENT fraction of precision (fully
-        redundant evidence -> no update). This is FDR lifted to evidence-independence.
+      * any shared provenance blocks precision gain, including partial overlap.
+
+    Stored prior provenance is always used; callers cannot accidentally forget it
+    on replay. Missing measurement provenance is rejected. Disjoint tags are only
+    a de-duplication check: the caller must establish conditional independence to
+    license this Normal-Normal calculation. This is not an FDR procedure.
     Trust is not touched here; it is DERIVED later (derived_trust)."""
     if prior.units != m.units or prior.basis != m.basis:
         raise TypeError(f"measurement {m.units}/{m.basis} incommensurable with "
                         f"prior {prior.units}/{prior.basis} — coerce first")
-    se = m.effective_stderr()
-    indep = 1.0 - _jaccard(prior_provenance, m.provenance)   # independent fraction
-    prec0 = 1.0 / (prior.sigma ** 2)
-    prec_m = indep / (se ** 2) if se > 0 else 0.0
-    post_prec = prec0 + prec_m
-    post_var = 1.0 / post_prec
-    post_mu = (prior.value * prec0 + m.estimate * prec_m) / post_prec
     support = dict(prior.support)
-    support["n"] = support.get("n", 0) + (m.n if indep > 0 else 0)
-    support["provenance"] = set(prior_provenance) | set(m.provenance)
+    seen = _provenance(support.get("provenance", frozenset())) | _provenance(prior_provenance)
+    if not m.provenance:
+        raise ValueError("measurement provenance is required for a posterior update")
+    if support.get("n", 0) and not seen:
+        raise ValueError("prior evidence has no provenance; cannot check overlap")
+    if seen & m.provenance:
+        # Still retain explicitly supplied prior provenance for subsequent calls.
+        support["provenance"] = seen
+        return replace(prior, support=support)
+    se = m.effective_stderr()
+    _finite(se, "effective stderr", positive=True)
+    # Ratios avoid overflow/underflow from explicitly squaring raw uncertainties.
+    if prior.sigma <= se:
+        ratio = prior.sigma / se
+        weight = ratio * ratio / (1.0 + ratio * ratio)
+    else:
+        ratio = se / prior.sigma
+        weight = 1.0 / (1.0 + ratio * ratio)
+    post_sigma = min(prior.sigma, se) / math.sqrt(1.0 + ratio * ratio)
+    post_mu = (1.0 - weight) * prior.value + weight * m.estimate
+    support["n"] = support.get("n", 0) + m.n
+    support["provenance"] = seen | m.provenance
     if m.deployment is not None:
         support["deployment"] = m.deployment
-    return replace(prior, value=post_mu, sigma=math.sqrt(post_var), support=support)
+    return replace(prior, value=post_mu, sigma=post_sigma, support=support)
 
 
 def derived_trust(q: Quantity) -> float:
@@ -147,7 +221,10 @@ def derived_trust(q: Quantity) -> float:
 # --------------------------------------------------------------------------- #
 @dataclass(frozen=True)
 class Leg:
-    """One externally-checked prediction entailed by the apex mechanism.
+    """One descriptive measurement for a prediction entailed by an apex mechanism.
+
+    Constructing a Leg does not certify a measurement. External check receipts
+    must be verified at ingestion before this calculation may update belief.
       kind='prediction'  : must BIND — effect in `direction`, |t| >= Z_SIGNIF.
       kind='necessity'   : must COLLAPSE — |t| < Z_COLLAPSE (ablation / ungated baseline).
       kind='specificity' : the thesis predicts the edge is PRESENT (`present=True`,
@@ -156,7 +233,9 @@ class Leg:
                            absent-check passes whether the instrument is null OR reverses
                            (YM = −7.7 still "shows no retail-long edge") — the honest test
                            is 'no significant edge in the predicted direction', not 'null'.
-    `provenance` groups legs that share underlying data (they are NOT independent)."""
+    `provenance` groups declared shared data; disjoint tags do not prove independence.
+    Empty provenance marks an unmeasured/unknown slot, which cannot bind.
+    Null checks here are threshold diagnostics, not equivalence tests."""
     name: str
     kind: str
     effect: float
@@ -166,11 +245,27 @@ class Leg:
     present: bool = True       # specificity: is that edge expected present or absent?
     n: int = 100
 
+    def __post_init__(self):
+        _label(self.name, "leg name")
+        if self.kind not in ("prediction", "necessity", "specificity"):
+            raise ValueError(f"unknown leg kind: {self.kind!r}")
+        _finite(self.effect, "effect")
+        _finite(self.stderr, "stderr", positive=True)
+        object.__setattr__(self, "provenance", _provenance(self.provenance))
+        if type(self.direction) is not int or self.direction not in (-1, 0, 1):
+            raise ValueError("direction must be -1, 0, or 1")
+        if self.kind == "specificity" and self.direction == 0:
+            raise ValueError("specificity requires a nonzero predicted direction")
+        if type(self.present) is not bool:
+            raise ValueError("present must be a boolean")
+        _sample_size(self.n)
+
     def t(self) -> float:
-        se = self.stderr if self.stderr > 0 else 1e-9
-        return self.effect / se
+        return self.effect / self.stderr
 
     def binds(self) -> bool:
+        if not self.provenance:
+            return False
         t = self.t()
         if self.kind == "necessity":
             return abs(t) < Z_COLLAPSE                          # must collapse
@@ -196,57 +291,86 @@ class Leg:
 @dataclass(frozen=True)
 class GroundingResult:
     grounded: bool
-    multiplicity: int                 # # provenance-independent binding patterns
-    verdict: float                    # signed, in [-1,1] — feeds implicate_from_outcome
+    multiplicity: int                 # # disjoint declared groups with binding evidence
+    verdict: float                    # support for apex, in [0,1]; not raw effect sign
     edge_weight: float                # derived from multiplicity (upgrades flat 0.3)
     failed_legs: tuple
     note: str
 
 
 def edge_weight_from_multiplicity(m: int) -> float:
-    """More provenance-independent bindings -> a stronger (less noisy) reverse-prop
-    signal. Saturating; one lonely pattern is worth ~0.22, three ~0.53, five ~0.71 —
-    i.e. a genuinely multiply-realized apex moves upstream claims far more than the old
-    flat 0.3, while a single-pattern apex moves them less (rightly more suspect)."""
+    """Saturating heuristic weight for distinct declared evidence groups.
+
+    One group weighs ~0.39, three ~0.78. This is not a probability or a claim that
+    different provenance labels establish statistical independence.
+    """
+    if type(m) is not int or m < 0:
+        raise ValueError("multiplicity must be a nonnegative integer")
     return 1.0 - math.exp(-m / 2.0)
 
 
+def _distinct_legs(legs):
+    """Exact repeated checks, even when renamed, are one quorum vote.
+
+    The lexically first name is retained for deterministic diagnostics. Shared
+    provenance with different measurements is handled separately by _summary.
+    """
+    unique = {}
+    for leg in legs:
+        if not isinstance(leg, Leg):
+            raise TypeError("grounding requires Leg measurements")
+        key = (leg.kind, leg.effect, leg.stderr, leg.provenance,
+               leg.direction, leg.present, leg.n)
+        if key not in unique or leg.name < unique[key].name:
+            unique[key] = leg
+    return sorted(unique.values(), key=lambda leg: leg.name)
+
+
 def colimit(apex: str, legs: list[Leg]) -> GroundingResult:
-    """Does the pattern of legs cohere into the apex (a universal cocone)? Grounded iff
-    EVERY leg binds as its kind requires. Multiplicity = number of provenance-disjoint
-    groups that each contain at least one binding *prediction/specificity* leg — the
-    Multiplicity Principle made countable. Non-existence of the colimit (a failed leg)
-    IS 'the facts don't bind, the signal isn't real'."""
-    failed = tuple(l.name for l in legs if not l.binds())
-    grounded = len(failed) == 0
+    """Require every declared check plus positive binding evidence for the apex.
+
+    Empty and null-only patterns cannot ground an apex. ``grounded`` describes
+    coherence of these supplied measurements; external authenticity is checked by
+    ingestion, not inferred from the numbers or tags here.
+    """
+    legs = _distinct_legs(legs)
+    failed = tuple(sorted({l.name for l in legs if not l.binds()}))
     multiplicity, verdict_raw = _summary(legs)
+    grounded = not failed and multiplicity > 0
     verdict = verdict_raw if grounded else 0.0
     ew = edge_weight_from_multiplicity(multiplicity) if grounded else 0.0
-    note = ("grounded" if grounded else f"colimit does not exist; failed legs: {failed}")
+    note = ("coherent measurements; external receipt required for belief"
+            if grounded else (f"failed or unmeasured legs: {failed}" if failed
+                              else "no positive binding evidence (empty or null-only pattern)"))
     return GroundingResult(grounded, multiplicity, verdict, ew, failed, note)
 
 
 def _summary(legs: list) -> tuple:
-    """(multiplicity, pooled_verdict) shared by strict and hybrid grounding. Multiplicity
-    = provenance-disjoint groups of binding *positive* evidence; verdict = inverse-variance
-    pooled SNR of that evidence, squashed and signed."""
-    binding = [l for l in legs if l.is_binding_evidence()]
-    groups: list = []
-    for l in binding:
-        merged = set(l.provenance)
-        rest = []
-        for g in groups:
-            (merged.__ior__(g) if g & l.provenance else rest.append(g))
-        rest.append(frozenset(merged))
-        groups = rest
-    multiplicity = len(groups)
-    if binding:
-        den = sum(1.0 / (l.stderr ** 2) for l in binding)
-        pooled_mu = sum(l.effect / (l.stderr ** 2) for l in binding) / den
-        verdict = math.tanh(pooled_mu / math.sqrt(1.0 / den))
-    else:
-        verdict = 0.0
-    return multiplicity, verdict
+    """Group transitive provenance overlaps and score the weakest binding check.
+
+    No precision is pooled, even across disjoint tags: those labels alone cannot
+    justify independence. The support score uses the predicted direction, so an
+    observed negative effect supports a hypothesis that predicted a negative effect.
+    Repeated or renamed copies cannot raise its score or provenance multiplicity.
+    Null/necessity legs may link source groups but never count as positive evidence.
+    """
+    groups = []                         # (union of tags, binding support scores)
+    for leg in legs:
+        if not leg.provenance:
+            continue
+        tags = set(leg.provenance)
+        scores = [leg.direction * leg.t()] if leg.is_binding_evidence() else []
+        remaining = []
+        # Existing groups are already disjoint, so one pass closes every overlap.
+        for group_tags, group_scores in groups:
+            if tags & group_tags:
+                tags.update(group_tags)
+                scores.extend(group_scores)
+            else:
+                remaining.append((group_tags, group_scores))
+        groups = remaining + [(tags, scores)]
+    group_scores = [min(scores) for _, scores in groups if scores]
+    return len(group_scores), math.tanh(min(group_scores)) if group_scores else 0.0
 
 
 def colimit_hybrid(apex: str, legs: list, allow_miss: int = 1) -> GroundingResult:
@@ -255,16 +379,22 @@ def colimit_hybrid(apex: str, legs: list, allow_miss: int = 1) -> GroundingResul
     specificity legs are graded by QUORUM — up to `allow_miss` may fall short of the
     threshold without pruning the apex. So one marginal check no longer kills a real
     signal, while an ablation that must collapse remains non-negotiable."""
+    if type(allow_miss) is not int or allow_miss < 0:
+        raise ValueError("allow_miss must be a nonnegative integer")
+    legs = _distinct_legs(legs)
     strict_kinds = [l for l in legs
-                    if l.kind == "necessity" or (l.kind == "specificity" and not l.present)]
-    veto = tuple(l.name for l in strict_kinds if not l.binds())
+                    if l.kind == "necessity" or (l.kind == "specificity" and not l.present)
+                    or (l.kind == "prediction" and l.direction == 0)
+                    or not l.provenance]
+    veto = tuple(sorted({l.name for l in strict_kinds if not l.binds()}))
     if veto:
         return GroundingResult(False, 0, 0.0, 0.0, veto, f"strict veto (necessity/absent): {veto}")
     req = [l for l in legs if (l.kind == "prediction" and l.direction != 0)
            or (l.kind == "specificity" and l.present)]   # bind-wanting legs
-    missed = tuple(l.name for l in req if not l.binds())
+    missed = tuple(sorted(l.name for l in req if not l.binds()))
     grounded = len(missed) <= allow_miss and (len(req) - len(missed)) >= 1
     multiplicity, verdict_raw = _summary(legs)
+    grounded = grounded and multiplicity > 0
     verdict = verdict_raw if grounded else 0.0
     ew = edge_weight_from_multiplicity(multiplicity) if grounded else 0.0
     note = (f"grounded (quorum {len(req) - len(missed)}/{len(req)}, necessity strict)"
@@ -280,6 +410,12 @@ class Hop:
     jacobian: float          # local linear gain d(out)/d(in)
     add_var: float = 0.0     # variance injected by this hop (model/approx error)
     label: str = ""
+
+    def __post_init__(self):
+        _finite(self.jacobian, "jacobian")
+        _finite(self.add_var, "add_var")
+        if self.add_var < 0:
+            raise ValueError("add_var must be nonnegative")
 
 
 def compose_chain(base: Quantity, hops: list[Hop]) -> tuple[Quantity, bool]:
@@ -306,7 +442,7 @@ def compose_chain(base: Quantity, hops: list[Hop]) -> tuple[Quantity, bool]:
 def _selftest():
     # 1) conjugate update tightens and moves toward the measurement.
     prior = Quantity(0.0, 1.0, "abn_return_pts")
-    m = Measurement(5.0, 1.0, n=200, units="abn_return_pts")
+    m = Measurement(5.0, 1.0, n=200, units="abn_return_pts", provenance=frozenset({"fixture"}))
     post = update(prior, m)
     assert post.sigma < min(prior.sigma, m.effective_stderr()), post.sigma
     assert 0.0 < post.value < 5.0, post.value

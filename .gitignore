@@ -37,3 +37,6 @@ corpus/brain.db
 corpus/brain.db-*
 corpus/brain_map.html
 corpus/brain_agenda.json
+
+# Local oracle journal, private receipt snapshots and generated reports
+corpus/runtime/

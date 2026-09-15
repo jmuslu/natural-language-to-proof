@@ -97,11 +97,11 @@ renderVerdict Unknown   = "no coverage"
 -- @CanonCond -> Bool@ would make "outside my domain" indistinguishable from
 -- "false", which is the one confusion this whole design exists to prevent.
 --
--- Nothing in this repository is a real oracle. A real one is a physics engine, a
--- backtesting engine, a database of settled measurements — something whose
--- answers do not depend on this pipeline. The 'Oracle' record is the seam where
--- one gets plugged in, and the toy oracles in the test suite exist only to
--- exercise the plumbing.
+-- A real oracle is a physics engine, a backtesting engine, or a database of
+-- settled measurements: its answers do not depend on this pipeline. The 'Oracle'
+-- record is the seam where one gets plugged in. "NL2Proof.Verify.External" reads
+-- externally checked run receipts through that seam; the language test fixtures
+-- still use toy oracles to exercise plumbing.
 data Oracle = Oracle
   { oracleName   :: String
   , oracleDomain :: String
@@ -130,11 +130,17 @@ check o c
 -- __The constructor is not exported.__ 'confirm' is the only way to obtain one,
 -- so a 'Confirmed' value cannot be forged and downstream stages that demand one
 -- are structurally unable to run on unverified input.
-data Confirmed = MkConfirmed
-  { confClaim  :: CanonCond
-  , confOracle :: String
-  }
+-- Positional fields are deliberate. Exported record selectors would permit
+-- @token { confClaim = uncheckedClaim }@ outside this module even with the
+-- constructor hidden. Ordinary accessor functions keep the token immutable.
+data Confirmed = MkConfirmed CanonCond String
   deriving (Eq, Show)
+
+confClaim :: Confirmed -> CanonCond
+confClaim (MkConfirmed claim _) = claim
+
+confOracle :: Confirmed -> String
+confOracle (MkConfirmed _ oracle) = oracle
 
 -- | 'Just' exactly when the oracle confirms the claim. 'Refuted' and 'Unknown'
 -- both give 'Nothing' — they are different facts about the claim but the same

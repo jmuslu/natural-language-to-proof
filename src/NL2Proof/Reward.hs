@@ -266,7 +266,7 @@ scoreOver w extent f g =
       length
         [ c
         | c <- base
-        , c `notElem` entailedFrom f { fusedClaims = filter (/= c) base }
+        , c `notElem` entailedFrom (withoutClaim c f)
         ]
 
     -- Only PREMISES are scored for verdicts. A derived node was never offered

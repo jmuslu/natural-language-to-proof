@@ -35,9 +35,13 @@
 -- a mistake to be careful about.
 module NL2Proof.Fusion
   ( -- * Fused output
-    Fused(..)
+    Fused
+  , fusedClaims
+  , fusedOracles
+  , fusedDropped
   , fuse
   , fusedContains
+  , withoutClaim
     -- * Box-level compression
   , compress
   , compressionRatio
@@ -61,26 +65,34 @@ import NL2Proof.Verify.Oracle
 --
 -- 'fusedDropped' exists for the same reason it did on the old branch: drift you
 -- have measured is different in kind from drift you have decided not to look at.
-data Fused = Fused
-  { fusedClaims  :: [CanonCond]
-    -- ^ Sorted and deduplicated. Every element was confirmed by some oracle.
-  , fusedOracles :: [String]
-    -- ^ Which oracles contributed. Retained because "confirmed" is meaningless
-    -- without naming what confirmed it.
-  , fusedDropped :: Int
-    -- ^ Redundant confirmations removed.
-  }
+-- Abstract and positional: neither construction nor exported record updates can
+-- introduce an unconfirmed claim. Only 'fuse' constructs a base; 'withoutClaim'
+-- can weaken one for novelty checks.
+data Fused = MkFused [CanonCond] [String] Int
   deriving (Eq, Show)
 
+-- | Sorted, deduplicated claims, each confirmed by an oracle.
+fusedClaims :: Fused -> [CanonCond]
+fusedClaims (MkFused claims _ _) = claims
+
+-- | Oracles contributing to the original confirmed base.
+fusedOracles :: Fused -> [String]
+fusedOracles (MkFused _ oracles _) = oracles
+
+-- | Redundant confirmations removed by fusion.
+fusedDropped :: Fused -> Int
+fusedDropped (MkFused _ _ dropped) = dropped
+
 fuse :: [Confirmed] -> Fused
-fuse cs =
-  Fused
-    { fusedClaims = kept
-    , fusedOracles = sort (nub (map confOracle cs))
-    , fusedDropped = length cs - length kept
-    }
+fuse cs = MkFused kept (sort (nub (map confOracle cs))) (length cs - length kept)
   where
     kept = dedupe (map confClaim cs)
+
+-- | Remove a claim from a certified base. This can only discard confirmation,
+-- never introduce it; reward uses it to ask whether the rest entails a claim.
+withoutClaim :: CanonCond -> Fused -> Fused
+withoutClaim claim (MkFused claims oracles dropped) =
+  MkFused (filter (/= claim) claims) oracles dropped
 
 fusedContains :: Fused -> CanonCond -> Bool
 fusedContains f c = c `elem` fusedClaims f

@@ -10,6 +10,8 @@ reward signal without the system supplying its own grounding.
 | [TRACE.md](TRACE.md) | one scenario through every layer: the object, the state, and the checkable propositions |
 | [PROGRESS.md](PROGRESS.md) | status by area: what is proven (with the measured numbers) and what is open |
 | [TEMPORAL.md](TEMPORAL.md) | the temporal discipline (valid-time, as-of, no lookahead) |
+| [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md) | executable oracle handoff, replay, revisions, and measured limits |
+| [BRAIN.md](BRAIN.md) | connected components, research hypotheses, and evaluation priorities |
 
 The short version:
 
@@ -102,13 +104,19 @@ supertagger. 116 checks. See `PROGRESS.md` for the measured results.
 | `test/Stage2Spec.hs` | 239 | candidate generation, ranking, SDRT threading |
 | `test/SubstrateSpec.hs` | 114 | oracle boundary, grounded support, precise retraction, reward admissibility + Pareto frontier |
 | `test/CCGBankSpec.hs` | 116 | CCGbank parsing, feature unification, `.auto` reconstruction, type-change induction, entry ingestion, whole-sentence + from-words parsing, Montague templates → DRS |
-| **total** | **855** | |
+| `test/ExternalSpec.hs` | 44 | scoped external receipts, strict parsing, oracle/fusion/reward integration, safe weakening |
+| **total** | **899** | |
+
+`bash scripts/check-oracle-boundary.sh` also checks that constructors and record
+updates cannot forge confirmation tokens or fused claims. The earlier hidden
+constructor was insufficient: exported record labels permitted mutation. These
+values now use private positional constructors and read-only getters.
 
 What the substrate has and has not:
 
 | Built | Not built |
 |---|---|
-| oracle interface with a three-valued verdict and a type-level confirmation gate | any **real** oracle — the ones in the suite are plumbing, not physics |
+| three-valued oracle interface, immutable confirmation gate, and external run-receipt adapter | independent authentication of the measurement producer and experimental design |
 | genealogy DAG: node identity, justifications, least-fixed-point support | supersession (revision-with-history) as distinct from retraction |
 | precise retraction as a difference of fixed points | AGM-style minimal revision when a reversal creates inconsistency |
 | cross-derivation convergence detection | a corpus long enough to exercise any of it |
@@ -472,7 +480,8 @@ test/Harness.hs        shared assert scaffolding, no framework dependency
 test/Spec.hs           386 discrete-core checks
 test/Stage2Spec.hs     239 candidate-generation checks
 test/SubstrateSpec.hs  114 substrate checks (incl. Pareto reward frontier)
-test/CCGBankSpec.hs    89 CCGbank parse / unification / reconstruction / ingestion checks
+test/CCGBankSpec.hs    116 CCGbank parse / unification / reconstruction / ingestion checks
+test/ExternalSpec.hs   44 external receipt and admission-boundary checks
 corpus/               the adversarial epistemic corpus + graph (see corpus/README.md)
 docs/                  standalone probes and CCGbank feature surveys (read-only)
 ```
@@ -489,15 +498,11 @@ In order, and the order matters.
    This determines whether the RL loop closes at all for that domain, and no
    amount of pipeline work substitutes for it. Everything below is wasted effort
    in a domain with no oracle.
-2. **Plug in one real oracle** and replace a whitelist with it. The seam is
-   `Verify.Oracle.Oracle`; the toy oracles in the suite exist only to exercise
-   the plumbing. *Partly underway for the trading domain, not yet wired into this
-   seam — see `PROGRESS.md`.* A real statistical oracle for trading
-   signals (walk-forward/OOS, permutation + random-timing nulls,
-   multiple-comparisons correction, regime-conditional evaluation) is now built
-   and hardened in `agentic-qr` and runs on every backtest; what remains here is
-   routing a real oracle into `nl2proof`'s own `Verify.Oracle` seam rather than
-   the toy ones.
+2. **Expand the checked oracle coverage.** `Verify.External` now routes audited
+   agentic-qr receipts through the actual oracle/confirmation/fusion/reward seam.
+   Its scope is `passes_validation(run_id)`, with durable three-valued revisions.
+   Broader source-claim truth, faithful extraction and independent experimental
+   design remain separate open problems. See [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md).
 3. **Build a generator over the lexicon and the CCG rules.** *Substantially
    built — see `PROGRESS.md`.* CCGbank (LDC2005T13) is the corpus:
    `Syntax/CCGBank` parses and classifies its feature-annotated categories;

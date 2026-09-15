@@ -63,8 +63,11 @@ disposes of it.
   the known BIIB/SRPT moves. **Deprioritized as an accessory** — it validates the wiring,
   not system efficacy; a systematic event universe is the only thing that would make it a
   real study, and that is not the priority.
-- **[open]** routing a real oracle into `nl2proof`'s own `Verify.Oracle` seam (today the
-  seam uses toy oracles; the real one lives in agentic-qr).
+- **[checked]** Audited run receipts now reach `Verify.Oracle` through
+  `Verify.External`, preserving Unknown, identity, and evidence hashes. Immutable
+  confirmation/fusion types also close two verified forgery paths. See §4 and
+  [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md). This certifies the recorded run checks,
+  not economic efficacy or source-claim truth.
 
 ## 3. Reward — what may count as an RL signal (`src/NL2Proof/Reward.hs`)
 
@@ -78,74 +81,52 @@ disposes of it.
 - **[open]** fit the corroboration/novelty combination against held-out oracle outcomes
   — likely the *same solved shape* as the graph-trust mechanism (§4).
 
-## 4. Epistemic graph + fact brain (`corpus/`)
+## 4. Epistemic graph, fact brain, and reasoning (`corpus/`)
 
-- **[checked] Trust originates only from external checks.** `epistemic_graph.py`: a
-  mutually-corroborating cluster with no external check stays at 0 (echo chamber → 0);
-  references/owner-labels/oracle-outcomes are the only sources; trust flows both ways
-  (forward corroboration; backward `implicate_from_outcome`, the same shape as
-  `Genealogy`'s retraction). Layer-5 parameters are *fit against held-out external
-  calibration*, never internal coherence (`fit_graph.py`: a pure echo chamber cannot be
-  fit into discrimination).
-- **[measured] The brain grades itself honestly.** A libSQL vector store embeds the
-  graph's claims (geometry) carrying trust copied verbatim (never invented).
-  `calibrate()` is the external check on the brain: leave-one-out vs a mean null →
-  **skill ≈ 0, NOT licensed** — trust is *not semantically smooth* (`corr(sim,|Δtrust|)
-  ≈ −0.03`), because it is earned per-claim by external check and 56% of claims are
-  unchecked. So the brain **refuses to impute trust from topic**. On the checked subset a
-  real signal appears (skill 0.15), and `learning_curve` shows skill rising as checks
-  accumulate — evidence the loop pays off, un-fabricated.
-- **[checked] The loop is closed both ways.** Retrieval / synthesis (`answer`, gated by
-  query-local checked-fraction) / directed exploration (`explore_frontier`,
-  `bridge_hypotheses`) → a ranked research agenda (`brain_agenda.py`) → hypotheses with
-  `claim_refs` → oracle → reverse-propagation to the cited claims. `answer` returns
-  `insufficiently_checked` when the relevant evidence is mostly unchecked (honest refusal
-  to overclaim). `evidence_basis` (public_reference / self_reported / unquantifiable)
-  routes "what to check next" to the right *kind* of check.
-- **[open]** the brain is corpus-size-limited: imputation stays not-licensed until more
-  claims are externally checked. The fix is *more external checks* (the frontier proposes
-  them), not tuning.
-- **[built] Discovery-brain mechanics (`BRAIN.md`; `corpus/estimand.py`, `multihop.py`,
-  wired into `ingest_outcomes.py`).** Reverse-propagation upgraded from the one-bit hole
-  (`passed→±1`, flat 0.3) to a *typed numerical* update: an estimand carries value·σ·
-  units·**basis**·support; measurements update a conjugate/robust posterior; grounding is
-  a **colimit** of externally-checked legs whose *multiplicity* (provenance-independent
-  bindings) sets a graded verdict + edge weight — an ungrounded apex earns **no** belief.
-  Adds multi-hop reasoning (uncertainty composing honestly, two-gate exploration/belief
-  guard) and **synthetic inference** (propose a signal by abstraction from a method-class;
-  method trust rises across independent domains). Proven end-to-end on the real
-  Futures-Reversal fixture (grounds NQ, refuses the ablation & YM controls, basis-types the
-  Sharpe 0.70→3.26) and generalized to a **neuromorphic** bifurcation-reversal signal.
-- **[built] Repertoire + tandem selection + residual meta-learning** (`alternates.py`,
-  `selector.py`, `metalearn.py`). Alternate machineries per mechanic compared fairly; a
-  selector uses them in tandem (cheap→heavy escalation near a decision boundary); a bandit
-  LEARNS the escalation thresholds from the divergence residuals, beating the hand-rule and
-  discovering a hidden divergence corner it prunes. `surprise.py`: `KL(filter‖smooth)` as
-  the shared alpha/exploration/epistemic primitive.
-- **[built] Generalization, not memorization** (`grok.py`, `discover.py`). The brain
-  distills the domain-agnostic invariant from grounded examples (memorizer stalls at base
-  rate; grokker snaps to 1.00 and TRANSFERS market→neuromorphic), then proposes+screens
-  NOVEL signals it never saw (precision/recall 1.00) and grounds the real ones. The
-  measurement plane (`agentic-qr:shared/backtesting/grounding.py`) emits the `grounding`
-  block and is cross-checked against the real colimit — **loop closed across both repos.**
-- **[built] Non-stationary regime estimand** (`regime_estimand.py`). The estimand is a
-  state tracked by a Kalman filter whose process noise inflates on surprise (the innovation
-  residual = a regime break/bifurcation): at a +1.0 jump it tracks with MAE 0.07 and
-  honestly widens covariance to 0.11, vs a fixed filter's confidently-wrong MAE 0.65 at
-  covariance 0.012. Same residual principle as the alpha signal and the meta-learner.
-  All corpus self-tests green. *Open:* estimand identity/registry.
-- **[built] Domain-general reasoning + the layers talk to each other** (`reason.py`,
-  `abstain.py`, `retract.py`). `reason.py` lifts the Haskell type discipline (`Ty`/`catTy`/
-  combinators; `Semantics/Lambda.hs`, `Syntax/Category.hs`, `CCGRules.hs`) into the brain —
-  one type algebra across linguistic, abstract, and *trading* composition, the type functor
-  refusing ill-typed steps; **robustness of reasoning is domain-general, the trading domain
-  an instantiation, not the point** (the Sharpe-centric `compose.py` was written and removed
-  as a domain-overfit). `abstain.py`: the faithfulness gate — the discrete invariant stays
-  faithful by REFUSING low-confidence labels (ingest-all corrupts it; abstaining keeps the
-  exact invariant on fewer labels). `retract.py`: least-fixed-point grounding + **precise
-  retraction** mirroring `Genealogy.hs` — a claim with a second independent derivation
-  survives a premise's retraction; the naive downstream answer over-retracts; a cycle grounds
-  nothing (anti-self-agreement). The brain's grounding now speaks Genealogy's language.
+- **[checked] The oracle handoff executes.** `pipeline.py` reads result files,
+  re-evaluates their certificates using agentic-qr's policy, journals revisions,
+  rebuilds run-scoped graph/index entries, and invokes the Haskell
+  oracle/confirmation/genealogy/fusion/reward path. `--oracle-only` needs no
+  embedding dependencies. [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md) gives commands.
+- **[checked] Scope is explicit.** The verdict is about
+  `passes_validation(run_id)`. Source `claim_refs` are attribution edges, not
+  source-truth updates. This replaces the earlier shortcut that a
+  strategy pass/failure should confirm/refute the prose it cited.
+- **[checked] Replay and revision are operational.** Immutable journal history,
+  duplicate suppression, stable run identities, exact support differences,
+  withdrawal and explicit reinstatement. Neither stale files nor attribution
+  edits can resurrect withdrawn evidence. Changed malformed files become Unknown.
+- **[measured] The available legacy evidence is incomplete.** 32 result files
+  (9 completed) lack run IDs and validation certificates. Replaying them yields
+  32 Unknown receipts, zero fused claims and zero Haskell reward. A positive
+  transport test uses an explicitly planted synthetic timing signal; it is
+  integration evidence, not an economic result.
+- **[checked] Grounding primitives are stricter.** `retract.py` handles
+  three-valued premises and persistent verdict changes. Empty justifications
+  need oracle confirmation; cycles cannot bootstrap. `estimand.py` rejects
+  empty/null-only/unmeasured patterns, invalid uncertainty and unsupported
+  provenance. Repeated measurements cannot tighten the same posterior; correctly
+  predicted negative effects support the hypothesis. Declared provenance groups
+  are not a proof of statistical independence, and their weight is stipulated.
+- **[measured, prior corpus] Semantic trust imputation remains unlicensed.**
+  Existing corpus calibration has skill near zero against its mean null. The
+  small checked subset and learning-curve runs are diagnostic; adding receipts
+  does not establish a general improvement. Proposed reference verdicts remain
+  labeled proposals in the base graph.
+- **[research prototypes]** `reason.py`, `abstain.py`, `multihop.py`,
+  `selector.py`, `alternates.py`, `metalearn.py`, `grok.py`, `discover.py`,
+  `regime_estimand.py` and `surprise.py` contain useful typed composition,
+  selection, abstention, invariant and residual ideas. Their synthetic
+  self-tests do not establish faithful extraction, out-of-generator transfer,
+  or frontier reasoning. Several remain standalone. The earlier labels
+  "loop closed", "generalization", and "proven" exceeded the evaluation.
+- **[open, next research milestone]** A non-frontier proposer participating in
+  an externally checked multi-hop pipeline: held-out compositions/topologies,
+  direct-answer and ablation baselines, equal budgets, proof checking, repair,
+  coverage/false-acceptance measures, and a versioned residual agenda. Then
+  connect DRT alternatives, typed composition, oracle and vector reward to the
+  same measured experiment. [BRAIN.md](BRAIN.md) records this scope.
+
 
 ## 5. Temporal discipline (`TEMPORAL.md`, condensed)
 

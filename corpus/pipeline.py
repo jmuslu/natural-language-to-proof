@@ -31,8 +31,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from brain import Brain
-
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 
@@ -69,39 +67,37 @@ def stage_ingest() -> dict:
         return {"stage": "ingest", "status": "skipped", "error": str(e)}
 
 
-def stage_graph() -> dict:
+def stage_graph(receipts, runtime) -> dict:
     banner("B", "GRAPH -- corpus records + external verdicts -> trust")
-    r = subprocess.run([sys.executable, str(HERE / "build_graph.py")],
-                       capture_output=True, text=True, timeout=120)
-    if r.returncode != 0:
-        print(r.stdout[-800:]); print(r.stderr[-800:])
-        return {"stage": "graph", "status": "error"}
-    g = json.loads((HERE / "graph.json").read_text())
+    from ingest_outcomes import materialize, graph_document, augmented_index
+    graph, _ = materialize(receipts)
+    g = graph_document(graph)
+    (runtime / "graph.json").write_text(json.dumps(g, indent=2))
+    (runtime / "claims_index.json").write_text(json.dumps(augmented_index(receipts), indent=2))
     s = g["summary"]
     claim_trust = [n["trust"] for n in g["nodes"] if n["kind"] == "claim"]
     checked = sum(1 for t in claim_trust if t != 0.0)
     print(f"  nodes {s['nodes']}  edges {s['edges']}  by_kind {s['by_kind']}")
-    print(f"  claims externally checked: {checked}/{len(claim_trust)} "
-          f"(the rest await a verdict -- trust must be earned)")
-    print("  => trust here originates ONLY from external checks (reference verdicts, "
-          "owner labels); the graph propagates it, never invents it.")
+    print(f"  claims with nonzero evidence scores: {checked}/{len(claim_trust)}")
+    print("  => oracle receipts concern run-validation propositions only; source references "
+          "remain attribution. Existing reference/owner scores retain their provenance.")
     return {"stage": "graph", "status": "ok", "nodes": s["nodes"], "edges": s["edges"],
             "checked": checked, "claims": len(claim_trust)}
 
 
-def stage_brain() -> tuple[dict, Brain]:
+def stage_brain(runtime, embedder="model2vec", as_of=None) -> tuple[dict, object]:
     banner("C", "BRAIN -- embed claims into libSQL vector store + grade the manifold")
-    brain = Brain.build(str(HERE / "claims_index.json"), str(HERE / "graph.json"),
-                        str(HERE / "brain.db"))
-    st = brain.stats()
-    cal = brain.calibrate()
-    lc = brain.learning_curve()
+    from brain import Brain
+    brain = Brain.build(str(runtime / "claims_index.json"), str(runtime / "graph.json"),
+                        str(runtime / "brain.db"), prefer=embedder)
+    st = brain.stats(as_of=as_of)
+    cal = brain.calibrate(as_of=as_of)
+    lc = brain.learning_curve(as_of=as_of)
     print(f"  {st['n_facts']} facts, dim {st['dim']}, embedder {st['embedder_id']}")
-    print(f"  calibration @k={cal['preregistered_k']}: skill={cal['skill']} "
-          f"pearson_r={cal['pearson_r']} sign_agreement={cal['sign_agreement']}")
-    print(f"  imputation licensed? {cal['licensed']}  -- {cal['verdict']}")
-    print(f"  checked-only (n={cal['n_checked']}): skill={cal['checked_only'].get('skill')}, "
-          f"pearson_r={cal['checked_only'].get('pearson_r')}")
+    print(f"  calibration @k={cal.get('preregistered_k')}: skill={cal.get('skill')} "
+          f"pearson_r={cal.get('pearson_r')} sign_agreement={cal.get('sign_agreement')}")
+    print(f"  imputation licensed? {cal.get('licensed', False)} -- {cal.get('verdict', 'insufficient data')}")
+    print(f"  checked-only (n={cal.get('n_checked', 0)}): skill={cal.get('checked_only', {}).get('skill')}")
     print("  learning curve (skill as #external-checks grows; real trust only):")
     for pt in lc["curve"]:
         ms = pt["mean_skill"]
@@ -116,37 +112,37 @@ def stage_brain() -> tuple[dict, Brain]:
     return {"stage": "brain", "status": "ok", "calibration": cal, "learning_curve": lc}, brain
 
 
-def stage_retrieve_explore(brain: Brain) -> dict:
+def stage_retrieve_explore(brain: Brain, as_of=None) -> dict:
     banner("D", "RETRIEVE + EXPLORE -- semantic recall and directed exploration")
     q = "can machine learning beat the market despite efficiency?"
     print(f"  retrieve (trust-weighted) <- \"{q}\"")
-    for f in brain.retrieve(q, k=3, trust_weighted=True):
+    for f in brain.retrieve(q, k=3, trust_weighted=True, as_of=as_of):
         print(f"      [{f.trust:+.2f} trust | sim {f.similarity:.2f}] {f.text[:66]}")
     print("  explore frontier (gaps: unchecked & central -> highest-leverage checks):")
-    for d in brain.explore_frontier(k=3, mode="gaps"):
+    for d in brain.explore_frontier(k=3, mode="gaps", as_of=as_of):
         print(f"      [{d['centrality']:.2f} central] {d['text'][:66]}")
     print("  explore frontier (contested: checked, neighbours disagree):")
-    for d in brain.explore_frontier(k=2, mode="contested"):
+    for d in brain.explore_frontier(k=2, mode="contested", as_of=as_of):
         print(f"      [{d['trust']:+.2f} trust, var {d['neighbor_trust_var']:.2f}] {d['text'][:60]}")
     print("  bridge hypotheses (two trusted facts, different domains, mid-distance):")
-    for p in brain.bridge_hypotheses(k=2):
+    for p in brain.bridge_hypotheses(k=2, as_of=as_of):
         print(f"      {p['a_domain']} <-> {p['b_domain']} (sim {p['similarity']:.2f}):")
         print(f"        A: {p['a_text'][:60]}")
         print(f"        B: {p['b_text'][:60]}")
     print("  synthesis (answer: retrieval + inference + exploration, cited & gated):")
     for aq in ("can machine learning reliably beat the market?",
                "is a paper loss a real loss even if I do not sell?"):
-        a = brain.answer(aq)
+        a = brain.answer(aq, as_of=as_of)
         print(f"      Q: {aq}")
-        print(f"        stance: {a['stance']}  (checked {a['n_checked']}/{a['n_relevant']} "
-              f"relevant, licensed_locally={a['licensed_locally']})")
+        print(f"        stance: {a['stance']}  (checked {a.get('n_checked', 0)}/{a.get('n_relevant', 0)} "
+              f"relevant, licensed_locally={a.get('licensed_locally', False)})")
         if a.get("proposed_next_check"):
             print(f"        next external check -> {a['proposed_next_check']['text'][:56]}")
     print("  => every item above is a PROPOSAL for an external check, never a verdict.")
     # the loop-closer: exploration becomes a ranked research agenda that feeds the
     # TOP of the loop (each item carries claim_refs so outcomes reverse-propagate).
     from brain_agenda import build_agenda
-    ag = build_agenda(brain)
+    ag = build_agenda(brain, as_of=as_of)
     print(f"  research agenda: {ag['count']} proposed items feed back to new hypotheses:")
     for it in ag["items"][:3]:
         print(f"      [{it['priority']:.2f}] {it['kind']} (refs {','.join(it['claim_refs'])})")
@@ -181,32 +177,68 @@ def stage_temporal(brain: Brain) -> dict:
     return {"stage": "temporal", "status": "ok", "events": n_events}
 
 
-def stage_oracle_note() -> None:
-    banner("F", "ORACLE -- external validation closes the loop (agentic-qr, private)")
-    print("  A frontier proposal (Stage D) that is operationalised as a trading signal")
-    print("  is validated by shared/backtesting/validation: walk-forward OOS, sign-flip")
-    print("  and random-timing nulls, Benjamini-Hochberg FDR, regime-conditional Sharpe,")
-    print("  and calibration (Brier/ECE). The resulting certificate is an EXTERNAL")
-    print("  verdict; ingest_outcomes.py feeds it back to Stage B, densifying the trust")
-    print("  field -- which the learning curve (Stage C) shows raises inference skill.")
-    print("  => the loop is closed: propose -> externally check -> update brain -> propose.")
+def stage_oracle(paths, oracle_repo, runtime, as_of=None):
+    from collections import Counter
+    from oracle_bridge import ReceiptLedger, load_evaluator, verify_haskell
+    from ingest_outcomes import revision_report
+    banner("F", "ORACLE -- audit result files, replay revisions, verify Haskell handoff")
+    ledger = ReceiptLedger(runtime / "oracle.sqlite")
+    try:
+        before = ledger.snapshots()
+        actions = ledger.ingest_files(paths, load_evaluator(oracle_repo)) if paths else []
+        current = ledger.snapshots()
+        receipts = ledger.snapshots(as_of)
+        hs = verify_haskell(receipts, runtime / "receipts.tsv", ROOT)
+        report = {"stage": "oracle", "status": "ok", "input_files": len(paths),
+                  "actions": dict(Counter(r["action"] for r in actions)),
+                  "verdicts": dict(Counter(r["verdict"] for r in receipts)),
+                  "reasons": dict(Counter(r["reason"] for r in receipts)),
+                  "support_changes": revision_report(before, current),
+                  "as_of": as_of, "haskell": hs}
+        print(f"  {len(paths)} files, {len(receipts)} active run receipts; {report['verdicts']}")
+        print(f"  journal actions: {report['actions']}; reasons: {report['reasons']}")
+        print(f"  Haskell fused claims: {hs['fused_claims']}; reward: {hs['reward']}")
+        (runtime / "oracle_report.json").write_text(json.dumps(report, indent=2))
+        return report, receipts
+    finally:
+        ledger.close()
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="skip the Haskell ingest stage")
+    ap.add_argument("--oracle-only", action="store_true", help="run receipt/graph/Haskell integration without embedding dependencies")
+    ap.add_argument("--oracle-repo", type=Path, default=Path.home() / "projects")
+    ap.add_argument("--results", nargs="*", type=Path, help="explicit result files; no values means replay only")
+    ap.add_argument("--results-dir", type=Path, help="read result_*.json from this directory")
+    ap.add_argument("--runtime-dir", type=Path, default=HERE / "runtime")
+    ap.add_argument("--as-of", help="replay only revisions observed by this UTC date/timestamp")
+    ap.add_argument("--embedder", choices=("model2vec", "hashing"), default="model2vec")
     args = ap.parse_args()
+    if args.results is not None and args.results_dir is not None:
+        ap.error("choose --results or --results-dir")
+    runtime = args.runtime_dir.expanduser().resolve()
+    runtime.mkdir(parents=True, exist_ok=True)
+    directory = args.results_dir or args.oracle_repo / "shared/backtesting/results"
+    paths = args.results if args.results is not None else sorted(directory.glob("result_*.json"))
     print("CONNECTED SYSTEM -- end-to-end operational run")
     print("discipline: no component certifies itself; trust comes only from external checks.")
     results = []
-    if not args.quick:
+    if not args.quick and not args.oracle_only:
         results.append(stage_ingest())
-    results.append(stage_graph())
-    r_brain, brain = stage_brain()
-    results.append(r_brain)
-    results.append(stage_retrieve_explore(brain))
-    results.append(stage_temporal(brain))
-    stage_oracle_note()  # narrative note, printed last as the loop-closer
+    oracle, receipts = stage_oracle(paths, args.oracle_repo, runtime, args.as_of)
+    results.append(oracle)
+    results.append(stage_graph(receipts, runtime))
+    if not args.oracle_only:
+        r_brain, brain = stage_brain(runtime, args.embedder, args.as_of)
+        try:
+            results.append(r_brain)
+            results.append(stage_retrieve_explore(brain, args.as_of))
+            if args.as_of is None:
+                results.append(stage_temporal(brain))
+        finally:
+            brain.con.close()
+    (runtime / "pipeline_report.json").write_text(json.dumps(results, indent=2))
     print(f"\n{'='*72}\n  RUN COMPLETE -- "
           + ", ".join(f"{r['stage']}:{r['status']}" for r in results)
           + "\n" + "=" * 72)
