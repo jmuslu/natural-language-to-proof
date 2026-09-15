@@ -117,11 +117,20 @@ not permission to explore. IDs remain stable for future changes and experiment r
 | R25 / P1 | Adaptive selection/residual learning/UCB; `selector.py`, `metalearn.py`, `adaptive_evaluation.py` | **Fallible-outcome learning implemented/tested.** Signed checked losses and fixed acceptance rule replace assumed-correct heavy escalation. Independent same-law test benefits; shifted contexts fail (figures above). Next drift detection and randomized audit policy under real costs. |
 | R26 / P1 | Grokking/noisy induction/abstention; `grok.py`, `abstain.py`, `robust_concept.py` | **Repaired and noise-tolerant class search replicated.** Two fresh seeds recover same-law concepts under noisy/confidently wrong labels; irreducible outcomes trigger abstention. Changed target laws still defeat source calibration. Scope is the supplied finite hypothesis class; next shift-aware audits and broader classes. |
 | R27 / P2 | Neuromorphic/Hodgkin–Huxley/Hopf engines | **Open analogy.** Identifiable dynamical models versus HMM/simple baselines on causal holdouts. HMM state change need not be bifurcation; estimate observables before attractor/proximity claims. |
-| R28 / P1 | Proposer ceiling/diversity/reasoner–coder ladder/trajectory DAG | **Execution substrate; discovery open.** Independent evaluator, matched failures and attempt deduplication; feature invention, tool-failure recovery, value/budget stopping and audit cost. |
+| R28 / P1 | Proposer ceiling/diversity/reasoner–coder ladder/trajectory DAG | **Experiment scheduling connected; discovery open.** One immutable request/run/protocol per session, crash recovery, explicit-family FDR wait and independently checked result. Fourteen scheduling regressions include delayed/reordered messages and atomic result replacement; no deployment. Legacy synchronous execution still needs hard cancellation. Model comparisons are in REASONING.md; small-model long-chain proof recovery remains unsolved. |
 | R29 / P0 | Knowability/events/hindsight labels; `brain.py`, event store | **Mechanism strengthened.** Offset/date/prefix/as-of tests exist. Extend cutoffs to fitting, label availability, source revisions and selector training; publication differs from observation. |
 | R30 / P0 | Financial mechanism/source fidelity; [private source](https://github.com/aiqs-org/Futures-Reversal) | **Original source located; replication incomplete.** The write-up postdates its code and requires an absent online predictor; no producing notebook or intraday sample was recovered in that repository. Keep the detailed source audit in ignored runtime storage. Reconstruct a causal residual primitive, then test the intended conditioned intraday mechanism with genuine data. Fixed daily baselines are plumbing controls; legacy figures and 32 uncertified results remain unverified. |
 
 ## Next experiments and acceptance criteria
+
+The primary application is financial mechanism discovery: participant constraints
+and incentives → positioning/flows → conditional price response → executable
+signal after costs. Use the recovered private Futures-Reversal source as the
+first concrete case. Preserve exploratory chains with uncertain or weak marginal
+links, then test their conditional consequences; checked admission applies to
+claimed conclusions, not permission to form a hypothesis. Recover the producing
+notebook and suitable intraday data before claiming reproduction or new alpha.
+The numerical and proof experiments below support this application.
 
 1. **Causality and evidence (R01,12,14,18,21,29,30):** freeze fitting and selection on
    eligible history; perturb unseen suffixes, replays and certificate revisions.
