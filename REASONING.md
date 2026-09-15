@@ -17,6 +17,8 @@ proof under supplied rules does not establish those rules in markets.
 | `corpus/reason.py` | Structural composition; singleton claim types bind predicate, arguments, and polarity |
 | `corpus/retract.py` | Evidence genealogy; withdrawal removes exactly the conclusions losing all supplied support |
 | `corpus/reasoning/run.py` | Shared prompts/caps, repair ablations, scoring, usage records, strict offline replay |
+| `corpus/reasoning/scaffold.py` | Bounded local typed joins and model-selected rule applications; separately labeled deterministic search |
+| `corpus/reasoning/scaffold_run.py` | Explicit-effort comparisons, current-state prompts, work accounting, paired scores and replay |
 | `corpus/reasoning/ledger.py` | Binds proof leaves to current or historical run-validation receipts; fingerprints rule/evidence dependencies |
 
 Rules are assumptions of the supplied world. A valid proof establishes a
@@ -118,6 +120,54 @@ become versioned development residuals; subsequent effectiveness claims need
 fresh held-out seeds/compositions. Extend this protocol to controlled-language
 extraction, corpus retrieval, authoritative domain receipts, and reward only with
 an independently specified target for each transition.
+
+## Local rule applications and explicit search
+
+The consumed mini failures often mismatched subjects, omitted conjunction gates,
+or invented premise IDs. The local tool admits checked leaves and exposes only
+currently enabled one-rule applications with exact bindings. The proposer selects
+application IDs and chooses when/how to finish; the tool assembles chronological
+proof steps and the independent engine checks the result. All rules remain task
+assumptions. Counters bound joins, scans, applications, views and proof size.
+
+`deterministic_search` explicitly consumes the same frontier without a model.
+On 18 consumed development/old-test worlds it solved all labels, supplying 12
+proofs and six complete-search unknowns, with zero model calls. These finite
+symbolic worlds already have an inexpensive solver. Any scaffold improvement
+measures tool-assisted planning/assembly, not frontier-level model intelligence.
+
+The new `local-applications-v2` prompt uses the current task, checked state and
+last action feedback. A no-call 45-world development preflight found that full
+transcript accumulation could require a single conservative reservation of
+110,541 tokens; compact state reduced the maximum to 25,529. This is reservation
+accounting, not measured model tokens or a guarantee the full run fits. Provider
+usage reconciles each reservation; unknown usage retains the conservative charge.
+
+The comparison has one-shot, verified-repair, scaffold and deterministic arms.
+Per world/arm ceilings are 96,000 tokens, 16 calls, 4,096 output tokens per call,
+180 seconds and 16 scaffold rounds; request timeout is 60 seconds with no retries.
+One-shot deliberately uses one call. Both model IDs explicitly request `medium`;
+actual calls/tokens and reported reasoning tokens remain separate outcomes.
+Paired raw/support discordance records improvements and regressions on identical
+worlds. Unknown is abstention unless the separate symbolic search saturates.
+
+Development uses six depth-2/3 worlds from
+`2026-09-15-scaffold-effort-dev-v1`. After development review, the planned test is
+the full 45 depth/topology/answer cells from the unused
+`2026-09-15-scaffold-effort-test-v1` seed. Source/prompt/config hashes are frozen;
+only development can guide changes before that test. A single writer lock and
+reconciled paid-attempt ledger prevent silently restarting interrupted work.
+Replay reconstructs each tool action, final proof, local work and paid accounting.
+
+```sh
+PYTHONPATH=corpus python3 -m reasoning.scaffold_run \
+  --oracle-repo ../agentic-qr --run-dir corpus/runtime/reasoning/scaffold-mini-medium-dev-v1 \
+  --split dev --seed 2026-09-15-scaffold-effort-dev-v1 --count 6 \
+  --connection-service caveman-strategy-core --model openai/gpt-5.4-mini \
+  --reasoning-effort medium --request-timeout 60
+PYTHONPATH=corpus python3 -m reasoning.scaffold_run \
+  --run-dir corpus/runtime/reasoning/scaffold-mini-medium-dev-v1 --replay
+```
 
 ## Receipt-backed proofs
 
