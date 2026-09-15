@@ -1139,7 +1139,7 @@ hypothesis (`claim_refs`, proposed by retrieval, author-confirmable) → a strat
 → a backtest → the validation certificate (external check) → reverse-propagated to
 the claim's trust, and aggregated over many outcomes into calibration. The two
 edges that were most recently only-partial are now wired: run-level FDR runs
-inside the batch loop (`strategy-core` `run_pending`), and the researcher anchors
+inside the batch loop (`caveman/strategy-core` `run_pending`), and the researcher anchors
 each note to corpus claims (`claim_match`, a retrieval proposer) so the one
 previously-ungated agent-output path is traceable into the graph that verifies it.
 Remaining open pieces are named in `PROGRESS.md` (e.g. the
