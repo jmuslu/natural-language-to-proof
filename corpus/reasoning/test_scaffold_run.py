@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 from reasoning import benchmark, run, scaffold_run as driver
 
@@ -258,6 +259,193 @@ class DriverTests(unittest.TestCase):
             driver.execute(self.directory, self.dataset, settings, client,
                            lambda: self.module.Budget(1000, 1, 128, 10.))
         self.assertEqual(self.payloads, [])
+
+    def test_authentication_or_credit_refusal_stops_every_remaining_pair(self):
+        for status in (401, 402, 403):
+            with self.subTest(status=status):
+                self.directory = Path(self.temp.name) / str(status)
+                self.payloads = []
+                self.replies = [status]
+                settings = self.settings()
+                summary = self.execute(settings)
+                self.assertEqual(len(self.payloads), 1)
+                self.assertEqual(len(self.rows()), 1)
+                self.assertEqual(summary["completion"]["status"], "interrupted")
+                self.assertFalse(summary["completion"]["complete"])
+                self.assertEqual(summary["completion"]["expected_pairs"], 12)
+                self.assertEqual(summary["completion"]["recorded_pairs"], 1)
+                self.assertEqual(summary["completion"]["unattempted_pair_count"], 11)
+                self.assertEqual(set(summary["arms"]), {"one_shot"})
+                self.assertEqual(summary["arms"]["one_shot"]["pairs_with_completed_model_response"], 0)
+                self.assertEqual(summary["completion"]["by_arm"]["scaffold"]["recorded_pairs"], 0)
+                marker = json.loads((self.directory / "interruption.json").read_text())
+                self.assertEqual(marker["http_status"], status)
+                self.assertEqual(marker["run_instance_id"], settings["run_instance_id"])
+                self.assertFalse(marker["resume_allowed"])
+                report = driver.replay(self.directory)
+                self.assertEqual(report["integrity_errors"], [])
+                self.assertEqual(report["verification_differences"], [])
+                self.assertEqual(report["summary"], summary)
+                with self.assertRaisesRegex(ValueError, "resume is forbidden"):
+                    self.execute(settings, resume=True)
+                self.assertEqual(len(self.payloads), 1)
+
+    def test_prior_deterministic_and_model_results_remain_without_later_slots(self):
+        self.replies = [{"answer": "unknown", "steps": [], "conclusion": None}, 402]
+        summary = self.execute(self.settings(["deterministic_search", "one_shot", "scaffold"]))
+        self.assertEqual(len(self.payloads), 2)
+        self.assertEqual([r["arm"] for r in self.rows()], ["deterministic_search", "one_shot", "scaffold"])
+        self.assertEqual(summary["completion"]["expected_pairs"], 9)
+        self.assertEqual(summary["completion"]["unattempted_pair_count"], 6)
+        self.assertEqual(summary["arms"]["deterministic_search"]["episodes"], 1)
+        self.assertEqual(summary["arms"]["one_shot"]["pairs_with_completed_model_response"], 1)
+        self.assertEqual(summary["paired"]["scaffold_vs_one_shot"]["paired_episodes"], 1)
+
+    def test_refusal_during_repair_retains_earlier_response_but_never_claims_completion(self):
+        self.dataset = benchmark.suite("refused-repair-fixture", "dev", 1)
+        self.replies = [{"answer": "entailed", "steps": [], "conclusion": None}, 403]
+        summary = self.execute(self.settings(["verified_repair"]))
+        self.assertEqual(len(self.payloads), 2)
+        self.assertEqual(self.rows()[0]["selected_attempt"], 0)
+        self.assertEqual(self.rows()[0]["raw_answer"], "entailed")
+        self.assertTrue(summary["completion"]["all_planned_pairs_recorded"])
+        self.assertFalse(summary["completion"]["complete"])
+        self.assertEqual(summary["completion"]["unattempted_pair_count"], 0)
+        self.assertEqual(summary["arms"]["verified_repair"]["pairs_with_completed_model_response"], 1)
+        self.assertEqual(driver.replay(self.directory)["verification_differences"], [])
+
+    def test_missing_or_tampered_marker_cannot_bypass_retained_fatal_refusal(self):
+        self.replies = [402]
+        settings = self.settings()
+        self.execute(settings)
+        marker = self.directory / "interruption.json"
+        marker.unlink()
+        with self.assertRaisesRegex(ValueError, "resume is forbidden"):
+            self.execute(settings, resume=True)
+        self.assertTrue(marker.is_file())
+        saved = json.loads(marker.read_text())
+        run.atomic_json(marker, {**saved, "http_status": 200})
+        with self.assertRaisesRegex(ValueError, "interruption report differs"):
+            self.execute(settings, resume=True)
+        self.assertEqual(len(self.payloads), 1)
+        self.assertTrue(driver.replay(self.directory)["integrity_errors"])
+
+    def test_resume_finds_refusal_when_either_durable_copy_is_missing(self):
+        for missing in ("results.jsonl", "transport.jsonl"):
+            with self.subTest(missing=missing):
+                self.directory = Path(self.temp.name) / missing.replace(".", "-")
+                self.payloads = []; self.replies = [401]
+                settings = self.settings()
+                self.execute(settings)
+                (self.directory / missing).unlink()
+                (self.directory / "interruption.json").unlink()
+                with self.assertRaisesRegex(ValueError, "resume is forbidden"):
+                    self.execute(settings, resume=True)
+                self.assertEqual(len(self.payloads), 1)
+                summary = json.loads((self.directory / "summary.json").read_text())
+                self.assertEqual(summary["completion"]["status"], "interrupted")
+                self.assertEqual(summary["completion"]["unreconciled_dispatches"], 1)
+                self.assertIsNone(summary["completion"]["unattempted_pair_count"])
+                self.assertTrue(driver.replay(self.directory)["integrity_errors"])
+
+    def test_crash_after_refusal_row_before_marker_still_blocks_resume(self):
+        self.replies = [403]
+        settings = self.settings()
+        original = driver.checked_interruption
+        def fail_marker(directory, config, rows, ledger, **kwargs):
+            if driver.interruption_for(config, rows, ledger):
+                raise OSError("fixture crash before interruption marker")
+            return original(directory, config, rows, ledger, **kwargs)
+        with mock.patch.object(driver, "checked_interruption", side_effect=fail_marker):
+            with self.assertRaisesRegex(OSError, "fixture crash"):
+                self.execute(settings)
+        self.assertEqual(len(self.rows()), 1)
+        with self.assertRaisesRegex(ValueError, "resume is forbidden"):
+            self.execute(settings, resume=True)
+        self.assertEqual(len(self.payloads), 1)
+        self.assertEqual(driver.replay(self.directory)["integrity_errors"], [])
+
+    def test_fatal_recovery_withholds_corrupt_scores_and_mismatched_events(self):
+        for corruption in ("scores", "same_reservation_event"):
+            with self.subTest(corruption=corruption):
+                self.directory = Path(self.temp.name) / corruption
+                self.payloads = []; self.replies = [402]
+                settings = self.settings()
+                self.execute(settings)
+                rows = self.rows()
+                if corruption == "scores":
+                    rows[0].update(raw_correct=True, supported_correct=True, answered=True)
+                else:
+                    rows[0]["attempts"][0]["response"]["attempts"][0]["http_status"] = 403
+                self.write_rows(rows)
+                with self.assertRaisesRegex(ValueError, "resume is forbidden"):
+                    self.execute(settings, resume=True)
+                self.assertEqual(len(self.payloads), 1)
+                summary = json.loads((self.directory / "summary.json").read_text())
+                self.assertEqual(summary["arms"], {})
+                self.assertEqual(summary["paired"], {})
+                self.assertFalse(summary["integrity"]["verified"])
+                self.assertTrue(summary["integrity"]["errors"] or summary["integrity"]["verification_differences"])
+                self.assertFalse(summary["completion"]["complete"])
+                self.assertIsNone(summary["completion"]["unattempted_pair_count"])
+
+    def test_http_words_in_model_text_do_not_trigger_endpoint_refusal(self):
+        answer = {"answer": "unknown", "steps": [], "conclusion": None, "comment": "HTTP 401 402 403"}
+        self.replies = [answer, answer, answer]
+        summary = self.execute(self.settings(["one_shot"]))
+        self.assertTrue(summary["completion"]["complete"])
+        self.assertEqual(len(self.payloads), 3)
+        self.assertFalse((self.directory / "interruption.json").exists())
+
+    def test_new_run_gets_new_identity_and_old_refused_identity_remains_stopped(self):
+        settings = self.settings(["one_shot"])
+        self.replies = [402]
+        self.execute(settings)
+        self.directory = Path(self.temp.name) / "fresh-after-external-resolution"
+        self.replies = None
+        fresh = self.settings(["one_shot"])
+        self.assertNotEqual(settings["run_instance_id"], fresh["run_instance_id"])
+        self.assertTrue(self.execute(fresh)["completion"]["complete"])
+
+    def cli(self, *, resume=False):
+        args = ["scaffold_run", "--run-dir", str(self.directory), "--seed", "offline-scaffold-fixture",
+                "--count", "3", "--connection-service", "fixture", "--reasoning-effort", "medium",
+                "--arms", "one_shot"] + (["--resume"] if resume else [])
+        real_client = self.module.ProposerClient
+        def client(config, **kwargs):
+            return real_client(config, transport=self.scripted_transport, **kwargs)
+        with mock.patch("sys.argv", args), mock.patch.object(driver.run, "load_client", return_value=(self.module, self.client_path)), \
+                mock.patch.object(self.module, "load_running_service_config", return_value=self.config), \
+                mock.patch.object(self.module, "ProposerClient", side_effect=client), contextlib.redirect_stdout(io.StringIO()):
+            driver.main()
+
+    def test_cli_exits_nonzero_for_interruption(self):
+        self.replies = [402]
+        with self.assertRaises(SystemExit) as raised:
+            self.cli()
+        self.assertEqual(raised.exception.code, 2)
+        self.assertEqual(len(self.payloads), 1)
+
+    def test_cli_normal_resume_preserves_saved_instance_identity(self):
+        self.cli()
+        saved = (self.directory / "run_config.json").read_bytes()
+        count = len(self.payloads)
+        self.cli(resume=True)
+        self.assertEqual((self.directory / "run_config.json").read_bytes(), saved)
+        self.assertEqual(len(self.payloads), count)
+
+    def test_legacy_artifacts_are_rejected_without_rewriting_them(self):
+        settings = self.settings(["one_shot"])
+        self.execute(settings)
+        legacy = {**settings, "schema": "reasoning.scaffold-run.v1"}
+        legacy.pop("run_instance_id")
+        run.atomic_json(self.directory / "run_config.json", legacy)
+        before = {p.name: p.read_bytes() for p in self.directory.iterdir() if p.is_file()}
+        count = len(self.payloads)
+        with self.assertRaisesRegex(ValueError, "unsupported scaffold run"):
+            self.execute(legacy, resume=True)
+        self.assertEqual({p.name: p.read_bytes() for p in self.directory.iterdir() if p.is_file()}, before)
+        self.assertEqual(len(self.payloads), count)
 
 
 if __name__ == "__main__":

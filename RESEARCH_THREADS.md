@@ -128,9 +128,12 @@ and incentives → positioning/flows → conditional price response → executab
 signal after costs. Use the recovered private Futures-Reversal source as the
 first concrete case. Preserve exploratory chains with uncertain or weak marginal
 links, then test their conditional consequences; checked admission applies to
-claimed conclusions, not permission to form a hypothesis. Recover the producing
-notebook and suitable intraday data before claiming reproduction or new alpha.
-The numerical and proof experiments below support this application.
+claimed conclusions, not permission to form a hypothesis. Reproducing the
+reported source figures requires its producing notebook and data. A separately
+declared reconstruction can proceed without that notebook once suitable NQ
+intraday data are available, but needs its own frozen definitions and independent
+confirmation before any alpha claim. The numerical and proof experiments below
+support this application.
 
 1. **Causality and evidence (R01,12,14,18,21,29,30):** freeze fitting and selection on
    eligible history; perturb unseen suffixes, replays and certificate revisions.

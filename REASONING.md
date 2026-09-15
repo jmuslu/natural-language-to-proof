@@ -55,7 +55,8 @@ of successful composition.
 
 ## Comparisons and metrics
 
-All arms use the same initial prompt, model, tasks, and resource ceilings:
+The original proof-proposal runner compares three arms with the same initial
+prompt, model, tasks and resource ceilings:
 
 1. `one_shot`: one proposal, retained as the cheaper reference.
 2. `self_refine`: generic independent review within the remaining caps.
@@ -180,6 +181,117 @@ PYTHONPATH=corpus python3 -m reasoning.scaffold_run \
   --run-dir corpus/runtime/reasoning/scaffold-mini-medium-dev-v1 --replay
 ```
 
+## Completed explicit-medium test, including endpoint refusals
+
+The frozen comparison covered `openai/gpt-5.4-mini` and `openai/gpt-5.5` on the
+same 45 worlds: depths 4/6/8, five topologies, and three gold outcomes.
+There are 30 answerable worlds and 15 unknowns. Each model has 180 unique
+episode/arm records. Independent audits reproduce both summaries, all prompt and
+source bindings, proofs, tool actions and usage ledgers, with zero integrity
+errors or verification differences. Settings were not tuned during these tests.
+
+Mini completed normally. GPT-5.5 encountered **23 HTTP 402 endpoint refusals**
+from episode 38 onward: eight one-shot, seven verified and eight scaffold pairs.
+The retained artifacts contain the status, empty text and absent usage, but no
+message establishing the specific account/credit cause. These are service errors,
+not model-generated malformed answers. All failures remain in the full test
+denominators; this interruption prevents a clean model-capability comparison.
+
+| Model | Arm | Raw correct | Supported proofs | Correct unknowns | Calls | Charged tokens | Reported reasoning subset |
+|---|---|---:|---:|---:|---:|---:|---:|
+| GPT-5.4-mini | One-shot | 45/45 | 24/30 | 15/15 | 45 | 155,618 | 30,718 |
+| GPT-5.4-mini | Verified repair | 45/45 | 30/30 | 15/15 | 52 | 188,498 | 38,998 |
+| GPT-5.4-mini | Scaffold | 37/45 | 18/30 | 15/15 | 192 | 1,006,313 | 144,144 |
+| GPT-5.5 | One-shot | 37/45 | 22/30 | 12/15 | 45 | 256,756 | 11,519 |
+| GPT-5.5 | Verified repair | 38/45 | 26/30 | 12/15 | 48 | 255,008 | 12,935 |
+| GPT-5.5 | Scaffold | 37/45 | 25/30 | 12/15 | 243 | 1,302,860 | 59,746 |
+| Symbolic search, each run | Deterministic | 45/45 | 30/30 | 15/15 | 0 | 0 | Unavailable |
+
+Within the verified arm, mini started with 24/30 valid proofs and repaired all
+six rejected cases using seven extra calls. The separate one-shot arm uses
+independent initial samples, so its aggregate difference is not itself a count
+of repaired proofs.
+
+Mini's scaffold stopped on its own in all 45 worlds: eight premature unknowns
+on answerable tasks and four asserted finishes without a derivation caused its
+support deficit. There were no
+cap or transport stops. Three unknown-candidate rejections occurred in one case.
+The tool therefore did not improve mini's result despite substantially greater
+token use. Supplied local applications do not ensure that a model selects or
+finishes them correctly.
+
+GPT-5.5's verified arm started with 23 valid proofs and repaired three invalid
+proofs in three extra calls; four answerable cases and three unknowns ended with HTTP 402
+errors. Its scaffold had 37 caller finishes and eight transport stops, with no
+premature unknowns or unsupported asserted finishes. One malformed action was
+corrected during a successfully completed episode. The one-shot arm also had
+three correct labels whose proofs were rejected.
+
+As a **post hoc diagnostic**, the 37 worlds completed by all GPT-5.5 arms contain
+25 answerable cases and 12 unknowns. On those same worlds, both models' verified
+arms supply 25/25 proofs; one-shot supplies mini 20/25 and GPT-5.5 22/25, while
+scaffold supplies mini 15/25 and GPT-5.5 25/25. This service-complete subset was
+selected after observing the refusals, is not randomly missing, and does not
+replace the full test or establish general model parity.
+
+Paired support counts retain improvements and regressions on identical worlds:
+
+| Model / scaffold comparator | Both supported | Scaffold only | Comparator only | Neither |
+|---|---:|---:|---:|---:|
+| Mini / one-shot | 14 | 4 | 10 | 17 |
+| Mini / verified repair | 18 | 0 | 12 | 15 |
+| GPT-5.5 / one-shot | 22 | 3 | 0 | 20 |
+| GPT-5.5 / verified repair | 25 | 0 | 1 | 19 |
+
+Each row spans 45 worlds. Neither includes the 15 gold unknowns, which cannot
+earn proof credit. GPT-5.5's differences also reflect the timing of service
+refusals; they do not isolate a policy effect.
+
+Charged tokens are **local budget accounting**, not a vendor invoice.
+All 289 mini calls have provider usage, totaling 1,350,429 tokens. GPT-5.5 has
+313 provider-accounted calls totaling 1,367,211 tokens plus 23 refusals whose
+unknown usage retains 447,413 conservatively reserved tokens. Its local charged
+total is therefore 1,814,624; the extra reservation is not established consumption.
+Conservative estimates are not guaranteed invoice or tokenization bounds, and
+the recorded refusals do not establish whether those requests were billed.
+Reported reasoning tokens are a subset of completion tokens, already included
+in provider usage. There were zero certified false assertions, token/output
+overrun flags or observed episode/request time-limit exceedances.
+The two runs overlapped; their elapsed times are descriptive, not a controlled model-speed comparison.
+The legacy `transport_elapsed_seconds` summary field includes local overhead
+between responses. Independent audits also retain the sum of request-event times.
+Symbolic CPU work is counted explicitly; its elapsed time was not measured here.
+
+The HTTP refusals exposed a dispatch defect: this frozen runner continued with
+later tasks after an unrecoverable endpoint response. The subsequent runner
+change interrupts the run on recorded HTTP 401/402/403, retains partial metrics,
+and refuses automatic resume of that fatal event. It does not rerun or rewrite
+this experiment. No further paid test was launched.
+
+**Conclusion within this test:** checked repair is a useful simpler path for
+mini, and the supplied finite rule worlds are already exactly solvable without
+a model. This is evidence for bounded proof composition under supplied rules,
+not faithful extraction of arbitrary text, induction of economic mechanisms,
+frontier parity, or discovered alpha. These inspected test worlds are now consumed
+evaluation data. Any later tuning needs a fresh distribution or held-out seed.
+
+Full records and independent audits stay under ignored
+`corpus/runtime/reasoning/scaffold-mini-medium-test-v1/` and
+`corpus/runtime/reasoning/scaffold-55-medium-test-v1/`.
+
+Their exact source checkpoint is NL `29787a0` with QR `618baad`; strict replay
+must use those versions after the subsequent runner change. Run the commands
+below from that source checkout, with an absolute path to the retained run
+directory if using a separate worktree. Never alter stored source hashes to
+make current code pass historical replay.
+
+```sh
+PYTHONPATH=corpus python3 -m reasoning.scaffold_run \
+  --run-dir corpus/runtime/reasoning/scaffold-mini-medium-test-v1 --replay
+PYTHONPATH=corpus python3 -m reasoning.scaffold_run \
+  --run-dir corpus/runtime/reasoning/scaffold-55-medium-test-v1 --replay
+```
+
 ## Receipt-backed proofs
 
 A task fact can declare `"oracle":{"kind":"passes_validation","run_id":"..."}`.
@@ -205,72 +317,34 @@ The connected `corpus/pipeline.py` also accepts `--proof-task` and
 `proof_report.json`; rejected or malformed input replaces any stale successful
 report and makes the CLI exit unsuccessfully.
 
-## Measured model checkpoints
+## Historical omitted-effort checkpoints
 
-All runs below used the same `typed-worlds-v2` data and `proof-proposer-v1`
-prompt, through the existing OpenRouter connection. Model IDs are explicit;
-there was no automatic model substitution. Development used three two-hop
-episodes, one per answer, at 24,000 tokens / two calls / 100 seconds per arm.
-Test used 15 episodes at depths 4/6/8 and all five topologies, with 48,000 tokens /
-two calls / 120 seconds per arm. Every call allowed 4,096 output tokens.
+Earlier runs used `typed-worlds-v2`/`proof-proposer-v1` through OpenRouter, with
+reasoning effort omitted. Official defaults differ:
+[GPT-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini) defaults
+to `none`, [GPT-5.5](https://developers.openai.com/api/docs/models/gpt-5.5) to
+`medium`; intermediary behavior was not independently attested. These results
+cannot establish a matched-effort model comparison or mini's reasoning ceiling.
 
-| Split / exact model | Arm | Raw correct | Supported / answerable | Correct raw unknowns | Calls | Charged tokens |
-|---|---|---:|---:|---:|---:|---:|
-| Dev / `minimax/minimax-m2.7` | One-shot | 3/3 | 2/2 | 1 | 3 | 9,883 |
-| Dev / MiniMax | Self-review | 3/3 | 1/2 | 1 | 6 | 17,739 |
-| Dev / MiniMax | Verified repair | 3/3 | 2/2 | 1 | 3 | 7,112 |
-| Dev / `openai/gpt-5.5` | One-shot | 3/3 | 2/2 | 1 | 3 | 5,277 |
-| Dev / GPT-5.5 | Self-review | 3/3 | 2/2 | 1 | 6 | 10,911 |
-| Dev / GPT-5.5 | Verified repair | 3/3 | 2/2 | 1 | 3 | 5,333 |
-| Dev / `openai/gpt-5.4-mini` | One-shot | 2/3 | 0/2 | 0 | 3 | 5,087 |
-| Dev / GPT-5.4-mini | Self-review | 1/3 | 1/2 | 0 | 6 | 10,437 |
-| Dev / GPT-5.4-mini | Verified repair | 3/3 | 2/2 | 1 | 5 | 8,493 |
-| Test / MiniMax | One-shot | 9/15 | 5/10 | 4 | 15 | 83,475 |
-| Test / MiniMax | Self-review | 7/15 | 2/10 | 3 | 23 | 119,234 |
-| Test / MiniMax | Verified repair | 9/15 | 6/10 | 3 | 15 | 85,966 |
-| Test / GPT-5.5 | One-shot | 15/15 | 10/10 | 5 | 15 | 46,464 |
-| Test / GPT-5.5 | Self-review | 15/15 | 10/10 | 5 | 30 | 96,193 |
-| Test / GPT-5.5 | Verified repair | 15/15 | 10/10 | 5 | 16 | 50,751 |
-| Test / GPT-5.4-mini | One-shot | 6/15 | 0/10 | 2 | 15 | 41,295 |
-| Test / GPT-5.4-mini | Self-review | 6/15 | 0/10 | 3 | 30 | 85,750 |
-| Test / GPT-5.4-mini | Verified repair | 7/15 | 0/10 | 5 | 26 | 74,408 |
+The 15-world historical test used depths 4/6/8 and five topologies, with ten
+answerable worlds; per-arm caps were 48,000 tokens, two calls, 4,096 output tokens
+per call and 120 seconds. Request timeouts were 60 seconds for MiniMax and 30
+for the explicit GPT wrapper.
 
-These historical requests **omitted reasoning effort**. Official model defaults
-currently differ: [GPT-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini)
-defaults to `none`, while [GPT-5.5](https://developers.openai.com/api/docs/models/gpt-5.5)
-defaults to `medium`. The OpenRouter behavior was not independently attested.
-Thus the table measures those endpoint configurations, not a matched-effort
-comparison or the smaller model's reasoning ceiling. Later runs must request
-matched effort explicitly and report the returned usage.
+| Exact model | Supported one-shot / self-review / verified | Raw correct, same arms |
+|---|---|---|
+| `minimax/minimax-m2.7` | 5 / 2 / 6 of 10 | 9 / 7 / 9 of 15 |
+| `openai/gpt-5.5` | 10 / 10 / 10 of 10 | 15 / 15 / 15 of 15 |
+| `openai/gpt-5.4-mini` | 0 / 0 / 0 of 10 | 6 / 6 / 7 of 15 |
 
-Under that omitted-effort configuration, the smaller model's development success
-did **not** generalize to longer chains: none of its test proposals supplied a
-valid supported answer. Its test raw false
-assertions were 7/4/2 across the three arms; all were rejected. GPT-5.5 completed
-all answerable test proofs, including one successful feedback repair, with no
-aggregate improvement over its one-shot result. MiniMax's verified arm had no
-successful repairs. Its final transport status was error in 5/7/6 test pairs,
-often because generation exhausted the output allowance before usable assistant
-text. This run cannot separate that limitation from reasoning difficulty.
+MiniMax frequently exhausted output before usable text; GPT-5.5 repaired one
+proof. All six development/test runs historically replayed with zero integrity
+errors, verification differences, certified false assertions or budget overruns.
+Together they charged 763,808 tokens; access smokes used 117 additional tokens.
+All are consumed development evidence. Their immutable configs retain exact
+development caps, source/prompt/data hashes, responses and accounting.
 
-All six runs replayed with zero verification differences or integrity errors
-against their recorded source versions;
-all had zero certified false assertions and zero budget overruns. MiniMax used
-a 60-second request timeout; the explicit GPT connection wrapper used 30 seconds.
-Recorded response times and transport events permit inspection of that difference.
-Independent first samples per arm and this small sample size limit causal method
-comparisons. These are finite synthetic composition results, not evidence of
-frontier-level general reasoning or alpha discovery. Inspected test tasks are now
-consumed evaluation data; later tuning needs fresh seeds and compositions.
-Strict replay checks source hashes: use the recorded historical code when
-replaying these runs after a client or runner change; never rewrite old hashes
-to make them match new code.
-
-Artifacts under ignored `corpus/runtime/reasoning/` are `dev-v2-a`, `test-v2-a`,
-`dev-gpt55-a`, `test-gpt55-a`, `dev-gpt54mini-a`, and `test-gpt54mini-a`.
-The six runs charged 763,808 tokens in total; two prior access smokes used 117
-additional tokens. Immutable run configs record model/endpoint, full dataset,
-source code and prompt hashes, caps, and exact responses.
-
-- Development dataset SHA256: `16f03b28ebe15b7a0adb1827036571b97aef278786ddce2444ee93ad0c232163`
-- Prompt SHA256: `be83bf0c2fd36590753356cdb4846ea18a88a5e5718076b3b3fa46ac9ec93115`
+Artifacts are `dev-v2-a`, `test-v2-a`, `dev-gpt55-a`, `test-gpt55-a`,
+`dev-gpt54mini-a`, and `test-gpt54mini-a` under ignored `corpus/runtime/reasoning/`.
+Strict replay requires their recorded historical code; never rewrite old hashes
+to fit changed client or runner sources.
