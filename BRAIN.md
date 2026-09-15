@@ -207,6 +207,23 @@ the model is surprised.
   `grounding` block (mechanism-ablation, all-holds Stouffer sweep, cross-sectional
   specificity, deployment/basis Sharpe) and is cross-checked against the real nl2proof
   colimit: **loop closed end-to-end across both repos.**
+  11. `reason.py` — domain-general typed reasoning composition, lifting nl2proof's own
+     `Ty`/`catTy`/combinator discipline (src/NL2Proof/Semantics/Lambda.hs, Syntax/Category.hs,
+     CCGRules.hs) into the brain so the parser, estimands, and multi-hop inference speak ONE
+     type algebra. Composition is combinator application under type unification; the type
+     functor refuses ill-typed steps (soundness under the hood); confidence degrades honestly
+     over hops; a grounded signal enters as a `t`-typed proposition (`from_grounding`). Shown
+     identical across linguistic, abstract, and trading composition — **robustness of
+     reasoning is domain-general; the trading domain is an instantiation, not the point.**
+  12. `abstain.py` — the faithfulness gate: the discrete invariant stays faithful by
+     REFUSING to ingest low-confidence labels (calibration-NULL / belief-gate applied to
+     induction), not by softening. Under 25% flipped labels, ingest-all corrupts the
+     invariant (R=∅) while abstaining keeps the exact invariant and generalizes on FEWER
+     labels. **Not everything should be ingested, by design — the projection's value is its
+     faithfulness.**
+  Note (dropped): a portfolio-Sharpe `compose.py` was written and removed — the Sharpe
+  framing was domain-overfit; composition belongs at the typed-reasoning level (`reason.py`),
+  not the finance-metric level.
 - **Remaining — measurement plane (agentic-qr) so REAL backtests emit a `grounding`
   block:** mechanism-ablation, all-holds/parameter-axis sweep with pooled meta-p,
   thesis-predicted cross-sectional specificity, deployment/support + basis-typed Sharpe,
