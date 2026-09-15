@@ -105,6 +105,19 @@ disposes of it.
 - **[open]** the brain is corpus-size-limited: imputation stays not-licensed until more
   claims are externally checked. The fix is *more external checks* (the frontier proposes
   them), not tuning.
+- **[built] Discovery-brain mechanics (`BRAIN.md`; `corpus/estimand.py`, `multihop.py`,
+  wired into `ingest_outcomes.py`).** Reverse-propagation upgraded from the one-bit hole
+  (`passed→±1`, flat 0.3) to a *typed numerical* update: an estimand carries value·σ·
+  units·**basis**·support; measurements update a conjugate/robust posterior; grounding is
+  a **colimit** of externally-checked legs whose *multiplicity* (provenance-independent
+  bindings) sets a graded verdict + edge weight — an ungrounded apex earns **no** belief.
+  Adds multi-hop reasoning (uncertainty composing honestly, two-gate exploration/belief
+  guard) and **synthetic inference** (propose a signal by abstraction from a method-class;
+  method trust rises across independent domains). Proven end-to-end on the real
+  Futures-Reversal fixture (grounds NQ, refuses the ablation & YM controls, basis-types the
+  Sharpe 0.70→3.26) and generalized to a **neuromorphic** bifurcation-reversal signal. All
+  self-tests green. *Open:* the measurement plane (agentic-qr) must emit the `grounding`
+  block for real backtests; estimand identity/registry; non-stationary/regime estimands.
 
 ## 5. Temporal discipline (`TEMPORAL.md`, condensed)
 

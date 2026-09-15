@@ -25,6 +25,11 @@ import sys
 from build_graph import build
 from epistemic_graph import EpistemicGraph
 
+try:
+    from estimand import Leg, colimit   # graded reverse-prop (typed grounding)
+except Exception:                        # optional: legacy ±1 path works without it
+    Leg = colimit = None
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -38,13 +43,37 @@ def outcome_verdict(result: dict):
     return None
 
 
+def resolve_verdict(result: dict):
+    """(verdict, edge_weight, mode). If the result carries a structured `grounding`
+    block (mechanism-entailed legs), grade it via the estimand colimit — an ungrounded
+    apex yields (0.0, 0.0, 'refused'): the brain declines to update belief from a signal
+    whose facts do not bind, and multiplicity sets the edge weight (a multiply-realized
+    apex moves upstream trust more than a lone pattern). Otherwise fall back to the legacy
+    pass/fail -> ±1 at the flat 0.3 weight, so existing results keep working unchanged."""
+    grounding = result.get("grounding")
+    if grounding and colimit is not None:
+        legs = []
+        for d in grounding:
+            d = dict(d)
+            d["provenance"] = frozenset(d.get("provenance", []))
+            legs.append(Leg(**d))
+        apex = (result.get("attribution", {}) or {}).get("hypothesis_id", "apex")
+        r = colimit(apex, legs)
+        return (r.verdict, r.edge_weight, "grounded" if r.grounded else "refused")
+    v = outcome_verdict(result)
+    if v is None:
+        return (None, 0.0, "no_verdict")
+    return (v, 0.3, "legacy")
+
+
 def ingest_outcome(g: EpistemicGraph, result: dict, oid: str) -> dict:
     """Attach one backtest outcome to the graph and reverse-propagate it to the
     claims named in result['attribution']['claim_refs']. Returns a report."""
     attrib = result.get("attribution", {}) or {}
     claim_refs = attrib.get("claim_refs", []) or []
-    verdict = outcome_verdict(result)
-    report = {"outcome_id": oid, "verdict": verdict, "claim_refs": claim_refs,
+    verdict, edge_weight, mode = resolve_verdict(result)
+    report = {"outcome_id": oid, "verdict": verdict, "edge_weight": edge_weight,
+              "mode": mode, "claim_refs": claim_refs,
               "resolved": [], "unresolved_refs": [], "skipped_reason": None}
     if verdict is None:
         report["skipped_reason"] = "no validation verdict on result"
@@ -68,7 +97,7 @@ def ingest_outcome(g: EpistemicGraph, result: dict, oid: str) -> dict:
         else:
             report["unresolved_refs"].append(cref)
     g.add_edge(sid, onode, "feeds")
-    g.implicate_from_outcome(onode, verdict=verdict)
+    g.implicate_from_outcome(onode, verdict=verdict, edge_weight=edge_weight)
     return report
 
 
@@ -99,8 +128,41 @@ def _selftest():
     # a result with no claim_refs is skipped, not crashed on
     rep2 = ingest_outcome(g, {"validation": {"passed": True}}, "no_attrib")
     assert rep2["skipped_reason"], rep2
+
+    # graded path: a result carrying a structured `grounding` block is scored by the
+    # estimand colimit. A grounded, multiply-realized apex updates trust with an edge
+    # weight > the flat 0.3; a refused apex (a leg fails) does NOT move trust at all.
+    if colimit is not None:
+        grounded_legs = [
+            {"name": "edge_all_holds", "kind": "prediction", "effect": 5.4,
+             "stderr": 1.9, "provenance": ["NQ_ts"], "direction": 1},
+            {"name": "ablation_collapses", "kind": "necessity", "effect": -0.2,
+             "stderr": 1.2, "provenance": ["NQ_abl"]},
+            {"name": "cross_present", "kind": "specificity", "effect": 5.4, "stderr": 1.9,
+             "provenance": ["cross"], "direction": 1, "present": True},
+        ]
+        g2 = build()
+        rg = ingest_outcome(g2, {
+            "attribution": {"hypothesis_id": "hyp_grounded", "claim_refs": ["003-a"]},
+            "grounding": grounded_legs}, "grounded_run")
+        g2.propagate()
+        assert rg["mode"] == "grounded" and rg["edge_weight"] > 0.3, rg
+        assert g2.trust_of("claim:003-a") > 0.0, g2.trust_of("claim:003-a")
+
+        refused_legs = list(grounded_legs)
+        refused_legs[1] = {"name": "ablation_collapses", "kind": "necessity",
+                           "effect": 4.0, "stderr": 1.2, "provenance": ["NQ_abl"]}
+        g3 = build()
+        rr = ingest_outcome(g3, {
+            "attribution": {"hypothesis_id": "hyp_refused", "claim_refs": ["003-a"]},
+            "grounding": refused_legs}, "refused_run")
+        g3.propagate()
+        assert rr["mode"] == "refused" and rr["edge_weight"] == 0.0, rr
+        assert abs(g3.trust_of("claim:003-a")) < 1e-9, g3.trust_of("claim:003-a")
+
     print("ingest_outcomes selftest: PASS "
-          "(real claim_refs resolved + reverse-propagated; missing attribution skipped cleanly)")
+          "(legacy claim_refs resolved + reverse-propagated; missing attribution skipped; "
+          "graded grounding updates trust, refused grounding does not)")
 
 
 def main():
