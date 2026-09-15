@@ -1,34 +1,26 @@
-"""selector.py — the machinery that uses the alternates IN TANDEM, switching by situation.
+"""Heuristic selection among numerical methods under one decision standard.
 
-The alternates (alternates.py) are a repertoire, not a menu to pick once. This is the
-meta-layer that IS the intelligence: for each call it runs the cheap machinery first and
-ESCALATES to the heavy one only when the situation is near a decision boundary (small-n,
-outlier, nonlinearity, marginal leg), then records where cheap and heavy diverged — the
-learning signal that, over time, tunes the escalation thresholds.
-
-  build lightweight -> test -> where it disagrees, go heavy -> compare -> learn -> steer.
-
-Cost-aware (don't pay for particles/MC when Gaussian/delta agree) and robust (pay when it
-matters). Dependency-free. Run: python3 selector.py
+Disagreement can trigger investigation; it does not identify which method is
+right. Paired external losses, latency and cost determine whether escalation
+helped. See adaptive_evaluation.py for independent-outcome policy experiments.
 """
 from __future__ import annotations
 
 import math
 
-from alternates import (up_gaussian, up_particle, up_interval, gr_strict, gr_quorum,
+from alternates import (up_gaussian, up_particle, up_interval,
                         prop_delta, prop_mc, propose_abstraction, propose_composition,
                         propose_bifurcation)
 
-# the learning signal: (mechanic, divergence) each time escalation found the cheap
-# machinery wrong. A rising divergence rate in a regime is the cue to lower its threshold.
+# Diagnostic disagreement only; neither method supplies its own error label.
 DIVERGENCE_LOG: list = []
 
 
 def select_update(pm, ps, est, se, n, z_conflict=4.0, n_min=30):
-    """Gaussian is cheap and correct when tails are thin, sampling is ample, and the
-    measurement is consistent with the prior. Escalate to a robust (particle) posterior —
-    and an interval conflict check — only when n is small OR the standardized discrepancy
-    is large (a potential outlier)."""
+    """A fixed heuristic chooses Gaussian or heavy-tailed particle assumptions.
+    Small n or prior discrepancy triggers a second calculation, not proof that
+    the particle answer is more accurate. These assumptions need external scoring.
+    """
     g = up_gaussian(pm, ps, est, se, n)
     z_disc = abs(est - pm) / math.sqrt(ps**2 + se**2)
     if n >= n_min and z_disc <= z_conflict:
@@ -45,19 +37,29 @@ def select_update(pm, ps, est, se, n, z_conflict=4.0, n_min=30):
 
 
 def select_ground(legs, z=1.64, margin=0.6):
-    """Strict colimit when every prediction leg is comfortably clear of the threshold
-    (it and quorum agree, and strict is the cleaner statement). Switch to the HYBRID
-    quorum (strict necessity + quorum predictions) when any prediction leg sits NEAR the
-    boundary, so one marginal check cannot prune a real signal."""
+    """Apply one strict screening criterion regardless of computational margin.
+
+    Marginal legs request review; they never switch the claim to a quorum.
+    This legacy t-statistic screen is not an external certificate. In particular,
+    its abs(t)<1 necessity screen is not an equivalence or causal necessity test.
+    Conf is a binary screen result, not a calibrated probability or truth token.
+    """
+    if any(type(x) not in (int, float) or not math.isfinite(x) or x < 0 for x in (z, margin)):
+        raise ValueError("finite nonnegative screen threshold and review margin required")
+    legs = list(legs)
+    for leg in legs:
+        if (leg.get("kind") not in ("prediction", "specificity", "necessity")
+                or type(leg.get("t")) not in (int, float) or not math.isfinite(leg["t"])
+                or type(leg.get("dir")) not in (int, float) or leg["dir"] not in (-1, 1)):
+            raise ValueError("each screen leg needs a recognized kind, finite t, and signed direction")
     preds = [l for l in legs if l["kind"] != "necessity"]
     near = [l for l in preds if abs(l["dir"] * l["t"] - z) < margin]
-    if not near:
-        c, note = gr_strict(legs)
-        return {"conf": c, "machinery": "strict", "escalated": False,
-                "why": "all prediction legs clear of the boundary -> strict"}
-    c, note = gr_quorum(legs)
-    return {"conf": c, "machinery": "quorum(hybrid)", "escalated": True,
-            "why": f"{len(near)} marginal prediction leg(s) near boundary -> quorum ({note})"}
+    passed = bool(preds) and all(abs(l["t"]) < 1 if l["kind"] == "necessity"
+                                 else l["dir"]*l["t"] >= z for l in legs)
+    return {"conf": float(passed), "accepted": passed, "grounded": False,
+            "machinery": "strict", "escalated": False, "requires_review": bool(near),
+            "decision_standard": "all prediction/specificity thresholds and legacy null screen",
+            "why": f"strict criterion retained; {len(near)} marginal prediction leg(s) require review"}
 
 
 def select_propagate(mu, sd, f, dfdx, tol=0.02, probe_N=2000):
@@ -77,8 +79,9 @@ def select_propagate(mu, sd, f, dfdx, tol=0.02, probe_N=2000):
 
 
 def select_proposers(method_classes, grounded, scan):
-    """Discovery never prunes: run every proposer and union the candidates. Breadth of
-    exploration is free (belief is gated elsewhere)."""
+    """Union this finite repertoire's candidates; downstream evidence gates belief.
+    Larger repertoires need explicit computation and candidate budgets.
+    """
     cands = (propose_abstraction(method_classes) | propose_composition(grounded)
              | propose_bifurcation(scan))
     return {"candidates": cands, "machinery": "abstraction+composition+bifurcation",
@@ -106,7 +109,8 @@ def _selftest():
     g_marg = select_ground(marginal)
     show("coherent legs", g_ok)
     show("one marginal leg", g_marg)
-    assert g_ok["machinery"] == "strict" and g_marg["machinery"].startswith("quorum") and g_marg["conf"] > 0
+    assert g_ok["conf"] == 1 and g_marg["conf"] == 0 and g_marg["requires_review"]
+    assert not g_ok["grounded"] and not select_ground([])["accepted"]
 
     print("PROPAGATE:")
     p_lin = select_propagate(0.7, 0.15, lambda x: 2 * x, lambda x: 2.0)
@@ -121,13 +125,13 @@ def _selftest():
     print(f"  candidates             -> {sorted(pr['candidates'])}")
     assert any("x" in c for c in pr["candidates"]) and any("bifurcation" in c for c in pr["candidates"])
 
-    print(f"\nLEARNING SIGNAL (where escalation caught the cheap machinery wrong):")
+    print(f"\nDISAGREEMENT DIAGNOSTICS (accuracy requires independent outcomes):")
     for mech, div in DIVERGENCE_LOG:
-        print(f"  {mech:10} divergence {div:.3f}  (a rising rate here => lower this regime's threshold)")
+        print(f"  {mech:10} divergence {div:.3f}")
     assert len(DIVERGENCE_LOG) >= 2
 
-    print("\nselector selftest: PASS — machineries used in tandem, switching by situation; "
-          "escalates only when it pays; divergences logged as the learning signal.")
+    print("\nselector checks: PASS — strict standard preserved; numerical method disagreement recorded. "
+          "These checks do not establish that escalation improves accuracy.")
 
 
 if __name__ == "__main__":

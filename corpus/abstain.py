@@ -1,77 +1,113 @@
-"""abstain.py — the discrete structure stays faithful by REFUSING to ingest noise.
+"""Calibrate a selective decision using independently checked outcomes.
 
-The caveat that reframes "grok under noisy labels": a discrete invariant is a PROJECTION,
-and its value is its faithfulness. Softening it to absorb every noisy/soft label loses
-exactly what makes it worth having. So the right move under label noise is not to soften —
-it is to ABSTAIN: ingest a label into the discrete invariant only when it is externally
-well-checked; leave the rest to the soft layer. Selectivity keeps the projection faithful.
-
-This is the calibration-NULL discipline (don't impute from what isn't checked) and the
-belief-gate, applied to concept induction. Demonstrated: with flipped low-confidence
-labels, the naive grokker (ingests all) has its invariant CORRUPTED and its generalization
-collapses; the abstaining grokker (ingests only high-confidence) keeps the exact invariant
-and generalizes — on FEWER labels. Faithfulness > quantity. Dependency-free.
+Scores are fallible predictions of correctness. Calibration uses separate labeled
+examples; no score reveals whether that example's label was actually corrupted.
+The finite-threshold bound assumes independent examples from the deployment
+distribution. It does not certify risk after a quality or context shift.
 """
 from __future__ import annotations
 
-import os
-import random
-import sys
+from dataclasses import dataclass
+import math
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from grok import Grokker, sample_signal, is_real, CORE, KILLER
+from grok import sample_signal
 
 
-def labeled_stream(rng, n, p_noise=0.25):
-    """Each example carries a CONFIDENCE reflecting external-check quality. A noisy label
-    is FLIPPED and comes with low confidence (the oracle was unsure); clean labels are
-    high-confidence. (In the real system the confidence is the certificate's, not a tag we
-    peek at — here it stands in for how well-checked the outcome is.)"""
+def probability(value):
+    if type(value) not in (int, float) or not math.isfinite(value) or not 0 <= value <= 1:
+        raise ValueError("finite probability in [0,1] required")
+    return float(value)
+
+
+def labeled_stream(rng, n, p_noise=.25, *, shifted=False):
+    """Simulated fallible label source; quality is drawn before label corruption.
+
+    Same-quality rows contain both correct and incorrect labels. Under shifted=True
+    the confidence ranking reverses; a threshold frozen on the old channel can fail.
+    The synthetic target remains hidden from the consumer of this stream.
+    """
+    probability(p_noise)
+    if type(n) is not int or n < 0:
+        raise ValueError("nonnegative integer sample count required")
+    qualities = (max(.01, 1-1.8*p_noise), 1-p_noise, min(.99, 1-.2*p_noise))
     out = []
     for _ in range(n):
-        f, y, _ = sample_signal(rng, "market")
-        if rng.random() < p_noise:
-            out.append((f, not y, 0.30))       # flipped + low confidence
-        else:
-            out.append((f, y, 0.95))           # clean + high confidence
+        feats, truth, _ = sample_signal(rng, "market")
+        quality = rng.choice(qualities)
+        actual = max(0., min(1., 1.25-quality)) if shifted else quality
+        label = truth if rng.random() < actual else not truth
+        out.append((feats, label, quality))
     return out
 
 
+@dataclass(frozen=True)
+class Threshold:
+    value: float | None
+    max_risk: float
+    alpha: float
+    calibration: tuple
+
+    def accepts(self, score):
+        score = probability(score)
+        return self.value is not None and score >= self.value
+
+    def to_dict(self):
+        return {"threshold": self.value, "max_risk": self.max_risk, "alpha": self.alpha,
+                "calibration": list(self.calibration),
+                "bound": "finite-threshold Hoeffding union bound; independent same-distribution examples required"}
+
+
+def checked_rows(rows):
+    result = []
+    for score, prediction, truth in rows:
+        if type(prediction) is not bool or type(truth) is not bool:
+            raise ValueError("Boolean predictions and independently checked Boolean outcomes required")
+        result.append((probability(score), prediction, truth))
+    return result
+
+
+def fit_threshold(rows, *, max_risk=.1, alpha=.05, thresholds=(.5, .7, .8, .9, .95)):
+    """Choose greatest calibration coverage among thresholds passing a risk bound.
+
+    Candidate thresholds must be fixed before inspecting these outcomes. The
+    union bound covers selection among that finite family, including threshold ties.
+    No passing threshold yields a valid all-abstain policy.
+    """
+    rows = checked_rows(rows)
+    probability(max_risk)
+    if not 0 < probability(alpha) < 1:
+        raise ValueError("alpha must be strictly between zero and one")
+    candidates = sorted(set(probability(t) for t in thresholds))
+    if not candidates:
+        raise ValueError("a prespecified finite threshold family is required")
+    reports = []
+    for threshold in candidates:
+        accepted = [(p, y) for score, p, y in rows if score >= threshold]
+        n = len(accepted)
+        errors = sum(p != y for p, y in accepted)
+        risk = errors/n if n else None
+        upper = min(1., risk + math.sqrt(math.log(len(candidates)/alpha)/(2*n))) if n else 1.
+        reports.append({"threshold": threshold, "accepted": n, "errors": errors,
+                        "risk": risk, "risk_upper": upper})
+    eligible = [r for r in reports if r["accepted"] and r["risk_upper"] <= max_risk]
+    chosen = max(eligible, key=lambda r: (r["accepted"], -r["threshold"]))["threshold"] if eligible else None
+    return Threshold(chosen, max_risk, alpha, tuple(reports))
+
+
+def risk_coverage(rows, threshold=None):
+    rows = checked_rows(rows)
+    kept = [(p, y) for score, p, y in rows if threshold is None or threshold.accepts(score)]
+    errors = sum(p != y for p, y in kept)
+    return {"examples": len(rows), "accepted": len(kept), "errors": errors,
+            "coverage": len(kept)/len(rows) if rows else 0.,
+            "risk": errors/len(kept) if kept else None,
+            "score_brier": sum((score-(p == y))**2 for score, p, y in rows)/len(rows) if rows else None}
+
+
 def _selftest():
-    rng = random.Random(4)
-    train = labeled_stream(rng, 1500, p_noise=0.25)
-    held = [sample_signal(rng, "market") for _ in range(500)]     # clean held-out
-    base = max(sum(y for _, y, _ in held), 500 - sum(y for _, y, _ in held)) / 500
-
-    naive, faithful = Grokker(), Grokker()
-    ingested_naive = ingested_faithful = 0
-    for f, label, conf in train:
-        naive.learn(f, label); ingested_naive += 1
-        if conf >= 0.5:                         # ABSTAIN on low-confidence labels
-            faithful.learn(f, label); ingested_faithful += 1
-
-    acc_naive = sum(naive.predict(f) == y for f, y, _ in held) / len(held)
-    acc_faith = sum(faithful.predict(f) == y for f, y, _ in held) / len(held)
-
-    print(f"base rate {base:.2f}; 25% of labels flipped+low-confidence\n")
-    print(f"  naive (ingest all)      : held-out {acc_naive:.2f}   "
-          f"invariant R={set(naive.R)} K={set(naive.K)}   [{ingested_naive} ingested]")
-    print(f"  faithful (abstain <0.5) : held-out {acc_faith:.2f}   "
-          f"invariant R={set(faithful.R)} K={set(faithful.K)}   [{ingested_faithful} ingested]")
-
-    # the abstaining grokker keeps the EXACT invariant and generalizes; the naive one is
-    # corrupted by noise and worse — even though it ingested MORE. Faithfulness > quantity.
-    assert faithful.R == CORE and faithful.K == frozenset({KILLER}), (faithful.R, faithful.K)
-    assert acc_faith > acc_naive + 0.1, (acc_faith, acc_naive)
-    assert ingested_faithful < ingested_naive         # it deliberately saw fewer
-    corrupted = (naive.R != CORE) or (naive.K != frozenset({KILLER}))
-    print(f"\n  naive invariant corrupted by noise? {corrupted}")
-    assert corrupted
-
-    print("\nabstain selftest: PASS — refusing to ingest low-confidence labels kept the "
-          "discrete invariant faithful and generalizing on FEWER labels, while ingesting "
-          "everything corrupted it. The discreteness + selectivity is the value; not "
-          "everything should be ingested, by design.")
+    import json
+    from adaptive_evaluation import abstention_experiment
+    print(json.dumps(abstention_experiment(), indent=2))
 
 
 if __name__ == "__main__":

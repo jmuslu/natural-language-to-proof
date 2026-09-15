@@ -190,6 +190,27 @@ def stage_oracle(paths, oracle_repo, runtime, as_of=None):
         ledger.close()
 
 
+def stage_proof(task_path, proposal_path, runtime, as_of=None):
+    """Recheck supplied rule consequences against this run's observed journal."""
+    from oracle_bridge import ReceiptLedger
+    from reasoning.ledger import check_against_ledger, read_input
+    from reasoning.run import atomic_json
+    banner("P", "PROOF -- supplied rules + journal-bound leaves -> checked consequence")
+    ledger = ReceiptLedger(runtime / "oracle.sqlite")
+    try:
+        proof = check_against_ledger(read_input(task_path), read_input(proposal_path), ledger, as_of=as_of)
+        status = ("supported" if proof["check"]["answered"] else
+                  "abstained" if proof["check"]["accepted"] else "rejected")
+        report = {"stage": "proof", "status": status, **proof}
+    except (ValueError, TypeError, KeyError, OSError) as exc:
+        report = {"stage": "proof", "status": "error", "error": str(exc), "as_of": as_of}
+    finally:
+        ledger.close()
+    atomic_json(runtime / "proof_report.json", report)
+    print(f"  proof status: {report['status']}; rules remain supplied assumptions")
+    return report
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="skip the Haskell ingest stage")
@@ -200,21 +221,27 @@ def main() -> None:
     ap.add_argument("--runtime-dir", type=Path, default=HERE / "runtime")
     ap.add_argument("--as-of", help="replay only revisions observed by this UTC date/timestamp")
     ap.add_argument("--embedder", choices=("model2vec", "hashing"), default="model2vec")
+    ap.add_argument("--proof-task", type=Path, help="typed task with explicit run-receipt fact bindings")
+    ap.add_argument("--proof-proposal", type=Path, help="proposed derivation to check against the observed journal")
     args = ap.parse_args()
     if args.results is not None and args.results_dir is not None:
         ap.error("choose --results or --results-dir")
+    if (args.proof_task is None) != (args.proof_proposal is None):
+        ap.error("--proof-task and --proof-proposal must be supplied together")
     runtime = args.runtime_dir.expanduser().resolve()
     runtime.mkdir(parents=True, exist_ok=True)
     directory = args.results_dir or args.oracle_repo / "shared/backtesting/results"
     paths = args.results if args.results is not None else sorted(directory.glob("result_*.json"))
     print("CONNECTED SYSTEM -- end-to-end operational run")
-    print("discipline: no component certifies itself; trust comes only from external checks.")
+    print("scope: receipts concern run validation; base scores retain their recorded provenance.")
     results = []
     if not args.quick and not args.oracle_only:
         results.append(stage_ingest())
     oracle, receipts = stage_oracle(paths, args.oracle_repo, runtime, args.as_of)
     results.append(oracle)
     results.append(stage_graph(receipts, runtime))
+    if args.proof_task is not None:
+        results.append(stage_proof(args.proof_task, args.proof_proposal, runtime, args.as_of))
     if not args.oracle_only:
         r_brain, brain = stage_brain(runtime, args.embedder, args.as_of)
         try:
@@ -228,6 +255,8 @@ def main() -> None:
     print(f"\n{'='*72}\n  RUN COMPLETE -- "
           + ", ".join(f"{r['stage']}:{r['status']}" for r in results)
           + "\n" + "=" * 72)
+    if any(r["stage"] == "proof" and r["status"] in ("rejected", "error") for r in results):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

@@ -77,7 +77,8 @@ class PrototypeProbeTests(unittest.TestCase):
         conflict = result["conflicting_normal_update"]
         self.assertLess(conflict["posterior_sigma"], conflict["prior_sigma"])
         self.assertGreater(conflict["signed_snr_score"], .999)
-        self.assertTrue(result["underpowered_null"]["legacy_binds"])
+        self.assertTrue(result["underpowered_null"]["historical_nonsignificance_binds"])
+        self.assertFalse(result["underpowered_null"]["current_equivalence_binds"])
         self.assertFalse(result["underpowered_null"]["establishes_equivalence"])
 
     def test_adaptive_filter_wins_on_jump_but_loses_on_outlier(self):
@@ -95,8 +96,10 @@ class PrototypeProbeTests(unittest.TestCase):
     def test_order_dependence_and_adverse_abstention_are_exposed(self):
         result = learning_failure_probe()
         first,second = result["same_training_set_different_orders"]
-        self.assertTrue(first["predicts_negative_as_true"])
+        self.assertFalse(first["predicts_negative_as_true"])
         self.assertFalse(second["predicts_negative_as_true"])
+        self.assertTrue(result["current_order_invariant"])
+        self.assertEqual(result["historical_order_dependent_predictions"], [True, False])
         abstention = result["adversely_calibrated_abstention"]
         self.assertGreater(abstention["accepted_error"], abstention["overall_error"])
         self.assertEqual(result["disagreement_is_not_truth"][1]["divergence"], 0)

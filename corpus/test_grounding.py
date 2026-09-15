@@ -8,7 +8,7 @@ import math
 import unittest
 from dataclasses import replace
 
-from estimand import (Hop, Leg, Measurement, Quantity, colimit, colimit_hybrid,
+from estimand import (EstimandIdentity, Hop, Leg, Measurement, Quantity, colimit, colimit_hybrid,
                       edge_weight_from_multiplicity, update)
 from retract import Genealogy
 
@@ -140,7 +140,7 @@ class GroundingTests(unittest.TestCase):
 
     def test_nonbinding_control_can_declare_shared_provenance(self):
         legs = [prediction("a", provenance=("a",)), prediction("b", provenance=("b",)),
-                Leg("joint-null", "necessity", 0, 1, frozenset({"a", "b"}))]
+                Leg("joint-null", "necessity", 0, .1, frozenset({"a", "b"}), equivalence_margin=.5)]
         self.assertEqual(colimit("apex", legs).multiplicity, 1)
 
     def test_disjoint_tags_do_not_pool_precision(self):
@@ -195,8 +195,9 @@ class GroundingTests(unittest.TestCase):
 
 class MeasurementTests(unittest.TestCase):
     def setUp(self):
-        self.prior = Quantity(0, 1, "x")
-        self.measurement = Measurement(3, 1, 100, "x", provenance=frozenset({"a"}))
+        self.identity = EstimandIdentity("response", "synthetic population", "one period", (), "x", "raw", "mean")
+        self.prior = Quantity(0, 1, "x", identity=self.identity)
+        self.measurement = Measurement(3, 1, 100, "x", provenance=frozenset({"a"}), identity=self.identity)
 
     def test_replay_uses_stored_prior_provenance(self):
         once = update(self.prior, self.measurement)
@@ -220,7 +221,8 @@ class MeasurementTests(unittest.TestCase):
     def test_units_basis_and_missing_provenance_refused(self):
         for field, value in (("units", "y"), ("basis", "calendar")):
             with self.assertRaises(TypeError):
-                update(self.prior, replace(self.measurement, **{field: value}))
+                update(self.prior, replace(self.measurement, **{field: value},
+                                          identity=replace(self.identity, **{field: value})))
         with self.assertRaises(ValueError):
             update(self.prior, replace(self.measurement, provenance=frozenset()))
         with self.assertRaises(ValueError):

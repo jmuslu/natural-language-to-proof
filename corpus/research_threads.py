@@ -146,16 +146,18 @@ def causal_prefix_probe():
 
 def evidence_probe():
     """Current-code regression plus limits of caller-declared provenance tags."""
-    from estimand import Leg, Quantity, Measurement, colimit, derived_trust, update
+    from estimand import EstimandIdentity, Leg, Quantity, Measurement, colimit, derived_trust, update
     leg = Leg("edge", "prediction", 2, 1, frozenset({"same-data"}))
     once = colimit("hypothesis", [leg])
     replay = colimit("hypothesis", [leg] * 20)
     relabeled = Leg("copy", "prediction", 2, 1, frozenset({"renamed-data"}))
     mislabeled = colimit("hypothesis", [leg, relabeled])
-    prior = Quantity(0, 1, "fixture")
-    measurement = Measurement(10, 1, 100, "fixture", provenance=frozenset({"observation"}), robust=False)
+    target = EstimandIdentity("response", "synthetic generator", "one step", (), "fixture", "raw", "mean")
+    prior = Quantity(0, 1, "fixture", identity=target)
+    measurement = Measurement(10, 1, 100, "fixture", provenance=frozenset({"observation"}), robust=False,
+                              identity=target)
     posterior = update(prior, measurement)
-    null = Leg("underpowered-null", "necessity", 0, 100, frozenset({"null-data"}))
+    null = Leg("underpowered-null", "necessity", 0, 100, frozenset({"null-data"}), equivalence_margin=.1)
     return {"duplicate_unchanged": once == replay, "multiplicity_once": once.multiplicity,
             "multiplicity_after_relabeling_same_data": mislabeled.multiplicity,
             "edge_weight_once": once.edge_weight, "edge_weight_after_relabeling": mislabeled.edge_weight,
@@ -163,7 +165,8 @@ def evidence_probe():
                                           "posterior_mean": posterior.value,
                                           "signed_snr_score": derived_trust(posterior),
                                           "standardized_conflict": 10 / math.sqrt(2)},
-            "underpowered_null": {"legacy_binds": null.binds(), "estimate": 0, "stderr": 100,
+            "underpowered_null": {"historical_nonsignificance_binds": True,
+                                  "current_equivalence_binds": null.binds(), "estimate": 0, "stderr": 100,
                                   "ninety_percent_interval": [-164.485362695, 164.485362695],
                                   "equivalence_margin": .1, "establishes_equivalence": False},
             "snr_one": {"tanh_score": math.tanh(1), "probability_if_normal_posterior":
@@ -229,7 +232,7 @@ def adaptation_probe():
 
 
 def learning_failure_probe():
-    """Order dependence, uncalibrated abstention, and disagreement versus error."""
+    """Retained-negative regression plus historical calibration counterexamples."""
     from grok import Grokker, CORE, KILLER
     positive, negative = CORE, CORE | {KILLER}
     outcomes = []
@@ -240,6 +243,8 @@ def learning_failure_probe():
         outcomes.append({"required": sorted(learner.R), "forbidden": sorted(learner.K),
                          "predicts_negative_as_true": learner.predict(negative)})
     return {"same_training_set_different_orders": outcomes,
+            "historical_order_dependent_predictions": [True, False],
+            "current_order_invariant": outcomes[0] == outcomes[1],
             "adversely_calibrated_abstention": {"overall_error": .2,
                 "accepted_coverage": .2, "accepted_error": 1,
                 "construction": "20 wrong examples confidence .95; 80 correct confidence .30; accept >=.5"},

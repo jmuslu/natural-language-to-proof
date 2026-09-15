@@ -133,6 +133,19 @@ class LedgerProofTests(unittest.TestCase):
         self.assertNotEqual(before["artifact_id"], after["artifact_id"])
         self.assertFalse(after["check"]["answered"])
 
+    def test_pipeline_proof_stage_uses_current_journal_and_replaces_stale_report(self):
+        from pipeline import stage_proof
+        self.ingest_pair()
+        task, proposal = task_and_proof()
+        task_path, proposal_path = self.put(task, "task.json"), self.put(proposal, "proof.json")
+        initial = stage_proof(task_path, proposal_path, self.directory)
+        self.assertEqual(initial["status"], "supported")
+        self.ledger.withdraw("run-b", "test withdrawal")
+        self.assertEqual(stage_proof(task_path, proposal_path, self.directory)["status"], "rejected")
+        task_path.write_text("broken JSON")
+        self.assertEqual(stage_proof(task_path, proposal_path, self.directory)["status"], "error")
+        self.assertEqual(json.loads((self.directory / "proof_report.json").read_text())["status"], "error")
+
 
 if __name__ == "__main__":
     unittest.main()
