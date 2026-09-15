@@ -11,6 +11,7 @@ from brain_agenda import build_agenda
 from brain_exploration import compose_discovery
 import brain_exploration as exploration
 import test_brain_evidence as support
+from test_mechanism_spec import fixture as mechanism_fixture, CONTEXT, INVENTORY
 
 EARLY, LATE, receipt, snapshot = support.EARLY, support.LATE, support.receipt, support.snapshot
 
@@ -44,8 +45,9 @@ class DiscoveryTests(unittest.TestCase):
         self.assertTrue(any(i["kind"] == "explore_mechanism" for i in build_agenda(brain, discovery_goal=GOAL)["items"]))
 
     def test_mixed_premises_keep_scoped_counterevidence_and_missing_links(self):
-        brain = self.brain([receipt("pass"), receipt("fail", "refuted"), receipt("pending", "unknown")])
-        proposal = compose_discovery(brain, goal=GOAL, k=1)[0]
+        brain = self.brain([receipt("pass"), receipt("fail", "refuted"), receipt("pending", "unknown")], pair=True)
+        goal = dict(GOAL, claim_refs=["source-claim", "validation:pass", "validation:fail", "validation:pending"])
+        proposal = compose_discovery(brain, goal=goal, k=1)[0]
         premises = {p["claim_id"]: p for p in proposal["premises"]}
         self.assertEqual({p["check_verdict"] for p in premises.values()}, {"confirmed", "refuted", "unknown"})
         failed = premises["validation:fail"]
@@ -61,11 +63,19 @@ class DiscoveryTests(unittest.TestCase):
         self.assertFalse(proposal["checked"])
         self.assertEqual(proposal["conditional_hypothesis"]["unconditional_claims_asserted"], [])
         self.assertEqual(proposal["conditional_hypothesis"]["counterevidence_refs"], ["validation:fail"])
+        self.assertEqual(set(proposal["causal_premise_refs"]), {"source-claim", "other-claim"})
+        self.assertEqual(set(proposal["evidence_context_refs"]), {"validation:pass", "validation:fail", "validation:pending"})
+        self.assertFalse(proposal["mechanism_ready"])
+        self.assertEqual(proposal["composition_role"], "retrieval_design_candidate")
+        self.assertTrue(proposal["design_gaps"])
+        self.assertFalse(any(link["from_claim"].startswith("validation:") or link["to_claim"].startswith("validation:")
+                             for link in proposal["mechanism_links"]))
         self.assertEqual(brain.stats()["n_checked"], 2)
 
     def test_future_evidence_is_masked_and_unavailable_anchor_fails_closed(self):
         brain = self.brain([receipt("future-check", observed=LATE)], pair=True)
-        proposals = compose_discovery(brain, goal=GOAL, as_of=EARLY)
+        scoped_goal = dict(GOAL, claim_refs=["source-claim", "validation:future-check"])
+        proposals = compose_discovery(brain, goal=scoped_goal, as_of=EARLY)
         self.assertTrue(proposals)
         self.assertTrue(all(p["n_checked_premises"] == 0 for p in proposals))
         future = next(p for p in proposals[0]["premises"] if p["claim_id"] == "validation:future-check")
@@ -136,8 +146,9 @@ class DiscoveryTests(unittest.TestCase):
         self.assertNotEqual(before[0]["context_sha256"], after[0]["context_sha256"])
 
     def test_observed_verdict_revision_updates_counterevidence_without_new_proposition(self):
-        pending = compose_discovery(self.brain([receipt("changing", "unknown")], pair=True), goal=GOAL)
-        refuted = compose_discovery(self.brain([receipt("changing", "refuted")], pair=True), goal=GOAL)
+        goal = dict(GOAL, claim_refs=["source-claim", "validation:changing"])
+        pending = compose_discovery(self.brain([receipt("changing", "unknown")], pair=True), goal=goal)
+        refuted = compose_discovery(self.brain([receipt("changing", "refuted")], pair=True), goal=goal)
         self.assertEqual([p["id"] for p in pending], [p["id"] for p in refuted])
         self.assertNotEqual(pending[0]["context_sha256"], refuted[0]["context_sha256"])
         self.assertEqual(pending[0]["conditional_hypothesis"]["counterevidence_refs"], [])
@@ -159,9 +170,56 @@ class DiscoveryTests(unittest.TestCase):
         self.assertEqual(hypothesis["discovery_context"], tasks[0]["proposal"])
         self.assertEqual(hypothesis["claim_refs"], tasks[0]["claim_refs"])
         self.assertEqual(hypothesis["execution_status"], "not_requested")
+        empty_brain = mock.Mock()
+        empty_brain._all.return_value = ([], [], [], [])
+        explicit = dict(GOAL, context_refs=CONTEXT, mechanism_spec=mechanism_fixture())
+        proposal = compose_discovery(empty_brain, goal=explicit, data_inventory=INVENTORY)[0]
+        self.assertEqual(proposal["claim_refs"], [])
+        output.write_text(json.dumps({"items": [proposal]}))
+        task = intake.candidate_tasks(path=output)[0]
+        self.assertEqual(intake.to_hypothesis(task)["claim_refs"], [])
+        self.assertTrue(task["proposal"]["mechanism_ready"])
         self.assertNotIn("validation", hypothesis)
         self.assertNotIn("oracle_receipt", hypothesis)
         self.assertEqual(hypothesis["id"], intake.to_hypothesis(tasks[0])["id"])
+        self.assertFalse(hypothesis["mechanism_ready"])
+        explicit = dict(GOAL, claim_refs=["source-claim"], context_refs=CONTEXT, mechanism_spec=mechanism_fixture())
+        proposal = compose_discovery(self.brain(pair=True), goal=explicit, data_inventory=INVENTORY)[0]
+        output.write_text(json.dumps({"items": [proposal]}))
+        task = intake.candidate_tasks(path=output)[0]
+        hypothesis = intake.to_hypothesis(task)
+        self.assertTrue(hypothesis["mechanism_ready"])
+        self.assertFalse(hypothesis["checked"])
+        self.assertEqual(hypothesis["execution_status"], "not_requested")
+
+    def test_biography_and_receipts_never_supply_causal_nodes(self):
+        brain = self.brain([receipt("failed", "refuted")], pair=True)
+        brain.con.cursor().execute("UPDATE facts SET domain='biographical' WHERE id='other-claim'")
+        brain.con.commit()
+        goal = dict(GOAL, claim_refs=["validation:failed", "other-claim"])
+        proposal = compose_discovery(brain, goal=goal)[0]
+        self.assertEqual(proposal["causal_premise_refs"], [])
+        self.assertEqual(proposal["mechanism_links"], [])
+        self.assertEqual(set(proposal["evidence_context_refs"]), {"validation:failed", "other-claim"})
+        self.assertFalse(proposal["mechanism_ready"])
+
+    def test_explicit_spec_changes_semantic_identity_but_inventory_changes_only_context(self):
+        brain = self.brain(pair=True)
+        goal = dict(GOAL, claim_refs=["source-claim"], context_refs=CONTEXT, mechanism_spec=mechanism_fixture())
+        missing = build_agenda(brain, k_gaps=0, k_contested=0, k_bridges=1,
+                               discovery_goal=goal, discovery_data_inventory={})["items"][0]
+        available = build_agenda(brain, k_gaps=0, k_contested=0, k_bridges=1,
+                                 discovery_goal=goal, discovery_data_inventory=INVENTORY)["items"][0]
+        self.assertEqual(missing["id"], available["id"])
+        self.assertNotEqual(missing["context_sha256"], available["context_sha256"])
+        self.assertFalse(missing["mechanism_ready"])
+        self.assertTrue(available["mechanism_ready"])
+        self.assertFalse(available["checked"])
+        self.assertEqual(available["composition_role"], "explicit_mechanism_design")
+        self.assertEqual(available["question"], goal["mechanism_spec"]["question"])
+        changed = copy.deepcopy(goal); changed["mechanism_spec"]["contrasts"][0]["margin"] *= 2
+        self.assertNotEqual(missing["id"], compose_discovery(brain, goal=changed)[0]["id"])
+        self.assertEqual(brain.stats()["n_checked"], 0)
 
 
 if __name__ == "__main__":

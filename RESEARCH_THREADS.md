@@ -94,7 +94,7 @@ not permission to explore. IDs remain stable for future changes and experiment r
 | R02 / P1 | Quantitative versus propositional claims; `estimand.py`, `multihop.py` | **Guard implemented.** Numerical chains require an explicit measured Quantity and matching candidate target; qualitative verdicts create no value/SE. Missing numeric data leaves exploration templates intact. Tests reject units strings and wrong targets. |
 | R03 / P1 | Estimand identity; `EstimandIdentity`, `commensurable` | **Declared identity mechanism.** Observable, population, horizon, conditioning, units, basis, summary and optional intervention/comparator must match. Legacy missing identities remain constructible but cannot pool. Labels assert semantics; they do not authenticate them. Registry governance remains future work. |
 | R04 / P1 | Deployment basis and portfolio value; `paired_sharpe`, `to_deployed_approx` | **Direct estimator implemented.** Retained equal-period stream gives calendar `.229416`, active `1`; nonzero idle returns change calendar to `.456937`, active stays `1`. No invented SE. Old exact conversion raises; approximation requires explicit assumptions and bounded point error. Annualization/cost/capacity need their own models. |
-| R05 / P1 | Data quality/externality/lineage; `Measurement.provenance` | **Open.** Manifest datasets, spans, transforms and hashes; test vendor revisions/shared data disguised as replication. External data can remain biased. |
+| R05 / P1 | Data quality/externality/lineage; `Measurement.provenance`, `mechanism_spec.py` | **Observed reuse; declared compatibility checked.** The actual SPY cache exactly matches a prior run artifact; it is reused evidence. Inventory checks require instrument, interval, timing, price/contract basis and coverage. Current bytes do not authenticate historical availability, vendor adjustments or independence. |
 | R06 / P1 | Hierarchical partial pooling; `PoolingModel` | **Implemented and replicated offline.** Separate training fit improves exchangeable groups, fails a sign-flipped subgroup (matrix above). Cross-group inference is an explicit model; incompatible targets and repeated training provenance are rejected. Next group predictors, variance-parameter uncertainty and shifted-group diagnostics. |
 | R07 / P1 | Nonstationary/regime quantities; `regime_estimand.py` | **Repaired and noise-tested.** Paired no-change/drift/jump/outlier cases across 200 paths and fresh seed; adaptive jump benefit trades off against no-change/outlier error. Next learning a regime/outlier selector from independent outcomes. |
 | R08 / P1 | Jacobian chains/uncertainty; `compose_chain`, `uncertainty_experiments.py` | **Local-linear boundary measured.** Same-target square/exp/linear comparisons report coverage, error and cost; exact risk exposes tail-unstable Monte Carlo estimates. Next richer nonlinear/correlated models only where diagnostics justify them. |
@@ -108,7 +108,7 @@ not permission to explore. IDs remain stable for future changes and experiment r
 | R16 / P1 | Matched dead ends/necessity; necessity `Leg`, ablation | **Equivalence gate implemented.** Missing margin and underpowered null fail; precise synthetic interval inside margin passes. Still require preregistration, paired removal/sham/retraining/cost/capacity/redundancy controls before a causal necessity claim. |
 | R17 / P1 | Thesis specificity/negative controls; specificity `Leg` | **Directional bound implemented.** No positive effect uses an upper confidence bound below declared tolerance; no effect uses two-sided equivalence. Both differ from predicted reversal. Missing margins and underpowered negatives cannot pass. |
 | R18 / P0 | Holdouts/all-holds/FDR/selection; QR validation | **Explicit-family mechanism.** Audit full attempt families, dependence, repeated looks, selection logs and untouched confirmation; local family checks cannot prove research completeness. |
-| R19 / P1 | Dead marginals/interaction/residual discovery; `discover.py`, `brain_exploration.py` | **Synthetic witness and exploratory bridge.** Uncertain/refuted premises can nominate different conditional chains; scoped counterevidence is retained. Stable designs pass into QR hypotheses without any new checked claim. Semantic nomination still requires concrete observable/contrast design and independent confirmation. |
+| R19 / P1 | Dead marginals/interaction/residual discovery; `discover.py`, `brain_exploration.py`, `mechanism_spec.py` | **Synthetic witness and explicit design bridge.** The initial eight semantic bundles failed operational review. Signed variable paths, measurements and contrasts now have separate design/data checks. One private source-based pilot remains incomplete with missing source definitions, latent participant variables and absent NQ data; it adds zero checked claims. |
 | R20 / P1 | Synthetic inference/abstraction/method classes; `multihop.py`, `discover.py` | **Prototype with corrected contracts.** 300 held-out synthetic candidates: screening precision/recall `1`, 97 coherent generated-response checks; source grouping remains one per candidate and no portfolio estimate is invented. Next hold out target laws/mechanisms; measure novelty, cost and later validation. |
 | R21 / P0 | HMM surprise/residuals; `surprise.py`, `online_residual.py` | **Connected causal reconstruction tested.** Progressive lagged KL, two online ridge branches, frozen forecasts, pre-update residuals and past-event thresholds have 22 tests, including an independent probability/batch-regression reference. The original progressive smoother is causal; the full-session toy leaks. Exact historical learner settings remain unavailable. Forecasting and conditional market value need separate evaluation. |
 | R22 / P1 | Free energy/model evidence/MDL | **Strong equivalence refuted.** Compare exact evidence with unequal variational gaps; any MDL link requires declared coding/model scheme. |
@@ -186,9 +186,52 @@ A subsequent semantic audit found **zero of the eight** defined an operational
 financial mechanism: two linked validation artifacts and six grouped source
 claims. All 24 links remained generic templates without participant roles,
 observable mediators, signed transmission or a financial estimand. These are
-consumed development failures. The next refinement must separate contextual
-receipts from causal variables and supply a specific mechanism/contrast before
-calling the design operational.
+consumed development failures. The revised nomination marks similarity bundles
+as `retrieval_design_candidate`, with `mechanism_ready=false`; validation receipts
+and biography remain context rather than causal nodes.
+
+`mechanism_spec.py` checks explicit actor context, signed links between variables,
+measurement mappings, availability, exposure/outcome windows, estimands and effect
+margins. A complete declared contrast and available compatible data are separate
+conditions. The checker rejects upstream outcomes, incompatible cumulative lags,
+sub-bar timing, and participant constructs inferred directly from OHLCV. These
+are declaration-consistency checks, not estimator validation, causal identification
+or execution authorization. A bar-based conditional price association can be
+specified without establishing a proposed participant explanation.
+
+The private Futures-Reversal pilot passes through the actual agenda and QR
+hypothesis interfaces: two actors, five variables, four signed/timed links and
+one named price contrast. The condition measurement remains unresolved because
+the producing notebook and key source definitions were not recovered. Three
+participant/flow variables remain unobserved; matching NQ data are missing.
+Both design completeness and data readiness are false, with zero runnable
+contrasts. Source attribution uses one private audit artifact and zero borrowed
+corpus claims. Checked Brain labels remain 21 before and after; no model, data or
+execution calls occurred. The exact source/specification and rebuild script stay
+in ignored `corpus/runtime/mechanism-pilot-20260915-v1/`.
+
+Specification changes alter the design identity. Inventory/evidence revisions
+alter only its context hash. An absent indexed source can be represented by
+explicit artifact attribution without manufacturing a claim. These declarations
+never establish historical eligibility or independent evidence.
+
+### Observed data reuse and readiness
+
+The existing QR loader read the actual SPY date/price cache: 2,136 dates from
+2016-01-04 through 2024-06-28, 46,790 bytes. Its SHA-256
+`3f0a385f9d823bce71f4c398159b9dbb7d42ee70bc340a4c6e33e2d04f4ab729`
+matches both the R30 source manifest and a prior committed artifact exactly.
+This is known reuse, not independent confirmation. The payload establishes only
+dates and prices; producer code suggests daily adjusted data but the payload
+does not authenticate that history. Bar clocks, publication availability,
+OHLCV, contract/roll conventions and acquisition receipts are absent.
+
+The mechanism inventory checks matching instrument, resolution, timestamp and
+timezone conventions, price/contract basis, publication delay and coverage.
+A different hash alone never establishes independence. These checks expose
+missing metadata; they cannot recover it or make the daily cache suitable for
+the intraday NQ mechanism. The metadata-only inspection is retained under
+ignored `corpus/runtime/research/r05-data-readiness-20260915.json`.
 
 ### Acquisition, stopping and misspecification
 

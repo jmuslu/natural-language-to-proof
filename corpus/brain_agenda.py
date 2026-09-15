@@ -32,7 +32,10 @@ HERE = Path(__file__).resolve().parent
 
 def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
                  k_bridges: int = 5, as_of: str | None = None,
-                 discovery_goal: dict | None = None) -> dict:
+                 discovery_goal: dict | None = None,
+                 discovery_data_inventory: dict | None = None) -> dict:
+    if discovery_data_inventory is not None and (not isinstance(discovery_data_inventory, dict) or discovery_goal is None):
+        raise ValueError("a discovery data inventory must be an object paired with an explicit discovery goal")
     as_of = cutoff(as_of)
     items = []
 
@@ -101,7 +104,8 @@ def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
 
     discoveries = []
     if discovery_goal is not None:
-        discoveries = compose_discovery(brain, goal=discovery_goal, k=k_bridges, as_of=as_of)
+        discoveries = compose_discovery(brain, goal=discovery_goal, k=k_bridges, as_of=as_of,
+                                        data_inventory=discovery_data_inventory)
         items.extend(discoveries)
 
     items.sort(key=lambda it: -it["priority"])
@@ -129,11 +133,16 @@ def main() -> None:
     ap.add_argument("--publish", default="", help="also copy the agenda to this path")
     ap.add_argument("--as-of", help="include only facts knowable by this UTC date or zoned timestamp")
     ap.add_argument("--discovery-goal", help="explicit JSON goal with id, question, and condition_scope.description")
+    ap.add_argument("--discovery-data-inventory", help="separate observed JSON data inventory for the explicit mechanism design")
     args = ap.parse_args()
+    if args.discovery_data_inventory and not args.discovery_goal:
+        ap.error("--discovery-data-inventory requires --discovery-goal")
 
     brain = Brain.open(args.db, load_embedder=False)
     goal = json.loads(Path(args.discovery_goal).read_text()) if args.discovery_goal else None
-    agenda = build_agenda(brain, as_of=args.as_of, discovery_goal=goal)
+    inventory = json.loads(Path(args.discovery_data_inventory).read_text()) if args.discovery_data_inventory else None
+    agenda = build_agenda(brain, as_of=args.as_of, discovery_goal=goal,
+                          discovery_data_inventory=inventory)
     Path(args.out).write_text(json.dumps(agenda, indent=2) + "\n")
     print(f"[brain_agenda] {agenda['count']} proposed research items -> {args.out}")
     for it in agenda["items"][:8]:

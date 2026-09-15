@@ -36,7 +36,7 @@ verdict. `public_reference`, `self_reported`, `unquantifiable`, and
 | `build_graph.py`, `epistemic_graph.py` | Construct nodes, structural edges and evidence-score propagation. |
 | `oracle_bridge.py`, `ingest_outcomes.py` | Recompute run certificates, journal revisions, materialize run-validation claims. |
 | `brain_build.py`, `brain_query.py`, `brain_evidence.py` | Build the libSQL store; retrieve explicit direct evidence separately from exploratory scores and propose checks. |
-| `brain_agenda.py`, `brain_exploration.py` | Opt-in uncertain mechanism chains, preserving scoped counterevidence and incomplete discriminating test designs. |
+| `brain_agenda.py`, `brain_exploration.py`, `mechanism_spec.py` | Opt-in source nominations and explicit mechanism designs, with separate specification and data-readiness checks. |
 | `pipeline.py` | Run the receipt/Haskell/graph/brain handoff with explicit stage reports. |
 | `reasoning/` | Bounded model proposals, typed proofs, receipt bindings, experiment/replay protocol. |
 
@@ -81,13 +81,32 @@ see [TEMPORAL.md](../TEMPORAL.md).
 the existing agenda. The goal needs an `id`, `question` and explicit
 `condition_scope.description`; optional `claim_refs` select eligible anchors.
 Without anchors, a topical overlap is required before semantic neighbors are
-nominated. Similarity locates candidate links and never establishes causality.
+nominated. Similarity produces `retrieval_design_candidate` items with explicit
+design gaps. Validation receipts and biography are evidence context, not causal
+variables.
+
+An optional `mechanism_spec` supplies actor context, signed/timed variable links,
+observable mappings and measurable contrasts. `mechanism_spec.assess` reports
+per-contrast `design_complete`, `data_ready` and their conjunction `runnable`.
+Here runnable means declared specification/data compatibility; it neither checks
+estimator code nor authorizes execution. Supply inventory separately through
+`build_agenda(..., discovery_data_inventory=...)` or
+`--discovery-data-inventory /path/inventory.json`; absence leaves data unverified.
+Inventory includes actual fields, data kind, instrument, interval, clock/timezone,
+price and contract basis, availability delay and coverage. OHLCV cannot identify
+participant classes, position closing or aggressive order flow by renaming them.
+
+Specification details bind the design ID; inventory changes bind only the context
+hash. Source artifacts can be attributed with `context_refs` when no indexed
+corpus claim exists. A declared contrast remains `specified_untested`, with any
+missing definitions recorded separately. No assessment changes checked labels.
 
 Uncertain premises remain available for discovery. Refuted premises retain their
 original scope as counterevidence; a proposed conditional alternative is a new
 question. Designs include link ablation, conditional interaction and negative
-controls, all marked `design_required`. Each still needs concrete observables,
-timing, contrasts and an independent confirmation protocol before execution.
+controls, marked `design_required` for retrieval candidates. Each still needs
+concrete observables, timing, contrasts and an independent confirmation protocol
+before execution.
 Proposal/design IDs and a separate context hash distinguish stable questions
 from changed evidence. The QR adapter preserves this context in a proposed
 hypothesis without writing a receipt or launching an experiment.
