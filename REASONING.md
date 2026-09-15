@@ -144,18 +144,29 @@ accounting, not measured model tokens or a guarantee the full run fits. Provider
 usage reconciles each reservation; unknown usage retains the conservative charge.
 
 The comparison has one-shot, verified-repair, scaffold and deterministic arms.
-Per world/arm ceilings are 96,000 tokens, 16 calls, 4,096 output tokens per call,
-180 seconds and 16 scaffold rounds; request timeout is 60 seconds with no retries.
+Per world/arm ceilings are 96,000 tokens, 16 calls, 180 seconds and 16 scaffold
+rounds; request timeout is 60 seconds with no retries. Development allowed 4,096
+output tokens per call; the final test allows 8,192 for both models, as explained below.
 One-shot deliberately uses one call. Both model IDs explicitly request `medium`;
 actual calls/tokens and reported reasoning tokens remain separate outcomes.
 Paired raw/support discordance records improvements and regressions on identical
 worlds. Unknown is abstention unless the separate symbolic search saturates.
 
-Development uses six depth-2/3 worlds from
-`2026-09-15-scaffold-effort-dev-v1`. After development review, the planned test is
-the full 45 depth/topology/answer cells from the unused
-`2026-09-15-scaffold-effort-test-v1` seed. Source/prompt/config hashes are frozen;
-only development can guide changes before that test. A single writer lock and
+Development used six depth-2/3 worlds from
+`2026-09-15-scaffold-effort-dev-v1`. Both models' one-shot and scaffold arms
+supplied four of four answerable proofs and two correct unknowns. Mini's repair
+arm supplied three proofs: one premise mismatch was followed by 4,096 reasoning
+tokens and no assistant text. GPT-5.5's repair arm supplied all four proofs.
+Mini one-shot/repair/scaffold charged 12,671/18,488/50,628 tokens;
+GPT-5.5 charged 11,350/11,238/52,094. All 48 records replayed with zero differences
+or integrity errors; no certified false assertion or budget overrun occurred.
+Thus scaffolding did not improve on direct proofs in this small development set.
+
+Based on that development output exhaustion, the final test raises the same
+output cap to 8,192 for both models. Other caps, code and prompts stay fixed.
+The test uses all 45 depth/topology/answer cells from
+`2026-09-15-scaffold-effort-test-v1`, unused before protocol freeze. Source,
+prompt, configuration and dataset hashes are retained. A single writer lock and
 reconciled paid-attempt ledger prevent silently restarting interrupted work.
 Replay reconstructs each tool action, final proof, local work and paid accounting.
 

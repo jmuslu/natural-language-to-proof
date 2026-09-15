@@ -182,6 +182,14 @@ handoff of uncertain research context; it does not establish novelty, meaningful
 causal links or useful alpha. Detailed context stays in ignored
 `corpus/runtime/exploratory-agenda-20260915-v2/`.
 
+A subsequent semantic audit found **zero of the eight** defined an operational
+financial mechanism: two linked validation artifacts and six grouped source
+claims. All 24 links remained generic templates without participant roles,
+observable mediators, signed transmission or a financial estimand. These are
+consumed development failures. The next refinement must separate contextual
+receipts from causal variables and supply a specific mechanism/contrast before
+calling the design operational.
+
 ### Online residual reconstruction
 
 `replay_progressive_residual` connects a supplied fixed scalar Gaussian HMM to
