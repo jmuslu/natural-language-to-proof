@@ -35,7 +35,7 @@ verdict. `public_reference`, `self_reported`, `unquantifiable`, and
 | `confound_check.py` | Test format/length confounds and sample readiness. |
 | `build_graph.py`, `epistemic_graph.py` | Construct nodes, structural edges and evidence-score propagation. |
 | `oracle_bridge.py`, `ingest_outcomes.py` | Recompute run certificates, journal revisions, materialize run-validation claims. |
-| `brain_build.py`, `brain_query.py` | Build the libSQL store; retrieve, inspect, propose checks and report calibrated/unlicensed inference. |
+| `brain_build.py`, `brain_query.py`, `brain_evidence.py` | Build the libSQL store; retrieve explicit direct evidence separately from exploratory scores and propose checks. |
 | `pipeline.py` | Run the receipt/Haskell/graph/brain handoff with explicit stage reports. |
 | `reasoning/` | Bounded model proposals, typed proofs, receipt bindings, experiment/replay protocol. |
 
@@ -61,11 +61,13 @@ strategy does not refute its cited source claims. Older generic reverse-propagat
 demonstrations are graph experiments, not the live receipt policy. See
 [ORACLE_BRIDGE.md](../ORACLE_BRIDGE.md) for identity, withdrawal and replay.
 
-Embeddings locate text; they do not create evidence. Trust interpolation,
-similarity-weighted answers and cross-domain bridges are proposals. Their
-calibration must be evaluated on independent outcomes, beyond agreement with the
-existing graph's scores. Small historical learning curves do not establish that
-confidence becomes licensed as the corpus grows.
+Embeddings locate text; they do not create evidence. `answer` returns
+`confirmed_related`, `refuted_related`, and `unchecked_relevant` citations,
+`checked_retrieval_coverage`, and `answer_status=not_inferred`. Verdicts concern
+the cited propositions; similarity alone does not establish an answer. Confidence
+remains null and local licensing false. Calibration uses direct observed receipt
+labels, never graph scores. Old databases without provenance are readable as
+unchecked; rebuild from the journal to restore their direct evidence.
 
 Historical queries filter every stage by the eligible evidence set before
 ranking or calibration. Date-only cutoffs mean the end of that UTC day. Source
@@ -74,8 +76,9 @@ see [TEMPORAL.md](../TEMPORAL.md).
 
 ## Development evidence
 
-`brain_test.py` has 168 offline contract checks. `test_temporal.py` covers
-historical selection, ranking, calibration and agenda behavior. These validate
+`brain_test.py`, `test_brain_evidence.py`, `test_brain_temporal.py` and
+`test_temporal.py` cover retrieval, direct provenance, historical selection,
+ranking, calibration and agenda behavior. These validate
 code contracts; `confound_check.py` and held-out downstream tasks must establish
 whether the corpus supports a useful research claim.
 

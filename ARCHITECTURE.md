@@ -104,11 +104,16 @@ time. A newly read historical receipt receives its local observation time;
 filenames cannot backdate evidence. Replaying old input cannot undo a withdrawal;
 reinstatement requires an explicit reason. See [TEMPORAL.md](TEMPORAL.md).
 
-`brain*.py` embeds claims for retrieval and exploration. Embeddings propose
-related material; they do not manufacture trust. Trust-imputation and confidence
-calibration require independent outcomes and comparison with simple baselines.
-A small corpus or a synthetic learning curve does not establish that this is
-licensed on future data.
+`brain*.py` embeds claims for retrieval and exploration. Graph `trust` remains an
+exploratory score; `brain_evidence.py` separately admits exact observed run
+receipts as checked labels. Missing provenance, pending reference interpretations,
+source judgments and propagated scores cannot supply those labels. Historical
+queries also mask checks by observation time; undated graph scores are not
+backdated. Legacy databases need rebuilding to recover checked provenance.
+`answer` reports confirmed/refuted related propositions and checked retrieval
+coverage, with `answer_status=not_inferred`. Similarity does not establish a
+proposition's logical relation to the question. Leave-one-out label diagnostics
+do not establish calibrated future confidence.
 
 `estimand.py` and `regime_estimand.py` track quantities, units, basis and declared
 provenance. `Leg` is a measurement pattern, not an external check. Empty or

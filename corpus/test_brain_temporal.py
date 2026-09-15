@@ -101,7 +101,8 @@ class HistoricalBrainTests(unittest.TestCase):
         actual = self.brain.calibrate(as_of=CUTOFF)
         expected = self.reference.calibrate(as_of=CUTOFF)
         self.assertEqual(actual, expected)
-        self.assertEqual(actual["n_checked"], 3)
+        # Legacy score-only fixtures have no direct observed evidence.
+        self.assertEqual(actual["n_checked"], 0)
         self.assertEqual(self.brain.infer_trust("market research signal", as_of=CUTOFF),
                          self.reference.infer_trust("market research signal", as_of=CUTOFF))
 
@@ -117,7 +118,8 @@ class HistoricalBrainTests(unittest.TestCase):
     def test_empty_history_does_not_use_future_calibration(self):
         end = "2020-01-01"
         self.assertEqual(self.brain.retrieve("market research", as_of=end), [])
-        self.assertEqual(self.brain.calibrate(as_of=end), {"status": "insufficient", "n": 0})
+        self.assertEqual(self.brain.calibrate(as_of=end)["status"], "insufficient")
+        self.assertEqual(self.brain.calibrate(as_of=end)["n"], 0)
         self.assertEqual(self.brain.explore_frontier(as_of=end), [])
         result = self.brain.infer_trust("market research", as_of=end)
         self.assertEqual(result["neighbors"], [])
@@ -126,7 +128,7 @@ class HistoricalBrainTests(unittest.TestCase):
     def test_bridges_learning_curve_and_stats_use_historical_snapshot(self):
         actual = self.brain.bridge_hypotheses(k=100, lo=-1, hi=1, as_of=CUTOFF)
         expected = self.reference.bridge_hypotheses(k=100, lo=-1, hi=1, as_of=CUTOFF)
-        self.assertTrue(expected)
+        self.assertEqual(expected, [])  # no provenance, so no confirmed endpoints
         self.assertEqual(actual, expected)
         self.assertEqual(self.brain.learning_curve(sizes=(1, 2), repeats=4, as_of=CUTOFF),
                          self.reference.learning_curve(sizes=(1, 2), repeats=4, as_of=CUTOFF))

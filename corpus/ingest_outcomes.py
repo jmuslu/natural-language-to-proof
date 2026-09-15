@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 
 from build_graph import build
+from export_claims_index import build_index
+from brain_evidence import observation, validation_text
 from oracle_bridge import ReceiptLedger, checked_receipt, load_evaluator
 from retract import Genealogy
 
@@ -36,8 +38,9 @@ def ingest_receipt(graph, receipt):
     verdict = {"confirmed": 1.0, "refuted": -1.0, "unknown": None}[receipt["verdict"]]
     graph.add_node(outcome, "outcome", dict(receipt), seed=verdict)
     graph.add_node(claim, "claim", {"role": "validation_proposition", "run_id": rid,
-                                    "text": f"Backtest run {rid} passed its declared validation gates.",
+                                    "text": validation_text(rid),
                                     "oracle_verdict": receipt["verdict"],
+                                    "check_provenance": observation(receipt),
                                     "knowable_time": receipt.get("observed_at")})
     graph.add_edge(outcome, claim, "supports")
     resolved, unresolved = [], []
@@ -90,15 +93,17 @@ def graph_document(graph):
 
 
 def augmented_index(receipts):
-    index = json.loads((HERE / "claims_index.json").read_text())
+    index = build_index()
     for r in receipts:
         rid = r["run_id"]
         index["claims"]["validation:" + rid] = {
-            "text": f"Backtest run {rid} passed its declared validation gates.",
+            "text": validation_text(rid),
             "domain": "statistical_validation", "claim_type": "run_validation",
             "evidence_basis": "oracle_receipt", "source_id": "oracle:" + rid,
             "knowable_time": r.get("observed_at"), "event_time": None,
-            "oracle_verdict": r["verdict"], "evidence_id": r["evidence_id"]}
+            "oracle_verdict": r["verdict"], "evidence_id": r["evidence_id"],
+            "verification_status": "observed_oracle_receipt" if observation(r) else "unverified_receipt",
+            "check_provenance": observation(r)}
     index["count"] = len(index["claims"])
     return index
 

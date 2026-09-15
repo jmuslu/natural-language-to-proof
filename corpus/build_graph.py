@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
-"""Assemble the epistemic graph from the corpus records + agent-proposed verdicts,
-run bidirectional trust propagation, and emit `corpus/graph.json`.
+"""Assemble exploratory graph scores from corpus records and reference proposals.
 
-This is where the corpus stops being a flat list of records and becomes the
-graph-shaped store the main handoff's Layers 5-8 need: sources, claims, domains,
-references and (owner) labels are nodes; assertion/domain links are structural
-edges; reference and owner-label verdicts are external-check edges that originate
-trust; and once real backtest outcomes exist they attach as `outcome` nodes whose
-`feeds`/`implicates` edges propagate a checked result backward to the claims that
-fed it. Information moves both ways, and trust is anchored only to external checks
-(the Layer-8 Version-A discipline enforced by `epistemic_graph`).
+Scores retain their source provenance; pending reference interpretations and
+source-level owner judgments are not checked factual labels. Direct observed
+run receipts enter through ingest_outcomes and remain scoped to their runs.
 """
 import glob
 import json
@@ -61,7 +55,9 @@ def build():
             g.add_edge(olid, sid, "supports" if sign > 0 else "contradicts", weight=1.0)
         for c in rec["claims"]:
             cid = f"claim:{c['claim_id']}"
-            g.add_node(cid, "claim", {"text": c["claim_text"], "claim_type": c["claim_type"]})
+            g.add_node(cid, "claim", {"text": c["claim_text"], "claim_type": c["claim_type"],
+                                        "verification_status": c.get("verification_status", "not_performed"),
+                                        "consistency_verdict": c.get("consistency_verdict")})
             g.add_edge(sid, cid, "asserts")
             dom = c["domain"]
             domains.add(dom)
@@ -70,7 +66,7 @@ def build():
                 g.add_node(did, "domain", {"name": dom})
             g.add_edge(cid, did, "in_domain")
 
-    # agent-proposed reference verdicts -> external-check nodes into claims
+    # Reference proposals seed exploratory scores only; they do not establish checks.
     for vd in verdicts:
         parent = claim_of_verdict(vd["claim_id"])
         cid = f"claim:{parent}"
@@ -85,7 +81,9 @@ def build():
         # positive seed = the reference's reliability; edge sign = the verdict.
         g.add_node(rid, "reference",
                    {"reference": vd["checkable_reference"], "verdict": vd["verdict"],
-                    "verdict_source": vd["verdict_source"]},
+                    "verdict_source": vd["verdict_source"],
+                    "verification_status": vd.get("verification_status", "unverified"),
+                    "claim_id": vd["claim_id"], "score_role": "exploratory_proposal"},
                    seed=w)
         g.add_edge(rid, cid, "supports" if vd["verdict"] == "consistent" else "contradicts", weight=1.0)
 
@@ -116,7 +114,7 @@ def main():
         print(f"  {n.id:16} trust={n.trust:+.3f}  {n.attrs['text'][:60]}")
     print()
     unresolved = [n for n in g.nodes.values() if n.kind == "claim" and abs(n.trust) < 1e-9]
-    print(f"claims with no external check yet (trust 0, correctly): {len(unresolved)}")
+    print(f"claims with no nonzero exploratory score: {len(unresolved)}")
     print("wrote graph.json")
 
 

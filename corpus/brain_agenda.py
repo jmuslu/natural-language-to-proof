@@ -79,10 +79,11 @@ def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
             "kind": "resolve_contested", "claim_refs": [d["id"]],
             "priority": round(d["explore_score"], 4),
             "question": f"Re-check (neighbours disagree): {d['text']}",
-            "rationale": (f"already checked (trust {d['trust']:+.2f}) but its semantic "
-                          f"neighbours disagree (trust var {d['neighbor_trust_var']}); "
-                          "a tie-breaking external check is informative"),
-            "domain": d["domain"], "status": "proposed"})
+            "rationale": (f"directly checked ({d['check_verdict']}) but its semantic "
+                          f"neighbours have differing checked verdicts (variance {d['neighbor_checked_verdict_var']}); "
+                          "similarity does not itself establish a logical contradiction"),
+            "domain": d["domain"], "check_evidence_id": d["check_evidence_id"],
+            "check_observed_at": d["check_observed_at"], "status": "proposed"})
 
     for b in brain.bridge_hypotheses(k=k_bridges, as_of=as_of):
         items.append({
@@ -91,7 +92,7 @@ def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
             "question": (f"Does a connecting hypothesis hold between "
                          f"[{b['a_domain']}] \"{b['a_text']}\" and "
                          f"[{b['b_domain']}] \"{b['b_text']}\"?"),
-            "rationale": (f"two externally-trusted claims in different domains "
+            "rationale": (f"two directly confirmed propositions in different domains "
                           f"({b['a_domain']} / {b['b_domain']}) are semantically "
                           f"adjacent (sim {b['similarity']}) — candidate synthesis"),
             "domains": [b["a_domain"], b["b_domain"]], "status": "proposed"})
@@ -105,7 +106,7 @@ def build_agenda(brain: Brain, *, k_gaps: int = 6, k_contested: int = 3,
                  "claim_refs record attribution to the claims an item concerns. "
                  "A backtest receipt establishes only its run-validation proposition."),
         "as_of": as_of,
-        "brain_state": {"n_facts": cal.get("n_predicted"),
+        "brain_state": {"n_facts": cal.get("n"), "n_checked": cal.get("n_checked"),
                         "frac_unchecked": cal.get("frac_unchecked"),
                         "imputation_licensed": cal.get("licensed")},
         "count": len(items), "items": items}

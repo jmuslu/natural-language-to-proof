@@ -69,25 +69,23 @@ def main() -> None:
         inf = b.infer_trust("machine learning predicts stock returns", k=8)
         check(inf["status"] == "conjectured", "inference not labelled conjecture")
         check("imputation_licensed" in inf and "caveat" in inf, "inference missing caveat")
-        check(isinstance(inf["predicted_trust"], float), "predicted_trust not float")
+        check(inf["predicted_trust"] is None or isinstance(inf["predicted_trust"], float),
+              "prediction must be absent or numeric")
 
         # --- answer: grounded synthesis obeys the discipline ---
         ans = b.answer(meta[3]["text"], k=8)  # a claim's own text -> guaranteed matches
-        allowed = {"supported_by_checked_evidence", "contradicted_or_cautioned",
-                   "mixed_or_weak", "insufficiently_checked", "unknown_no_checked_evidence",
-                   "no_relevant_facts"}
+        allowed = {"related_checked_evidence", "unknown_no_checked_evidence", "no_relevant_facts"}
         check(ans["stance"] in allowed, f"bad stance {ans['stance']}")
         check("caveat" in ans, "answer missing caveat")
         if ans["stance"] != "no_relevant_facts":
-            check(all(f["trust"] > 0 for f in ans["supporting"]), "supporting not all trust>0")
-            check(all(f["trust"] < 0 for f in ans["cautioning"]), "cautioning not all trust<0")
-            check(all(f["trust"] == 0 for f in ans["unchecked_relevant"]), "unchecked not all 0")
-            cited = ans["supporting"] + ans["cautioning"] + ans["unchecked_relevant"]
+            check(all(f["check_verdict"] == "confirmed" for f in ans["confirmed_related"]), "bad confirmed verdict")
+            check(all(f["check_verdict"] == "refuted" for f in ans["refuted_related"]), "bad refuted verdict")
+            check(all(not f["checked"] for f in ans["unchecked_relevant"]), "unchecked has evidence")
+            cited = ans["confirmed_related"] + ans["refuted_related"] + ans["unchecked_relevant"]
             check(all(f["similarity"] >= ans["min_sim"] for f in cited),
                   "a cited fact is below the relevance floor")
-            if ans["licensed_locally"]:
-                check(ans["n_checked"] >= 2 and ans["checked_fraction"] >= 0.6,
-                      "licensed_locally without >=2 checked and majority")
+            check(not ans["licensed_locally"] and not ans["proof_entailment"],
+                  "retrieval claimed query entailment")
         # a query that matches nothing returns the honest empty stance
         none_ans = b.answer("zzqx wuvt gibberish nonexistent token cluster", k=8)
         check(none_ans["stance"] in ("no_relevant_facts", "unknown_no_checked_evidence",
@@ -120,18 +118,19 @@ def main() -> None:
 
         # --- calibration: honest verdict + frac_unchecked matches the field ---
         cal = b.calibrate()
-        exp_unchecked = round(float(np.mean(trusts == 0.0)), 4)
+        exp_unchecked = round(float(np.mean([not m["checked"] for m in meta])), 4)
         check(cal["frac_unchecked"] == exp_unchecked, "frac_unchecked mismatch")
         check(isinstance(cal["licensed"], bool), "licensed not bool")
         check("verdict" in cal and "checked_only" in cal, "calibration missing fields")
         # the licensing bar must actually gate: verify it agrees with the metrics
         lic, _ = Brain._licensed(cal)
-        check(lic == cal["licensed"], "licensed flag disagrees with _licensed()")
+        check(lic == cal["loo_signal_detected"], "LOO signal flag disagrees with diagnostic")
+        check(not cal["licensed"], "LOO diagnostic asserted prediction confidence")
 
         # --- exploration frontier: modes obey their contracts ---
         gaps = b.explore_frontier(k=6, mode="gaps")
         check(all(not d["checked"] for d in gaps), "gaps mode returned a checked fact")
-        check(all(d["trust"] == 0.0 for d in gaps), "gaps mode fact had nonzero trust")
+        check(all(d["check_value"] is None for d in gaps), "gaps mode fact had direct verdict")
         contested = b.explore_frontier(k=6, mode="contested")
         check(all(d["checked"] for d in contested), "contested mode returned unchecked")
         check(all(d["status"] == "proposed_to_check" for d in gaps + contested),

@@ -1,25 +1,23 @@
 #!/usr/bin/env python3
-"""Export a lightweight, referenceable index of corpus claims.
+"""Export stable corpus claim identities, source attribution, and review status.
 
-For the Layer 7 loop to become live, an upstream stage (the researcher / a
-hypothesis) has to be able to cite *which corpus claims* a strategy leans on, by
-stable id, without loading the full records. This writes `corpus/claims_index.json`:
-claim_id -> {text, domain, claim_type, source_id, source_title}. Those ids are
-exactly what a hypothesis's `claim_refs` (and a backtest result's
-`attribution.claim_refs`) point at, and what `ingest_outcomes.py` resolves when a
-checked outcome propagates back.
+Hypotheses and run results use these IDs to cite source claims. An outcome
+receipt establishes only its own passes_validation(run_id) proposition; it does
+not propagate a factual verdict to referenced source text. Record verification
+status is preserved separately from exploratory graph scores.
 """
 import glob
 import json
 import os
+from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
-def main():
+def build_index():
     index = {}
     for f in sorted(glob.glob(os.path.join(HERE, "records", "*.json"))):
-        rec = json.load(open(f))
+        rec = json.loads(Path(f).read_text())
         dates = rec.get("dates", {}) or {}
         # knowable_time: when the claim became externally available -- the source's
         # publication date (the earliest a party could have acted on it). This is the
@@ -36,6 +34,8 @@ def main():
                 "domain": c["domain"],
                 "claim_type": c["claim_type"],
                 "evidence_basis": c.get("evidence_basis", "public_reference"),
+                "verification_status": c.get("verification_status", "not_performed"),
+                "consistency_verdict": c.get("consistency_verdict"),
                 "knowable_time": knowable,
                 "event_time": c.get("event_time"),   # the date the claim is ABOUT (nullable)
                 "ingestion_time": ingestion,
@@ -49,10 +49,15 @@ def main():
         "count": len(index),
         "claims": index,
     }
+    return out
+
+
+def main():
+    out = build_index()
     path = os.path.join(HERE, "claims_index.json")
     with open(path, "w") as fh:
         json.dump(out, fh, indent=2)
-    print(f"wrote {os.path.basename(path)}: {len(index)} claims")
+    print(f"wrote {os.path.basename(path)}: {out['count']} claims")
 
 
 if __name__ == "__main__":

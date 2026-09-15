@@ -1,24 +1,9 @@
-"""The fact brain: a semantic-trust manifold over the corpus, in a libSQL vector DB.
+"""Semantic retrieval with separate exploratory scores and observed evidence.
 
-WHAT IT IS. Every corpus claim becomes a *fact node*: its text embedded to a unit
-vector (geometry) plus its trust taken verbatim from the epistemic graph (an
-externally-anchored scalar this module never edits). Stored in libSQL -- the Rust
-SQLite fork with native vector search -- so nearest-neighbour retrieval and
-directed exploration run as first-class DB operations.
-
-THE DISCIPLINE, restated so it cannot drift:
-  * Embeddings position facts; they never create trust.
-  * Trust comes only from `epistemic_graph.py`, which grants it only from external
-    checks. The brain reads that field; it does not write to it.
-  * Synthetic inference (predicting a fact's trust from its semantic neighbours) is
-    a CONJECTURE. Its only warrant is `calibrate()`: leave-one-out prediction graded
-    against the graph's real trust, versus a mean-trust null -- the same "skill vs
-    null" test the backtest oracle uses. If it beats the null, the manifold carries
-    trust-relevant structure and inference is licensed; if not, the brain says so.
-  * Exploration outputs (`explore_frontier`, `bridge_hypotheses`) are PROPOSALS for
-    what to check next, never verdicts.
-
-So the brain proposes (retrieval, inference, exploration); external checks dispose.
+Graph ``trust`` is an exploratory score and may include pending agent proposals.
+Only direct observed receipt metadata supplies checked labels. Embeddings and
+score propagation never establish facts. Retrieval coverage is descriptive;
+similarity-weighted neighbors do not prove an answer to a user's question.
 """
 from __future__ import annotations
 
@@ -34,6 +19,7 @@ import libsql_experimental as libsql
 
 from brain_embed import get_embedder, vec_literal
 from oracle_bridge import cutoff
+from brain_evidence import direct_evidence, fields as evidence_fields
 
 HERE = Path(__file__).resolve().parent
 
@@ -61,7 +47,18 @@ class Fact:
     claim_type: str
     source_id: str
     trust: float
-    similarity: float = 0.0  # populated by retrieval / neighbour queries
+    similarity: float = 0.0
+    checked: bool = False
+    check_verdict: str = "unknown"
+    check_value: Optional[float] = None
+    check_evidence_id: Optional[str] = None
+    check_observed_at: Optional[str] = None
+    check_source: Optional[str] = None
+    verification_status: str = "unverified"
+
+    @property
+    def exploratory_score(self):
+        return self.trust
 
 
 class Brain:
@@ -70,6 +67,23 @@ class Brain:
         self.dim = dim
         self.embedder = embedder
         self.embedder_id = embedder_id
+        # Old databases remain readable, with no fabricated evidence provenance.
+        self._columns = {r[1] for r in con.cursor().execute("PRAGMA table_info(facts)").fetchall()}
+
+    def _extra_columns(self, prefix=""):
+        return ",".join(prefix + name if name in self._columns else "NULL"
+                        for name in ("check_provenance", "verification_status"))
+
+    @staticmethod
+    def _fact(meta, trust, similarity):
+        return Fact(meta["id"], meta["text"], meta["domain"], meta["claim_type"],
+                    meta["source_id"], float(trust), similarity=float(similarity),
+                    **{key: meta[key] for key in ("checked", "check_verdict", "check_value",
+                       "check_evidence_id", "check_observed_at", "check_source", "verification_status")})
+
+    @staticmethod
+    def _labels(meta):
+        return np.asarray([m["check_value"] if m["checked"] else np.nan for m in meta], dtype=float)
 
     # ---- construction -------------------------------------------------------
     @classmethod
@@ -79,7 +93,8 @@ class Brain:
 
         The join is claims_index key `001-1-a` <-> graph node `claim:001-1-a`. Only
         claims present in the graph get a trust; anything missing is skipped and
-        reported rather than silently defaulted (trust must be earned externally).
+        reported rather than silently defaulted. Scores are preserved for exploration;
+        only a matching direct receipt observation contributes checked evidence.
 
         Date-only knowable times mean the end of that UTC day: a publication date
         does not establish intraday availability. Offset timestamps are normalized
@@ -101,7 +116,9 @@ class Brain:
             facts.append((cid, c["text"], c.get("domain", ""),
                           c.get("claim_type", ""), c.get("source_id", ""),
                           trust_by_id[cid], c.get("evidence_basis", ""),
-                          cutoff(c.get("knowable_time")), c.get("event_time")))
+                          cutoff(c.get("knowable_time")), c.get("event_time"),
+                          json.dumps(direct_evidence(cid, c, graph)),
+                          c.get("verification_status", "unverified")))
             texts.append(c["text"])
         if missing:
             print(f"[brain] {len(missing)} claim(s) had no graph trust, skipped: "
@@ -117,19 +134,20 @@ class Brain:
         cur.execute(f"""CREATE TABLE facts (
             id TEXT PRIMARY KEY, text TEXT, domain TEXT, claim_type TEXT,
             evidence_basis TEXT, source_id TEXT, trust REAL,
-            knowable_time TEXT, event_time TEXT, emb F32_BLOB({dim}))""")
+            knowable_time TEXT, event_time TEXT, emb F32_BLOB({dim}),
+            check_provenance TEXT, verification_status TEXT)""")
         cur.execute("CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT)")
-        for (cid, text, dom, ct, sid, tr, eb, kt, et), row in zip(facts, embs):
+        for (cid, text, dom, ct, sid, tr, eb, kt, et, cp, vs), row in zip(facts, embs):
             cur.execute(
                 "INSERT INTO facts(id,text,domain,claim_type,evidence_basis,source_id,"
-                "trust,knowable_time,event_time,emb)"
-                " VALUES (?,?,?,?,?,?,?,?,?,vector32(?))",
-                (cid, text, dom, ct, eb, sid, tr, kt, et, vec_literal(row)))
+                "trust,knowable_time,event_time,emb,check_provenance,verification_status)"
+                " VALUES (?,?,?,?,?,?,?,?,?,vector32(?),?,?)",
+                (cid, text, dom, ct, eb, sid, tr, kt, et, vec_literal(row), cp, vs))
         for k, v in {"embedder_id": embedder.id, "dim": str(dim),
                      "n_facts": str(len(facts)),
                      "built_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                      "claims_index": str(claims_index_path),
-                     "graph": str(graph_path)}.items():
+                     "graph": str(graph_path), "evidence_schema": "direct-observation-v1"}.items():
             cur.execute("INSERT INTO meta(key,value) VALUES (?,?)", (k, v))
         # ANN index for scalable retrieval (brute-force cosine is exact and used by
         # default on this small corpus; the index is here for when it grows).
@@ -163,7 +181,7 @@ class Brain:
         as_of = cutoff(as_of)
         rows = self.con.cursor().execute(
             "SELECT id,text,domain,claim_type,evidence_basis,source_id,trust,"
-            "knowable_time,event_time,emb FROM facts"
+            "knowable_time,event_time,emb," + self._extra_columns() + " FROM facts"
         ).fetchall()
         ids, meta, trusts, embs = [], [], [], []
         for r in rows:
@@ -171,11 +189,20 @@ class Brain:
             knowable_time = cutoff(r[7])
             if as_of is not None and (knowable_time is None or knowable_time > as_of):
                 continue
+            check = evidence_fields(r[10], as_of)
+            status = r[11] or "unverified"
+            if as_of is not None and status == "observed_oracle_receipt" and not check["check_source"]:
+                status = "unverified_as_of"
             ids.append(r[0])
             meta.append({"id": r[0], "text": r[1], "domain": r[2],
                          "claim_type": r[3], "evidence_basis": r[4] or "",
-                         "source_id": r[5], "knowable_time": knowable_time, "event_time": r[8]})
-            trusts.append(float(r[6]))
+                         "source_id": r[5], "knowable_time": knowable_time, "event_time": r[8],
+                         "verification_status": status,
+                         **check})
+            # Graph proposal scores have no observation history. Do not backdate
+            # the current scalar into historical rankings or reports. The only
+            # dated score available here is the direct observed signed verdict.
+            trusts.append(float(r[6]) if as_of is None else (check["check_value"] or 0.0))
             embs.append(np.frombuffer(r[9], dtype=np.float32))
         E = np.vstack(embs) if embs else np.zeros((0, self.dim), np.float32)
         return ids, E, np.asarray(trusts, dtype=np.float64), meta
@@ -188,17 +215,18 @@ class Brain:
     # ---- retrieval ----------------------------------------------------------
     def retrieve(self, query: str, k: int = 5, *, trust_weighted: bool = False,
                  ann: bool = False, as_of: Optional[str] = None) -> List[Fact]:
-        """Semantic nearest facts to `query`, each carrying its external trust.
+        """Semantic nearest claims with exploratory scores and direct evidence.
 
-        `trust_weighted=True` re-ranks by similarity*(0.5+0.5*trust) so a query
-        surfaces facts that are both on-topic and externally credible rather than
-        merely on-topic. `ann=True` uses the DiskANN index (approximate, for scale);
+        `trust_weighted=True` re-ranks by similarity*(0.5+0.5*trust), using the
+        exploratory graph score. This ranking does not confer checked status. `ann=True` uses the DiskANN index (approximate, for scale);
         default is exact brute-force cosine. `as_of` restricts to facts knowable by
         that date (knowable_time <= as_of; no lookahead -- see TEMPORAL.md).
 
         Historical queries rank only eligible facts with exact vector comparison,
         including when ``ann=True``: future facts cannot influence candidate selection.
         Dates include the full UTC day; timestamps must include their timezone.
+        Historical scores use only then-observed direct verdicts, because proposal
+        scores have no observation journal and cannot safely be backdated.
         """
         qv = self._embed_query(query)
         as_of = cutoff(as_of)
@@ -209,9 +237,7 @@ class Brain:
             ids, E, trusts, meta = self._all(as_of=as_of)
             sims = E @ qv
             order = np.argsort(-sims, kind="stable")[:kk]
-            facts = [Fact(ids[j], meta[j]["text"], meta[j]["domain"],
-                          meta[j]["claim_type"], meta[j]["source_id"], float(trusts[j]),
-                          similarity=float(sims[j])) for j in order]
+            facts = [self._fact(meta[j], trusts[j], sims[j]) for j in order]
             if trust_weighted:
                 facts.sort(key=lambda f: -(f.similarity * (0.5 + 0.5 * f.trust)))
             return facts[:k]
@@ -221,17 +247,18 @@ class Brain:
             params = (qlit, qlit, kk)
             rows = cur.execute(
                 "SELECT f.id,f.text,f.domain,f.claim_type,f.source_id,f.trust,"
-                " vector_distance_cos(f.emb, vector32(?)) AS dist "
+                " vector_distance_cos(f.emb, vector32(?)) AS dist," + self._extra_columns("f.") + " "
                 "FROM vector_top_k('facts_ann', vector32(?), ?) AS v "
-                "JOIN facts f ON f.id=v.id ORDER BY dist", params).fetchall()
+                "JOIN facts f ON f.rowid=v.id ORDER BY dist", params).fetchall()
         else:
             params = (qlit, kk)
             rows = cur.execute(
                 "SELECT id,text,domain,claim_type,source_id,trust,"
-                " vector_distance_cos(emb, vector32(?)) AS dist "
+                " vector_distance_cos(emb, vector32(?)) AS dist," + self._extra_columns() + " "
                 "FROM facts ORDER BY dist LIMIT ?", params).fetchall()
         facts = [Fact(r[0], r[1], r[2], r[3], r[4], float(r[5]),
-                      similarity=1.0 - float(r[6])) for r in rows]
+                      similarity=1.0 - float(r[6]), **evidence_fields(r[7]),
+                      verification_status=r[8] or "unverified") for r in rows]
         if trust_weighted:
             facts.sort(key=lambda f: -(f.similarity * (0.5 + 0.5 * f.trust)))
         return facts[:k]
@@ -249,8 +276,7 @@ class Brain:
             if j == i:
                 continue
             m = meta[j]
-            out.append(Fact(m["id"], m["text"], m["domain"], m["claim_type"],
-                            m["source_id"], float(trusts[j]), similarity=float(sims[j])))
+            out.append(self._fact(m, trusts[j], sims[j]))
             if len(out) >= k:
                 break
         return out
@@ -269,28 +295,30 @@ class Brain:
 
     def infer_trust(self, query: str, k: int = 8, *, with_caveat: bool = True,
                     as_of: Optional[str] = None) -> dict:
-        """CONJECTURE a trust for arbitrary text from its nearest facts' trust.
+        """Conjecture a signed receipt outcome from checked neighbors only.
 
-        This is synthetic inference: it interpolates the externally-anchored trust
-        field at a new point. It is only as trustworthy as `calibrate()` says the
-        field is, so by default it carries that verdict inline -- a predicted trust
-        must never travel without the caveat that says whether imputation is even
-        licensed on this corpus. The result is a proposal for an external check to
-        confirm or refute, never a decision.
+        Leave-one-out diagnostics describe this local dataset; they neither
+        establish out-of-distribution confidence nor prove an arbitrary query.
         """
         qv = self._embed_query(query)
         ids, E, trusts, meta = self._all(as_of=as_of)
-        sims = E @ qv
-        pred, mass = self._predict_from(sims, trusts, k)
-        order = np.argsort(-sims)[:k]
-        out = {"query": query, "predicted_trust": pred, "support_mass": mass,
-               "k": k, "status": "conjectured",
-               "neighbors": [{"id": ids[j], "similarity": float(sims[j]),
-                              "trust": float(trusts[j]), "text": meta[j]["text"]}
+        labels = self._labels(meta)
+        checked = np.where(~np.isnan(labels))[0]
+        sims = E[checked] @ qv
+        pred, mass = self._predict_from(sims, labels[checked], k)
+        order = checked[np.argsort(-sims)[:k]]
+        out = {"query": query, "predicted_trust": None if np.isnan(pred) else pred, "support_mass": mass,
+               "k": k, "status": "conjectured", "prediction_confidence": None,
+               "neighbors": [{"id": ids[j], "similarity": float(E[j] @ qv),
+                              "trust": float(trusts[j]), "exploratory_score": float(trusts[j]),
+                              "text": meta[j]["text"],
+                              **{key: meta[j][key] for key in ("checked", "check_verdict", "check_value",
+                                 "check_evidence_id", "check_observed_at", "check_source")}}
                              for j in order]}
         if with_caveat:
             cal = self.calibrate(as_of=as_of)
-            out["imputation_licensed"] = cal.get("licensed")
+            out["imputation_licensed"] = False
+            out["loo_signal_detected"] = cal.get("loo_signal_detected", False)
             out["caveat"] = cal.get("verdict")
         return out
 
@@ -316,24 +344,19 @@ class Brain:
                        "does NOT impute trust from topic")
 
     def calibrate(self, k: Optional[int] = None, *, as_of: Optional[str] = None) -> dict:
-        """External check on the brain: does semantic structure predict trust?
+        """Leave-one-out diagnostic on direct observed +/-1 labels only.
 
-        Leave-one-out -- predict each fact's trust from its neighbours (excluding
-        itself), compare to the graph's real trust. Headline uses a pre-registered
-        k = round(sqrt(n)) so k is not tuned to flatter the result; a small sweep is
-        reported alongside for transparency, not for cherry-picking. Baseline is the
-        leave-one-out global mean (the trivial predictor). `skill` = 1 - MAE/MAE_base.
-        `licensed` applies an honest bar (see `_licensed`): a fractionally positive
-        skill is NOT enough. We also report `frac_unchecked` (claims at trust==0, not
-        yet externally checked) and a `checked_only` re-run over trust!=0 claims,
-        because a field dominated by unknowns is the usual reason imputation fails.
-        With ``as_of``, both reference facts and calibration labels are limited
-        to that historical snapshot.
+        Missing evidence is excluded, never treated as a zero-valued label.
+        Graph proposal scores are not calibration targets. The fixed k rule and
+        sweep report local fit; no held-out prediction-risk license is asserted.
         """
-        ids, E, trusts, _ = self._all(as_of=as_of)
+        ids, E, scores, meta = self._all(as_of=as_of)
         n = len(ids)
-        if n < 3:
-            return {"status": "insufficient", "n": n}
+        trusts = self._labels(meta)
+        checked_idx = np.where(~np.isnan(trusts))[0]
+        k_reg = k if k is not None else max(2, round(len(checked_idx) ** 0.5))
+        if not isinstance(k_reg, int) or k_reg < 1:
+            raise ValueError("k must be a positive integer")
 
         def calc(idx: np.ndarray, kk: int) -> dict:
             sub_t = trusts[idx]
@@ -345,6 +368,8 @@ class Brain:
             np.fill_diagonal(Ss, -np.inf)
             preds = np.array([self._predict_from(Ss[i], sub_t, kk)[0] for i in range(m)])
             ok = ~np.isnan(preds)
+            if not ok.any():
+                return {"k": kk, "n_predicted": 0, "skill": None}
             a, p = sub_t[ok], preds[ok]
             base = np.array([np.delete(sub_t, i).mean() for i in range(m)])[ok]
             mae = float(np.mean(np.abs(p - a)))
@@ -358,19 +383,20 @@ class Brain:
                     "pearson_r": None if np.isnan(corr) else round(corr, 4),
                     "sign_agreement": round(sign, 4)}
 
-        all_idx = np.arange(n)
-        checked_idx = np.where(trusts != 0.0)[0]
-        k_reg = k if k is not None else max(2, round(n ** 0.5))
-
-        headline = calc(all_idx, k_reg)
-        headline["preregistered_k"] = k_reg
-        headline["frac_unchecked"] = round(float(np.mean(trusts == 0.0)), 4)
-        headline["n_checked"] = int(len(checked_idx))
-        headline["sweep"] = [calc(all_idx, kk) for kk in sorted({3, 5, 8, 12, k_reg}) if kk < n]
-        headline["checked_only"] = calc(checked_idx, min(k_reg, max(2, len(checked_idx) - 1)))
-        lic, why = self._licensed(headline)
-        headline["licensed"] = lic
-        headline["verdict"] = why
+        headline = calc(checked_idx, k_reg)
+        headline.update({"n": n, "n_checked": int(len(checked_idx)),
+                         "status": "ok" if len(checked_idx) >= 3 else "insufficient",
+                         "preregistered_k": k_reg,
+                         "frac_unchecked": round(1 - len(checked_idx) / n, 4) if n else None,
+                         "label_basis": "direct_observed_receipts"})
+        headline["sweep"] = [calc(checked_idx, kk) for kk in sorted({3, 5, 8, 12, k_reg})
+                             if kk < len(checked_idx)]
+        headline["checked_only"] = calc(checked_idx, k_reg)
+        signal, why = self._licensed(headline)
+        headline["loo_signal_detected"] = signal
+        headline["licensed"] = False
+        headline["verdict"] = ("Checked-label leave-one-out diagnostic: " + why +
+                               ". This does not establish held-out prediction confidence or query entailment.")
         return headline
 
     # ---- directed exploration (proposals) ----------------------------------
@@ -381,7 +407,7 @@ class Brain:
         Active-inference flavour, tuned to what this trust field actually looks like
         (mostly unchecked, not semantically smooth):
 
-          * UNCHECKED (trust==0) and CENTRAL -> high leverage: an external check here
+          * UNCHECKED (no direct observed verdict) and CENTRAL -> high leverage: an external check here
             resolves a dense, currently-unknown neighbourhood. This is the primary
             frontier, since most claims are unchecked.
           * CHECKED and ISOLATED -> worth corroboration: a lone trusted/distrusted
@@ -389,7 +415,8 @@ class Brain:
           * CHECKED with DISAGREEING neighbours -> contested: worth a tie-breaking check.
 
         `mode` selects which frontier: 'gaps' (unchecked-and-central only),
-        'contested' (checked only), or 'all' (both, ranked together -- note contested
+        'contested' (checked with differing nearby checked verdicts), or 'all'
+        (also includes checked-isolated suggestions, ranked together -- note contested
         scores tend to dominate, so use 'gaps' to see the unchecked opportunity that
         makes up most of the corpus). `reason` names which applies. Output is a
         PROPOSED to-check list -- what an external checker should look at next --
@@ -400,7 +427,8 @@ class Brain:
         n = len(ids)
         S = E @ E.T
         np.fill_diagonal(S, -np.inf)
-        checked = trusts != 0.0
+        labels = self._labels(meta)
+        checked = ~np.isnan(labels)
         out = []
         for i in range(n):
             order = np.argsort(-S[i])[:knn]
@@ -412,11 +440,11 @@ class Brain:
             cn = order[checked[order]]
             wcn = np.clip(S[i][cn], 0.0, None)
             if wcn.sum() > 1e-9:
-                mean = float((wcn * trusts[cn]).sum() / wcn.sum())
-                var = float((wcn * (trusts[cn] - mean) ** 2).sum() / wcn.sum())
+                mean = float((wcn * labels[cn]).sum() / wcn.sum())
+                var = float((wcn * (labels[cn] - mean) ** 2).sum() / wcn.sum())
             else:
                 var = 0.0
-            if trusts[i] == 0.0:
+            if not checked[i]:
                 score = centrality            # unchecked: value rises with centrality
                 reason = "unchecked_and_central"
             else:
@@ -427,15 +455,17 @@ class Brain:
             out.append({"id": ids[i], "text": meta[i]["text"], "domain": meta[i]["domain"],
                         "claim_type": ctype, "evidence_basis": ebasis,
                         "externally_checkable": _is_checkable(ctype, ebasis),
-                        "trust": float(trusts[i]), "checked": bool(checked[i]),
+                        "trust": float(trusts[i]), "exploratory_score": float(trusts[i]),
+                        **{key: meta[i][key] for key in ("checked", "check_verdict", "check_value",
+                           "check_evidence_id", "check_observed_at", "check_source", "verification_status")},
                         "centrality": round(centrality, 4), "isolation": round(isolation, 4),
-                        "neighbor_trust_var": round(var, 4),
+                        "neighbor_trust_var": round(var, 4), "neighbor_checked_verdict_var": round(var, 4),
                         "explore_score": round(score, 4), "reason": reason,
                         "status": "proposed_to_check"})
         if mode == "gaps":
             out = [d for d in out if not d["checked"]]
         elif mode == "contested":
-            out = [d for d in out if d["checked"]]
+            out = [d for d in out if d["reason"] == "checked_contested"]
         out.sort(key=lambda d: -d["explore_score"])
         return out[:k]
 
@@ -444,7 +474,8 @@ class Brain:
                           as_of: Optional[str] = None) -> List[dict]:
         """Propose syntheses: two credible facts, different domains, mid-distance.
 
-        Both endpoints must be externally trusted (>= trust_min); they must sit in
+        Both endpoints need directly confirmed receipts plus an exploratory score
+        >= trust_min; they must sit in
         DIFFERENT domains; and be semantically adjacent but not near-duplicate
         (lo < cosine < hi). Such pairs are candidate connective hypotheses worth
         forming and then checking -- the generative, exploratory edge of the brain.
@@ -454,10 +485,11 @@ class Brain:
         n = len(ids)
         pairs = []
         for i in range(n):
-            if trusts[i] < trust_min:
+            if meta[i]["check_verdict"] != "confirmed" or trusts[i] < trust_min:
                 continue
             for j in range(i + 1, n):
-                if trusts[j] < trust_min or meta[i]["domain"] == meta[j]["domain"]:
+                if (meta[j]["check_verdict"] != "confirmed" or trusts[j] < trust_min
+                        or meta[i]["domain"] == meta[j]["domain"]):
                     continue
                 sim = float(E[i] @ E[j])
                 if lo < sim < hi:
@@ -465,6 +497,8 @@ class Brain:
                                   "a_domain": meta[i]["domain"],
                                   "b": ids[j], "b_text": meta[j]["text"],
                                   "b_domain": meta[j]["domain"],
+                                  "a_evidence_id": meta[i]["check_evidence_id"],
+                                  "b_evidence_id": meta[j]["check_evidence_id"],
                                   "similarity": round(sim, 4),
                                   "min_trust": round(float(min(trusts[i], trusts[j])), 4),
                                   "score": round(sim * float(min(trusts[i], trusts[j])), 4),
@@ -474,105 +508,62 @@ class Brain:
 
     def answer(self, question: str, k: int = 8, min_sim: float = 0.25,
                as_of: Optional[str] = None) -> dict:
-        """Query-driven synthesis: what do the EXTERNALLY-CHECKED facts say here?
+        """Return cited related claims and their evidence coverage.
 
-        The capstone that ties retrieval + inference + exploration together. It
-        retrieves the semantically relevant facts, drops those below `min_sim` (a
-        relevance gate so the stance is not driven by loosely-related facts; the
-        default suits the model2vec embedder's similarity scale), splits the rest by
-        external trust into supporting / cautioning / still-unchecked, and reports a
-        stance that is the similarity-weighted trust of the *checked* relevant facts
-        only. Crucially it never claims the answer is true: it reports what the
-        checked corpus supports, how well-checked this corner of the corpus is
-        (`checked_fraction` -- a query-local calibration), and the single external
-        check that would most resolve the question (the most central unchecked
-        relevant fact). Every element cites claim ids and trust. Proposal, not verdict.
+        Confirmed/refuted describes each cited proposition, not its relation of
+        entailment to the question. Semantic similarity cannot infer that relation.
         """
-        retrieved = self.retrieve(question, k=k, as_of=as_of)  # by similarity, as-of
+        retrieved = self.retrieve(question, k=k, as_of=as_of)
         facts = [f for f in retrieved if f.similarity >= min_sim]
-        if not facts:
-            return {"question": question, "stance": "no_relevant_facts",
-                    "min_sim": min_sim, "n_retrieved": len(retrieved),
-                    "caveat": (f"nothing cleared the relevance floor ({min_sim}); "
-                               "the corpus has no sufficiently on-topic facts")}
 
-        def cite(f: "Fact") -> dict:
+        def cite(f):
             return {"id": f.id, "similarity": round(f.similarity, 4),
-                    "trust": round(f.trust, 4), "domain": f.domain, "text": f.text}
+                    "trust": round(f.trust, 4), "exploratory_score": round(f.trust, 4),
+                    "domain": f.domain, "text": f.text,
+                    **{key: getattr(f, key) for key in ("checked", "check_verdict", "check_value",
+                       "check_evidence_id", "check_observed_at", "check_source", "verification_status")}}
 
-        support = [f for f in facts if f.trust > 0]
-        caution = [f for f in facts if f.trust < 0]
-        unchecked = [f for f in facts if f.trust == 0.0]
-        checked = support + caution
-        checked_frac = round(len(checked) / len(facts), 4)
-
-        if checked:
-            wsum = sum(f.similarity for f in checked) or 1.0
-            stance_score = round(sum(f.similarity * f.trust for f in checked) / wsum, 4)
-        else:
-            stance_score = None
-
-        # query-local licensing: a stance is only meaningful if this corner of the
-        # corpus is actually checked. Mirror the global honesty at the query level.
-        # A single fact is not a body of evidence, and a large mass of relevant but
-        # UNCHECKED facts (which by discipline cannot drive the stance) means the
-        # question is genuinely under-checked -- so require >=2 checked facts AND a
-        # clear checked majority. On a 43%-checked corpus most questions land here,
-        # which is the honest state, and makes `proposed_next_check` the real payoff.
-        licensed_locally = bool(len(checked) >= 2 and checked_frac >= 0.6
-                                and stance_score is not None)
-        if stance_score is None:
-            stance = "unknown_no_checked_evidence"
-        elif not licensed_locally:
-            stance = "insufficiently_checked"
-        elif stance_score >= 0.3:
-            stance = "supported_by_checked_evidence"
-        elif stance_score <= -0.3:
-            stance = "contradicted_or_cautioned"
-        else:
-            stance = "mixed_or_weak"
-
-        # the most informative next external check for THIS question: the most
-        # central unchecked relevant fact (verifying it resolves the biggest gap).
+        confirmed = [f for f in facts if f.check_verdict == "confirmed"]
+        refuted = [f for f in facts if f.check_verdict == "refuted"]
+        unchecked = [f for f in facts if not f.checked]
+        checked = confirmed + refuted
+        coverage = round(len(checked) / len(facts), 4) if facts else None
         next_check = None
         if unchecked:
             frontier = self.explore_frontier(k=200, mode="gaps", as_of=as_of)
             rank = {d["id"]: d for d in frontier}
             best = max(unchecked, key=lambda f: rank.get(f.id, {}).get("centrality", 0.0))
-            nc = rank.get(best.id, {})
             next_check = {"id": best.id, "text": best.text, "domain": best.domain,
-                          "centrality": nc.get("centrality"),
-                          "why": "unchecked and central to this question"}
-
-        return {"question": question, "stance": stance, "stance_score": stance_score,
-                "checked_fraction": checked_frac, "licensed_locally": licensed_locally,
-                "min_sim": min_sim, "as_of": as_of,
+                          "centrality": rank.get(best.id, {}).get("centrality"),
+                          "why": "no direct observed verdict; relevant to this question"}
+        stance = ("no_relevant_facts" if not facts else
+                  "unknown_no_checked_evidence" if not checked else "related_checked_evidence")
+        return {"question": question, "stance": stance, "answer_status": "not_inferred",
+                "proof_entailment": False, "prediction_confidence": None,
+                "checked_fraction": coverage, "checked_retrieval_coverage": coverage,
+                "licensed_locally": False, "stance_score": None,
+                "min_sim": min_sim, "as_of": as_of, "n_retrieved": len(retrieved),
                 "n_relevant": len(facts), "n_checked": len(checked),
-                "supporting": [cite(f) for f in support],
-                "cautioning": [cite(f) for f in caution],
+                "confirmed_related": [cite(f) for f in confirmed],
+                "refuted_related": [cite(f) for f in refuted],
                 "unchecked_relevant": [cite(f) for f in unchecked],
                 "proposed_next_check": next_check,
-                "caveat": ("stance reflects what externally-CHECKED corpus facts imply, "
-                           "weighted by relevance -- NOT a claim of ground truth. "
-                           "Unchecked facts are shown but excluded from the stance.")}
+                "caveat": ("This is a retrieval report. Confirmed/refuted applies only to each "
+                           "cited proposition. Coverage is the fraction with direct observed evidence; "
+                           "it is neither proof of an answer nor calibrated prediction confidence. "
+                           "Graph scores remain exploratory, including pending reference proposals.")}
 
     def learning_curve(self, sizes: Sequence[int] = (5, 10, 15, 20),
                        k: int = 5, repeats: int = 40, seed: int = 0, *,
                        as_of: Optional[str] = None) -> dict:
-        """Empirical payoff of the feedback loop: does inference improve as more
-        claims get externally checked?
+        """Resampling diagnostic using direct observed receipt labels only.
 
-        Over the CHECKED claims only (real external trust, nothing fabricated), for
-        each reference-set size m: repeatedly sample m checked claims as the "known"
-        set, predict every other checked claim's trust from that set by
-        similarity-weighted kNN, and score skill against the known-set mean baseline.
-        A rising skill-vs-m curve is direct evidence that accumulating external
-        checks -- the frontier `explore_frontier` proposes -- makes synthetic
-        inference progressively more licensed. No trust is invented; unknown claims
-        are simply excluded, exactly as they are in the live field.
+        More observed labels can improve this local prediction diagnostic; the
+        curve is not evidence of future efficacy or a confidence guarantee.
         """
-        ids, E, trusts, _ = self._all(as_of=as_of)
-        checked = np.where(trusts != 0.0)[0]
+        ids, E, scores, meta = self._all(as_of=as_of)
+        trusts = self._labels(meta)
+        checked = np.where(~np.isnan(trusts))[0]
         if len(checked) < max(sizes) + 1:
             sizes = tuple(s for s in sizes if s < len(checked))
         rng = np.random.default_rng(seed)
@@ -615,4 +606,5 @@ class Brain:
                 "trust_mean": round(float(trusts.mean()), 4) if len(ids) else None,
                 "trust_min": round(float(trusts.min()), 4) if len(ids) else None,
                 "trust_max": round(float(trusts.max()), 4) if len(ids) else None,
-                "domains": len(doms)}
+                "domains": len(doms), "n_checked": sum(m["checked"] for m in meta),
+                "score_basis": "exploratory_graph_score"}

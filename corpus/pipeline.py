@@ -62,13 +62,17 @@ def stage_graph(receipts, runtime) -> dict:
     (runtime / "claims_index.json").write_text(json.dumps(augmented_index(receipts), indent=2))
     s = g["summary"]
     claim_trust = [n["trust"] for n in g["nodes"] if n["kind"] == "claim"]
-    checked = sum(1 for t in claim_trust if t != 0.0)
+    scored = sum(1 for t in claim_trust if t != 0.0)
+    from brain_evidence import fields
+    checked = sum(fields(n["attrs"].get("check_provenance"))["checked"]
+                  for n in g["nodes"] if n["kind"] == "claim")
     print(f"  nodes {s['nodes']}  edges {s['edges']}  by_kind {s['by_kind']}")
-    print(f"  claims with nonzero evidence scores: {checked}/{len(claim_trust)}")
+    print(f"  claims with nonzero evidence scores: {scored}/{len(claim_trust)}")
+    print(f"  claims with direct observed verdicts: {checked}/{len(claim_trust)}")
     print("  => oracle receipts concern run-validation propositions only; source references "
           "remain attribution. Existing reference/owner scores retain their provenance.")
     return {"stage": "graph", "status": "ok", "nodes": s["nodes"], "edges": s["edges"],
-            "checked": checked, "claims": len(claim_trust)}
+            "checked": checked, "scored": scored, "claims": len(claim_trust)}
 
 
 def stage_brain(runtime, embedder="model2vec", as_of=None) -> tuple[dict, object]:
@@ -84,7 +88,7 @@ def stage_brain(runtime, embedder="model2vec", as_of=None) -> tuple[dict, object
           f"pearson_r={cal.get('pearson_r')} sign_agreement={cal.get('sign_agreement')}")
     print(f"  imputation licensed? {cal.get('licensed', False)} -- {cal.get('verdict', 'insufficient data')}")
     print(f"  checked-only (n={cal.get('n_checked', 0)}): skill={cal.get('checked_only', {}).get('skill')}")
-    print("  learning curve (skill as #external-checks grows; real trust only):")
+    print("  learning curve (local resampling over direct receipt labels):")
     for pt in lc["curve"]:
         ms = pt["mean_skill"]
         print(f"      m={pt['m']:>2}  mean_skill={ms:+.4f}" if ms is not None
@@ -93,8 +97,8 @@ def stage_brain(runtime, embedder="model2vec", as_of=None) -> tuple[dict, object
     if len(pts) >= 2:
         trend = "rises overall" if pts[-1] > pts[0] else "does not rise"
         strict = " and monotonically" if lc["monotone_up"] else " (not strictly monotone on this small sample)"
-        print(f"  skill {trend} ({pts[0]:+.3f} -> {pts[-1]:+.3f}){strict}  => more external "
-              "checks tend to make synthetic inference more licensed.")
+        print(f"  skill {trend} ({pts[0]:+.3f} -> {pts[-1]:+.3f}){strict}; this local diagnostic "
+              "does not establish future efficacy or prediction confidence.")
     return {"stage": "brain", "status": "ok", "calibration": cal, "learning_curve": lc}, brain
 
 
@@ -103,25 +107,25 @@ def stage_retrieve_explore(brain: Brain, as_of=None) -> dict:
     q = "can machine learning beat the market despite efficiency?"
     print(f"  retrieve (trust-weighted) <- \"{q}\"")
     for f in brain.retrieve(q, k=3, trust_weighted=True, as_of=as_of):
-        print(f"      [{f.trust:+.2f} trust | sim {f.similarity:.2f}] {f.text[:66]}")
+        print(f"      [{f.trust:+.2f} exploratory score | sim {f.similarity:.2f}] {f.text[:66]}")
     print("  explore frontier (gaps: unchecked & central -> highest-leverage checks):")
     for d in brain.explore_frontier(k=3, mode="gaps", as_of=as_of):
         print(f"      [{d['centrality']:.2f} central] {d['text'][:66]}")
-    print("  explore frontier (contested: checked, neighbours disagree):")
+    print("  explore frontier (checked propositions with differing nearby verdicts):")
     for d in brain.explore_frontier(k=2, mode="contested", as_of=as_of):
         print(f"      [{d['trust']:+.2f} trust, var {d['neighbor_trust_var']:.2f}] {d['text'][:60]}")
-    print("  bridge hypotheses (two trusted facts, different domains, mid-distance):")
+    print("  bridge hypotheses (two directly confirmed propositions, different domains):")
     for p in brain.bridge_hypotheses(k=2, as_of=as_of):
         print(f"      {p['a_domain']} <-> {p['b_domain']} (sim {p['similarity']:.2f}):")
         print(f"        A: {p['a_text'][:60]}")
         print(f"        B: {p['b_text'][:60]}")
-    print("  synthesis (answer: retrieval + inference + exploration, cited & gated):")
+    print("  answer lookup (related claims and direct evidence coverage; no entailment):")
     for aq in ("can machine learning reliably beat the market?",
                "is a paper loss a real loss even if I do not sell?"):
         a = brain.answer(aq, as_of=as_of)
         print(f"      Q: {aq}")
         print(f"        stance: {a['stance']}  (checked {a.get('n_checked', 0)}/{a.get('n_relevant', 0)} "
-              f"relevant, licensed_locally={a.get('licensed_locally', False)})")
+              f"relevant, answer_status={a['answer_status']})")
         if a.get("proposed_next_check"):
             print(f"        next external check -> {a['proposed_next_check']['text'][:56]}")
     print("  => every item above is a PROPOSAL for an external check, never a verdict.")
@@ -145,7 +149,7 @@ def stage_temporal(brain: Brain) -> dict:
           f"{before['stance']} ({before.get('n_relevant', 0)} relevant facts knowable)")
     print(f"  answer as-of 2024-06-01 (after 005 published 2024-04-17): stance "
           f"{after['stance']} ({after.get('n_relevant', 0)} relevant facts knowable)")
-    print("  => the brain answers 'what did we know as of T' -- knowable_time <= T only.")
+    print("  => retrieval requires knowable_time <= T; checked labels also require observation time <= T.")
     ev = ROOT / "corpus" / "events"
     n_events = 0
     try:
