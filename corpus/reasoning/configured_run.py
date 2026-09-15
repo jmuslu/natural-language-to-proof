@@ -16,6 +16,8 @@ def main():
     parser.add_argument("--connection-service", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--oracle-repo", type=Path, required=True)
+    parser.add_argument("--reasoning-effort", choices=("none", "minimal", "low", "medium", "high", "xhigh", "max"))
+    parser.add_argument("--request-timeout", type=float)
     args, remaining = parser.parse_known_args()
     if "--service" in remaining or "--role" in remaining:
         parser.error("select only one connection mechanism")
@@ -24,6 +26,10 @@ def main():
     os.environ.update(REASONING_BASE_URL=config.base_url,
                       REASONING_API_KEY=config.api_key,
                       REASONING_MODEL=args.model)
+    if args.reasoning_effort is not None:
+        os.environ["REASONING_EFFORT"] = args.reasoning_effort
+    if args.request_timeout is not None:
+        os.environ["REASONING_TIMEOUT_SECONDS"] = str(args.request_timeout)
     sys.argv = [sys.argv[0], "--oracle-repo", str(args.oracle_repo), *remaining]
     run()
 

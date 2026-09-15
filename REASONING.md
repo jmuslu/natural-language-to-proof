@@ -78,6 +78,14 @@ Configure `REASONING_BASE_URL`, `REASONING_API_KEY`, and `REASONING_MODEL`, or
 explicitly select an existing service's configuration in memory. The latter
 does not install, restart, or send messages to that service.
 
+Controlled comparisons should explicitly set `REASONING_EFFORT` and
+`REASONING_TIMEOUT_SECONDS`; omitted effort uses the endpoint default. The
+`reasoning.configured_run` wrapper accepts `--reasoning-effort` and
+`--request-timeout`. The client records the requested setting and optional
+provider reasoning-token usage, with no silent effort fallback. It cannot attest
+that an intermediary honored the requested effort. Reasoning usage is a subset
+of completion usage, not an additional charge.
+
 ```sh
 PYTHONPATH=corpus python3 -m reasoning.run \
   --oracle-repo ~/projects --run-dir corpus/runtime/reasoning/dev-v2-a \
@@ -166,8 +174,17 @@ two calls / 120 seconds per arm. Every call allowed 4,096 output tokens.
 | Test / GPT-5.4-mini | Self-review | 6/15 | 0/10 | 3 | 30 | 85,750 |
 | Test / GPT-5.4-mini | Verified repair | 7/15 | 0/10 | 5 | 26 | 74,408 |
 
-The smaller model's development success did **not** generalize to longer chains:
-none of its test proposals supplied a valid supported answer. Its test raw false
+These historical requests **omitted reasoning effort**. Official model defaults
+currently differ: [GPT-5.4-mini](https://developers.openai.com/api/docs/models/gpt-5.4-mini)
+defaults to `none`, while [GPT-5.5](https://developers.openai.com/api/docs/models/gpt-5.5)
+defaults to `medium`. The OpenRouter behavior was not independently attested.
+Thus the table measures those endpoint configurations, not a matched-effort
+comparison or the smaller model's reasoning ceiling. Later runs must request
+matched effort explicitly and report the returned usage.
+
+Under that omitted-effort configuration, the smaller model's development success
+did **not** generalize to longer chains: none of its test proposals supplied a
+valid supported answer. Its test raw false
 assertions were 7/4/2 across the three arms; all were rejected. GPT-5.5 completed
 all answerable test proofs, including one successful feedback repair, with no
 aggregate improvement over its one-shot result. MiniMax's verified arm had no
@@ -175,7 +192,8 @@ successful repairs. Its final transport status was error in 5/7/6 test pairs,
 often because generation exhausted the output allowance before usable assistant
 text. This run cannot separate that limitation from reasoning difficulty.
 
-All six runs replayed with zero verification differences or integrity errors;
+All six runs replayed with zero verification differences or integrity errors
+against their recorded source versions;
 all had zero certified false assertions and zero budget overruns. MiniMax used
 a 60-second request timeout; the explicit GPT connection wrapper used 30 seconds.
 Recorded response times and transport events permit inspection of that difference.
@@ -183,6 +201,9 @@ Independent first samples per arm and this small sample size limit causal method
 comparisons. These are finite synthetic composition results, not evidence of
 frontier-level general reasoning or alpha discovery. Inspected test tasks are now
 consumed evaluation data; later tuning needs fresh seeds and compositions.
+Strict replay checks source hashes: use the recorded historical code when
+replaying these runs after a client or runner change; never rewrite old hashes
+to make them match new code.
 
 Artifacts under ignored `corpus/runtime/reasoning/` are `dev-v2-a`, `test-v2-a`,
 `dev-gpt55-a`, `test-gpt55-a`, `dev-gpt54mini-a`, and `test-gpt54mini-a`.
