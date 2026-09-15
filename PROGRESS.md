@@ -133,8 +133,19 @@ disposes of it.
   residual = a regime break/bifurcation): at a +1.0 jump it tracks with MAE 0.07 and
   honestly widens covariance to 0.11, vs a fixed filter's confidently-wrong MAE 0.65 at
   covariance 0.012. Same residual principle as the alpha signal and the meta-learner.
-  All corpus self-tests green. *Open:* estimand identity/registry; deeper compositional
-  multi-hop; scaling grok invariant-induction to noisy/soft labels.
+  All corpus self-tests green. *Open:* estimand identity/registry.
+- **[built] Domain-general reasoning + the layers talk to each other** (`reason.py`,
+  `abstain.py`, `retract.py`). `reason.py` lifts the Haskell type discipline (`Ty`/`catTy`/
+  combinators; `Semantics/Lambda.hs`, `Syntax/Category.hs`, `CCGRules.hs`) into the brain —
+  one type algebra across linguistic, abstract, and *trading* composition, the type functor
+  refusing ill-typed steps; **robustness of reasoning is domain-general, the trading domain
+  an instantiation, not the point** (the Sharpe-centric `compose.py` was written and removed
+  as a domain-overfit). `abstain.py`: the faithfulness gate — the discrete invariant stays
+  faithful by REFUSING low-confidence labels (ingest-all corrupts it; abstaining keeps the
+  exact invariant on fewer labels). `retract.py`: least-fixed-point grounding + **precise
+  retraction** mirroring `Genealogy.hs` — a claim with a second independent derivation
+  survives a premise's retraction; the naive downstream answer over-retracts; a cycle grounds
+  nothing (anti-self-agreement). The brain's grounding now speaks Genealogy's language.
 
 ## 5. Temporal discipline (`TEMPORAL.md`, condensed)
 
