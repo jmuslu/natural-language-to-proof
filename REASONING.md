@@ -1,5 +1,12 @@
 # Multi-hop reasoning: protocol and evidence
 
+The financial objective is to compose testable alpha hypotheses from participant
+constraints and incentives, through positioning and order flow, to conditional
+price responses and an executable signal after costs. Logical composition checks
+are one part of this process. Uncertain economic links require explicit empirical
+targets, dependent-evidence accounting, and independent confirmation; a valid
+proof under supplied rules does not establish those rules in markets.
+
 ## Components
 
 | Component | Contract |
@@ -124,34 +131,64 @@ proposal hash, evidence snapshot hash, journal revisions and observation times,
 and the checked consequence. Recheck after evidence/rule revisions; a previous
 artifact does not certify the current state. `--as-of` uses historical evidence.
 
-## Measured development checkpoint
+The connected `corpus/pipeline.py` also accepts `--proof-task` and
+`--proof-proposal` together. It rechecks journal-backed leaves and writes
+`proof_report.json`; rejected or malformed input replaces any stale successful
+report and makes the CLI exit unsuccessfully.
 
-`dev-v2-a`, 2026-09-15: exact model `minimax/minimax-m2.7` at the explicitly
-configured OpenRouter endpoint. Three two-hop chain episodes: one entailed,
-one refuted, one unknown. Prompt unchanged from `proof-proposer-v1`.
+## Measured model checkpoints
 
-| Arm | Raw labels correct | Supported answers / 2 answerable | Correct raw unknowns | Calls | Charged tokens |
-|---|---:|---:|---:|---:|---:|
-| One-shot | 3/3 | 2/2 | 1 | 3 | 9,883 |
-| Generic self-review | 3/3 | 1/2 | 1 | 6 | 17,739 |
-| Verified repair | 3/3 | 2/2 | 1 | 3 | 7,112 |
+All runs below used the same `typed-worlds-v2` data and `proof-proposer-v1`
+prompt, through the existing OpenRouter connection. Model IDs are explicit;
+there was no automatic model substitution. Development used three two-hop
+episodes, one per answer, at 24,000 tokens / two calls / 100 seconds per arm.
+Test used 15 episodes at depths 4/6/8 and all five topologies, with 48,000 tokens /
+two calls / 120 seconds per arm. Every call allowed 4,096 output tokens.
 
-All 12 calls completed, with 34,734 charged tokens and no budget overruns or
-false assertions. The self-review arm twice retained nonchronological premise
-references on one episode. The verified arm's initial proofs already passed,
-so **this run contains no successful repair and no evidence of improvement over
-one-shot**. Different first proposals use independent model samples; three tasks
-cannot separate sampling variation from method effects. Two access smoke tests
-used another 117 tokens, outside this experiment.
+| Split / exact model | Arm | Raw correct | Supported / answerable | Correct raw unknowns | Calls | Charged tokens |
+|---|---|---:|---:|---:|---:|---:|
+| Dev / `minimax/minimax-m2.7` | One-shot | 3/3 | 2/2 | 1 | 3 | 9,883 |
+| Dev / MiniMax | Self-review | 3/3 | 1/2 | 1 | 6 | 17,739 |
+| Dev / MiniMax | Verified repair | 3/3 | 2/2 | 1 | 3 | 7,112 |
+| Dev / `openai/gpt-5.5` | One-shot | 3/3 | 2/2 | 1 | 3 | 5,277 |
+| Dev / GPT-5.5 | Self-review | 3/3 | 2/2 | 1 | 6 | 10,911 |
+| Dev / GPT-5.5 | Verified repair | 3/3 | 2/2 | 1 | 3 | 5,333 |
+| Dev / `openai/gpt-5.4-mini` | One-shot | 2/3 | 0/2 | 0 | 3 | 5,087 |
+| Dev / GPT-5.4-mini | Self-review | 1/3 | 1/2 | 0 | 6 | 10,437 |
+| Dev / GPT-5.4-mini | Verified repair | 3/3 | 2/2 | 1 | 5 | 8,493 |
+| Test / MiniMax | One-shot | 9/15 | 5/10 | 4 | 15 | 83,475 |
+| Test / MiniMax | Self-review | 7/15 | 2/10 | 3 | 23 | 119,234 |
+| Test / MiniMax | Verified repair | 9/15 | 6/10 | 3 | 15 | 85,966 |
+| Test / GPT-5.5 | One-shot | 15/15 | 10/10 | 5 | 15 | 46,464 |
+| Test / GPT-5.5 | Self-review | 15/15 | 10/10 | 5 | 30 | 96,193 |
+| Test / GPT-5.5 | Verified repair | 15/15 | 10/10 | 5 | 16 | 50,751 |
+| Test / GPT-5.4-mini | One-shot | 6/15 | 0/10 | 2 | 15 | 41,295 |
+| Test / GPT-5.4-mini | Self-review | 6/15 | 0/10 | 3 | 30 | 85,750 |
+| Test / GPT-5.4-mini | Verified repair | 7/15 | 0/10 | 5 | 26 | 74,408 |
 
-Offline replay reconstructed all nine episode/arm records with zero verification
-differences or integrity errors. Original artifacts are retained under ignored
-`corpus/runtime/reasoning/dev-v2-a/` on the research host.
+The smaller model's development success did **not** generalize to longer chains:
+none of its test proposals supplied a valid supported answer. Its test raw false
+assertions were 7/4/2 across the three arms; all were rejected. GPT-5.5 completed
+all answerable test proofs, including one successful feedback repair, with no
+aggregate improvement over its one-shot result. MiniMax's verified arm had no
+successful repairs. Its final transport status was error in 5/7/6 test pairs,
+often because generation exhausted the output allowance before usable assistant
+text. This run cannot separate that limitation from reasoning difficulty.
 
-- Dataset SHA256: `16f03b28ebe15b7a0adb1827036571b97aef278786ddce2444ee93ad0c232163`
+All six runs replayed with zero verification differences or integrity errors;
+all had zero certified false assertions and zero budget overruns. MiniMax used
+a 60-second request timeout; the explicit GPT connection wrapper used 30 seconds.
+Recorded response times and transport events permit inspection of that difference.
+Independent first samples per arm and this small sample size limit causal method
+comparisons. These are finite synthetic composition results, not evidence of
+frontier-level general reasoning or alpha discovery. Inspected test tasks are now
+consumed evaluation data; later tuning needs fresh seeds and compositions.
+
+Artifacts under ignored `corpus/runtime/reasoning/` are `dev-v2-a`, `test-v2-a`,
+`dev-gpt55-a`, `test-gpt55-a`, `dev-gpt54mini-a`, and `test-gpt54mini-a`.
+The six runs charged 763,808 tokens in total; two prior access smokes used 117
+additional tokens. Immutable run configs record model/endpoint, full dataset,
+source code and prompt hashes, caps, and exact responses.
+
+- Development dataset SHA256: `16f03b28ebe15b7a0adb1827036571b97aef278786ddce2444ee93ad0c232163`
 - Prompt SHA256: `be83bf0c2fd36590753356cdb4846ea18a88a5e5718076b3b3fa46ac9ec93115`
-
-The next frozen pilot uses 15 test episodes across depths 4/6/8 and all five
-topologies, the same prompt, and 48,000-token / two-call / 120-second ceilings per
-arm/episode (4,096 output tokens per call). Test responses are evaluation data;
-any later tuning needs fresh held-out seeds/compositions.

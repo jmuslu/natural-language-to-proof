@@ -13,8 +13,9 @@ import random
 import statistics
 
 from abstain import fit_threshold, labeled_stream, risk_coverage
-from grok import CORE, KILLER, Grokker, Memorizer, accuracy, is_real, sample_signal
+from grok import CORE, KILLER, FEATURES, Grokker, Memorizer, accuracy, is_real, sample_signal
 from metalearn import ResidualLearner, fixed_policy, incurred
+from robust_concept import Conjunction, train_candidates, select_candidate, prediction_confidence
 
 
 def concept_experiment(seed=9201, n_train=1200, n_test=600):
@@ -156,9 +157,96 @@ def selector_experiment(seed=9401, n_train=6000, n_calibration=2000, n_test=4000
             "scope": "Simulated fallible channels; costs are stipulated units. Hindsight regret compares with a nondeployable per-example lower bound. Test labels never update the policy; training probes are additional reported cost."}
 
 
+def induction_rows(seed, n, scenario, *, changed_target=False):
+    """Synthetic world outcomes and fallible labels, generated before model fitting."""
+    if scenario not in ("clean", "symmetric_noise", "confident_asymmetric_errors", "irreducible_outcome_noise"):
+        raise ValueError("unknown induction scenario")
+    rng, rows = random.Random(seed), []
+    for _ in range(n):
+        features, latent, _ = sample_signal(rng, "market")
+        if changed_target:
+            latent = ("weak_predictor_residual" in features) != ("regime_conditional" in features)
+        # Irreducible outcome variation is different from a bad observed label.
+        truth = latent ^ (scenario == "irreducible_outcome_noise" and rng.random() < .25)
+        if scenario == "symmetric_noise":
+            score, flip_probability = rng.choice((.55, .75, .95)), None
+            flip_probability = 1-score
+        elif scenario == "confident_asymmetric_errors":
+            score, flip_probability = .95, .4 if truth else .05
+        else:
+            score, flip_probability = .99, 0.
+        observed = truth ^ (rng.random() < flip_probability)
+        rows.append({"features": features, "observed": observed, "truth": truth,
+                     "score": score, "latent": latent})
+    return rows
+
+
+def robust_induction_experiment(seed=9501, n_train=1500, n_selection=4000,
+                                n_risk_calibration=2000, n_test=4000, *, evaluation_role="development"):
+    """Same noisy training labels for three discrete induction methods.
+
+    Model/complexity and source-label threshold use selection calibration only.
+    Prediction-risk calibration is separate again; test data select nothing.
+    """
+    if evaluation_role not in ("development", "fixed_replication"):
+        raise ValueError("evaluation role must distinguish development from a fixed replication")
+    scenarios = ("clean", "symmetric_noise", "confident_asymmetric_errors", "irreducible_outcome_noise")
+    result = {}
+    for index, scenario in enumerate(scenarios):
+        start = seed+100*index
+        train = induction_rows(start, n_train, scenario)
+        selection = induction_rows(start+1, n_selection, scenario)
+        risk_calibration = induction_rows(start+2, n_risk_calibration, scenario)
+        test = induction_rows(start+3, n_test, scenario)
+        pairs = lambda rows, label: [(row["features"], row[label]) for row in rows]
+        checked_selection = pairs(selection, "truth")
+        source_threshold = fit_threshold([(row["score"], row["observed"], row["truth"]) for row in selection])
+        exact, selection_only = Grokker(), Grokker()
+        selected_count = 0
+        for row in train:
+            exact.learn(row["features"], row["observed"])
+            if source_threshold.accepts(row["score"]):
+                selection_only.learn(row["features"], row["observed"])
+                selected_count += 1
+        candidates, resources = train_candidates(pairs(train, "observed"), FEATURES)
+        robust, candidate_scores = select_candidate(candidates, checked_selection)
+        # Freeze the same R/K patterns once; evaluating must not relearn them or
+        # repeatedly scan every historical negative at every test prediction.
+        freeze = lambda model: Conjunction(tuple(sorted(model.R)), tuple(sorted(model.K)), not model.pos_seen)
+        models = {"exact_intersection": freeze(exact), "selection_only": freeze(selection_only),
+                  "empirical_signed_conjunction": robust}
+        tests = {"same_distribution": test}
+        if scenario == "symmetric_noise":
+            tests["changed_target"] = induction_rows(start+4, n_test, scenario, changed_target=True)
+        reports = {}
+        for name, model in models.items():
+            confidence = prediction_confidence(model, checked_selection)
+            scored = lambda rows: [(confidence[model.predict(row["features"])],
+                                   model.predict(row["features"]), row["truth"]) for row in rows]
+            threshold = fit_threshold(scored(risk_calibration))
+            reports[name] = {"prediction_confidence": {"false": confidence[False], "true": confidence[True]},
+                             "risk_threshold": threshold.to_dict(),
+                             "tests": {test_name: {"all_predictions": risk_coverage(scored(rows)),
+                                                   "with_abstention": risk_coverage(scored(rows), threshold)}
+                                       for test_name, rows in tests.items()}}
+        result[scenario] = {
+            "split_seeds": {"train": start, "selection": start+1, "risk_calibration": start+2,
+                            "test": start+3, "changed_target_test": start+4 if "changed_target" in tests else None},
+            "training_label_error_rate": sum(row["observed"] != row["truth"] for row in train)/n_train,
+            "training_outcome_variation_rate": sum(row["truth"] != row["latent"] for row in train)/n_train,
+            "source_label_threshold": source_threshold.value, "training_labels_selected": selected_count,
+            "exact_training_consistent": exact.consistent, "selection_training_consistent": selection_only.consistent,
+            "hypothesis_class": resources, "selected_model": robust.to_dict(),
+            "candidate_scores": candidate_scores, "methods": reports}
+    return {"seed": seed, "evaluation_role": evaluation_role, "n_train": n_train, "n_selection": n_selection,
+            "n_risk_calibration": n_risk_calibration, "n_test_each": n_test, "scenarios": result,
+            "scope": "Finite signed-conjunction class with supplied feature universe. Same noisy labels train all methods; separate checked calibration outcomes select complexity and then validate abstention. No hidden corruption flag or test outcome enters a learner. Risk bounds require unchanged sampling; irreducible variation and target shift remain failure controls."}
+
+
 def run():
-    return {"schema": "adaptive-outcomes-v1", "concept": concept_experiment(),
-            "abstention": abstention_experiment(), "selector": selector_experiment()}
+    return {"schema": "adaptive-outcomes-v2", "concept": concept_experiment(),
+            "abstention": abstention_experiment(), "selector": selector_experiment(),
+            "robust_induction": robust_induction_experiment()}
 
 
 def main():

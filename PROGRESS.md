@@ -6,6 +6,16 @@ or regression passed. **Measured** names an actual experiment and its scope.
 **Historical** means retained earlier measurements, not rerun in this checkpoint.
 An implementation test does not by itself establish reasoning or market efficacy.
 
+## Financial target
+
+The intended outcome is inductive alpha research: start from participant incentives
+or constraints, propose links through positioning and order flow to a conditional
+price response, and test a signal with explicit timing and costs. The system must
+compose uncertain links, seek discriminating measurements, and reuse failed tests
+to refine conditional hypotheses. The original private Futures-Reversal writeup
+is the concrete starting mechanism; generic daily-price baselines and synthetic
+proof tasks establish supporting behavior, not completion of that objective.
+
 ## Connected system
 
 | Area | Current result | Evidence / remaining boundary |
@@ -14,9 +24,9 @@ An implementation test does not by itself establish reasoning or market efficacy
 | Retraction and history | **Checked.** Exact support differences, inert duplicate replay, explicit reinstatement, stale-evidence rejection, UTC/as-of retrieval. | `test_oracle_bridge.py`, `test_grounding.py`, `test_temporal.py`. Historical journal replay recovers earlier evidence; latest-only snapshots cannot. |
 | Haskell admission boundary | **Checked.** Private positional constructors and read-only getters prevent forging Confirmed/Fused values through construction or record updates. | 899 runtime checks across five suites; six compile-failure regressions and a positive API check. |
 | Typed multi-hop proofs | **Checked.** Signed claims, exact entity bindings, conjunctions, chronological steps, bounded proof depth, unconfirmed-leaf rejection, and alternative-support withdrawal. | [REASONING.md](REASONING.md). Supplied rules are explicit assumptions; arbitrary-language extraction is separate. |
-| Receipt-backed proof leaves | **Checked.** `reasoning.ledger` binds only run-validation facts, supports scoped negative receipts, rechecks revisions, and fingerprints task/rule/evidence dependencies. | Six cross-repository regressions; rule consequences retain their assumption scope. |
-| Model loop | **Measured development run.** Pinned MiniMax M2.7, three generated episodes, one-shot/self-review/checker-feedback arms, usage recorded and independently replayed. | Full protocol and result table in [REASONING.md](REASONING.md). Held-out evaluation is ongoing. |
-| Retrieval confidence | **Historical limitation.** Existing semantic trust-imputation skill was near its mean-null baseline on the small corpus. | Remains unlicensed; oracle wiring does not establish calibrated confidence. |
+| Receipt-backed proof leaves | **Checked.** `reasoning.ledger` and the pipeline bind only run-validation facts, support scoped negative receipts, recheck revisions, and fingerprint task/rule/evidence dependencies. | Seven cross-repository regressions; rule consequences retain their assumption scope. |
+| Model loop | **Measured.** Three exact models, three development and 15 longer test episodes each, one-shot/self-review/checker-feedback arms; all six runs independently replayed. | [REASONING.md](REASONING.md). GPT-5.5 supported 10/10 answerable test cases per arm; GPT-5.4-mini supported 0/10. One feedback pass has not closed the smaller-model gap. |
+| Retrieval confidence | **Repair in progress.** Base corpus references are pending proposed verdicts, but current Brain retrieval loses that distinction when reporting checked coverage. | No directly checked base factual claims exist. Direct observed receipt provenance must be kept separate from exploratory graph scores; semantic similarity does not establish entailment. |
 
 The two repositories are connected through explicit artifact interfaces. The
 language parser, corpus retrieval, typed proof search, numerical uncertainty,
@@ -31,6 +41,12 @@ and evidence are independently specified.
 - **Checked positive integration:** a planted synthetic timing series passes
   the statistical oracle and reaches Haskell. This establishes transport and
   validation behavior, not discovery of a profitable strategy.
+- **Measured cached-price replay:** seven daily-price caches × three fixed
+  long/cash policies produced 21 completed validation runs, all refuted under
+  `passes_validation(run_id)`. The connected journal/Haskell/graph pipeline
+  retained all 21 outcomes. This retrospective baseline experiment does not test
+  the original NQ intraday mechanism. Protocol, full family and limitations:
+  [agentic-qr report](https://github.com/aiqs-org/agentic-qr/blob/main/docs/R30_CACHED_PRICE_REPLAY.md).
 - **Historical event-study demonstration:** seven hand-selected events produced
   approximately +17.5% mean signed one-day abnormal return, p≈.0002. Selection
   prevents treating this as a systematic performance estimate. The original
@@ -53,7 +69,8 @@ It replaces repeated session narratives. Key results already implemented:
 | Online surprise | Causal predictive/posterior KL and predictive density added; log-space HMM checked against exhaustive paths. Full-sequence smoothing remains explicitly retrospective. |
 | Nonstationarity | First observation used once; variance/standard-deviation mismatch fixed. Separate jump-adaptive and outlier-robust options expose opposing tradeoffs. |
 | Conditional discovery | An independently evaluated XOR interaction survives zero marginal effects; retain conditional search with untouched confirmation. |
-| Confidence and selection | Current prototype confidence, method selection, necessity, and numerical conversions have identified unsupported assumptions. Contract fixes and outcome-based experiments are in progress. |
+| Confidence and selection | Explicit numerical targets, equivalence margins and outcome-based method selection replace unsupported shortcuts. A finite noise-tolerant concept learner succeeds on two same-law replications; changed target laws still defeat its calibration. |
+| Uncertainty and pooling | Two 200-replicate matrices compare matched methods. Covariance modeling repairs common-error undercoverage; heavier tails alone do not. Partial pooling helps exchangeable groups and fails a shifted subgroup. Nonlinear exact-model and simulation results expose delta-method and tail-sampling limits. |
 
 The initial research battery has 12 reusable cases. Nine HMM tests, eight Kalman
 tests, and thirteen battery tests passed at the causal-method checkpoint.
