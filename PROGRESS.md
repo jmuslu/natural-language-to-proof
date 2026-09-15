@@ -128,8 +128,13 @@ disposes of it.
   NOVEL signals it never saw (precision/recall 1.00) and grounds the real ones. The
   measurement plane (`agentic-qr:shared/backtesting/grounding.py`) emits the `grounding`
   block and is cross-checked against the real colimit — **loop closed across both repos.**
-  All corpus self-tests green. *Open:* estimand identity/registry; non-stationary/regime-
-  conditional (state-space) estimands; scaling the grok invariant-induction to noisy labels.
+- **[built] Non-stationary regime estimand** (`regime_estimand.py`). The estimand is a
+  state tracked by a Kalman filter whose process noise inflates on surprise (the innovation
+  residual = a regime break/bifurcation): at a +1.0 jump it tracks with MAE 0.07 and
+  honestly widens covariance to 0.11, vs a fixed filter's confidently-wrong MAE 0.65 at
+  covariance 0.012. Same residual principle as the alpha signal and the meta-learner.
+  All corpus self-tests green. *Open:* estimand identity/registry; deeper compositional
+  multi-hop; scaling grok invariant-induction to noisy/soft labels.
 
 ## 5. Temporal discipline (`TEMPORAL.md`, condensed)
 
