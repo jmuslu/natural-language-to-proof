@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The islands — how the pieces connect (and don't)</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--ink:#1c2230;--muted:#5b6473;--line:#e6e9f0;
+    --g:#1f9d55;--a:#c77700;--r:#d64545;--accent:#5b5bd6;--gap:#d64545}
+  @media(prefers-color-scheme:dark){:root{--bg:#10121a;--card:#1b1e27;--ink:#eef1f7;--muted:#9aa3b2;--line:#2a2e3a}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:18px 14px}
+  .wrap{max-width:1120px;margin:0 auto}
+  h1{font-size:23px;margin:0 0 4px;text-align:center}
+  .sub{color:var(--muted);text-align:center;font-size:14px;max-width:760px;margin:0 auto 10px}
+  .bar{display:flex;gap:16px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:12.5px;color:var(--muted);margin:8px 0}
+  .bar b{color:var(--ink)}
+  .k{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .ln{width:26px;height:0;border-top:3px solid var(--muted)}
+  .ln.dash{border-top:3px dashed var(--gap)}
+  button{font:inherit;font-size:12.5px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 11px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  .frame{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:8px;overflow:hidden}
+  svg{display:block;width:100%;height:auto;touch-action:none}
+  text{font-family:inherit;user-select:none;-webkit-user-select:none}
+  .glab{font-size:12px;font-weight:800;letter-spacing:.06em;opacity:.35;text-transform:uppercase}
+  .nlab{font-size:11px;font-weight:600}
+  .node circle{cursor:grab}
+  .node.pinned circle{stroke-dasharray:2 2}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🧩 The islands — how the pieces connect (and don’t)</h1>
+  <p class="sub">Each blob is a layer of the project. <b>Solid line = a real connection</b> (code actually flows). <b>Dashed red = the bridge that <i>should</i> exist but doesn’t yet</b> — that’s why the layers stay islands. Drag anything to rearrange; drops stay pinned.</p>
+  <div class="bar">
+    <span class="k"><span class="dot" style="background:var(--g)"></span> works</span>
+    <span class="k"><span class="dot" style="background:var(--a)"></span> alone / synthetic</span>
+    <span class="k"><span class="dot" style="background:var(--r)"></span> refuted</span>
+    <span class="k"><span class="ln"></span> real link</span>
+    <span class="k"><span class="ln dash"></span> missing bridge</span>
+    <button id="reheat">↻ shake loose</button>
+    <button id="unpin">unpin all</button>
+  </div>
+  <div class="frame">
+    <svg id="svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet"></svg>
+  </div>
+  <footer>A living picture of the wiring, not the final word · sits alongside MAP.html + GUIDE.html</footer>
+</div>
+<script>
+const SVG="http://www.w3.org/2000/svg";
+const svg=document.getElementById("svg");
+const C={g:getComputedStyle(document.documentElement).getPropertyValue('--g').trim()||'#1f9d55',
+         a:getComputedStyle(document.documentElement).getPropertyValue('--a').trim()||'#c77700',
+         r:getComputedStyle(document.documentElement).getPropertyValue('--r').trim()||'#d64545',
+         line:getComputedStyle(document.documentElement).getPropertyValue('--line').trim()||'#e6e9f0',
+         gap:'#d64545'};
+
+// layers (islands) with an anchor the members gently gravitate toward
+const G={
+ LANG :{x:180,y:150,label:"Language (Haskell)"},
+ VERIFY:{x:480,y:120,label:"Verify · trust core"},
+ BRIDGE:{x:660,y:330,label:"Bridges / pipeline"},
+ BRAIN:{x:380,y:360,label:"Graph + fact brain"},
+ REASON:{x:175,y:560,label:"Reasoning engine (synthetic)"},
+ MECH :{x:470,y:585,label:"Uncertainty mechanics"},
+ QR   :{x:840,y:520,label:"agentic-qr (oracle/exec)"},
+};
+// nodes: id,label,group,status
+const N=[
+ ["tok","Tokenizer","LANG","a"],["ccg","CCG parser","LANG","a"],["ty","Types e/t · catTy","LANG","g"],
+ ["drs","DRS / DRT","LANG","a"],["prag","Stage2 pragmatics","LANG","a"],
+ ["oracle","Oracle ★ truth gate","VERIFY","g"],["geneal","Genealogy · retract","VERIFY","g"],
+ ["fusion","Fusion","VERIFY","g"],["reward","Reward","VERIFY","g"],
+ ["recs","Corpus (5 records)","BRAIN","a"],["vclaims","verify_claims","BRAIN","a"],
+ ["graph","Epistemic graph","BRAIN","g"],["fit","fit_graph","BRAIN","g"],
+ ["brain","Fact brain (vectors)","BRAIN","a"],["agenda","Agenda / explore","BRAIN","a"],
+ ["engine","Horn proof engine","REASON","a"],["scaffold","Scaffold + baseline","REASON","a"],
+ ["bench","Benchmark / run","REASON","a"],["ledger","Ledger (receipts)","REASON","a"],
+ ["estimand","estimand","MECH","a"],["multihop","multihop·reason·retract","MECH","a"],
+ ["grok","grok · discover","MECH","a"],["surprise","surprise·regime·residual","MECH","a"],
+ ["selm","selector·metalearn·alts","MECH","a"],["acq","acquisition·abstain","MECH","a"],
+ ["valo","Validation oracle","QR","g"],["grnd","grounding.py","QR","a"],
+ ["evs","Event study","QR","r"],["circ","caveman/verbose circles","QR","a"],
+ ["pipe","pipeline.py","BRIDGE","a"],["obr","oracle_bridge · ingest","BRIDGE","g"],
+ ["evt","Event store (temporal)","BRIDGE","g"],["fix","FuturesReversal fixture","BRIDGE","r"],
+];
+// links: s,t,kind  (strong=intra, thread=weak real cross, gap=missing/dashed)
+const L=[
+ ["tok","ccg","strong"],["ty","ccg","strong"],["ccg","drs","strong"],["ty","drs","strong"],["drs","prag","strong"],
+ ["drs","oracle","strong"],["oracle","fusion","strong"],["fusion","reward","strong"],["oracle","geneal","strong"],
+ ["recs","vclaims","strong"],["recs","graph","strong"],["vclaims","graph","strong"],["graph","fit","strong"],
+ ["graph","brain","strong"],["brain","agenda","strong"],["obr","graph","strong"],
+ ["engine","scaffold","strong"],["scaffold","bench","strong"],["engine","ledger","strong"],
+ ["estimand","multihop","strong"],["estimand","grok","strong"],["multihop","grok","strong"],
+ ["surprise","selm","strong"],["selm","acq","strong"],["multihop","surprise","strong"],
+ ["valo","grnd","strong"],["evt","evs","strong"],
+ // weak but REAL cross-layer threads
+ ["pipe","oracle","thread"],["pipe","graph","thread"],["pipe","brain","thread"],
+ ["grnd","estimand","thread"],["obr","valo","thread"],["ledger","obr","thread"],["fix","estimand","thread"],
+ // MISSING bridges (dashed) — the reasons the islands don't merge
+ ["drs","graph","gap"],       // DRS -> typed-fact extractor: NOT BUILT
+ ["agenda","engine","gap"],   // brain proposes -> reasoning: not wired
+ ["estimand","graph","gap"],  // mechanics never write the belief store
+ ["scaffold","valo","gap"],   // synthetic reasoning -> real oracle: untested together
+ ["evs","obr","gap"],         // refuted results not looped back
+ ["circ","valo","gap"],       // circles not driven by a real reasoning loop
+];
+const idx={}; N.forEach((n,i)=>idx[n[0]]=i);
+const nodes=N.map(([id,label,group,st])=>{const a=G[group];
+  return {id,label,group,st,x:a.x+(Math.random()*80-40),y:a.y+(Math.random()*80-40),vx:0,vy:0,fx:null,fy:null};});
+const links=L.map(([s,t,k])=>({s:idx[s],t:idx[t],k}));
+
+// ---- build DOM ----
+const glayer=document.createElementNS(SVG,"g");
+const llayer=document.createElementNS(SVG,"g");
+const nlayer=document.createElementNS(SVG,"g");
+svg.append(glayer,llayer,nlayer);
+for(const key in G){const t=document.createElementNS(SVG,"text");
+  t.setAttribute("class","glab");t.setAttribute("text-anchor","middle");
+  t.setAttribute("fill","currentColor");t.textContent=G[key].label;t.dataset.g=key;glayer.appendChild(t);}
+const lel=links.map(l=>{const e=document.createElementNS(SVG,"line");
+  e.setAttribute("stroke",l.k==="gap"?C.gap:C.line);
+  e.setAttribute("stroke-width",l.k==="strong"?2.4:l.k==="thread"?1.8:2);
+  if(l.k==="gap"){e.setAttribute("stroke-dasharray","6 5");e.setAttribute("opacity",".85");}
+  else e.setAttribute("opacity",l.k==="thread"?".55":".8");
+  llayer.appendChild(e);return e;});
+const nel=nodes.map((n,i)=>{const gp=document.createElementNS(SVG,"g");gp.setAttribute("class","node");
+  const col=C[n.st];
+  const c=document.createElementNS(SVG,"circle");c.setAttribute("r",n.id==="oracle"?11:8.5);
+  c.setAttribute("fill",col);c.setAttribute("fill-opacity",".28");c.setAttribute("stroke",col);c.setAttribute("stroke-width",2.5);
+  const t=document.createElementNS(SVG,"text");t.setAttribute("class","nlab");t.setAttribute("text-anchor","middle");
+  t.setAttribute("fill","currentColor");t.setAttribute("y",-13);t.textContent=n.label;
+  gp.append(c,t);gp.dataset.i=i;nlayer.appendChild(gp);return gp;});
+
+// ---- force sim ----
+let alpha=1;
+function tick(){
+  // charge repulsion
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const a=nodes[i],b=nodes[j];let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy||0.01;
+    if(d2<40000){const f=1900/d2, d=Math.sqrt(d2);const ux=dx/d,uy=dy/d;
+      a.vx+=ux*f*alpha;a.vy+=uy*f*alpha;b.vx-=ux*f*alpha;b.vy-=uy*f*alpha;}}
+  // springs (gaps exert no pull -> islands stay apart)
+  for(const l of links){if(l.k==="gap")continue;const a=nodes[l.s],b=nodes[l.t];
+    const len=l.k==="strong"?66:150, kk=l.k==="strong"?0.05:0.012;
+    let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||0.01;const f=(d-len)*kk*alpha;
+    const ux=dx/d,uy=dy/d;a.vx+=ux*f;a.vy+=uy*f;b.vx-=ux*f;b.vy-=uy*f;}
+  // gravity to group anchor
+  for(const n of nodes){const g=G[n.group];n.vx+=(g.x-n.x)*0.02*alpha;n.vy+=(g.y-n.y)*0.02*alpha;}
+  // integrate
+  for(const n of nodes){if(n.fx!=null){n.x=n.fx;n.y=n.fy;n.vx=n.vy=0;continue;}
+    n.vx*=0.86;n.vy*=0.86;n.x+=n.vx;n.y+=n.vy;
+    n.x=Math.max(30,Math.min(970,n.x));n.y=Math.max(28,Math.min(672,n.y));}
+  alpha*=0.994; if(alpha<0.02)alpha=0.02;
+  render();
+}
+function render(){
+  for(let i=0;i<links.length;i++){const l=links[i],a=nodes[l.s],b=nodes[l.t];
+    lel[i].setAttribute("x1",a.x);lel[i].setAttribute("y1",a.y);lel[i].setAttribute("x2",b.x);lel[i].setAttribute("y2",b.y);}
+  for(let i=0;i<nodes.length;i++){nel[i].setAttribute("transform",`translate(${nodes[i].x},${nodes[i].y})`);}
+  // group labels at member centroid (top)
+  for(const t of glayer.children){const key=t.dataset.g;let sx=0,sy=1e9,c=0;
+    for(const n of nodes)if(n.group===key){sx+=n.x;sy=Math.min(sy,n.y);c++;}
+    if(c){t.setAttribute("x",sx/c);t.setAttribute("y",sy-26);}}
+}
+let raf;function loop(){tick();raf=requestAnimationFrame(loop);}loop();
+
+// ---- drag (pin on drop) ----
+function toSVG(e){const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());}
+let drag=null;
+nlayer.addEventListener("pointerdown",e=>{const g=e.target.closest(".node");if(!g)return;
+  drag=+g.dataset.i;g.setPointerCapture(e.pointerId);alpha=Math.max(alpha,.5);
+  const p=toSVG(e);nodes[drag].fx=p.x;nodes[drag].fy=p.y;});
+svg.addEventListener("pointermove",e=>{if(drag==null)return;const p=toSVG(e);
+  nodes[drag].fx=p.x;nodes[drag].fy=p.y;});
+svg.addEventListener("pointerup",e=>{if(drag==null)return;
+  nel[drag].classList.add("pinned");drag=null;});
+document.getElementById("reheat").onclick=()=>{alpha=1;};
+document.getElementById("unpin").onclick=()=>{nodes.forEach((n,i)=>{n.fx=n.fy=null;nel[i].classList.remove("pinned");});alpha=1;};
+</script>
+</body>
+</html>
