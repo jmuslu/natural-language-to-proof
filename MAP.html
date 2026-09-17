@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is this project? (the simple version)</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --card:#ffffff; --ink:#1c2230; --muted:#5b6473; --line:#e6e9f0;
+    --green:#1f9d55; --greenbg:#e7f6ee;
+    --amber:#c77700; --amberbg:#fdf1dd;
+    --red:#d64545;   --redbg:#fbe6e6;
+    --accent:#5b5bd6;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#12141a; --card:#1b1e27; --ink:#eef1f7; --muted:#9aa3b2; --line:#2a2e3a;
+      --greenbg:#0f2a1c; --amberbg:#2c2009; --redbg:#2c1414; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5;padding:28px 16px}
+  .wrap{max-width:920px;margin:0 auto}
+  header{text-align:center;margin-bottom:8px}
+  h1{font-size:30px;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:17px;max-width:640px;margin:0 auto 4px}
+  .big1{background:linear-gradient(135deg,var(--accent),#8a5bd6);color:#fff;border-radius:18px;
+    padding:20px 22px;margin:20px 0;font-size:18px;text-align:center;box-shadow:0 6px 24px rgba(91,91,214,.25)}
+  h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:26px 0 12px}
+  /* flow */
+  .flow{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;justify-content:center}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 12px;
+    text-align:center;flex:1;min-width:130px}
+  .step .e{font-size:30px} .step .t{font-weight:700;margin-top:4px} .step .d{font-size:13px;color:var(--muted)}
+  .arrow{align-self:center;font-size:22px;color:var(--muted)}
+  .note{text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+  .dash{color:var(--red);font-weight:600}
+  /* cards */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;
+    border-left:6px solid var(--line)}
+  .card.g{border-left-color:var(--green)} .card.a{border-left-color:var(--amber)} .card.r{border-left-color:var(--red)}
+  .card .h{display:flex;align-items:center;gap:10px}
+  .card .e{font-size:26px}
+  .card .name{font-weight:800;font-size:17px}
+  .pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;margin:8px 0}
+  .pill.g{background:var(--greenbg);color:var(--green)} .pill.a{background:var(--amberbg);color:var(--amber)} .pill.r{background:var(--redbg);color:var(--red)}
+  .card p{margin:4px 0 0;color:var(--muted);font-size:15px}
+  /* truth */
+  .truth{margin:26px 0 8px;background:var(--card);border:2px dashed var(--accent);border-radius:16px;padding:18px 20px}
+  .truth b{color:var(--ink)}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;color:var(--muted);font-size:13px;margin-top:18px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🔍 What is this thing, really?</h1>
+    <p class="sub">A project that’s trying to build a careful “truth machine” — and this is an honest look at how far along it is.</p>
+  </header>
+
+  <div class="big1">
+    <b>The dream:</b> a machine that <b>reads</b> writing, <b>reasons</b> about it super carefully,
+    and only <b>believes</b> something once it’s <b>checked against the real world</b> — aimed at finding trading signals.
+  </div>
+
+  <h2>How it’s supposed to flow</h2>
+  <div class="flow">
+    <div class="step"><div class="e">📖</div><div class="t">Read</div><div class="d">turn English into logic</div></div>
+    <div class="arrow">⇢</div>
+    <div class="step"><div class="e">🧠</div><div class="t">Reason</div><div class="d">chain facts into a claim</div></div>
+    <div class="arrow">⇢</div>
+    <div class="step"><div class="e">🔬</div><div class="t">Check</div><div class="d">test it against reality</div></div>
+    <div class="arrow">⇢</div>
+    <div class="step"><div class="e">💾</div><div class="t">Remember</div><div class="d">keep only what passed</div></div>
+  </div>
+  <p class="note">Each box is built and works on its own — but the <span class="dash">arrows aren’t connected yet</span>. It’s parts, not one running machine.</p>
+
+  <h2>The parts, in plain words</h2>
+  <div class="grid">
+    <div class="card g">
+      <div class="h"><span class="e">🔒</span><span class="name">The Lie-Detector Lock</span></div>
+      <span class="pill g">★ Actually works — and genuinely clever</span>
+      <p>You <em>literally cannot</em> sneak an unchecked “fact” into the reward system — the computer refuses to build. This is the standout piece.</p>
+    </div>
+    <div class="card a">
+      <div class="h"><span class="e">📖</span><span class="name">The Grammar Reader</span></div>
+      <span class="pill a">Great — but plugged into nothing</span>
+      <p>Reads real English sentences ~99% correctly (tested on sentences it hadn’t seen). Impressive… and sitting alone on the shelf.</p>
+    </div>
+    <div class="card a">
+      <div class="h"><span class="e">🧩</span><span class="name">The Reasoning Puzzle-Solver</span></div>
+      <span class="pill a">Only on made-up puzzles</span>
+      <p>Solves tiny logic puzzles it invented for itself. A dumb brute-force shortcut almost ties it — so it’s a <em>test dummy</em>, not real reasoning yet.</p>
+    </div>
+    <div class="card a">
+      <div class="h"><span class="e">🧠</span><span class="name">The Brain &amp; Toolbox</span></div>
+      <span class="pill a">Lots of tools, tested one by one</span>
+      <p>Memory, uncertainty math, “learn the rule,” “know when to shut up.” All neat, all tested <em>separately</em> — never switched on together.</p>
+    </div>
+    <div class="card r">
+      <div class="h"><span class="e">💰</span><span class="name">The Money Test</span></div>
+      <span class="pill r">Tried for real — didn’t work yet</span>
+      <p>Every actual market test so far <em>failed</em> or was <em>biased</em>. The trading idea itself hasn’t been proven.</p>
+    </div>
+  </div>
+
+  <div class="truth">
+    🧰 <b>The honest truth:</b> Right now it’s a <b>workshop full of well-made tools — not a finished machine.</b>
+    The safety lock is real and smart. The reader is strong but lonely. Most of the rest works only on
+    pretend data. And the big promise — turning writing into a <b>money-making signal</b> — hasn’t come true yet.
+    <br><br>That’s not failure; it’s an early, <b>honestly-labeled</b> stage: the pipes are being made trustworthy
+    before anything real flows through them.
+  </div>
+
+  <div class="legend">
+    <span><span class="dot" style="background:var(--green)"></span> works &amp; proven</span>
+    <span><span class="dot" style="background:var(--amber)"></span> works, but alone / on pretend data</span>
+    <span><span class="dot" style="background:var(--red)"></span> tried for real, not there yet</span>
+  </div>
+
+  <footer>Friendly companion to <b>MAP.md</b> · a snapshot, not the final word</footer>
+</div>
+</body>
+</html>
