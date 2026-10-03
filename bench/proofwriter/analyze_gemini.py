@@ -1,4 +1,5 @@
 import json, glob, os, math, statistics, sys
+from scoring import rescore
 BASE = os.path.dirname(os.path.abspath(__file__))
 SAMPLE = {x['id']: x for x in map(json.loads, open(os.path.join(BASE, 'sample.jsonl')))}
 LABELS = ('True', 'False', 'Unknown')
@@ -29,6 +30,8 @@ def report(path, small):
     print(f'\n=== {name}  (answered {n}/120; API-error rows {len(errs)})' + ('  PARTIAL' if n < 120 else ''))
     if rs: print('config:', json.dumps(rs[0].get('generation_config')), '| modelVersion:', rs[0].get('model_version'))
     print(f'overall: {fmt(k, n)}   invalid: {inv}')
+    lr, fx, wr = rescore(rs)
+    print(f'with leniency: {fmt(sum(r["correct"] for r in lr), n)}   invalid->correct {fx}, invalid->wrong {wr}')
     print('by depth (n=20 each when complete; Wilson CIs are wide):')
     for d in range(6):
         s = [r for r in rs if r['depth'] == d]

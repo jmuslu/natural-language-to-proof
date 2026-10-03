@@ -1,4 +1,5 @@
 import json, glob, os, math, statistics, collections, sys
+from scoring import rescore
 BASE = os.path.dirname(os.path.abspath(__file__))
 S = {x['id']: x for x in map(json.loads, open(os.path.join(BASE, 'sample.jsonl')))}
 
@@ -24,6 +25,8 @@ for f in sorted(glob.glob(os.path.join(BASE, 'results', 'results_*.jsonl'))):
     ok = [r for r in rs if 'error' not in r]
     print(f"\n=== {os.path.basename(f)}  (records {len(rs)}, api-errors {len(rs)-len(ok)}) ===")
     print("overall      ", fmt(sum(r['correct'] for r in ok), len(ok)))
+    lr, fx, wr = rescore(ok)
+    print("with leniency", fmt(sum(r['correct'] for r in lr), len(lr)), f"  (invalid->correct {fx}, invalid->wrong {wr})")
     for d in range(6):
         g = [r for r in ok if r['depth'] == d]; print(f"depth {d}      ", fmt(sum(r['correct'] for r in g), len(g)))
     g = [r for r in ok if r['depth'] >= 3]; print("depth>=3     ", fmt(sum(r['correct'] for r in g), len(g)))
