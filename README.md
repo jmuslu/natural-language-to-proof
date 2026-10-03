@@ -1,54 +1,23 @@
-# Natural language to checked reasoning
+# nl2proof
 
-This repository combines a Haskell language/proof substrate with a Python
-evidence journal, retrieval system, and measured multi-hop proposer loop.
-[agentic-qr](https://github.com/aiqs-org/agentic-qr) supplies the statistical
-oracle and bounded model client.
+Deterministic natural language to checked logical form. Sentences are parsed with
+CCG, composed into typed lambda terms, built into DRSs that carry provenance, and
+recorded in a derivation graph (Genealogy) where claims are fused and grounded only
+by an external oracle. Nothing internal to the system counts as evidence.
 
-The application is inductive alpha research: participant constraints and incentives
-→ positioning/flows → conditional price response → a testable signal after costs.
-Reliable multi-hop reasoning from a smaller proposer supports that objective.
-Current experiments separate a correct answer, a valid derivation under supplied
-rules, and empirical evidence. Frontier-level reasoning and financial efficacy
-remain objectives to measure.
+`text -> tokens -> CCG derivation -> typed lambda term -> DRS (+provenance) -> claims -> Genealogy -> oracle-gated grounding -> Fusion`
 
-## Start here
+- `src/NL2Proof/Syntax/` - tokenizer, categories, toy lexicon, CCG rules/derivation, CCGbank reader, CKY parser, supertagger
+- `src/NL2Proof/Semantics/Lambda.hs` - typed lambda calculus (typing, beta, alpha-equivalence)
+- `src/NL2Proof/DRT/` - DRS types, construction, canonical claim form
+- `src/NL2Proof/Provenance.hs`, `Trace.hs` - source spans, decisions and diagnostics
+- `src/NL2Proof/Pipeline.hs`, `Collapse/Class.hs`, `Fragment.hs` - end-to-end run, logged selection, fixed eval set
+- `src/NL2Proof/Verify/` - Oracle (sealed admission), Claims (claim table), External (receipt oracle)
+- `src/NL2Proof/Genealogy.hs`, `Fusion.hs`, `Reward.hs` - derivation graph, fusion, grounding score
+- `tools/` - CCGbank measurement drivers; `app/` - demo; `scripts/` - no-cabal build, oracle boundary check
+- `test/` - specs; `test/compile-fail` + `compile-pass` prove the Oracle admission lock
 
-| Need | Read |
-|---|---|
-| Current results and limitations | [PROGRESS.md](PROGRESS.md) |
-| System components and interfaces | [ARCHITECTURE.md](ARCHITECTURE.md) |
-| Run receipts, history, withdrawal, replay | [ORACLE_BRIDGE.md](ORACLE_BRIDGE.md) |
-| Multi-hop experiment protocol and results | [REASONING.md](REASONING.md) |
-| Research hypotheses, counterexamples, next experiments | [RESEARCH_THREADS.md](RESEARCH_THREADS.md) |
-| Corpus schemas and ingestion | [corpus/README.md](corpus/README.md) |
-| Temporal semantics | [TEMPORAL.md](TEMPORAL.md) |
-| Detailed language-substrate reasoning | [TRACE.md](TRACE.md) |
-
-## What runs together
-
-```text
-agentic-qr result files → recomputed run receipts → append-only journal
-                                                ├→ Haskell oracle → fusion/reward
-                                                └→ graph/index → brain/retrieval
-                                                                   └→ proposed research designs
-
-bounded model client → proposed proof → typed step checker → errors/repair
-                                         └→ evidence genealogy/retraction
-```
-
-The second path uses generated finite worlds with separate trusted fact receipts
-and explicit rule assumptions. It exercises exact signed claims, conjunctions,
-entity bindings, proof depth, abstention, and repair. Local rule tools are compared
-with a separately labeled symbolic solver. Exploratory research preserves uncertain
-premises and counterevidence; nomination alone does not operationalize a mechanism.
-The language front end's
-CCG/DRT alternatives are a separate input path; arbitrary prose-to-faithful-rule
-extraction is still an integration and evaluation task.
-
-## Run
-
-Haskell needs GHC and Cabal, with only bundled `base` and `containers`:
+## Build and test
 
 ```sh
 cabal build all
@@ -57,39 +26,15 @@ bash scripts/check-oracle-boundary.sh
 cabal run nl2proof-demo
 ```
 
-Without Cabal, use `scripts/build.sh` or `scripts/build.ps1`; set `GHC_BIN` if GHC
-is outside PATH. Their default interpreted execution avoids requiring a newly
-compiled executable. Research tools read a separately supplied CCGbank corpus;
-the repository contains no raw corpus data.
+Only `base` and `containers` are used; `scripts/build.sh` works with bare GHC.
 
-The receipt-only path needs Python and the updated companion checkout:
+CCGbank (LDC2005T13, licensed, never committed) must live at `~/ccgbank/ccgbank_1_1/data/`.
 
-```sh
-python3 corpus/pipeline.py --oracle-only --oracle-repo ~/projects
-ORACLE_REPO=~/projects python3 -m unittest discover -s corpus -p test_oracle_bridge.py
-PYTHONPATH=corpus python3 -m unittest discover -s corpus/reasoning
-```
+## Next
 
-For the full retrieval path, use the corpus environment with its embedding and
-libSQL dependencies: `corpus/.venv/bin/python corpus/pipeline.py --quick
---oracle-repo ~/projects`. Model experiments require an explicitly selected
-endpoint/model; see [REASONING.md](REASONING.md). Journals, private inputs, model
-responses, and transport logs belong in ignored `corpus/runtime/`.
+1. Wire the CCGbank parser (`CCGParse`/`CCGSupertag`) into `Pipeline`.
+2. Claims -> graph nodes, forward chaining, retrieval over the graph.
+3. ProofWriter benchmark by depth: small-raw / large-raw / small+graph / graph-only.
+4. Strength: oracle-grounded vs hearsay.
 
-## Evidence contract
-
-- A model response is a proposal. Type compatibility alone does not establish
-  entailment or factual truth.
-- A run receipt asserts `passes_validation(run_id)` under the recorded policy.
-  Source references preserve attribution; they do not inherit that verdict.
-- Missing evidence is Unknown. Abstention earns no supported-answer credit.
-- Confirmed and Fused Haskell values have private constructors and read-only
-  accessors. Fusion accepts only confirmations obtained through the oracle.
-- Genealogy uses least-fixed-point support: unsupported cycles cannot ground
-  themselves, and withdrawal preserves genuinely independent alternatives.
-- Observation times govern historical access. Stale files cannot reinstate
-  withdrawn evidence.
-
-Measured results live in one place, [PROGRESS.md](PROGRESS.md). Detailed research
-claims carry their scope and falsification tests in
-[RESEARCH_THREADS.md](RESEARCH_THREADS.md); older revisions remain in Git history.
+Tag `pre-cut` holds everything removed (Python corpus/brain, Stage 2, finance, docs).

@@ -1,16 +1,11 @@
 cabal-version:      2.4
 name:               nl2proof
 version:            0.1.0.0
-synopsis:           Text to oracle-verifiable logical form, for an RL reward signal
+synopsis:           Deterministic NL to CCG to typed lambda to DRS, with provenance
 description:
-  A substrate that turns natural language into discrete logical claims which an
-  external domain oracle can confirm or refute, so the result is usable as a
-  reinforcement-learning reward signal. See ARCHITECTURE.md.
-  .
-  Four stages: extract a candidate space, verify against an external oracle
-  while retaining every derivation, fuse the confirmed claims, and score. Truth
-  enters only at the oracle; nothing internal to the system is treated as
-  evidence.
+  A deterministic pipeline from natural language through CCG and typed lambda
+  calculus to DRSs with provenance, feeding a derivation graph (Genealogy) with
+  fusion and oracle-gated grounding. Truth enters only at the oracle.
   .
   Dependencies are limited to what a bare GHC bindist ships with, so the
   project builds with plain @ghc --make@ and needs no package manager.
@@ -22,7 +17,6 @@ maintainer:         muslu.jo@northeastern.edu
 category:           Language
 build-type:         Simple
 extra-doc-files:    README.md
-                    ARCHITECTURE.md
 extra-source-files: scripts/check-oracle-boundary.sh
                     test/compile-fail/*.hs
                     test/compile-pass/*.hs
@@ -55,15 +49,6 @@ library
                       NL2Proof.Collapse.Class
                       NL2Proof.Fragment
                       NL2Proof.Pipeline
-                      NL2Proof.Stage2.Distribution
-                      NL2Proof.Stage2.Modifier
-                      NL2Proof.Stage2.Model
-                      NL2Proof.Stage2.Alternatives
-                      NL2Proof.Stage2.Fingerprint
-                      NL2Proof.Stage2.RSA
-                      NL2Proof.Stage2.SDRT
-                      NL2Proof.Stage2.Threading
-                      NL2Proof.Stage2.Pipeline
                       NL2Proof.Verify.Oracle
                       NL2Proof.Verify.Claims
                       NL2Proof.Verify.External
@@ -167,17 +152,6 @@ test-suite nl2proof-substrate-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          SubstrateSpec.hs
-    other-modules:    Harness
-    default-language: Haskell2010
-    build-depends:    base, containers, nl2proof
-
-test-suite nl2proof-stage2-test
-    -- Stage 2 keeps its own suite so Stage 1's check count stays a stable
-    -- number that means the same thing over time.
-    import:           warnings
-    type:             exitcode-stdio-1.0
-    hs-source-dirs:   test
-    main-is:          Stage2Spec.hs
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
