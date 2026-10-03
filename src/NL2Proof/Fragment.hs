@@ -1,6 +1,6 @@
 -- | The fixed evaluation set.
 --
--- ARCHITECTURE.md, methodology:
+-- Methodology:
 --
 -- > Fix a stable evaluation set of test sentences\/short discourses before
 -- > comparing any variant of the augmentation layer. Without this, comparisons

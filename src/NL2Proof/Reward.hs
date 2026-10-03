@@ -55,7 +55,7 @@
 --    source text or for six characters of it.
 --
 -- 3. __It factors through the idempotent quotient.__ 'NL2Proof.Fusion.fusedClaims'
---    is a set, and per TRACE.md P5.2 that quotient is precisely what erases
+--    is a set, and that idempotent quotient is precisely what erases
 --    corroboration. So the scalar cannot express "two derivations agree", which
 --    is the one provability-shaped signal
 --    "NL2Proof.Genealogy".'NL2Proof.Genealogy.corroboratedNodes' argues is safe.
@@ -105,8 +105,8 @@
 -- ignores most of the source is now distinguishable from one that does not. They
 -- do not bound /semantic/ correspondence. A policy that derives a true claim from
 -- the right characters and means something else by it still scores well, and no
--- internal mechanism supplies that check. See ARCHITECTURE.md's standing
--- limitations; this is the one that narrows and does not close.
+-- internal mechanism supplies that check. Of the standing limitations, this is
+-- the one that narrows and does not close.
 module NL2Proof.Reward
   ( -- * Reward
     Reward(..)

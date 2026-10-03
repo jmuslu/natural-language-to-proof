@@ -59,8 +59,8 @@ TARGET="${1:-test}"
 mapfile -t SOURCES < <(find "$ROOT/src" -name '*.hs')
 
 # Every spec is its own `module Main`, so each needs a separate invocation.
-# Discovering them by glob means a branch can add test/ModeSpec.hs, or a stage
-# can add test/Stage2Spec.hs, without this script changing.
+# Discovering them by glob means a branch can add test/ModeSpec.hs without this
+# script changing.
 mapfile -t SPECS < <(find "$ROOT/test" -maxdepth 1 -name '*Spec.hs' | sort)
 
 echo "== typechecking library (-Wall)"

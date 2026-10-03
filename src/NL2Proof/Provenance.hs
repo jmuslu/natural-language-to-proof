@@ -2,7 +2,7 @@
 
 -- | Provenance tagging.
 --
--- Per ARCHITECTURE.md, /every/ DRS box, discourse referent, and semantic
+-- /Every/ DRS box, discourse referent, and semantic
 -- condition carries a provenance tag from day one, even though Stage 1 only
 -- exercises the logical-content half. Retrofitting this later is expensive;
 -- including it now is cheap.

@@ -100,9 +100,8 @@ isAtomic _             = False
 -- parser needs a concrete, provisional type to compose at all.
 --
 -- The choice is /supported by the corpus/, not merely asserted: a frequency
--- survey of every PP-bearing category (@docs\/ccgbank-pp-role-survey.py@) finds
--- @PP@ is __97.7% argument-like__ (a preposition's result, or a complement a head
--- selects) and __0% predicate__ — CCGbank routes adjunct\/predicative PPs through
+-- survey of every PP-bearing category finds @PP@ is __97.7% argument-like__ (a
+-- preposition's result, or a complement a head selects) and __0% predicate__ — CCGbank routes adjunct\/predicative PPs through
 -- prepositions whose /result/ is a modifier category like @(S\\NP)\\(S\\NP)@,
 -- never through the @PP@ atom. So @tyGQ@ (argument-like) is the empirically
 -- justified default over @e -> t@ (predicative). Still stipulated (a semantic

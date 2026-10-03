@@ -18,14 +18,18 @@ module Main (main) where
 import Data.List (foldl', sortBy)
 import qualified Data.Map.Strict as M
 import Data.Ord (comparing, Down(..))
-import System.Environment (getArgs)
+import System.Environment (getArgs, lookupEnv)
 import System.IO (hPutStrLn, stderr)
 
 import NL2Proof.Syntax.CCGBank
 
-defaultPath :: FilePath
-defaultPath =
-  "/home/gram/ccgbank/ccgbank_1_1/data/LEX/CCGbank.00-24.lexicon"
+-- | Default input: @$CCGBANK_DIR@ if set, else @$HOME/ccgbank/ccgbank_1_1/data@.
+defaultPath :: IO FilePath
+defaultPath = do
+  dir  <- lookupEnv "CCGBANK_DIR"
+  home <- lookupEnv "HOME"
+  let base = maybe (maybe "." id home ++ "/ccgbank/ccgbank_1_1/data") id dir
+  pure (base ++ "/LEX/CCGbank.00-24.lexicon")
 
 -- | One entry from the LEX file: word, category, corpus count. The word is
 -- kept for readability of the format even though the tally only needs the
@@ -105,7 +109,7 @@ pct k tot =
 main :: IO ()
 main = do
   args <- getArgs
-  let path = case args of (p : _) -> p; [] -> defaultPath
+  path <- case args of (p : _) -> pure p; [] -> defaultPath
   contents <- readFile path
   let entries = [ e | Just e <- map parseLine (lines contents) ]
       t       = foldl' step emptyTally entries

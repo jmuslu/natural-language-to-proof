@@ -8,7 +8,7 @@
 --
 -- A parser that silently returns its first parse has already made that decision
 -- and thrown away the record of it — which is exactly the conflation of search
--- with verification that ARCHITECTURE.md forbids.
+-- with verification that the architecture forbids.
 module NL2Proof.Syntax.CCG
   ( -- * Signs
     Sign(..)

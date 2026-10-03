@@ -13,7 +13,6 @@
 --   appropriate keys
 --
 -- With no active repository there is no index to verify, so the build works
--- offline and out of the box. See README.md for the one-time config note if
--- your cabal still complains.
+-- offline and out of the box.
 packages: .
 active-repositories: none

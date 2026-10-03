@@ -26,15 +26,19 @@ module Main (main) where
 import Data.List (foldl', isInfixOf, sortBy)
 import qualified Data.Map.Strict as M
 import Data.Ord (comparing, Down(..))
-import System.Environment (getArgs)
+import System.Environment (getArgs, lookupEnv)
 import System.IO (hPutStrLn, stderr)
 
 import NL2Proof.Syntax.CCGBank (parseCCGCat)
 import NL2Proof.Syntax.CCGRules (combineNamed, unifiable, allCombinators, Combinator)
 
-defaultPath :: FilePath
-defaultPath =
-  "/home/gram/ccgbank/ccgbank_1_1/data/GRAMMAR/CCGbank.00-24.grammar"
+-- | Default input: @$CCGBANK_DIR@ if set, else @$HOME/ccgbank/ccgbank_1_1/data@.
+defaultPath :: IO FilePath
+defaultPath = do
+  dir  <- lookupEnv "CCGBANK_DIR"
+  home <- lookupEnv "HOME"
+  let base = maybe (maybe "." id home ++ "/ccgbank/ccgbank_1_1/data") id dir
+  pure (base ++ "/GRAMMAR/CCGbank.00-24.grammar")
 
 -- | (frequency, parent, children).
 data Rule = Rule Int String [String]
@@ -116,7 +120,7 @@ pct k tot =
 main :: IO ()
 main = do
   args <- getArgs
-  let path = case args of (p : _) -> p; [] -> defaultPath
+  path <- case args of (p : _) -> pure p; [] -> defaultPath
   contents <- readFile path
   let rules = [ r | Just r <- map parseRule (lines contents) ]
       a     = foldl' step emptyAcc rules

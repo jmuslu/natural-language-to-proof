@@ -28,7 +28,7 @@ cabal run nl2proof-demo
 
 Only `base` and `containers` are used; `scripts/build.sh` works with bare GHC.
 
-CCGbank (LDC2005T13, licensed, never committed) must live at `~/ccgbank/ccgbank_1_1/data/`.
+CCGbank (LDC2005T13, licensed, never committed): `~/ccgbank/ccgbank_1_1/data/`, or set `CCGBANK_DIR`.
 
 ## Next
 

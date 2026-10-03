@@ -4,7 +4,7 @@
 -- The oracle here is a whitelist. It settles nothing about the world and exists
 -- only to show that the seams line up — a real oracle is a physics engine, a
 -- backtesting engine, or something else whose answers do not depend on this
--- pipeline. See ARCHITECTURE.md.
+-- pipeline.
 module Main (main) where
 
 import qualified Data.Map as M

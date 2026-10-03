@@ -1,6 +1,6 @@
 -- | The tracing layer: decisions and diagnostics.
 --
--- ARCHITECTURE.md, core principle: search\/generation and verification must stay
+-- Core principle: search\/generation and verification must stay
 -- separated, and the pipeline must /explicitly collapse/ from a candidate set to
 -- a single selected object before handing off downstream.
 --

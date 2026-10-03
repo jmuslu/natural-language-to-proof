@@ -695,8 +695,7 @@ allChecks =
 -- thing scope permutation cannot move.
 --
 -- Built by hand rather than through the pipeline, so that a universe in an order
--- Stage 1 would never produce can be handed in directly. @Stage2Spec.hs@ section
--- 14 does the same thing with a real scope-permuted reading.
+-- Stage 1 would never produce can be handed in directly.
 recencyChecks :: [Check]
 recencyChecks =
   [ expectEq

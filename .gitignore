@@ -22,21 +22,14 @@ Thumbs.db
 .hie/
 hie.yaml
 
-# Corpus raw transcripts/articles stay outside the repo (third-party ToS/copyright);
-# structured records live in corpus/records, raw lives at ~/corpus/raw
+# Leftovers from the removed Python corpus/brain tooling (see tag pre-cut);
+# kept ignored until the local copies are deleted.
 corpus/raw/
-
-# Python bytecode (corpus/ tooling)
-__pycache__/
-*.pyc
-
-# Fact brain: build artifacts, regenerable from committed inputs via brain_build.py.
-# brain_manifest.json (the human-readable calibration record) IS committed.
 corpus/.venv/
 corpus/brain.db
 corpus/brain.db-*
 corpus/brain_map.html
 corpus/brain_agenda.json
-
-# Local oracle journal, private receipt snapshots and generated reports
 corpus/runtime/
+__pycache__/
+*.pyc

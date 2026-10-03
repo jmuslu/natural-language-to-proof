@@ -1,9 +1,9 @@
 -- | Discourse Representation Structures, provenance-tagged throughout.
 --
 -- Every referent in a universe and every condition in a box carries a 'Prov'.
--- Per ARCHITECTURE.md this is done from day one even though Stage 1 only
--- exercises the logical-content half, because retrofitting it later is expensive
--- and including it now is cheap.
+-- This is done from day one even though Stage 1 only exercises the
+-- logical-content half, because retrofitting it later is expensive and including
+-- it now is cheap.
 --
 -- Accessibility ('accessibleRefs') is the top-level universe only. Referents
 -- introduced inside a negated, implicational, or disjunctive box are /not/
@@ -190,10 +190,9 @@ accessibleRefs = map fst . drsUniverse
 -- coincidence resting on a third fact: the transitive verb entry always gives
 -- the subject wide scope, which makes /outermost/ coincide with /leftmost/.
 --
--- "NL2Proof.Stage2.Alternatives".'NL2Proof.Stage2.Alternatives.scopeAlternatives'
--- permutes exactly that. Under an object-wide reading the nesting inverts, the
--- cons order inverts with it, and a reversal would rank the subject as the more
--- recent of the two — wrongly, and with nothing in the anaphora code mentioning
+-- Quantifier scope permutation changes exactly that. Under an object-wide
+-- reading the nesting inverts, the cons order inverts with it, and a reversal
+-- would rank the subject as the more recent of the two — wrongly, and with nothing in the anaphora code mentioning
 -- scope, so nothing would flag it.
 --
 -- Surface position does not move when scope permutes. Ordering by it is

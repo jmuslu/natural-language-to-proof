@@ -187,24 +187,23 @@ predicatesOn v = nub . go
 --
 -- The candidate set now comes from 'Antecedents' rather than being computed
 -- inline, so "do better" can mean "supply a different candidate set" without
--- touching the substitution or the logging. 'NL2Proof.Stage2.Threading' is the
--- first consumer of that.
+-- touching the substitution or the logging.
 resolveAnaphora :: DRS -> DRS -> Prov -> (DRS, Trace)
 resolveAnaphora context = resolveAnaphoraWith (flatAntecedents context)
 
 -- | A ranked candidate list together with the name of the rule that produced it.
 --
 -- Introduced so that the /source/ of antecedents is a parameter rather than a
--- hard-coded call to 'accessibleRefs'. Stage 1 supplies 'flatAntecedents'; the
--- SDRT layer supplies a frontier-restricted list. Both then go through the same
--- 'resolveAnaphoraWith', so the substitution and the logging are shared and only
+-- hard-coded call to 'accessibleRefs'. Stage 1 supplies 'flatAntecedents'; an
+-- SDRT layer would supply a frontier-restricted list. Both then go through the
+-- same 'resolveAnaphoraWith', so the substitution and the logging are shared and only
 -- the candidate set differs — which is what makes the two comparable at all.
 --
 -- 'antWhy' and 'antNoneNote' travel with the candidates because a 'Decision'
 -- that does not name its own heuristic is not reusable, and the two sources have
 -- genuinely different explanations for the same outcome: flat threading says a
--- missing antecedent is inside a negated box, SDRT threading says it was closed
--- off by a coordinating relation.
+-- missing antecedent is inside a negated box, SDRT threading would say it was
+-- closed off by a coordinating relation.
 data Antecedents = Antecedents
   { antCandidates :: [Ref]
     -- ^ Best first.

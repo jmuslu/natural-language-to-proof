@@ -79,7 +79,7 @@ skeletonFor word cat = Con word (catTy cat)
 -- than the opaque constant 'skeletonFor' produces.
 --
 -- This is a __stipulated default, not a faithful meaning__ (the same honesty caveat
--- as 'skeletonFor', TRACE S2): it assumes the standard intersective / neo-Montague
+-- as 'skeletonFor'): it assumes the standard intersective / neo-Montague
 -- reading, which is right for a plain transitive verb or intersective adjective and
 -- wrong for many real words. It exists so the DRT/SDRT stages can be exercised on
 -- reconstructed sentences: 'toDRS' consumes a 'Term', and an opaque constant yields a

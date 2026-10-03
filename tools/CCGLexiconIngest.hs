@@ -17,13 +17,18 @@ module Main (main) where
 import Data.List (foldl', intercalate, sortBy)
 import qualified Data.Map.Strict as M
 import Data.Ord (comparing, Down(..))
-import System.Environment (getArgs)
+import System.Environment (getArgs, lookupEnv)
 import System.IO (hPutStrLn, stderr)
 
 import NL2Proof.Syntax.CCGLexicon
 
-defaultPath :: FilePath
-defaultPath = "/home/gram/ccgbank/ccgbank_1_1/data/LEX/CCGbank.00-24.lexicon"
+-- | Default input: @$CCGBANK_DIR@ if set, else @$HOME/ccgbank/ccgbank_1_1/data@.
+defaultPath :: IO FilePath
+defaultPath = do
+  dir  <- lookupEnv "CCGBANK_DIR"
+  home <- lookupEnv "HOME"
+  let base = maybe (maybe "." id home ++ "/ccgbank/ccgbank_1_1/data") id dir
+  pure (base ++ "/LEX/CCGbank.00-24.lexicon")
 
 data Acc = Acc
   { aBuilt :: !Int,  aBuiltTok :: !Int
@@ -92,7 +97,7 @@ main :: IO ()
 main = do
   args <- getArgs
   let jsonMode = "--json" `elem` args
-      path = case filter (/= "--json") args of (p : _) -> p; [] -> defaultPath
+  path <- case filter (/= "--json") args of (p : _) -> pure p; [] -> defaultPath
   contents <- readFile path
   let entries = [e | Just e <- map parseLine (lines contents)]
       a = foldl' step emptyAcc entries

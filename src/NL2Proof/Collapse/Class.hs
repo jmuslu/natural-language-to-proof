@@ -16,7 +16,7 @@
 --
 -- == Why 'Selection' exists
 --
--- ARCHITECTURE.md: the pipeline must explicitly collapse a candidate set to one
+-- Design principle: the pipeline must explicitly collapse a candidate set to one
 -- selected proposition, and
 --
 -- > That collapse is a decision, not a derivation, and should be logged as such.

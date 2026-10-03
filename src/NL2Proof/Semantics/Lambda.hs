@@ -6,7 +6,7 @@
 -- This module is the Stage 1 verification story in miniature. Composition is not
 -- merely /performed/, it is /type-checked/ ('typeOf'): a CCG derivation that
 -- produces a semantically ill-typed term is rejected mechanically, not by
--- inspection. That is the Curry–Howard framing of ARCHITECTURE.md applied at the
+-- inspection. That is the project's Curry–Howard framing applied at the
 -- smallest available scale — type-checking as proof-checking.
 --
 -- The calculus is simply typed and therefore strongly normalizing, so

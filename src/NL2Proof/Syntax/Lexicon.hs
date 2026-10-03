@@ -1,6 +1,6 @@
 -- | The lexicon for the closed English fragment.
 --
--- Deliberately small. Per ARCHITECTURE.md the Stage 1 target is a handful of
+-- Deliberately small. The Stage 1 target is a handful of
 -- sentence types covering simple transitives, quantified NPs, a relative clause,
 -- a cross-sentence pronoun, and a compound-noun\/coupling case — implemented
 -- fully and tested, rather than broad coverage implemented shallowly.
