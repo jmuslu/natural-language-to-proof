@@ -81,6 +81,11 @@ if __name__ == '__main__':
                   f"strata {s['by_s']}  labels {s['by_l']}  invalid {s['inv']}")
         print('  confusion strict:', dict(collections.Counter(f"{r['label']}->{r['p_strict']}" for r in rs)))
         print('  confusion lenient:', dict(collections.Counter(f"{r['label']}->{r['p_len']}" for r in rs)))
+        long_ = [r for r in rs if len(r['raw'].strip()) > 20]
+        if long_:
+            short = [r for r in rs if len(r['raw'].strip()) <= 20]
+            print(f"  verbose replies (>20 chars): {len(long_)}/{len(rs)}; lenient acc verbose "
+                  f"{sum(r['p_len']==r['label'] for r in long_)}/{len(long_)}, terse {sum(r['p_len']==r['label'] for r in short)}/{len(short)}")
         bad = [r['raw'][:80].replace('\n', ' ') for r in rs if r['p_strict'] is None][:5]
         if bad: print('  invalid raw:', bad)
         th = [((r.get('usage') or {}).get('thoughtsTokenCount') or (r.get('usage') or {}).get('reasoning_output_tokens') or 0) for r in rs]
