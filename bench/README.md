@@ -13,11 +13,11 @@ Condition A/B of the "small model + graph context vs large model on raw text" ex
 <!-- table -->
 | model / config | prontoqa | folio | proverqa |
 |---|---|---|---|
-| gpt-5.5 / high | 100.0% (100.0%) n=120 | 81.1% (81.1%) n=90 | 80.3% (80.3%) n=71 |
+| gpt-5.5 / high | 100.0% (100.0%) n=120 | 82.5% (82.5%) n=120 | 75.0% (75.0%) n=120 |
 | gemini-3.5-flash / high | – | – | – |
-| gemma-4-31b-it / minimal | 100.0% (100.0%) n=10 | – | – |
-| gemini-3.1-flash-lite / budget0 | 80.0% (80.0%) n=60 | – | 58.3% (58.3%) n=48 |
-| gemma-4-26b-a4b-it / minimal | 91.7% (91.7%) n=60 | – | 30.8% (69.2%) n=13 |
+| gemma-4-31b-it / minimal | 100.0% (100.0%) n=12 | 50.0% (50.0%) n=6 | 75.0% (75.0%) n=8 |
+| gemini-3.1-flash-lite / budget0 | 81.0% (81.0%) n=63 | 60.0% (60.0%) n=60 | 55.0% (55.0%) n=60 |
+| gemma-4-26b-a4b-it / minimal | 91.7% (91.7%) n=60 | – | 34.1% (78.0%) n=41 |
 <!-- /table -->
 
 **Verdict.** TBD
