@@ -24,14 +24,15 @@ Answer with exactly one word: True, False, or Uncertain. Uncertain means it cann
 |---|---|---|---|---|---|---|---|---|---|
 | gpt-5.5 / high | 120 | 99/120 = 82.5% [75, 88] | 28/30 | 33/42 | 38/48 | 31/40 | 32/40 | 36/40 | 0 |
 | (with leniency) | 120 | 99/120 = 82.5% [75, 88] | 28/30 | 33/42 | 38/48 | 31/40 | 32/40 | 36/40 | 0 |
-| gemma-4-31b-it / minimal (60/120) | 60 | 45/60 = 75.0% [63, 84] | 11/15 | 18/21 | 16/24 | 16/20 | 16/20 | 13/20 | 0 |
-| (with leniency) | 60 | 45/60 = 75.0% [63, 84] | 11/15 | 18/21 | 16/24 | 16/20 | 16/20 | 13/20 | 0 |
+| gemma-4-31b-it / minimal | 120 | 93/120 = 77.5% [69, 84] | 24/30 | 34/42 | 35/48 | 33/40 | 33/40 | 27/40 | 0 |
+| (with leniency) | 120 | 93/120 = 77.5% [69, 84] | 24/30 | 34/42 | 35/48 | 33/40 | 33/40 | 27/40 | 0 |
 | gemini-3.1-flash-lite / budget0 | 120 | 81/120 = 67.5% [59, 75] | 25/30 | 28/42 | 28/48 | 28/40 | 22/40 | 31/40 | 0 |
 | (with leniency) | 120 | 81/120 = 67.5% [59, 75] | 25/30 | 28/42 | 28/48 | 28/40 | 22/40 | 31/40 | 0 |
 | gemma-4-26b-a4b-it / minimal | 120 | 77/120 = 64.2% [55, 72] | 25/30 | 28/42 | 24/48 | 22/40 | 23/40 | 32/40 | 4 |
 | (with leniency) | 120 | 81/120 = 67.5% [59, 75] | 25/30 | 28/42 | 28/48 | 25/40 | 24/40 | 32/40 | 0 |
 <!-- /table -->
+gemini-3.5-flash / high is missing because its free-tier daily request quota ran out (see `../README.md`).
 
-**Findings.** TBD
+**Findings.** gpt-5.5 is not at ceiling (82.5% [75, 88]). Most of its misses (15/21) are True/False items answered Uncertain, and 13 items are wrong for all four models, which fits FOLIO v0.0's known label noise. The real ceiling is probably about 90%. gemma-4-31b (no thinking) is close to it at 77.5%. The small models score 67.5% (flash-lite) and 64.2%/67.5% (gemma-26b strict/lenient), a 15-pt gap to gpt-5.5, and they fail the same way, by answering Uncertain on provable items (flash-lite: 27 of 39 errors). Premise count barely predicts difficulty (6–9 premises: 58–79% for every model).
 
 **Attribution.** `sample.jsonl` holds 120 items from the FOLIO v0.0 validation set (Han et al. 2022, Yale LILY Lab), licensed CC BY-SA 4.0; this sample is shared under the same license. Full data in `~/data/folio/` (not committed).

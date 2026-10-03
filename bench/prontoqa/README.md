@@ -24,14 +24,15 @@ Answer with exactly one word: True or False.
 |---|---|---|---|---|---|---|
 | gpt-5.5 / high | 120 | 120/120 = 100.0% [97, 100] | 120/120 | 60/60 | 60/60 | 0 |
 | (with leniency) | 120 | 120/120 = 100.0% [97, 100] | 120/120 | 60/60 | 60/60 | 0 |
-| gemma-4-31b-it / minimal (54/120) | 54 | 54/54 = 100.0% [93, 100] | 54/54 | 26/26 | 28/28 | 0 |
-| (with leniency) | 54 | 54/54 = 100.0% [93, 100] | 54/54 | 26/26 | 28/28 | 0 |
+| gemma-4-31b-it / minimal | 120 | 120/120 = 100.0% [97, 100] | 120/120 | 60/60 | 60/60 | 0 |
+| (with leniency) | 120 | 120/120 = 100.0% [97, 100] | 120/120 | 60/60 | 60/60 | 0 |
 | gemini-3.1-flash-lite / budget0 | 120 | 96/120 = 80.0% [72, 86] | 96/120 | 39/60 | 57/60 | 0 |
 | (with leniency) | 120 | 96/120 = 80.0% [72, 86] | 96/120 | 39/60 | 57/60 | 0 |
 | gemma-4-26b-a4b-it / minimal | 120 | 109/120 = 90.8% [84, 95] | 109/120 | 49/60 | 60/60 | 0 |
 | (with leniency) | 120 | 109/120 = 90.8% [84, 95] | 109/120 | 49/60 | 60/60 | 0 |
 <!-- /table -->
+gemini-3.5-flash / high is missing because its free-tier daily request quota ran out (see `../README.md`).
 
-**Findings.** TBD
+**Findings.** Saturated for large and mid-size models: gpt-5.5 (high) and gemma-4-31b without thinking both score 120/120. Only the small models leave room: gemini-3.1-flash-lite 80.0% and gemma-4-26b-a4b 90.8%, and their errors are nearly all True→False (21/24 and 11/11). They miss the 5-hop chain and fall back on the distractor property ("Numpuses are sour" vs "Tumpuses are not sour"), the same under-chaining seen on ProofWriter. All replies were a single word, so strict and lenient scores are identical. Use this benchmark as a CCG/graph sanity check (the fictional-ontology syntax is very regular), not to measure the large-vs-small gap.
 
 **Attribution.** `sample.jsonl` holds 120 items from ProntoQA (Saparov & He 2023; Apache-2.0) via the Logic-LM release (Pan et al. 2023, *Logic-LM*, Findings of EMNLP; MIT), unmodified apart from field selection. Full data in `~/data/prontoqa/` (not committed).

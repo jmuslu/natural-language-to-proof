@@ -15,9 +15,11 @@ Condition A/B of the "small model + graph context vs large model on raw text" ex
 |---|---|---|---|
 | gpt-5.5 / high | 100.0% (100.0%) n=120 | 82.5% (82.5%) n=120 | 75.0% (75.0%) n=120 |
 | gemini-3.5-flash / high | – | – | – |
-| gemma-4-31b-it / minimal | 100.0% (100.0%) n=54 | 75.0% (75.0%) n=60 | 71.7% (71.7%) n=53 |
+| gemma-4-31b-it / minimal | 100.0% (100.0%) n=120 | 77.5% (77.5%) n=120 | 69.2% (69.2%) n=120 |
 | gemini-3.1-flash-lite / budget0 | 80.0% (80.0%) n=120 | 67.5% (67.5%) n=120 | 50.8% (50.8%) n=120 |
 | gemma-4-26b-a4b-it / minimal | 90.8% (90.8%) n=120 | 64.2% (67.5%) n=120 | 30.8% (68.3%) n=120 |
 <!-- /table -->
 
-**Verdict.** TBD
+**gemini-3.5-flash (high thinking) is missing.** Its free-tier daily request quota (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`) had already been used up by the ProofWriter runs, and only a single request went through all day, so it has no results. Rerun after the quota resets: `python3 common/run_gemini.py <bench> gemini-3.5-flash high 6 60`. The other four models are complete at n=120. gpt-5.5 runs through Codex with ~16k tokens of agent prompt; the others are plain API calls (not like-for-like, as in ProofWriter).
+
+**Verdict.** **ProverQA-hard gives the best headroom** for the graph-context experiment. The large model is clearly below ceiling (gpt-5.5 75%), small models without thinking lose another 25–45 points under strict scoring (flash-lite 51%, gemma-26b 31%), and every model fails the same way, answering Uncertain on items that are provable. That is the gap that derived facts in context should close. One caveat: ProverQA reads a bare "either A or B" as exclusive, so the graph has to encode that convention. FOLIO also has headroom (gpt-5.5 82.5%, small models 64–68%), but some of its ceiling is v0.0 label noise (13 items wrong for every model), and the human-written English is harder for the CCG front end. ProntoQA is saturated (gpt-5.5 and gemma-31b both 100%) and is useful only as a parsing sanity check, and like ProofWriter it leaves room only for the smallest models.

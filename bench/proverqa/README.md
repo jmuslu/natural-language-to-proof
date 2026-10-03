@@ -24,14 +24,15 @@ Answer with exactly one word: True, False, or Uncertain. Uncertain means it cann
 |---|---|---|---|---|---|---|---|---|---|
 | gpt-5.5 / high | 120 | 90/120 = 75.0% [67, 82] | 30/40 | 32/40 | 28/40 | 26/40 | 25/40 | 39/40 | 0 |
 | (with leniency) | 120 | 90/120 = 75.0% [67, 82] | 30/40 | 32/40 | 28/40 | 26/40 | 25/40 | 39/40 | 0 |
-| gemma-4-31b-it / minimal (53/120) | 53 | 38/53 = 71.7% [58, 82] | 12/17 | 10/18 | 16/18 | 13/17 | 7/18 | 18/18 | 0 |
-| (with leniency) | 53 | 38/53 = 71.7% [58, 82] | 12/17 | 10/18 | 16/18 | 13/17 | 7/18 | 18/18 | 0 |
+| gemma-4-31b-it / minimal | 120 | 83/120 = 69.2% [60, 77] | 27/40 | 27/40 | 29/40 | 29/40 | 17/40 | 37/40 | 0 |
+| (with leniency) | 120 | 83/120 = 69.2% [60, 77] | 27/40 | 27/40 | 29/40 | 29/40 | 17/40 | 37/40 | 0 |
 | gemini-3.1-flash-lite / budget0 | 120 | 61/120 = 50.8% [42, 60] | 18/40 | 19/40 | 24/40 | 15/40 | 8/40 | 38/40 | 0 |
 | (with leniency) | 120 | 61/120 = 50.8% [42, 60] | 18/40 | 19/40 | 24/40 | 15/40 | 8/40 | 38/40 | 0 |
 | gemma-4-26b-a4b-it / minimal | 120 | 37/120 = 30.8% [23, 40] | 13/40 | 15/40 | 9/40 | 4/40 | 6/40 | 27/40 | 73 |
 | (with leniency) | 120 | 82/120 = 68.3% [60, 76] | 29/40 | 28/40 | 25/40 | 24/40 | 20/40 | 38/40 | 0 |
 <!-- /table -->
+gemini-3.5-flash / high is missing because its free-tier daily request quota ran out (see `../README.md`).
 
-**Findings.** TBD
+**Findings.** Real headroom even at the top: gpt-5.5 (high, mean 318 reasoning tokens) gets 75.0% [67, 82]. Uncertain is 39/40, but True is 26/40 and False 25/40, and 28 of its 30 errors are "Uncertain" on provable items. In about half of its True/False misses (14/29, against 9/51 among its hits) the gold proof reads a bare "either A or B" as exclusive. Some of the gap is therefore a convention mismatch, which the graph would need to encode (XOR) to match gold. gemma-4-31b gets 69.2%. flash-lite reaches 50.8% (False 8/40, with 24 False→Uncertain). gemma-26b scores 30.8% strict because 73/120 replies ignore "exactly one word" and write visible chain-of-thought; scored leniently it reaches 68.3%, so a small model that reasons out loud closes most of the gap. Depth bucket (3–6/7/8–9) has no clear effect at n=40.
 
 **Attribution.** `sample.jsonl` holds 120 items from ProverQA hard (Qi et al. 2025, OpenDataLab, `opendatalab/ProverQA`), unmodified apart from field selection. Full data in `~/data/proverqa/` (not committed).
