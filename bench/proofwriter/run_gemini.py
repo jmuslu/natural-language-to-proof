@@ -1,5 +1,5 @@
 """Raw-text ProofWriter baseline via Gemini API generateContent (plain chat, no tools).
-usage: python3 run_gemini.py <model> <config> [pace_seconds] [n]
+usage: python3 run_gemini.py <model> <config> [pace_seconds] [n] [depths]
 config: none | minimal | low | medium | high (thinkingLevel) | budget<N> (thinkingBudget=N)
 Resumable: rows without 'error' are skipped. API key is read from gemini.env and never logged.
 """
@@ -96,6 +96,9 @@ if __name__ == '__main__':
     if os.path.exists(outp):
         done = {r['id'] for r in map(json.loads, open(outp)) if 'error' not in r}
     xs = [json.loads(l) for l in open(os.path.join(BASE, 'sample.jsonl'))][:n]
+    if len(sys.argv) > 5:  # optional depth filter, e.g. "5" or "3,4,5" (used when free-tier daily quota is tiny)
+        ds = {int(d) for d in sys.argv[5].split(',')}
+        xs = [x for x in xs if x['depth'] in ds]
     xs = [x for x in xs if x['id'] not in done]
     print(f'{model} {config} gc={gc} todo={len(xs)} pace={pace}s', flush=True)
     last = 0.0
