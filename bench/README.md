@@ -15,9 +15,9 @@ Condition A/B of the "small model + graph context vs large model on raw text" ex
 |---|---|---|---|
 | gpt-5.5 / high | 100.0% (100.0%) n=120 | 82.5% (82.5%) n=120 | 75.0% (75.0%) n=120 |
 | gemini-3.5-flash / high | – | – | – |
-| gemma-4-31b-it / minimal | 100.0% (100.0%) n=33 | 75.0% (75.0%) n=36 | 65.6% (65.6%) n=32 |
+| gemma-4-31b-it / minimal | 100.0% (100.0%) n=54 | 75.0% (75.0%) n=60 | 71.7% (71.7%) n=53 |
 | gemini-3.1-flash-lite / budget0 | 80.0% (80.0%) n=120 | 67.5% (67.5%) n=120 | 50.8% (50.8%) n=120 |
-| gemma-4-26b-a4b-it / minimal | 90.8% (90.8%) n=120 | 58.3% (61.7%) n=60 | 28.6% (70.1%) n=77 |
+| gemma-4-26b-a4b-it / minimal | 90.8% (90.8%) n=120 | 64.2% (67.5%) n=120 | 30.8% (68.3%) n=120 |
 <!-- /table -->
 
 **Verdict.** TBD
