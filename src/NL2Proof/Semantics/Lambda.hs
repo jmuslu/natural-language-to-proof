@@ -30,6 +30,11 @@ module NL2Proof.Semantics.Lambda
   , pred2
   , gq
   , det
+    -- * Definite descriptions
+  , iotaName
+  , tyIota
+  , iota
+  , isIota
     -- * Anaphora placeholders
     -- $anaphora
   , anaphorPrefix
@@ -48,13 +53,15 @@ module NL2Proof.Semantics.Lambda
   , fresh
   , subst
   , normalize
+  , simplifyConj
     -- * Equality and rendering
   , canonical
+  , canonicalAC
   , alphaEq
   , pretty
   ) where
 
-import Data.List (delete, intercalate, nub, union)
+import Data.List (delete, intercalate, nub, sort, union)
 
 --------------------------------------------------------------------------------
 -- Types
@@ -154,6 +161,31 @@ gq n = Con n tyGQ
 
 det :: String -> Term
 det n = Con n tyDet
+
+--------------------------------------------------------------------------------
+-- Definite descriptions
+--------------------------------------------------------------------------------
+
+-- | The description operator: @iota(P)@ denotes /the/ @P@, an entity.
+--
+-- A constant of type @(e -> t) -> e@ rather than a binder, for the same reason
+-- anaphors are constants: the lambda calculus composes it without knowing what
+-- it means. "NL2Proof.DRT.Build" interprets it when it builds a DRS, under the
+-- unique-name reading (a definite description names one individual, and the
+-- same description names the same one).
+iotaName :: String
+iotaName = "iota"
+
+tyIota :: Ty
+tyIota = tyPred1 ~> TyE
+
+-- | @iota p@ is the entity term /the p/.
+iota :: Term -> Term
+iota = App (Con iotaName tyIota)
+
+isIota :: Term -> Bool
+isIota (App (Con c _) _) = c == iotaName
+isIota _                 = False
 
 --------------------------------------------------------------------------------
 -- Anaphora placeholders
@@ -335,6 +367,37 @@ normalize = \case
   t@Var{}       -> t
   t@Con{}       -> t
 
+-- | Flatten nested conjunctions and drop repeated conjuncts (keeping the first
+-- occurrence, so order is otherwise preserved), everywhere in a term.
+--
+-- Sound: it uses only associativity and idempotence of @&@, so the result is
+-- logically equivalent to the input. It matters for the CCGbank path, where two
+-- derivations of one meaning can differ by exactly this much (pointwise
+-- coordination of intersective modifiers repeats the noun's conjunct), and
+-- treating those as distinct meanings would report ambiguity that is not there.
+-- Not commutativity: conjunct order is left as the derivation produced it.
+simplifyConj :: Term -> Term
+simplifyConj = \case
+  t@TAnd{}      -> rebuild (dedupe (concatMap conjuncts [t]))
+  Lam v ty b    -> Lam v ty (simplifyConj b)
+  App f a       -> App (simplifyConj f) (simplifyConj a)
+  TOr a b       -> TOr (simplifyConj a) (simplifyConj b)
+  TImp a b      -> TImp (simplifyConj a) (simplifyConj b)
+  TNot a        -> TNot (simplifyConj a)
+  TEq a b       -> TEq (simplifyConj a) (simplifyConj b)
+  TForall v ty b -> TForall v ty (simplifyConj b)
+  TExists v ty b -> TExists v ty (simplifyConj b)
+  t@Var{}       -> t
+  t@Con{}       -> t
+  where
+    conjuncts (TAnd a b) = conjuncts a ++ conjuncts b
+    conjuncts t          = [simplifyConj t]
+    -- Simplifying a non-conjunction never produces a conjunction at its root,
+    -- so one flattening pass suffices.
+    dedupe = reverse . foldl (\acc c -> if any (alphaEq c) acc then acc else c : acc) []
+    -- 'conjuncts' of a TAnd is never empty, so foldr1 is safe here.
+    rebuild = foldr1 TAnd
+
 --------------------------------------------------------------------------------
 -- Equality and rendering
 --------------------------------------------------------------------------------
@@ -362,6 +425,29 @@ canonical = go [] (0 :: Int)
       Lam v t b     -> rebind env n Lam v t b
       TForall v t b -> rebind env n TForall v t b
       TExists v t b -> rebind env n TExists v t b
+
+-- | 'canonical', then conjunctions flattened and their conjuncts sorted: a key
+-- for equality up to alpha-renaming /and/ associativity-commutativity of @&@.
+--
+-- For deciding whether two derivations mean the same thing, not for display:
+-- it forgets conjunct order, which the derivation's own term keeps (and which
+-- matters downstream, e.g. for naming a description @"bald eagle"@).
+canonicalAC :: Term -> Term
+canonicalAC = go . canonical
+  where
+    go = \case
+      t@TAnd{}      -> foldr1 TAnd (sort (map go (conjuncts t)))
+      Lam v ty b    -> Lam v ty (go b)
+      App f a       -> App (go f) (go a)
+      TOr a b       -> TOr (go a) (go b)
+      TImp a b      -> TImp (go a) (go b)
+      TNot a        -> TNot (go a)
+      TEq a b       -> TEq (go a) (go b)
+      TForall v ty b -> TForall v ty (go b)
+      TExists v ty b -> TExists v ty (go b)
+      t             -> t
+    conjuncts (TAnd a b) = conjuncts a ++ conjuncts b
+    conjuncts t          = [t]
 
 -- | Equality up to renaming of bound variables. This is what the tests assert,
 -- since the particular variable names a derivation happens to produce are not

@@ -27,6 +27,7 @@ module NL2Proof.Syntax.Tokenize
   , Sentence(..)
   , splitSentences
   , rawTokens
+  , casedTokens
   , joinTokens
     -- * The lexical lattice
   , Lattice(..)
@@ -94,6 +95,34 @@ rawTokens base str = go base str
           tok   = Token (map toLower core) (Span (i + pre) (i + pre + length core))
           toks  = if null core then [] else [tok]
       in toks ++ go (i + length word) rest
+
+-- | Case-preserving tokenization that keeps punctuation as tokens of its own.
+--
+-- 'rawTokens' lower-cases and drops punctuation, which suits the hand lexicon.
+-- A CCGbank-trained parser needs both back: CCGbank's grammar has categories for
+-- @,@ and @.@ (coordination, punctuation absorption), and its tag dictionary is
+-- case-sensitive (proper names, sentence-initial capitals). So here a token is a
+-- maximal alphanumeric run (apostrophes and hyphens inside a word kept) or a
+-- single punctuation character, with exact spans and original case.
+casedTokens :: Int -> String -> [Token]
+casedTokens base = go base
+  where
+    go _ [] = []
+    go i s@(c : rest)
+      | isSpace c = go (i + 1) rest
+      | isAlphaNum c =
+          let (w, rest') = spanWord s
+          in Token w (Span i (i + length w)) : go (i + length w) rest'
+      | otherwise = Token [c] (Span i (i + 1)) : go (i + 1) rest
+
+    -- An inner apostrophe or hyphen continues a word only if a letter or digit
+    -- follows it, so a trailing quote is still its own token.
+    spanWord (x : y : z : more)
+      | isAlphaNum x, y `elem` "'-", isAlphaNum z =
+          let (w, r) = spanWord (z : more) in (x : y : w, r)
+    spanWord (x : more)
+      | isAlphaNum x = let (w, r) = spanWord more in (x : w, r)
+    spanWord more = ([], more)
 
 --------------------------------------------------------------------------------
 -- The lexical lattice

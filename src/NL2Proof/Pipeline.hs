@@ -15,12 +15,20 @@
 --   'TypeCheckFailure' and contributes nothing to the discourse, so the failure
 --   is visible in the output rather than showing up as a mysteriously absent
 --   condition.
+--
+-- There are two front ends ('ParserChoice'): the hand-written fragment lexicon
+-- with its application-only parser, and the CCGbank-trained parser with the
+-- semantic layer of "NL2Proof.Semantics.CCGSem". They differ up to the
+-- candidate set of root signs; selection, type checking and DRS construction
+-- are one shared back end, so both are held to the same discipline.
 module NL2Proof.Pipeline
   ( -- * Results
     SentenceResult(..)
   , PipelineResult(..)
     -- * Running
+  , ParserChoice(..)
   , runPipeline
+  , runPipelineWith
   , runFragment
   , sentenceProv
     -- * Ambiguity detection
@@ -37,8 +45,11 @@ import NL2Proof.Collapse.Class
 import NL2Proof.DRT.Build
 import NL2Proof.DRT.Types
 import NL2Proof.Provenance
+import NL2Proof.Semantics.CCGSem (LexItem(..), Stipulation(..))
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.CCG
+import NL2Proof.Syntax.CCGBank (ccatToCat)
+import NL2Proof.Syntax.CCGSemParse
 import NL2Proof.Syntax.Category
 import NL2Proof.Syntax.Lexicon
 import NL2Proof.Syntax.Tokenize
@@ -82,12 +93,24 @@ data PipelineResult = PipelineResult
 -- Running
 --------------------------------------------------------------------------------
 
+-- | Which front end produces the candidate signs.
+data ParserChoice
+  = -- | The hand-written lexicon ("NL2Proof.Syntax.Lexicon") and the
+    -- application-only CKY parser of "NL2Proof.Syntax.CCG".
+    HandLexicon Lexicon
+  | -- | The CCGbank-trained supertagger and grammar, with meanings from
+    -- "NL2Proof.Semantics.CCGSem" ("NL2Proof.Syntax.CCGSemParse").
+    CCGBankParser SemModel
+
 -- | Run the fragment lexicon over a text.
 runFragment :: SourceId -> String -> PipelineResult
 runFragment = runPipeline fragmentLexicon
 
 runPipeline :: Lexicon -> SourceId -> String -> PipelineResult
-runPipeline lexicon src text =
+runPipeline = runPipelineWith . HandLexicon
+
+runPipelineWith :: ParserChoice -> SourceId -> String -> PipelineResult
+runPipelineWith choice src text =
   PipelineResult
     { prSource = src
     , prText = text
@@ -97,7 +120,7 @@ runPipeline lexicon src text =
     , prTrace = foldMap srTrace results <> dscTrace discourse
     }
   where
-    results = map (processSentence lexicon src) (splitSentences text)
+    results = map (processSentence choice src) (splitSentences text)
 
     -- Discourse threading happens over the sentences that produced a DRS.
     -- A sentence that failed to parse or failed to type-check contributes
@@ -123,8 +146,12 @@ sentenceProv src r = case srChosen r of
 discourseProv :: SourceId -> [SentenceResult] -> Prov
 discourseProv src = provRule "discourse" . map (sentenceProv src)
 
-processSentence :: Lexicon -> SourceId -> Sentence -> SentenceResult
-processSentence lexicon src sent =
+processSentence :: ParserChoice -> SourceId -> Sentence -> SentenceResult
+processSentence (HandLexicon lexicon) = processHand lexicon
+processSentence (CCGBankParser model) = processCCG model
+
+processHand :: Lexicon -> SourceId -> Sentence -> SentenceResult
+processHand lexicon src sent =
   SentenceResult
     { srSentence = sent
     , srLattice = lat
@@ -135,23 +162,14 @@ processSentence lexicon src sent =
     , srForm = form
     , srDRS = drs
     , srTrace =
-        unknownTrace <> segTrace <> couplingTrace <> parseTrace <> typeTrace
+        unknownTrace <> segTrace <> couplingTrace <> backTrace
     }
   where
     lat = sentenceLattice (inLexicon lexicon) (maxPhraseLength lexicon) sent
     toks = latRaw lat
     unknown = uncoveredTokens lat
 
-    unknownTrace =
-      foldMap
-        (\t ->
-           flag
-             Diagnostic
-               { diagKind = NoParse
-               , diagMsg = "unknown word: " ++ show (tokText t)
-               , diagProv = ProvLex src (tokSpan t) (tokText t)
-               })
-        unknown
+    unknownTrace = foldMap (unknownWord src "unknown word: ") unknown
 
     -- A fork is not a decision here, so it is a diagnostic and not a
     -- 'Decision': nothing is collapsed at this point. It is still worth logging,
@@ -178,13 +196,122 @@ processSentence lexicon src sent =
 
     parses = parse lexicon src lat S
 
-    sentProvFallback = provRule "sentence" [ProvLex src (sentSpan sent) (sentText sent)]
+    (chosen, form, drs, backTrace) =
+      backEnd
+        BackEnd
+          { beTieBreak =
+              "first derivation in CKY enumeration order; a positional"
+                ++ " tie-break, not a linguistic one"
+          , beProvIndex = buildProvIndex lexicon . sProv
+          , bePostDRS = \_ d -> (d, mempty)
+          , beNotes = const mempty
+          }
+        src sent (null unknown) parses
+
+-- | The CCGbank path: case-preserving tokens with punctuation, the semantic
+-- chart, then the shared back end. Root candidates are distinct meanings, best
+-- supertagger score first.
+processCCG :: SemModel -> SourceId -> Sentence -> SentenceResult
+processCCG model src sent =
+  SentenceResult
+    { srSentence = sent
+    , srLattice = lat
+    , srTokens = toks
+    , srUnknown = unknown
+    , srParses = parses
+    , srChosen = chosen
+    , srForm = form
+    , srDRS = drs
+    , srTrace = unknownTrace <> backTrace
+    }
+  where
+    toks = casedTokens (spanStart (sentSpan sent)) (sentText sent)
+    lat = Lattice toks (M.fromList [ ((i, i + 1), t) | (i, t) <- zip [0 ..] toks ])
+    sp = semParse model src toks
+    lexs = spLexical sp
+
+    -- The analogue of an unknown word: the tagger offered categories, but the
+    -- semantic lexicon interprets none of them.
+    unknown = [ t | (t, ls) <- zip toks lexs, null ls ]
+    unknownTrace =
+      foldMap (unknownWord src "no interpretable CCGbank category for word: ") unknown
+
+    roots = spRoots sp
+    parses = map toSign roots
+    toSign s = Sign (maybe S id (ccatToCat (ssCat s))) (ssSem s) (ssProv s)
+    -- The back end always selects the first candidate, so the stipulations to
+    -- log are those of the first root.
+    chosenNotes = case roots of { (r : _) -> ssNotes r; [] -> [] }
+
+    -- Word-level provenance from the chosen derivation's own leaves: each leaf
+    -- token maps the constants of its interpretable readings to its span.
+    provIndexFor sg =
+      let spans = [ sp' | (_, sp', _) <- provLeaves (sProv sg) ]
+      in M.fromList
+           [ (c, ProvLex src (tokSpan t) (tokText t))
+           | (t, ls) <- zip toks lexs
+           , tokSpan t `elem` spans
+           , LexSign _ (LexTerm tm _ _) _ <- ls
+           , c <- constNames tm
+           ]
+
+    (chosen, form, drs, backTrace) =
+      backEnd
+        BackEnd
+          { beTieBreak =
+              "highest supertagger log-probability (sum over the derivation);"
+                ++ " a statistical tie-break from CCGbank frequencies, not a"
+                ++ " linguistic one"
+          , beProvIndex = provIndexFor
+          , bePostDRS = \sg d -> resolveLocalAnaphora (provIndexFor sg) d
+          , beNotes = \_ ->
+              foldMap
+                (\(st, p) ->
+                   note
+                     Decision
+                       { decKind = stKind st
+                       , decChoice = stChoice st
+                       , decAlternatives = stAlternatives st
+                       , decWhy = stWhy st
+                       , decProv = p
+                       })
+                chosenNotes
+          }
+        src sent (null unknown) parses
+
+unknownWord :: SourceId -> String -> Token -> Trace
+unknownWord src msg t =
+  flag
+    Diagnostic
+      { diagKind = NoParse
+      , diagMsg = msg ++ show (tokText t)
+      , diagProv = ProvLex src (tokSpan t) (tokText t)
+      }
+
+-- | What differs between front ends inside the shared back end.
+data BackEnd = BackEnd
+  { beTieBreak  :: String
+    -- ^ How the first candidate came to be first, for the selection 'Decision'.
+  , beProvIndex :: Sign -> ProvIndex
+  , bePostDRS   :: Sign -> DRS -> (DRS, Trace)
+    -- ^ Sentence-internal DRS steps after translation (the CCGbank path
+    -- resolves donkey anaphora here).
+  , beNotes     :: Sign -> Trace
+    -- ^ Decisions the chosen derivation's entries stipulated.
+  }
+
+-- | Selection, verification and translation: shared by both front ends.
+backEnd :: BackEnd -> SourceId -> Sentence -> Bool -> [Sign] -> (Maybe Sign, Maybe Term, Maybe DRS, Trace)
+backEnd be src sent wordsCovered parses = (chosen, form, drs, parseTrace <> typeTrace)
+  where
+    sentProvFallback =
+      provRule "sentence" [ProvLex src (sentSpan sent) (sentText sent)]
 
     -- Search produced a candidate set; here is where it collapses, out loud.
     (chosen, parseTrace) = case parses of
       [] ->
         ( Nothing
-        , if null unknown
+        , if wordsCovered
             then
               flag
                 Diagnostic
@@ -192,7 +319,7 @@ processSentence lexicon src sent =
                   , diagMsg = "no derivation to S for " ++ show (sentText sent)
                   , diagProv = sentProvFallback
                   }
-            else mempty -- already reported as unknown words
+            else mempty -- already reported per word
         )
       [only] -> (Just only, mempty)
       (first : rest) ->
@@ -210,9 +337,7 @@ processSentence lexicon src sent =
                 { decKind = "parse-selection"
                 , decChoice = pretty (normalize (sSem first))
                 , decAlternatives = map (pretty . normalize . sSem) rest
-                , decWhy =
-                    "first derivation in CKY enumeration order; a positional"
-                      ++ " tie-break, not a linguistic one"
+                , decWhy = beTieBreak be
                 , decProv = sentProvFallback
                 }
         )
@@ -225,8 +350,8 @@ processSentence lexicon src sent =
         Right t
           | t == catTy (sCat s) ->
               let nf = normalize (sSem s)
-                  idx = buildProvIndex lexicon (sProv s)
-              in (Just nf, Just (toDRS idx (sProv s) nf), mempty)
+                  (d, postTrace) = bePostDRS be s (toDRS (beProvIndex be s) (sProv s) nf)
+              in (Just nf, Just d, beNotes be s <> postTrace)
         Right t ->
           ( Nothing
           , Nothing

@@ -43,6 +43,8 @@ library
                       NL2Proof.Syntax.CCGParse
                       NL2Proof.Syntax.CCGSupertag
                       NL2Proof.Syntax.CCGLexicon
+                      NL2Proof.Syntax.CCGSemParse
+                      NL2Proof.Semantics.CCGSem
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
                       NL2Proof.DRT.Canonical
@@ -55,6 +57,8 @@ library
                       NL2Proof.Genealogy
                       NL2Proof.Fusion
                       NL2Proof.Reward
+                      NL2Proof.Bench.JSON
+                      NL2Proof.Bench.ProofWriter
     build-depends:    base       >=4.14 && <5
                     , containers >=0.6  && <0.8
 
@@ -164,6 +168,30 @@ test-suite nl2proof-ccgbank-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          CCGBankSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+executable proofwriter-coverage
+    -- ProofWriter (CWA/OWA depth-5) through the CCGbank parser and semantic
+    -- layer: % parsed / typed / DRS / exactly matching the gold triples and
+    -- rules, whole-theory match, failure buckets. Reads $PROOFWRITER_DIR and
+    -- $CCGBANK_DIR (neither is in the repo). Research driver.
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          ProofWriterCoverage.hs
+    default-language: Haskell2010
+    ghc-options:      -threaded -rtsopts "-with-rtsopts=-N"
+    build-depends:    base, containers, nl2proof
+
+test-suite nl2proof-ccgsem-test
+    -- The CCGbank parser's semantic layer (closed-class entries, templates,
+    -- combinator semantics, donkey binding, definites, ProofWriter conversion)
+    -- on a miniature tag dictionary: needs no licensed data.
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          CCGSemSpec.hs
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof

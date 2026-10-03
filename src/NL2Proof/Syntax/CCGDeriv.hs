@@ -18,6 +18,7 @@ module NL2Proof.Syntax.CCGDeriv
     AutoNode(..)
   , nodeCat
   , parseAuto
+  , leafHeaders
     -- * Reconstruction check
   , NodeVerdict(..)
   , verdicts
@@ -95,6 +96,17 @@ pChildren ts = do
   (n, rest)   <- pNode ts
   (ns, rest') <- pChildren rest
   Right (n : ns, rest')
+
+-- | Every leaf of an @.auto@ line as @(category, POS, word)@, in surface order.
+--
+-- 'AutoLeaf' keeps only category and word; the POS field is needed separately by
+-- the tag dictionary that decides which words are proper names
+-- ('NL2Proof.Syntax.CCGSupertag.POSModel'). Lines that fail to tokenise yield
+-- no leaves rather than an error, matching how the tools skip unparsable lines.
+leafHeaders :: String -> [(String, String, String)]
+leafHeaders s = case tokenize s of
+  Left _     -> []
+  Right toks -> [ (c, pos, w) | THeader h <- toks, ("L" : c : pos : _ : w : _) <- [words h] ]
 
 -- | The surface word of a leaf header @L cat modpos pos word predarg@ (5th field).
 leafWord :: String -> String

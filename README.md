@@ -8,7 +8,8 @@ by an external oracle. Nothing internal to the system counts as evidence.
 `text -> tokens -> CCG derivation -> typed lambda term -> DRS (+provenance) -> claims -> Genealogy -> oracle-gated grounding -> Fusion`
 
 - `src/NL2Proof/Syntax/` - tokenizer, categories, toy lexicon, CCG rules/derivation, CCGbank reader, CKY parser, supertagger
-- `src/NL2Proof/Semantics/Lambda.hs` - typed lambda calculus (typing, beta, alpha-equivalence)
+- `src/NL2Proof/Semantics/` - typed lambda calculus; `CCGSem` meanings for CCGbank categories
+- `src/NL2Proof/Bench/` - ProofWriter gold parser and DRS -> triple/rule conversion
 - `src/NL2Proof/DRT/` - DRS types, construction, canonical claim form
 - `src/NL2Proof/Provenance.hs`, `Trace.hs` - source spans, decisions and diagnostics
 - `src/NL2Proof/Pipeline.hs`, `Collapse/Class.hs`, `Fragment.hs` - end-to-end run, logged selection, fixed eval set
@@ -29,10 +30,14 @@ cabal run nl2proof-demo
 Only `base` and `containers` are used; `scripts/build.sh` works with bare GHC.
 
 CCGbank (LDC2005T13, licensed, never committed): `~/ccgbank/ccgbank_1_1/data/`, or set `CCGBANK_DIR`.
+ProofWriter V2020.12.3 (CC BY 4.0, never committed): `~/data/proofwriter/`, or `PROOFWRITER_DIR`;
+`cabal run proofwriter-coverage -- --split dev --split test --questions`.
 
 ## Next
 
-1. Wire the CCGbank parser (`CCGParse`/`CCGSupertag`) into `Pipeline`.
+1. Done: `CCGBankParser` in `Pipeline`. ProofWriter CWA depth-5, frozen on train: test sentences
+   85.4% exact (facts 89.4%, rules 79.8%), whole theories 24.6%. The blocker is the WSJ lexicon:
+   `round`/`kind` never get a predicative-adjective category; without them 99.8% / 94.9%.
 2. Claims -> graph nodes, forward chaining, retrieval over the graph.
 3. ProofWriter benchmark by depth: small-raw / large-raw / small+graph / graph-only.
 4. Strength: oracle-grounded vs hearsay.

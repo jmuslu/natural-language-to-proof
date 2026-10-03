@@ -25,7 +25,9 @@ module NL2Proof.DRT.Build
     -- * Translation
   , toDRS
   , predicatesOn
+  , describeIota
     -- * Anaphora resolution
+  , resolveLocalAnaphora
   , Antecedents(..)
   , flatAntecedents
   , resolveAnaphora
@@ -126,12 +128,14 @@ toDRS idx fallback = go
     dterm t = case t of
       Var v   -> DRef (Ref v)
       Con c _ -> DConst c
+      App (Con c _) p | c == iotaName -> DConst (describeIota p)
       _       -> DConst (pretty t)
 
     -- Provenance for a condition: the words behind its predicate symbol and
-    -- behind each of its constant arguments.
+    -- behind each of its constant arguments (including the words of a definite
+    -- description, which reach the condition as an iota argument).
     condProvFor args extra =
-      let names = extra ++ [c | Con c _ <- args]
+      let names = extra ++ filter (/= iotaName) (concatMap constNames args)
       in case mapMaybe (lookupProv idx) (nub names) of
            [] -> fallback
            ps -> provRule "cond" ps
@@ -142,6 +146,28 @@ toDRS idx fallback = go
       case mapMaybe (lookupProv idx) (predicatesOn v body) of
         [] -> fallback
         ps -> provRule "ref" ps
+
+-- | The constant a definite description @iota(P)@ denotes, named by its
+-- descriptive content: the one-place predicates @P@ conjoins on its variable, in
+-- order, space-separated (@the bald eagle@ names @"bald eagle"@).
+--
+-- __This is the unique-name reading of definites, stated:__ a description is a
+-- rigid name for one individual, and the same description in two places names
+-- the same individual, so identity across sentences needs no resolution step.
+-- That is the reading the ProofWriter theories are generated under, and it is a
+-- /translation/ here, not a decision: nothing is chosen among candidates. A
+-- description that is not a conjunction of one-place predicates on its variable
+-- is rendered verbatim rather than guessed at.
+describeIota :: Term -> String
+describeIota p = case p of
+  Con c _ -> c
+  Lam v _ body | Just cs <- mapM (onVar v) (conjs body) -> unwords cs
+  _ -> pretty p
+  where
+    conjs (TAnd a b) = conjs a ++ conjs b
+    conjs t          = [t]
+    onVar v (App (Con c _) (Var v')) | v' == v = Just c
+    onVar _ _                                 = Nothing
 
 -- | Names of predicates applied to exactly the variable @v@ and nothing else.
 --
@@ -273,6 +299,78 @@ resolveAnaphoraWith ants new sentProv =
     mentions name (CPred _ as _) = DConst name `elem` as
     mentions name (CEq a b _)    = DConst name `elem` [a, b]
     mentions _ _                 = False
+
+--------------------------------------------------------------------------------
+-- Intra-sentential anaphora (donkey binding)
+--------------------------------------------------------------------------------
+
+-- | Resolve a sentence's anaphors against the referents DRT makes accessible to
+-- them /inside the sentence/: the referents of the anaphor's own box, of every
+-- box that contains it, and — for a box in the consequent of a conditional —
+-- of that conditional's antecedent box.
+--
+-- This is the donkey case. In @"If something is big then it is red"@ the
+-- referent introduced by @something@ lives in the antecedent box, so
+-- 'resolveAnaphora' (which only sees top-level referents of /earlier/ sentences)
+-- cannot reach it, and it must not: the binding is internal to the conditional.
+--
+-- __The heuristic, stated:__ among accessible referents whose introducing words
+-- /precede/ the pronoun, take the latest by surface position (the same recency
+-- notion as 'recencyOrdered'). No agreement features are consulted. Every
+-- binding is logged as an @anaphora@ 'Decision' naming the alternatives passed
+-- over. An anaphor with no preceding accessible referent is left untouched, so
+-- discourse-level resolution (or its 'UnresolvedAnaphor' diagnostic) still sees
+-- it.
+resolveLocalAnaphora :: ProvIndex -> DRS -> (DRS, Trace)
+resolveLocalAnaphora idx = goBox []
+  where
+    goBox env (DRS us cs) =
+      let env' = env ++ us
+          (cs', tr) = foldl (step env') ([], mempty) cs
+      in (DRS us (reverse cs'), tr)
+
+    step env (acc, tr) c = case c of
+      CNot d p ->
+        let (d', t) = goBox env d in (CNot d' p : acc, tr <> t)
+      COr a b p ->
+        let (a', ta) = goBox env a
+            (b', tb) = goBox env b
+        in (COr a' b' p : acc, tr <> ta <> tb)
+      CImp a b p ->
+        let (a', ta) = goBox env a
+            (b', tb) = goBox (env ++ drsUniverse a') b
+        in (CImp a' b' p : acc, tr <> ta <> tb)
+      _ ->
+        let (c', t) = foldl (resolveIn env) (c, mempty) (anaphorsIn c)
+        in (c' : acc, tr <> t)
+
+    anaphorsIn (CPred _ as _) = nub [n | DConst n <- as, isAnaphorName n]
+    anaphorsIn (CEq a b _)    = nub [n | DConst n <- [a, b], isAnaphorName n]
+    anaphorsIn _              = []
+
+    resolveIn env (c, tr) name =
+      let here = lookupProv idx name >>= provSpan
+          before (_, p) = case (here, provSpan p) of
+            (Just h, Just s) -> spanStart s < spanStart h
+            _                -> False
+          ranked = recencyOrdered (DRS (filter before env) [])
+      in case ranked of
+           [] -> (c, tr)
+           (chosen : rejected) ->
+             ( substCond name (DRef chosen) c
+             , tr <> note Decision
+                 { decKind = "anaphora"
+                 , decChoice = show chosen
+                 , decAlternatives = map show rejected
+                 , decWhy = "intra-sentential (DRT accessibility: own box, enclosing"
+                     ++ " boxes, antecedent of an enclosing conditional); latest"
+                     ++ " accessible referent preceding the pronoun"
+                 , decProv = fromMaybe (condProv c) (lookupProv idx name)
+                 } )
+
+    substCond name new c = case drsConds (substConstDRS name new (DRS [] [c])) of
+      [c'] -> c'
+      _    -> c
 
 --------------------------------------------------------------------------------
 -- Discourse

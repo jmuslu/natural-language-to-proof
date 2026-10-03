@@ -18,7 +18,12 @@ module NL2Proof.Syntax.CCGSupertag
   , buildTagModel
   , supertag
   , supertagScored
+  , scoreCounts
   , isOOV
+    -- * Part-of-speech tag dictionary
+  , POSModel(..)
+  , buildPOSModel
+  , posCounts
   , oracleIncluded
   ) where
 
@@ -65,9 +70,18 @@ supertag tm k w = case M.lookup w (tmWord tm) of
 -- an arbitrary cap.
 supertagScored :: TagModel -> Double -> Int -> String -> [(CCat, Double)]
 supertagScored tm beta kmax w =
-  case M.findWithDefault (tmPrior tm) w (tmWord tm) of
+  scoreCounts beta kmax (M.findWithDefault (tmPrior tm) w (tmWord tm))
+
+-- | The β-beam and log-probability scoring of 'supertagScored', over an explicit
+-- count list (sorted descending by count). Exposed so a caller that merges two
+-- count lists (e.g. a sentence-initial word with its lower-cased form) scores
+-- them by exactly the same rule.
+scoreCounts :: Double -> Int -> [(CCat, Int)] -> [(CCat, Double)]
+scoreCounts beta kmax cs0 =
+  let cs = sortBy (comparing (Down . snd)) cs0
+  in case cs of
     [] -> []
-    cs@((_, mx) : _) ->      -- cs is sorted desc by count, so mx is the max
+    ((_, mx) : _) ->
       let total  = fromIntegral (sum (map snd cs)) :: Double
           thresh = beta * fromIntegral mx
       in take kmax [ (c, log (fromIntegral n / total))
@@ -80,3 +94,22 @@ isOOV tm w = not (M.member w (tmWord tm))
 -- match: gold and lexicon categories come from the same CCGbank vocabulary.)
 oracleIncluded :: TagModel -> Int -> String -> CCat -> Bool
 oracleIncluded tm k w gold = gold `elem` supertag tm k w
+
+--------------------------------------------------------------------------------
+-- Part-of-speech tag dictionary
+--------------------------------------------------------------------------------
+
+-- | Per-word POS counts from CCGbank leaves (the gold Penn POS field). Used for
+-- one thing only: deciding whether a word is a proper name (NNP\/NNPS), which the
+-- category alone cannot tell (CCGbank tags a lone name @N@ and a bare plural @N@
+-- alike, and only the POS distinguishes the @N -> NP@ name reading).
+newtype POSModel = POSModel (M.Map String (M.Map String Int))
+
+buildPOSModel :: [(String, String)] -> POSModel
+buildPOSModel pairs =
+  POSModel (foldr (\(w, p) -> M.insertWith (M.unionWith (+)) w (M.singleton p 1)) M.empty pairs)
+
+-- | A word's POS counts, most frequent first; empty if the word is unseen.
+posCounts :: POSModel -> String -> [(String, Int)]
+posCounts (POSModel m) w =
+  sortBy (comparing (Down . snd)) (M.toList (M.findWithDefault M.empty w m))
