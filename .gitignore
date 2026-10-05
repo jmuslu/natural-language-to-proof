@@ -33,3 +33,6 @@ corpus/brain_agenda.json
 corpus/runtime/
 __pycache__/
 *.pyc
+
+# Claude Code local state (agent worktrees, settings)
+.claude/
