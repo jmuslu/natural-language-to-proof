@@ -18,3 +18,7 @@ checkCandidate oracle r = confirm oracle (asCandidate (reportedClaim' r))
 -- Asserted claims, indexed or bare, are confirmable as before.
 checkAsserted :: Oracle -> CanonCond -> (Maybe Confirmed, Maybe Confirmed)
 checkAsserted oracle c = (confirm oracle c, confirm oracle (assertedClaim c))
+
+-- Embedded claims can be inspected, and promoted explicitly like a report.
+inspectEmbedded :: Oracle -> Claim 'Embedded -> (CanonCond, Maybe Confirmed)
+inspectEmbedded oracle e = (claimCond e, confirm oracle (asCandidate e))

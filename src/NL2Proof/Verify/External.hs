@@ -132,7 +132,7 @@ evaluateReceipts book@(ReceiptBook receipts) runIds
     oracle = receiptOracle book
     claims = map validationClaim runIds
     fused = fuse (confirmAll oracle claims)
-    genealogy = genealogyOf oracle (ClaimTable [] facts "external run validation receipts" [] [])
+    genealogy = genealogyOf oracle (ClaimTable [] facts "external run validation receipts" [] [] [])
     facts =
       [ Fact i (validationClaim runId)
           (provRule ("external-receipt:" ++ maybe "uncovered" id (evidenceFor runId)) [])

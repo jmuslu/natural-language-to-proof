@@ -13,7 +13,7 @@ by an external oracle. Nothing internal to the system counts as evidence.
 - `src/NL2Proof/DRT/` - DRS types, construction, canonical claim form
 - `src/NL2Proof/Provenance.hs`, `Trace.hs` - source spans, decisions and diagnostics
 - `src/NL2Proof/Pipeline.hs`, `Collapse/Class.hs`, `Fragment.hs` - end-to-end run, logged selection, fixed eval set
-- `src/NL2Proof/Verify/` - Oracle (sealed admission), ClaimKind (Asserted/Reported/Presupposed phantom index; `confirm` takes asserted only), Claims, Reported (attitude content with source chains, never a premise), External
+- `src/NL2Proof/Verify/` - Oracle (sealed admission), ClaimKind (Asserted/Reported/Presupposed/Embedded phantom index; `confirm` takes asserted only), Claims (facts are the main box's top-level conditions only: a negation, conditional or disjunction is one fact, whole; what is inside it is Embedded), Reported (attitude content with source chains, never a premise), External
 - `src/NL2Proof/Genealogy.hs`, `Fusion.hs`, `Reward.hs` - derivation graph, fusion, grounding score
 - `Readings/Alternatives.hs` - scope permutations and modifier-coupling candidates (restored; not yet wired into Pipeline)
 - `Readings/Modifier.hs` - modifier classes and the layer each resolves at (restored; not yet wired into Pipeline)

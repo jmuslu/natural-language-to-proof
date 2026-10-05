@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 -- | The verification stage's claim table: atomic claims with their derivations
 -- retained in full.
 --
@@ -39,7 +41,15 @@
 -- 'genealogyOf' is the bridge: it turns this table into the graph the precise
 -- version operates on.
 --
--- == Asserted versus reported
+-- == Asserted versus reported, presupposed and embedded
+--
+-- A fact is a /top-level/ condition of the main box, and nothing else. @"The
+-- cat is not red"@ yields the one fact @~[red(cat)]@ (a negative claim, whole);
+-- @"All red things are big"@ the one rule @[r0 | red(r0); thing(r0)] =>
+-- [big(r0)]@. What is inside such a box is in 'ctEmbedded', indexed
+-- @'Claim' 'Embedded@ so it cannot be confirmed: every fact is a genealogy
+-- premise, and an inner literal recorded as one could be confirmed into a
+-- grounded claim the text denies or only conditions on.
 --
 -- Content embedded under an attitude verb (@"Bob said that the cat is red"@)
 -- is not a fact of this table. It is kept in 'ctReported' as a
@@ -47,7 +57,8 @@
 -- verb, and the complement of a factive verb in 'ctPresupposed'. 'genealogyOf'
 -- makes neither a premise, so no oracle verdict attaches to them by way of the
 -- report. The attitude condition itself (@say(Bob, K)@) is an ordinary
--- asserted fact.
+-- asserted fact when it is at the top level (and embedded, like anything else,
+-- under a negation: @"Bob did not say that P"@ asserts only @~[say(Bob, K)]@).
 module NL2Proof.Verify.Claims
   ( -- * Claims
     Fact(..)
@@ -79,6 +90,7 @@ import NL2Proof.DRT.Canonical
 import NL2Proof.DRT.Types
 import NL2Proof.Genealogy
 import NL2Proof.Provenance
+import NL2Proof.Verify.ClaimKind
 import NL2Proof.Verify.Oracle
 import NL2Proof.Verify.Reported
 
@@ -113,6 +125,10 @@ data ClaimTable = ClaimTable
   , ctPresupposed :: [Presupposed]
     -- ^ Presupposed, not asserted: complements of factive verbs, hoisted to
     -- the top level. Not premises either.
+  , ctEmbedded :: [Claim 'Embedded]
+    -- ^ Mentioned, not asserted: every condition inside a top-level negation,
+    -- conditional or disjunction. The enclosing condition is the fact; these
+    -- are kept for inspection only, never premises, and cannot be confirmed.
   }
   deriving (Eq, Show)
 
@@ -122,7 +138,9 @@ data ClaimTable = ClaimTable
 -- 'NL2Proof.Verify.Reported.splitClaims' walks the DRS and its canonical form
 -- in parallel (each node, then its children, in order; nothing reordered or
 -- dropped), so each claim is paired with the provenance of the condition it
--- came from. Conditions inside an attitude box go to 'ctReported' instead.
+-- came from. Only top-level conditions are facts: a negation, conditional or
+-- disjunction is one fact, whole, and what is inside it goes to 'ctEmbedded'.
+-- Conditions inside a top-level attitude box go to 'ctReported'.
 claimsOf :: Selection -> ClaimTable
 claimsOf sel = claimsOfDRS (selRationale sel) (selChosen sel)
 
@@ -135,9 +153,10 @@ claimsOfDRS rationale chosen =
     , ctRationale = rationale
     , ctReported = reported
     , ctPresupposed = presupposed
+    , ctEmbedded = embedded
     }
   where
-    (facts, reported, presupposed) = splitClaims chosen
+    (facts, reported, presupposed, embedded) = splitClaims chosen
 
 retainingStrategy :: CollapseStrategy ClaimTable
 retainingStrategy =
@@ -266,6 +285,10 @@ renderClaimTable ct =
            [] -> []
            rs -> "" : "  reported (attributed, not asserted; never premises):"
                    : map (("    " ++) . renderReported) rs
+      ++ case ctEmbedded ct of
+           [] -> []
+           es -> "" : "  embedded (inside a negation, conditional or disjunction; not asserted):"
+                   : map (("    " ++) . renderCanonCond . claimCond) es
       ++ case ctPresupposed ct of
            [] -> []
            ps -> "" : "  presupposed (factive complements; never premises):"

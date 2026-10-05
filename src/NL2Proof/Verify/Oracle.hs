@@ -154,7 +154,8 @@ confOracle (MkConfirmed _ oracle) = oracle
 -- | What 'confirm' accepts: asserted claims only. A bare 'CanonCond' is the
 -- asserted form the claim table has always produced, and @'Claim' 'Asserted@
 -- is the indexed one. @'Claim' 'Reported@ and @'Claim' 'Presupposed@ have
--- instances only to turn the attempt into a readable compile error; the class
+-- (and @'Claim' 'Embedded@) have instances only to turn the attempt into a
+-- readable compile error; the class
 -- method is not exported, so no other instance can be written to work around
 -- it.
 class Confirmable c where
@@ -174,6 +175,12 @@ instance TypeError ('Text "A reported claim cannot be confirmed: being reported 
 instance TypeError ('Text "A presupposed claim cannot be confirmed directly."
                     ':$$: 'Text "Promote it with asCandidate and ask an oracle about the candidate.")
       => Confirmable (Claim 'Presupposed) where
+  assertedCond = claimCond
+
+instance TypeError ('Text "An embedded claim cannot be confirmed: the text does not assert it."
+                    ':$$: 'Text "It occurs under a negation, a conditional or a disjunction; confirm the whole"
+                    ':$$: 'Text "top-level condition, or promote it with asCandidate and ask an oracle.")
+      => Confirmable (Claim 'Embedded) where
   assertedCond = claimCond
 
 -- | 'Just' exactly when the oracle confirms the claim. 'Refuted' and 'Unknown'

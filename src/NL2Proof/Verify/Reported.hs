@@ -8,8 +8,8 @@
 -- stage keeps attitude content in a box attached to the attitude condition
 -- ('NL2Proof.DRT.Types.CAtt'); here that box's conditions become
 -- @'Claim' 'Reported@ values with their attribution chain. The attitude
--- condition itself (@say(Bob, K)@) is an ordinary asserted claim: the text does
--- assert that Bob said something.
+-- condition itself (@say(Bob, K)@), at the top level, is an ordinary asserted
+-- claim: the text does assert that Bob said something.
 --
 -- == The polarity rule
 --
@@ -19,6 +19,11 @@
 -- report. The same holds under a conditional or a disjunction. Reported claims
 -- are the top-level conditions of the report box, so @"Bob said that the cat is
 -- not red"@ reports @~red(cat)@ and nothing else.
+--
+-- The same rule governs assertion ('splitClaims'): only the top-level
+-- conditions of the main box are asserted. Under a negation the attitude
+-- condition itself is not asserted either: @"Bob did not say that P"@ asserts
+-- @~[say(Bob, K)]@ and nothing else.
 --
 -- == The guard
 --
@@ -116,36 +121,49 @@ presupposedClaim' (MkPresupposed c _) = c
 presupposedProv :: Presupposed -> Prov
 presupposedProv (MkPresupposed _ p) = p
 
--- | Split a DRS into asserted claims (with provenance), reported claims and
--- presupposed claims.
+-- | Split a DRS into asserted claims (with provenance), reported claims,
+-- presupposed claims and embedded claims.
 --
--- Asserted claims are exactly what the claim table has always produced:
--- every condition outside attitude and presupposition boxes, node before
--- children, in order (an attitude condition is itself one of them). Reported
--- claims follow the polarity rule in the module header. Presupposed claims are
--- the conditions of top-level 'CPresup' boxes. All three share one canonical
--- renaming, so a reported @red(r0)@ and an asserted @red(r0)@ are about the
--- same referent.
-splitClaims :: DRS -> ([(CanonCond, Prov)], [Reported], [Presupposed])
-splitClaims top = mconcat (zipWith (topCond) (drsConds top) (canonConds canon))
+-- __Only a top-level condition of the main box is asserted__ ('topCond' is
+-- the one place that decides it). A negation, conditional or disjunction at
+-- the top level is asserted /whole/, as the single condition it is: @~[red(cat)]@
+-- for @"The cat is not red"@, the rule @[red(x)] => [big(x)]@ for @"All red
+-- things are big"@. Nothing inside such a box is asserted: the text denies,
+-- conditions on or offers it, and a fact of the table becomes a genealogy
+-- premise that an oracle may confirm. Those inner conditions (at every depth,
+-- including attitudes and their content under a negation) are returned as
+-- @'Claim' 'Embedded@, which 'NL2Proof.Verify.Oracle.confirm' rejects at
+-- compile time.
+--
+-- Reported claims follow the polarity rule in the module header. Presupposed
+-- claims are the conditions of top-level 'CPresup' boxes. All four share one
+-- canonical renaming, so a reported @red(r0)@ and an asserted @red(r0)@ are
+-- about the same referent.
+splitClaims :: DRS -> ([(CanonCond, Prov)], [Reported], [Presupposed], [Claim 'Embedded])
+splitClaims top = mconcat (zipWith topCond (drsConds top) (canonConds canon))
   where
     canon = canonicalize top
 
     topCond c k = case (c, k) of
       (CAtt v _ x _, CanAtt _ hs kx) ->
-        ([(k, condProv c)], reported [attribution v hs] x kx, [])
+        ([(k, condProv c)], reported [attribution v hs] x kx, [], [])
       (CPresup x _, CanPresup kx) ->
         ([], [], zipWith (\c' k' -> MkPresupposed (presupposedClaim k') (condProv c'))
-                         (drsConds x) (canonConds kx))
-      _ -> (asserted c k, [], [])
+                         (drsConds x) (canonConds kx), [])
+      _ -> ([(k, condProv c)], [], [], map embeddedClaim (below k))
 
-    -- Below the top level: assertions as today, but no reports (polarity).
-    asserted c k = (k, condProv c) : case (c, k) of
-      (CNot x _, CanNot kx)      -> nested x kx
-      (CImp a b _, CanImp ka kb) -> nested a ka ++ nested b kb
-      (COr a b _, CanOr ka kb)   -> nested a ka ++ nested b kb
-      _                          -> []
-    nested (DRS _ cs) (Canonical _ ks) = concat (zipWith asserted cs ks)
+    -- Every condition strictly inside a top-level negation, conditional or
+    -- disjunction, at every depth. None of it is asserted.
+    below k = case k of
+      CanNot x   -> inside x
+      CanImp a b -> inside a ++ inside b
+      CanOr a b  -> inside a ++ inside b
+      _          -> []
+    inside (Canonical _ ks) = concatMap (\k' -> k' : nested k') ks
+    nested k = case k of
+      CanAtt _ _ x -> inside x
+      CanPresup x  -> inside x
+      _            -> below k
 
     -- The top-level conditions of a report box, each a reported claim; an
     -- attitude at the top of the box recurses one level deeper; a presupposed

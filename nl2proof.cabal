@@ -242,3 +242,15 @@ test-suite nl2proof-intensional-test
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+test-suite nl2proof-assertion-test
+    -- Only the top-level conditions of the main box are asserted: nothing
+    -- under negation, conditionals, disjunction, universals or a negated
+    -- attitude enters the claim table, and none of it can reach an oracle.
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          AssertionSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
