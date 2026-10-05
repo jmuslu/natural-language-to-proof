@@ -15,6 +15,11 @@ by an external oracle. Nothing internal to the system counts as evidence.
 - `src/NL2Proof/Pipeline.hs`, `Collapse/Class.hs`, `Fragment.hs` - end-to-end run, logged selection, fixed eval set
 - `src/NL2Proof/Verify/` - Oracle (sealed admission), Claims (claim table), External (receipt oracle)
 - `src/NL2Proof/Genealogy.hs`, `Fusion.hs`, `Reward.hs` - derivation graph, fusion, grounding score
+- `Readings/Alternatives.hs` - scope permutations and modifier-coupling candidates (restored; not yet wired into Pipeline)
+- `Readings/Modifier.hs` - modifier classes and the layer each resolves at (restored; not yet wired into Pipeline)
+- `Discourse/SDRT.hs` - SDRT relations, right frontier, cue-ranked glue (restored; not yet wired into Pipeline)
+- `Discourse/Threading.hs` - frontier-aware anaphora threading, Committed/Permissive (restored; not yet wired into Pipeline)
+- The probabilistic modules (RSA, Distribution, Model, Fingerprint) stay in tag `pre-cut`: planned as an optional ranking layer on top of these discrete readings, never admitting facts.
 - `tools/` - CCGbank measurement drivers; `app/` - demo; `scripts/` - no-cabal build, oracle boundary check
 - `test/` - specs; `test/compile-fail` + `compile-pass` prove the Oracle admission lock
 
