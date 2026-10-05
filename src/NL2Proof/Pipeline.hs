@@ -203,7 +203,9 @@ processHand lexicon src sent =
               "first derivation in CKY enumeration order; a positional"
                 ++ " tie-break, not a linguistic one"
           , beProvIndex = buildProvIndex lexicon . sProv
-          , bePostDRS = \_ d -> (d, mempty)
+          , bePostDRS = \sg d ->
+              let (d1, t1) = projectPresuppositions d
+              in (d1, t1 <> reportDefiniteDecisions (sProv sg) (normalize (sSem sg)))
           , beNotes = const mempty
           }
         src sent (null unknown) parses
@@ -263,7 +265,10 @@ processCCG model src sent =
                 ++ " a statistical tie-break from CCGbank frequencies, not a"
                 ++ " linguistic one"
           , beProvIndex = provIndexFor
-          , bePostDRS = \sg d -> resolveLocalAnaphora (provIndexFor sg) d
+          , bePostDRS = \sg d ->
+              let (d1, t1) = resolveLocalAnaphora (provIndexFor sg) d
+                  (d2, t2) = projectPresuppositions d1
+              in (d2, t1 <> t2 <> reportDefiniteDecisions (sProv sg) (sSem sg))
           , beNotes = \_ ->
               foldMap
                 (\(st, p) ->
@@ -295,7 +300,7 @@ data BackEnd = BackEnd
   , beProvIndex :: Sign -> ProvIndex
   , bePostDRS   :: Sign -> DRS -> (DRS, Trace)
     -- ^ Sentence-internal DRS steps after translation (the CCGbank path
-    -- resolves donkey anaphora here).
+    -- resolves donkey anaphora here; both project factive presuppositions).
   , beNotes     :: Sign -> Trace
     -- ^ Decisions the chosen derivation's entries stipulated.
   }

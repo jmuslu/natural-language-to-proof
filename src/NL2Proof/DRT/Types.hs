@@ -9,6 +9,15 @@
 -- introduced inside a negated, implicational, or disjunctive box are /not/
 -- accessible from outside it — which is why @"No student sleeps. She smiles."@
 -- correctly fails to resolve its pronoun.
+--
+-- An attitude report adds a fourth kind of subordinate box: @say(bob, K)@
+-- ('CAtt') holds the reported content @K@ as a box /attached to/ the attitude
+-- condition, never merged into the box that contains it. Its conditions are
+-- therefore not conditions of the main DRS and are not asserted. Its referents
+-- obey the same rule as a negated box: accessible inside @K@ (and boxes nested
+-- in it), never from outside, while referents of the enclosing boxes are
+-- accessible inside @K@. Modal subordination (@"Bob thinks a cat is here. He
+-- thinks it is red."@) is not implemented.
 module NL2Proof.DRT.Types
   ( -- * Structures
     Ref(..)
@@ -77,6 +86,15 @@ data Condition
   | -- | Duplex condition: @antecedent => consequent@.
     CImp DRS DRS Prov
   | COr DRS DRS Prov
+  | -- | Attitude report: @verb(holders, K)@, e.g. @say(bob, K)@. The arguments
+    -- are the attitude holder (and, for @tell@, the addressee); @K@ is the
+    -- reported content, a subordinate box. Nothing in @K@ is asserted.
+    CAtt String [DTerm] DRS Prov
+  | -- | Presupposed content: the complement of a factive verb, hoisted by
+    -- "NL2Proof.DRT.Build".'NL2Proof.DRT.Build.projectPresuppositions' to the
+    -- top of the main DRS (or of the enclosing report). Kept marked, so the
+    -- claim table can tell presupposed from asserted.
+    CPresup DRS Prov
   deriving (Eq, Show)
 
 -- | A DRS box: a universe of referents, and a list of conditions.
@@ -154,6 +172,8 @@ condProv (CEq _ _ p)   = p
 condProv (CNot _ p)    = p
 condProv (CImp _ _ p)  = p
 condProv (COr _ _ p)   = p
+condProv (CAtt _ _ _ p) = p
+condProv (CPresup _ p) = p
 
 -- | Every referent, including those in subordinate boxes.
 drsRefs :: DRS -> [Ref]
@@ -162,6 +182,8 @@ drsRefs (DRS us cs) = map fst us ++ concatMap go cs
     go (CNot d _)   = drsRefs d
     go (CImp a b _) = drsRefs a ++ drsRefs b
     go (COr a b _)  = drsRefs a ++ drsRefs b
+    go (CAtt _ _ k _) = drsRefs k
+    go (CPresup k _) = drsRefs k
     go _            = []
 
 -- | Referents an anaphor in a /following/ sentence may pick up.
@@ -215,6 +237,8 @@ drsConditionProvs (DRS _ cs) = concatMap go cs
       CNot d _   -> drsConditionProvs d
       CImp a b _ -> drsConditionProvs a ++ drsConditionProvs b
       COr a b _  -> drsConditionProvs a ++ drsConditionProvs b
+      CAtt _ _ k _ -> drsConditionProvs k
+      CPresup k _ -> drsConditionProvs k
       _          -> []
 
 -- | Every provenance tag in the structure: referents and conditions, all depths.
@@ -228,6 +252,8 @@ drsAllProvs (DRS us cs) = map snd us ++ concatMap go cs
       CNot d _   -> drsAllProvs d
       CImp a b _ -> drsAllProvs a ++ drsAllProvs b
       COr a b _  -> drsAllProvs a ++ drsAllProvs b
+      CAtt _ _ k _ -> drsAllProvs k
+      CPresup k _ -> drsAllProvs k
       _          -> []
 
 -- | Which sources this structure draws on. The @why@-provenance of a whole DRS.
@@ -243,6 +269,8 @@ drsPredicates (DRS _ cs) = nub (concatMap go cs)
     go (CNot d _)    = drsPredicates d
     go (CImp a b _)  = drsPredicates a ++ drsPredicates b
     go (COr a b _)   = drsPredicates a ++ drsPredicates b
+    go (CAtt v _ k _) = v : drsPredicates k
+    go (CPresup k _) = drsPredicates k
 
 -- | Every constant appearing in an argument position, at every depth.
 drsConstants :: DRS -> [String]
@@ -253,6 +281,8 @@ drsConstants (DRS _ cs) = nub (concatMap go cs)
     go (CNot d _)     = drsConstants d
     go (CImp a b _)   = drsConstants a ++ drsConstants b
     go (COr a b _)    = drsConstants a ++ drsConstants b
+    go (CAtt _ as k _) = [c | DConst c <- as] ++ drsConstants k
+    go (CPresup k _)  = drsConstants k
 
 -- | Constants still marked as unresolved anaphors.
 anaphorConstants :: DRS -> [String]
@@ -266,6 +296,8 @@ drsSize (DRS us cs) = length us + sum (map go cs)
     go (CNot d _)   = 1 + drsSize d
     go (CImp a b _) = 1 + drsSize a + drsSize b
     go (COr a b _)  = 1 + drsSize a + drsSize b
+    go (CAtt _ _ k _) = 1 + drsSize k
+    go (CPresup k _) = 1 + drsSize k
     go _            = 1
 
 --------------------------------------------------------------------------------
@@ -289,6 +321,8 @@ substConstDRS name new (DRS us cs) = DRS us (map go cs)
     go (CNot d p')     = CNot (substConstDRS name new d) p'
     go (CImp a b p')   = CImp (substConstDRS name new a) (substConstDRS name new b) p'
     go (COr a b p')    = COr (substConstDRS name new a) (substConstDRS name new b) p'
+    go (CAtt v as k p') = CAtt v (map s as) (substConstDRS name new k) p'
+    go (CPresup k p')  = CPresup (substConstDRS name new k) p'
 
 -- | Rename every referent, at every depth.
 --
@@ -306,6 +340,8 @@ mapRefs f (DRS us cs) = DRS [(f r, p) | (r, p) <- us] (map goC cs)
       CNot d p     -> CNot (mapRefs f d) p
       CImp a b p   -> CImp (mapRefs f a) (mapRefs f b) p
       COr a b p    -> COr (mapRefs f a) (mapRefs f b) p
+      CAtt v as k p -> CAtt v (map goT as) (mapRefs f k) p
+      CPresup k p  -> CPresup (mapRefs f k) p
 
     goT t = case t of
       DRef r   -> DRef (f r)
@@ -374,5 +410,9 @@ drsBoxLines (DRS us cs) =
     condLines (CNot d _)  = "NOT:" : indent (drsBoxLines d)
     condLines (CImp a b _) = indent (drsBoxLines a) ++ ["  =>"] ++ indent (drsBoxLines b)
     condLines (COr a b _)  = indent (drsBoxLines a) ++ ["  OR"] ++ indent (drsBoxLines b)
+    condLines (CAtt v as k _) =
+      (v ++ "(" ++ intercalate ", " (map renderDTerm as ++ ["K"]) ++ ")  K:")
+        : indent (drsBoxLines k)
+    condLines (CPresup k _) = "PRESUPPOSED:" : indent (drsBoxLines k)
 
     indent = map ("  " ++)

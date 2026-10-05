@@ -1,3 +1,8 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 -- | Stage 2 of the substrate pipeline: verification against an __external__
 -- domain oracle.
 --
@@ -48,6 +53,7 @@ module NL2Proof.Verify.Oracle
   , Confirmed
   , confClaim
   , confOracle
+  , Confirmable
   , confirm
   , confirmAll
     -- * Coverage reporting
@@ -58,7 +64,10 @@ module NL2Proof.Verify.Oracle
 
 import Data.List (nub, partition)
 
+import GHC.TypeLits (ErrorMessage(..), TypeError)
+
 import NL2Proof.DRT.Canonical
+import NL2Proof.Verify.ClaimKind
 
 --------------------------------------------------------------------------------
 -- Verdicts
@@ -142,13 +151,40 @@ confClaim (MkConfirmed claim _) = claim
 confOracle :: Confirmed -> String
 confOracle (MkConfirmed _ oracle) = oracle
 
+-- | What 'confirm' accepts: asserted claims only. A bare 'CanonCond' is the
+-- asserted form the claim table has always produced, and @'Claim' 'Asserted@
+-- is the indexed one. @'Claim' 'Reported@ and @'Claim' 'Presupposed@ have
+-- instances only to turn the attempt into a readable compile error; the class
+-- method is not exported, so no other instance can be written to work around
+-- it.
+class Confirmable c where
+  assertedCond :: c -> CanonCond
+
+instance Confirmable CanonCond where
+  assertedCond = id
+
+instance Confirmable (Claim 'Asserted) where
+  assertedCond = claimCond
+
+instance TypeError ('Text "A reported claim cannot be confirmed: being reported is not evidence."
+                    ':$$: 'Text "Promote it with asCandidate and ask an oracle about the candidate.")
+      => Confirmable (Claim 'Reported) where
+  assertedCond = claimCond
+
+instance TypeError ('Text "A presupposed claim cannot be confirmed directly."
+                    ':$$: 'Text "Promote it with asCandidate and ask an oracle about the candidate.")
+      => Confirmable (Claim 'Presupposed) where
+  assertedCond = claimCond
+
 -- | 'Just' exactly when the oracle confirms the claim. 'Refuted' and 'Unknown'
 -- both give 'Nothing' — they are different facts about the claim but the same
--- fact about whether it may proceed.
-confirm :: Oracle -> CanonCond -> Maybe Confirmed
-confirm o c = case check o c of
+-- fact about whether it may proceed. Accepts asserted claims only
+-- ('Confirmable').
+confirm :: Confirmable c => Oracle -> c -> Maybe Confirmed
+confirm o x = case check o c of
   Confirmed -> Just (MkConfirmed c (oracleName o))
   _         -> Nothing
+  where c = assertedCond x
 
 confirmAll :: Oracle -> [CanonCond] -> [Confirmed]
 confirmAll o cs = [x | Just x <- map (confirm o) cs]

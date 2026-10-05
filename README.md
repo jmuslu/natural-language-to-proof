@@ -8,12 +8,12 @@ by an external oracle. Nothing internal to the system counts as evidence.
 `text -> tokens -> CCG derivation -> typed lambda term -> DRS (+provenance) -> claims -> Genealogy -> oracle-gated grounding -> Fusion`
 
 - `src/NL2Proof/Syntax/` - tokenizer, categories, toy lexicon, CCG rules/derivation, CCGbank reader, CKY parser, supertagger
-- `src/NL2Proof/Semantics/` - typed lambda calculus; `CCGSem` meanings for CCGbank categories
+- `src/NL2Proof/Semantics/` - typed lambda calculus; `Intensional` (Ty2: world-indexed twins `c_s`, propositions `\w. P_w`, attitude verbs, fail-safe for unlisted reporting verbs); `CCGSem` meanings for CCGbank categories
 - `src/NL2Proof/Bench/` - ProofWriter gold parser and DRS -> triple/rule conversion
 - `src/NL2Proof/DRT/` - DRS types, construction, canonical claim form
 - `src/NL2Proof/Provenance.hs`, `Trace.hs` - source spans, decisions and diagnostics
 - `src/NL2Proof/Pipeline.hs`, `Collapse/Class.hs`, `Fragment.hs` - end-to-end run, logged selection, fixed eval set
-- `src/NL2Proof/Verify/` - Oracle (sealed admission), Claims (claim table), External (receipt oracle)
+- `src/NL2Proof/Verify/` - Oracle (sealed admission), ClaimKind (Asserted/Reported/Presupposed phantom index; `confirm` takes asserted only), Claims, Reported (attitude content with source chains, never a premise), External
 - `src/NL2Proof/Genealogy.hs`, `Fusion.hs`, `Reward.hs` - derivation graph, fusion, grounding score
 - `Readings/Alternatives.hs` - scope permutations and modifier-coupling candidates (restored; not yet wired into Pipeline)
 - `Readings/Modifier.hs` - modifier classes and the layer each resolves at (restored; not yet wired into Pipeline)
@@ -45,6 +45,6 @@ ProofWriter V2020.12.3 (CC BY 4.0, never committed): `~/data/proofwriter/`, or `
    `round`/`kind` never get a predicative-adjective category; without them 99.8% / 94.9%.
 2. Claims -> graph nodes, forward chaining, retrieval over the graph.
 3. ProofWriter benchmark by depth: small-raw / large-raw / small+graph / graph-only.
-4. Strength: oracle-grounded vs hearsay.
+4. Strength: oracle-grounded vs hearsay (hearsay is now representable: `Verify/Reported`).
 
 Tag `pre-cut` holds everything removed (Python corpus/brain, Stage 2, finance, docs).

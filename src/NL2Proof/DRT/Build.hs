@@ -32,6 +32,9 @@ module NL2Proof.DRT.Build
   , flatAntecedents
   , resolveAnaphora
   , resolveAnaphoraWith
+    -- * Presupposition
+  , projectPresuppositions
+  , reportDefiniteDecisions
     -- * Discourse
   , Discourse(..)
   , emptyDiscourse
@@ -45,6 +48,7 @@ import Data.Maybe (fromMaybe, mapMaybe)
 
 import NL2Proof.DRT.Types
 import NL2Proof.Provenance
+import NL2Proof.Semantics.Intensional (deindexWith, isFactiveVerb)
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.Lexicon
 import NL2Proof.Trace
@@ -114,6 +118,13 @@ toDRS idx fallback = go
       TEq a b  -> DRS [] [CEq (dterm a) (dterm b) (condProvFor [a, b] [])]
 
       App{} -> case spine term of
+        -- An attitude verb applied to a proposition @\wn. P_wn@: strip the
+        -- world index (@c_s wn@ back to @c@) and build the proposition's own
+        -- box, attached to the attitude condition and never merged here.
+        (Con c _, args)
+          | not (null args), Lam w TyS body <- last args ->
+              DRS [] [CAtt c (map dterm (init args)) (go (deindexWith (Var w) body))
+                           (condProvFor (init args) [c])]
         (Con c _, args) -> DRS [] [CPred c (map dterm args) (condProvFor args [c])]
         _               -> unsupported term
 
@@ -254,7 +265,7 @@ flatAntecedents context =
     { antCandidates = recencyOrdered context
     , antWhy = "most recently introduced accessible referent, by surface position"
     , antNoneNote =
-        "referents inside negated or implicational boxes are correctly"
+        "referents inside negated, implicational or attitude boxes are correctly"
           ++ " inaccessible"
     }
 
@@ -298,6 +309,7 @@ resolveAnaphoraWith ants new sentProv =
 
     mentions name (CPred _ as _) = DConst name `elem` as
     mentions name (CEq a b _)    = DConst name `elem` [a, b]
+    mentions name (CAtt _ as _ _) = DConst name `elem` as
     mentions _ _                 = False
 
 --------------------------------------------------------------------------------
@@ -340,12 +352,23 @@ resolveLocalAnaphora idx = goBox []
         let (a', ta) = goBox env a
             (b', tb) = goBox (env ++ drsUniverse a') b
         in (CImp a' b' p : acc, tr <> ta <> tb)
+      -- The attitude holder is resolved where the condition sits; the reported
+      -- box is subordinate, like a negated one.
+      CAtt {} ->
+        let (c', t) = foldl (resolveIn env) (c, mempty) (anaphorsIn c)
+        in case c' of
+             CAtt v as k p ->
+               let (k', tk) = goBox env k in (CAtt v as k' p : acc, tr <> t <> tk)
+             _ -> (c' : acc, tr <> t)
+      CPresup k p ->
+        let (k', t) = goBox env k in (CPresup k' p : acc, tr <> t)
       _ ->
         let (c', t) = foldl (resolveIn env) (c, mempty) (anaphorsIn c)
         in (c' : acc, tr <> t)
 
     anaphorsIn (CPred _ as _) = nub [n | DConst n <- as, isAnaphorName n]
     anaphorsIn (CEq a b _)    = nub [n | DConst n <- [a, b], isAnaphorName n]
+    anaphorsIn (CAtt _ as _ _) = nub [n | DConst n <- as, isAnaphorName n]
     anaphorsIn _              = []
 
     resolveIn env (c, tr) name =
@@ -371,6 +394,135 @@ resolveLocalAnaphora idx = goBox []
     substCond name new c = case drsConds (substConstDRS name new (DRS [] [c])) of
       [c'] -> c'
       _    -> c
+
+--------------------------------------------------------------------------------
+-- Presupposition projection
+--------------------------------------------------------------------------------
+
+-- | Hoist the complement of every factive attitude condition (@know(x, K)@,
+-- @know@ in 'NL2Proof.Semantics.Intensional.factiveVerbs') as a presupposed
+-- box, @CPresup K@, logging a @presupposition@ 'Decision' for each.
+-- @know(x, K)@ itself stays where it is.
+--
+-- __The rule, stated:__ the presupposition goes to the top of its target box,
+-- wherever the factive sits below it, so it projects through negation,
+-- conditionals and disjunction: @"Bob does not know that P"@ still
+-- presupposes @P@. The target is the main DRS, except:
+--
+-- * __Never out of an attitude report.__ Under an enclosing attitude the target
+--   is that attitude's box. In @"Alice said that Bob knows that P"@ the
+--   commitment to @P@ is Alice's, so @P@ stays inside her report: projecting it
+--   to the main DRS would turn hearsay into an assertion.
+-- * __Binding is out of scope.__ If @K@ uses a referent not accessible at the
+--   target (bound by a box in between), nothing is hoisted and the decision
+--   says so. Local accommodation is not implemented.
+--
+-- Hoisted boxes are alpha-renamed against every referent in the structure, so
+-- the merge stays disjoint.
+projectPresuppositions :: DRS -> (DRS, Trace)
+projectPresuppositions root =
+  let rootAcc = map fst (drsUniverse root)
+      (d, hs, tr) = box rootAcc [] Nothing root
+  in (absorb d hs, tr)
+  where
+    taken = drsRefs root
+
+    -- Append hoisted conditions to their target, freshening each.
+    absorb = foldl (\acc h -> mergeDRS acc (fst (freshenAgainst (taken ++ drsRefs acc) h)))
+
+    -- @tgtAcc@: referents accessible at the current target box; @env@:
+    -- referents accessible here (this box's universe is added); @att@: the
+    -- verb of the enclosing attitude, if any.
+    box tgtAcc env att (DRS us cs) =
+      let env' = env ++ map fst us
+          (cs', hs, tr) = foldl (step tgtAcc env' att) ([], [], mempty) cs
+      in (DRS us (reverse cs'), hs, tr)
+
+    step tgtAcc env att (acc, hs, tr) c = case c of
+      CNot d p ->
+        let (d', h, t) = box tgtAcc env att d in (CNot d' p : acc, hs ++ h, tr <> t)
+      COr a b p ->
+        let (a', ha, ta) = box tgtAcc env att a
+            (b', hb, tb) = box tgtAcc env att b
+        in (COr a' b' p : acc, hs ++ ha ++ hb, tr <> ta <> tb)
+      CImp a b p ->
+        let (a', ha, ta) = box tgtAcc env att a
+            (b', hb, tb) = box tgtAcc (env ++ map fst (drsUniverse a')) att b
+        in (CImp a' b' p : acc, hs ++ ha ++ hb, tr <> ta <> tb)
+      CAtt v as k p ->
+        -- The attitude box is the target for whatever projects inside it.
+        let kAcc = env ++ map fst (drsUniverse k)
+            (k', hk, tk) = box kAcc env (Just v) k
+            here = CAtt v as (absorb k' hk) p : acc
+            free = [ r | r <- usedRefs k, r `notElem` drsRefs k ]
+        in if not (isFactiveVerb v)
+             then (here, hs, tr <> tk)
+             else if all (`elem` tgtAcc) free
+               then (here, hs ++ [DRS [] [CPresup k p]], tr <> tk <> decide v p att True)
+               else (here, hs, tr <> tk <> decide v p att False)
+      _ -> (c : acc, hs, tr)
+
+    usedRefs (DRS _ cs) = nub (concatMap condRefs cs)
+    condRefs c = case c of
+      CPred _ as _  -> [r | DRef r <- as]
+      CEq a b _     -> [r | DRef r <- [a, b]]
+      CNot d _      -> usedRefs d
+      CImp a b _    -> usedRefs a ++ usedRefs b
+      COr a b _     -> usedRefs a ++ usedRefs b
+      CAtt _ as k _ -> [r | DRef r <- as] ++ usedRefs k
+      CPresup k _   -> usedRefs k
+
+    decide v p att projected =
+      note Decision
+        { decKind = "presupposition"
+        , decChoice = case (projected, att) of
+            (True, Nothing) -> "complement of " ++ v ++ " presupposed in the main DRS"
+            (True, Just a)  -> "complement of " ++ v ++ " presupposed inside the report of "
+                                 ++ a ++ " (stays attributed)"
+            (False, _)      -> "not projected: the complement of " ++ v
+                                 ++ " uses a referent bound below the target"
+        , decAlternatives =
+            [ "no presupposition (non-factive reading)" ]
+              ++ [ "projection to the main DRS (refused: would assert reported content)"
+                 | Just _ <- [att] ]
+        , decWhy = "factive verb: its complement is presupposed at the actual world and"
+            ++ " projects through negation and conditionals, never out of an attitude"
+            ++ " report; local accommodation and binding are out of scope"
+        , decProv = p
+        }
+
+-- | Decisions about definite descriptions inside attitude complements: each is
+-- read /de dicto/, local to the report.
+--
+-- The repo's definite encoding (a description-named constant, see
+-- 'describeIota') is kept inside the report box, so @"Bob said that the cat is
+-- red"@ reports @red(cat)@. Because it sits only in the report, the main DRS
+-- does not assert that there is a cat; the de re reading (the speaker
+-- vouching for the cat) is not generated. Logged, since nothing in the syntax
+-- forces it.
+reportDefiniteDecisions :: Prov -> Term -> Trace
+reportDefiniteDecisions p = go False
+  where
+    go inReport t = case t of
+      App (Con c _) d | c == iotaName, inReport ->
+        note Decision
+          { decKind = "definite-in-report"
+          , decChoice = "de dicto: the description is local to the report"
+          , decAlternatives = ["de re (description scoped out of the attitude, asserted)"]
+          , decWhy = "complements are read de dicto; de re readings are not generated"
+          , decProv = p
+          } <> go inReport d
+      Lam _ TyS b    -> go True b
+      Lam _ _ b      -> go inReport b
+      App f a        -> go inReport f <> go inReport a
+      TAnd a b       -> go inReport a <> go inReport b
+      TOr a b        -> go inReport a <> go inReport b
+      TImp a b       -> go inReport a <> go inReport b
+      TNot a         -> go inReport a
+      TEq a b        -> go inReport a <> go inReport b
+      TForall _ _ b  -> go inReport b
+      TExists _ _ b  -> go inReport b
+      _              -> mempty
 
 --------------------------------------------------------------------------------
 -- Discourse

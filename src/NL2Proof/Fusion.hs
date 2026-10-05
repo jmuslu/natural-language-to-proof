@@ -119,6 +119,8 @@ compress c = (compressed, canonSize c - canonSize compressed)
     deeper (CanNot x)   = CanNot (go x)
     deeper (CanImp a b) = CanImp (go a) (go b)
     deeper (CanOr a b)  = CanOr (go a) (go b)
+    deeper (CanAtt v as k) = CanAtt v as (go k)
+    deeper (CanPresup k) = CanPresup (go k)
     deeper k            = k
 
 -- | Compressed size as a fraction of original size. @1.0@ means nothing dropped.

@@ -21,6 +21,7 @@ module NL2Proof.Syntax.Lexicon
   , maxPhraseLength
     -- * The fragment
   , fragmentLexicon
+  , attitudeLexicon
     -- * Entry builders
   , nameEntry
   , nounEntry
@@ -33,6 +34,7 @@ module NL2Proof.Syntax.Lexicon
 import Data.Char (toLower)
 import qualified Data.Map as M
 
+import NL2Proof.Semantics.Intensional
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.Category
 
@@ -255,3 +257,28 @@ fragmentLexicon =
         , ("write", [tvEntry "write"])
         ]
       ]
+
+-- | The fragment plus @that@-clauses and a few attitude verbs, for the
+-- intensional suite. Kept separate so the fragment's own vocabulary (and every
+-- check stated over it) is unchanged.
+--
+-- @that@ becomes lexically ambiguous (relativizer or complementiser); the
+-- categories decide. Its entry declares an intensional parameter
+-- ('complementizer' is @(s -> t) -> s -> t@ under @S[em]\/S@), which the
+-- parser's application ('NL2Proof.Semantics.Intensional.applyIntensional')
+-- discharges. Only @that@-complements are given: the application-only parser
+-- unifies @S@ with @S[em]@, so a bare-complement entry would also apply to a
+-- @that@-clause and yield a second derivation of the same meaning. Bare
+-- complements are handled on the CCGbank path.
+attitudeLexicon :: Lexicon
+attitudeLexicon =
+  mkLexicon $
+    [ (k, lookupWord fragmentLexicon k) | k <- lexiconKeys fragmentLexicon ]
+      ++ [ ("that", [Entry (Feature "em" S :/ S) complementizer "complementiser"]) ]
+      ++ [ (w, [Entry ((S :\ NP) :/ Feature "em" S) (attitudeVerb l) gloss])
+         | (l, gloss, forms) <-
+             [ (l, "non-factive attitude verb", fs) | (l, fs) <- nonFactiveVerbs ]
+               ++ [ (l, "factive attitude verb", fs) | (l, fs) <- factiveVerbs ]
+         , l `elem` ["say", "believe", "think", "know"]
+         , w <- forms
+         ]

@@ -38,11 +38,22 @@
 -- different events, and conflating them would make one of the two answers wrong.
 -- 'genealogyOf' is the bridge: it turns this table into the graph the precise
 -- version operates on.
+--
+-- == Asserted versus reported
+--
+-- Content embedded under an attitude verb (@"Bob said that the cat is red"@)
+-- is not a fact of this table. It is kept in 'ctReported' as a
+-- 'NL2Proof.Verify.Reported.Reported' claim carrying its source chain and
+-- verb, and the complement of a factive verb in 'ctPresupposed'. 'genealogyOf'
+-- makes neither a premise, so no oracle verdict attaches to them by way of the
+-- report. The attitude condition itself (@say(Bob, K)@) is an ordinary
+-- asserted fact.
 module NL2Proof.Verify.Claims
   ( -- * Claims
     Fact(..)
   , ClaimTable(..)
   , claimsOf
+  , claimsOfDRS
   , retainingStrategy
     -- * Queries
   , factSources
@@ -69,6 +80,7 @@ import NL2Proof.DRT.Types
 import NL2Proof.Genealogy
 import NL2Proof.Provenance
 import NL2Proof.Verify.Oracle
+import NL2Proof.Verify.Reported
 
 --------------------------------------------------------------------------------
 -- Claims
@@ -95,42 +107,37 @@ data ClaimTable = ClaimTable
   , ctRationale :: String
     -- ^ Carried through from the 'Selection', so the record of /why this
     -- reading/ survives alongside the record of how each fact was derived.
+  , ctReported  :: [Reported]
+    -- ^ Attributed, not asserted: the content of attitude reports. Never
+    -- premises of the genealogy.
+  , ctPresupposed :: [Presupposed]
+    -- ^ Presupposed, not asserted: complements of factive verbs, hoisted to
+    -- the top level. Not premises either.
   }
   deriving (Eq, Show)
 
 -- | Flatten the chosen DRS into facts, pairing each condition's canonical claim
 -- with its untouched provenance tree.
 --
--- The two traversals are deliberately parallel rather than fused:
--- 'canonicalize' strips provenance and 'drsConditionProvs' collects it, and
--- zipping them re-associates the two halves. Both walk conditions in the same
--- order, and neither reorders or drops anything, so the zip is total on both
--- sides.
+-- 'NL2Proof.Verify.Reported.splitClaims' walks the DRS and its canonical form
+-- in parallel (each node, then its children, in order; nothing reordered or
+-- dropped), so each claim is paired with the provenance of the condition it
+-- came from. Conditions inside an attitude box go to 'ctReported' instead.
 claimsOf :: Selection -> ClaimTable
-claimsOf sel =
+claimsOf sel = claimsOfDRS (selRationale sel) (selChosen sel)
+
+-- | 'claimsOf' for a bare DRS and a rationale.
+claimsOfDRS :: String -> DRS -> ClaimTable
+claimsOfDRS rationale chosen =
   ClaimTable
-    { ctUniverse = canonUniverse canon
-    , ctFacts =
-        [ Fact i claim prov
-        | (i, claim, prov) <- zip3 [0 ..] (flattenClaims canon) provs
-        ]
-    , ctRationale = selRationale sel
+    { ctUniverse = canonUniverse (canonicalize chosen)
+    , ctFacts = [ Fact i claim prov | (i, (claim, prov)) <- zip [0 ..] facts ]
+    , ctRationale = rationale
+    , ctReported = reported
+    , ctPresupposed = presupposed
     }
   where
-    chosen = selChosen sel
-    canon = canonicalize chosen
-    provs = drsConditionProvs chosen
-
--- | Claims in the same order 'drsConditionProvs' walks conditions: each node,
--- then its children.
-flattenClaims :: Canonical -> [CanonCond]
-flattenClaims (Canonical _ cs) = concatMap go cs
-  where
-    go c = c : case c of
-      CanNot x   -> flattenClaims x
-      CanImp a b -> flattenClaims a ++ flattenClaims b
-      CanOr a b  -> flattenClaims a ++ flattenClaims b
-      _          -> []
+    (facts, reported, presupposed) = splitClaims chosen
 
 retainingStrategy :: CollapseStrategy ClaimTable
 retainingStrategy =
@@ -217,6 +224,10 @@ retractionImpact s ct = (before, after, before - after)
 -- nodes are added afterwards by whatever does the deriving; this function only
 -- establishes the grounded floor.
 --
+-- Reported and presupposed claims ('ctReported', 'ctPresupposed') are not
+-- added: a report is not evidence for its content. If the same content is also asserted somewhere, that assertion is a
+-- fact of its own and becomes a premise like any other.
+--
 -- Note what is deliberately /not/ done: convergent facts are not merged, so a
 -- claim with two derivations becomes two nodes with the same 'nodeClaim'. That
 -- is what lets 'NL2Proof.Genealogy.convergentNodes' see the convergence and what
@@ -251,6 +262,14 @@ renderClaimTable ct =
     , ""
     ]
       ++ map renderFact (ctFacts ct)
+      ++ case ctReported ct of
+           [] -> []
+           rs -> "" : "  reported (attributed, not asserted; never premises):"
+                   : map (("    " ++) . renderReported) rs
+      ++ case ctPresupposed ct of
+           [] -> []
+           ps -> "" : "  presupposed (factive complements; never premises):"
+                   : map (("    " ++) . renderPresupposed) ps
       ++ case convergentClaims ct of
            [] -> ["", "  no convergent claims"]
            cs ->

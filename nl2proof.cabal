@@ -32,6 +32,7 @@ library
     exposed-modules:  NL2Proof.Provenance
                       NL2Proof.Trace
                       NL2Proof.Semantics.Lambda
+                      NL2Proof.Semantics.Intensional
                       NL2Proof.Syntax.Category
                       NL2Proof.Syntax.Lexicon
                       NL2Proof.Syntax.Tokenize
@@ -52,6 +53,8 @@ library
                       NL2Proof.Fragment
                       NL2Proof.Pipeline
                       NL2Proof.Verify.Oracle
+                      NL2Proof.Verify.ClaimKind
+                      NL2Proof.Verify.Reported
                       NL2Proof.Verify.Claims
                       NL2Proof.Verify.External
                       NL2Proof.Genealogy
@@ -224,6 +227,18 @@ test-suite nl2proof-readings-discourse-test
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          ReadingsDiscourseSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+test-suite nl2proof-intensional-test
+    -- Ty2 intensional types for attitude reports: that-clauses as s->t
+    -- propositions, reported (not asserted) content, factive presupposition,
+    -- opacity on a finite model, and the reported-claim guard. Both parsers.
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          IntensionalSpec.hs
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof

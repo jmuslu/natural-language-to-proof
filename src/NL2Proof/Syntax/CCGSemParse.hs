@@ -56,8 +56,9 @@ import Text.Printf (printf)
 
 import NL2Proof.Provenance
 import NL2Proof.Semantics.CCGSem
+import NL2Proof.Semantics.Intensional (applyIntensional, isIntensionalTerm, liftsTo)
 import NL2Proof.Semantics.Lambda
-import NL2Proof.Syntax.CCGBank (CCat(..), eraseFeatures, parseCCGCat)
+import NL2Proof.Syntax.CCGBank (CCat(..), Feat(..), eraseFeatures, parseCCGCat)
 import NL2Proof.Syntax.CCGDeriv (AutoNode(..), leafHeaders, nodeCat, parseAuto)
 import NL2Proof.Syntax.CCGParse (Rules(..), chartParseScored)
 import NL2Proof.Syntax.CCGTypeChange (TypeChange(..), inducements, normalizeTC)
@@ -481,6 +482,9 @@ semParse m src toks = SemParse roots lexs maxCats
     roots =
       let rs = [ s | s <- ML.findWithDefault [] (0, n) table
                    , unifiable (ssCat s) (CAtom "S" [])
+                   -- A root asserts: an embedded clause (S[em], a proposition)
+                   -- standing alone is not a sentence meaning.
+                   , semTy (ssCat s) == Just TyT
                    , ssCoord s == Nothing, ssStructural s == Nothing ]
           byMeaning = M.fromListWith (\new old -> if ssScore new > ssScore old then new else old)
                         [ (canonicalAC (ssSem s), s) | s <- rs ]
@@ -490,16 +494,37 @@ semParse m src toks = SemParse roots lexs maxCats
 -- semantics admits it: each combinator of 'combineNamed' has one fixed semantic
 -- operation.
 semCombine :: Combinator -> CCat -> SSign -> SSign -> Maybe SSign
-semCombine comb0 out0 l r = sem comb0 out0
+semCombine comb0 out0 l r = sem comb0 out0 >>= emGuard
   where
+    -- Feature unification treats @S@ as a wildcard for @S[em]@, but the two
+    -- differ in semantic type (@t@ versus @s -> t@, see
+    -- 'NL2Proof.Syntax.Category.catTy'), and an entry with a declared
+    -- intensional parameter has a lifted type ('liftsTo'). Where either is
+    -- involved, a combination whose meaning does not inhabit its output type
+    -- (up to declared lifting) is dropped rather than built: composition into
+    -- an intensional parameter, for one, cannot re-index an argument it does
+    -- not have yet. Elsewhere no check is made, so nothing changes for
+    -- extensional sentences.
+    emGuard x
+      | ssStructural x == Nothing
+      , any mentionsEm [ssCat l, ssCat r, ssCat x]
+          || any (isIntensionalTerm . ssSem) [l, r]
+      , Just ty <- semTy (ssCat x) =
+          case typeOf [] (ssSem x) of
+            Right t | t `liftsTo` ty -> Just x
+            _                        -> Nothing
+      | otherwise = Just x
+
     plain x = ssCoord x == Nothing && ssStructural x == Nothing
     pv comb = provRule (show comb) [ssProv l, ssProv r]
     notes = ssNotes l ++ ssNotes r
     mk comb out tm coord = SSign out (finish tm) (pv comb) (ssScore l + ssScore r) coord Nothing notes
 
     sem comb out = case comb of
-      FwdApp  | plain l, plain r -> Just (mk comb out (App (ssSem l) (ssSem r)) Nothing)
-      BwdApp  | plain l, plain r -> Just (mk comb out (App (ssSem r) (ssSem l)) Nothing)
+      -- 'applyIntensional' is 'App' unless the functor declares an
+      -- intensional parameter (then the argument is abstracted over a world).
+      FwdApp  | plain l, plain r -> Just (mk comb out (applyIntensional (ssSem l) (ssSem r)) Nothing)
+      BwdApp  | plain l, plain r -> Just (mk comb out (applyIntensional (ssSem r) (ssSem l)) Nothing)
       FwdComp | plain l, plain r -> compose comb out (ssSem l) (ssSem r) (argOfR r)
       FwdXComp | plain l, plain r -> compose comb out (ssSem l) (ssSem r) (argOfR r)
       BwdComp | plain l, plain r -> compose comb out (ssSem r) (ssSem l) (argOfR l)
@@ -529,6 +554,12 @@ semCombine comb0 out0 l r = sem comb0 out0
 
     compose comb out f g (Just zTy) = Just (mk comb out (composeTerm zTy f g) Nothing)
     compose _ _ _ _ Nothing = Nothing
+
+-- | Does a category mention an embedded clause @S[em]@?
+mentionsEm :: CCat -> Bool
+mentionsEm (CAtom "S" fs)      = Feat "em" `elem` fs
+mentionsEm (CAtom _ _)         = False
+mentionsEm (CSlash _ a b _)    = mentionsEm a || mentionsEm b
 
 -- | The existing category-only parser ('chartParseScored') on the same tagger
 -- output: does /any/ category derivation reach @S@, meanings aside? Reported

@@ -58,7 +58,7 @@ module NL2Proof.Syntax.CCGBank
 import Data.Char (isAlpha, isSpace)
 import Data.List (isSuffixOf, nub, sort)
 
-import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, (~>))
+import NL2Proof.Semantics.Lambda (Ty(TyT), tyGQ, tyPred1, tyProp, (~>))
 import NL2Proof.Syntax.Category (Cat(..))
 
 --------------------------------------------------------------------------------
@@ -235,7 +235,9 @@ data TyIssue
 -- for manual scrutiny, returned here as a 'TyIssue' rather than given a silent
 -- default.
 ccatToTy :: CCat -> Either TyIssue Ty
-ccatToTy (CAtom name _) = case name of
+ccatToTy (CAtom name fs) = case name of
+  -- An embedded clause (S[em]) denotes a proposition; see 'NL2Proof.Syntax.Category.catTy'.
+  "S" | Feat "em" `elem` fs -> Right tyProp
   "S"  -> Right TyT
   "NP" -> Right tyGQ
   "N"  -> Right tyPred1

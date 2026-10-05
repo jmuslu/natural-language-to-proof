@@ -71,6 +71,9 @@ data CanonCond
   | CanNot Canonical
   | CanImp Canonical Canonical
   | CanOr Canonical Canonical
+  | -- | An attitude report @verb(holders, K)@; @K@ is reported, not asserted.
+    CanAtt String [CTerm] Canonical
+  | CanPresup Canonical
   deriving (Eq, Ord)
 
 instance Show CanonCond where
@@ -106,6 +109,8 @@ allRefsIn d = nub (go d)
     cond (CNot x _)     = go x
     cond (CImp a b _)   = go a ++ go b
     cond (COr a b _)    = go a ++ go b
+    cond (CAtt _ as k _) = [r | DRef r <- as] ++ go k
+    cond (CPresup k _)  = go k
 
 -- | Strip provenance and renumber referents by first appearance.
 --
@@ -129,6 +134,8 @@ canonicalize top = go top
     cond (CNot x _)     = CanNot (go x)
     cond (CImp a b _)   = CanImp (go a) (go b)
     cond (COr a b _)    = CanOr (go a) (go b)
+    cond (CAtt v as k _) = CanAtt v (map cterm as) (go k)
+    cond (CPresup k _)  = CanPresup (go k)
 
 --------------------------------------------------------------------------------
 -- Inspection
@@ -142,6 +149,8 @@ canonSize (Canonical us cs) = length us + sum (map go cs)
     go (CanNot x)   = 1 + canonSize x
     go (CanImp a b) = 1 + canonSize a + canonSize b
     go (CanOr a b)  = 1 + canonSize a + canonSize b
+    go (CanAtt _ _ k) = 1 + canonSize k
+    go (CanPresup k) = 1 + canonSize k
     go _            = 1
 
 -- | Top-level conditions only.
@@ -156,6 +165,8 @@ canonPredicates (Canonical _ cs) = nub (concatMap go cs)
     go (CanNot x)    = canonPredicates x
     go (CanImp a b)  = canonPredicates a ++ canonPredicates b
     go (CanOr a b)   = canonPredicates a ++ canonPredicates b
+    go (CanAtt v _ k) = v : canonPredicates k
+    go (CanPresup k) = canonPredicates k
 
 --------------------------------------------------------------------------------
 -- Rendering
@@ -173,6 +184,9 @@ renderCanonCond (CanEq a b)    = renderCTerm a ++ " = " ++ renderCTerm b
 renderCanonCond (CanNot x)     = "~" ++ renderCanonical x
 renderCanonCond (CanImp a b)   = renderCanonical a ++ " => " ++ renderCanonical b
 renderCanonCond (CanOr a b)    = renderCanonical a ++ " OR " ++ renderCanonical b
+renderCanonCond (CanAtt v as k) =
+  v ++ "(" ++ intercalate ", " (map renderCTerm as ++ [renderCanonical k]) ++ ")"
+renderCanonCond (CanPresup k)  = "presup " ++ renderCanonical k
 
 -- | Single-line set-like notation, so two canonical forms can be compared by eye.
 renderCanonical :: Canonical -> String

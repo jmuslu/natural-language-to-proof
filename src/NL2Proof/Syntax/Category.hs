@@ -106,14 +106,31 @@ isAtomic _             = False
 -- never through the @PP@ atom. So @tyGQ@ (argument-like) is the empirically
 -- justified default over @e -> t@ (predicative). Still stipulated (a semantic
 -- type is not corpus-derivable the way a category is) and open to revision.
+--
+-- __The one feature that is not erased is @[em]@.__ CCGbank marks an embedded
+-- (complementiser) clause @S[em]@: @that@ is @S[em]\/S[dcl]@ and an attitude verb
+-- is @(S[dcl]\\NP)\/S[em]@. Its meaning is a /proposition/, @s -> t@
+-- ('tyProp'), not a truth value, because what an attitude verb relates its
+-- subject to is the content of the clause, not its truth value at the actual
+-- world (see "NL2Proof.Semantics.Intensional"). Only an @S@ carrying @[em]@ is
+-- affected; no category without @[em]@ changes type, and the hand fragment has
+-- no features at all.
 catTy :: Cat -> Ty
 catTy S             = TyT
 catTy NP            = tyGQ
 catTy N             = tyPred1
 catTy PP            = tyGQ
+catTy (Feature "em" c)
+  | isSentence c    = TyS ~> catTy c
 catTy (Feature _ c) = catTy c
 catTy (r :/ a)      = catTy a ~> catTy r
 catTy (r :\ a)      = catTy a ~> catTy r
+
+-- | An @S@, under any feature annotations.
+isSentence :: Cat -> Bool
+isSentence S             = True
+isSentence (Feature _ c) = isSentence c
+isSentence _             = False
 
 -- | The argument category of a functor, if it is one. Feature annotations on a
 -- functor are transparent to this.

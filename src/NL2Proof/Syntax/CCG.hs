@@ -36,6 +36,7 @@ import Data.List (nubBy)
 import qualified Data.Map as M
 
 import NL2Proof.Provenance
+import NL2Proof.Semantics.Intensional (applyIntensional)
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.Category
 import NL2Proof.Syntax.Lexicon
@@ -75,13 +76,13 @@ type Rule = Sign -> Sign -> [Sign]
 -- | Forward application, @X\/Y  Y  =>  X@.
 fwdApp :: Rule
 fwdApp (Sign (res :/ arg) f p1) (Sign c x p2)
-  | catUnify arg c = [Sign res (App f x) (provRule ">" [p1, p2])]
+  | catUnify arg c = [Sign res (applyIntensional f x) (provRule ">" [p1, p2])]
 fwdApp _ _ = []
 
 -- | Backward application, @Y  X\\Y  =>  X@.
 bwdApp :: Rule
 bwdApp (Sign c x p2) (Sign (res :\ arg) f p1)
-  | catUnify arg c = [Sign res (App f x) (provRule "<" [p2, p1])]
+  | catUnify arg c = [Sign res (applyIntensional f x) (provRule "<" [p2, p1])]
 bwdApp _ _ = []
 
 -- | Forward composition, @X\/Y  Y\/Z  =>  X\/Z@.

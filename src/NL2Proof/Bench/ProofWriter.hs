@@ -222,6 +222,8 @@ drsToStatement (DRS us cs)
       CEq{} -> Left "equality condition"
       CImp{} -> Left "nested conditional"
       COr{} -> Left "disjunction"
+      CAtt{} -> Left "attitude report"
+      CPresup{} -> Left "unprojected presupposition"
 
     term env t = case t of
       DRef r -> maybe (Left ("unbound referent " ++ show r)) Right (lookup r env)

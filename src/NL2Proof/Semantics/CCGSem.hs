@@ -37,6 +37,8 @@ module NL2Proof.Semantics.CCGSem
   , closedClassWords
   , isClosedClass
   , closedEntries
+  , intensionalTable
+  , attitudeEntry
   , openTemplate
   , nameItem
   , lemma3sg
@@ -54,6 +56,7 @@ module NL2Proof.Semantics.CCGSem
 import Data.Char (toLower)
 import Data.List (isSuffixOf)
 
+import NL2Proof.Semantics.Intensional
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.CCGBank (CCat(..), Dir(..), Feat(..), ccatToCat, parseCCGCat)
 import NL2Proof.Syntax.CCGRules (isPunct, unifiable)
@@ -193,6 +196,118 @@ closedTable i =
      , ("or", cat "conj", LexStructural "coordinator (or)")
      ]
   ++ [ (w, cat "NP", LexTerm (pronoun w i) "pronoun" Nothing) | w <- ["it", "they"] ]
+  ++ [ ("did", cat "(S[dcl]\\NP)/(S[b]\\NP)", LexTerm vpIdentity "do-support auxiliary (past)" Nothing) ]
+
+--------------------------------------------------------------------------------
+-- Intensional entries
+--------------------------------------------------------------------------------
+
+-- | Closed-class entries that /declare an intensional parameter/ (see
+-- "NL2Proof.Semantics.Intensional"): their type lifts @τ@ to @s -> τ@ at that
+-- argument, so it is 'liftsTo' of the category's type rather than equal to it.
+-- Kept out of 'closedTable', whose entries inhabit their category type exactly.
+--
+-- * @that@, @S[em]\/S[dcl]@: @\\p:s->t. p@, declared @(s -> t) -> s -> t@.
+intensionalTable :: [(String, CCat, LexItem)]
+intensionalTable =
+  [ ("that", cat "S[em]/S[dcl]", LexTerm complementizer "complementiser (declared s->t parameter)" Nothing) ]
+
+-- | Reporting and attitude verbs, by category shape and lemma.
+--
+-- Two explicitly separate lists, "NL2Proof.Semantics.Intensional".'nonFactiveVerbs'
+-- and 'factiveVerbs', decide the class of a listed word. A word in neither
+-- that the tagger offers a clausal-complement category is read as reporting
+-- (non-factive) anyway: __the fail-safe__. @"added"@, @"noted"@,
+-- @"announced"@ fail toward not-asserting, and the choice is a logged
+-- 'NL2Proof.Trace.Decision'. Shapes (any @S@ feature on the result):
+--
+-- * @(S\\NP)\/S[em]@: @\\p:s->t. \\S. S(\\x. v(x, p))@
+-- * @(S\\NP)\/S[dcl]@ (bare complement): the same term; the @S[dcl]@ argument
+--   is a declared intensional parameter. Logged.
+-- * @((S\\NP)\/S[em])\/NP@ and @((S\\NP)\/S[dcl])\/NP@ (@told Alice that P@):
+--   three-place, @tell(x, y, p)@.
+-- * @(S[dcl]\\S[dcl])\\NP@ and @(S[dcl]\\S[dcl])\/NP@: the fronted or quoted
+--   clause (CCGbank strips quotation marks: @"The cat is red," Bob said@ and
+--   @..., said Bob@), and @((S[dcl]\\S[dcl])\\NP)\/NP@ with an addressee.
+--   Logged.
+--
+-- Factivity is a property of the lemma: a factive entry logs it, and the DRT
+-- stage projects the complement as a presupposition.
+attitudeEntry :: String -> CCat -> Maybe LexItem
+attitudeEntry w c = do
+  (shape, term) <- attitudeShape c
+  let (lemma, cls, listed) = case attitudeOf w of
+        Just (l, a) -> (l, a, True)
+        Nothing     -> (lemma3sg (map toLower w), NonFactive, False)
+      st
+        | not listed          = Just (failSafe shape)
+        | shape == "bare"     = Just bareComplement
+        | shape == "fronted"  = Just frontedReport
+        | cls == Factive      = Just factivity
+        | otherwise           = Nothing
+      gloss = (if cls == Factive then "factive" else "non-factive") ++ " attitude verb ("
+        ++ shape ++ (if listed then ")" else ", unlisted: fail-safe)")
+  Just (LexTerm (term lemma) gloss st)
+  where
+    s fs = CAtom "S" fs
+    isNP (CAtom "NP" _) = True
+    isNP _              = False
+    isS (CAtom "S" _) = True
+    isS _             = False
+    em = [Feat "em"]
+    dcl = [Feat "dcl"]
+    attitudeShape cat' = case cat' of
+      CSlash Fwd (CSlash Bwd r n _) (CAtom "S" fs) _
+        | isS r, isNP n, fs == em  -> Just ("that-clause", attitudeVerb)
+        | isS r, isNP n, fs == dcl -> Just ("bare", attitudeVerb)
+      CSlash Fwd (CSlash Fwd (CSlash Bwd r n _) (CAtom "S" fs) _) o _
+        | isS r, isNP n, isNP o, fs == em  -> Just ("addressee", addresseeVerb)
+        | isS r, isNP n, isNP o, fs == dcl -> Just ("bare", addresseeVerb)
+      CSlash _ (CSlash Bwd r a _) n _
+        | r == s dcl, a == s dcl, isNP n -> Just ("fronted", frontedVerb)
+      CSlash Fwd (CSlash Bwd (CSlash Bwd r a _) n _) o _
+        | r == s dcl, a == s dcl, isNP n, isNP o -> Just ("fronted", frontedAddresseeVerb)
+      _ -> Nothing
+
+-- | Factivity, as a stated lexical property.
+factivity :: Stipulation
+factivity = Stipulation
+  { stKind = "factive"
+  , stChoice = "complement presupposed at the actual world"
+  , stAlternatives = ["complement only attributed (non-factive)"]
+  , stWhy = "know/realize/regret are lexically factive: the complement is presupposed"
+      ++ " true, not asserted by the verb; the DRT stage projects it and logs where"
+  }
+
+-- | Reading a bare complement as an attitude complement.
+bareComplement :: Stipulation
+bareComplement = Stipulation
+  { stKind = "bare-complement"
+  , stChoice = "bare complement read as attitude (a proposition, not asserted)"
+  , stAlternatives = ["asserted complement (read extensionally)"]
+  , stWhy = "CCGbank's S[dcl] argument does not mark the clause as embedded, but under an"
+      ++ " attitude verb a clause without 'that' is reported exactly like one with it"
+  }
+
+-- | Reading a fronted (quoted) clause as reported.
+frontedReport :: Stipulation
+frontedReport = Stipulation
+  { stKind = "fronted-report"
+  , stChoice = "fronted or quoted clause read as reported (a proposition, not asserted)"
+  , stAlternatives = ["asserted clause"]
+  , stWhy = "CCGbank strips quotation marks, so a quote surfaces as an S[dcl] the reporting"
+      ++ " verb takes on its left; it is the reported content, not an assertion"
+  }
+
+-- | The fail-safe for a clausal-complement verb in neither list.
+failSafe :: String -> Stipulation
+failSafe shape = Stipulation
+  { stKind = "unlisted-reporting-verb"
+  , stChoice = "reported (non-factive): complement attributed, not asserted (" ++ shape ++ ")"
+  , stAlternatives = ["asserted complement", "factive (complement presupposed)"]
+  , stWhy = "the verb is in neither the factive nor the non-factive list; an unknown"
+      ++ " reporting verb fails toward not-asserting"
+  }
 
 -- | Words whose meanings come only from the closed-class table. Such a word
 -- never falls through to an open-class template, so @"is"@ cannot be read as a
@@ -201,7 +316,7 @@ closedClassWords :: [String]
 closedClassWords =
   [ "the", "all", "every", "a", "an", "is", "are", "does", "do", "not", "if"
   , "then", "something", "someone", "things", "people", "and", "or", "it"
-  , "they" ]
+  , "they", "did", "that" ]
 
 isClosedClass :: String -> Bool
 isClosedClass w = map toLower w `elem` closedClassWords
@@ -214,7 +329,7 @@ isClosedClass w = map toLower w `elem` closedClassWords
 closedEntries :: Int -> String -> CCat -> [LexItem]
 closedEntries i w c
   | isPunct c = [LexStructural ("punctuation " ++ show w)]
-  | otherwise = [ e | (w', c', e) <- closedTable i, w' == map toLower w, c' == c ]
+  | otherwise = [ e | (w', c', e) <- closedTable i ++ intensionalTable, w' == map toLower w, c' == c ]
 
 --------------------------------------------------------------------------------
 -- Open class
@@ -230,8 +345,12 @@ closedEntries i w c
 -- * @S[f]\\NP@: @\\S. S(\\x. w(x))@ (predicative adjective or intransitive verb)
 -- * @(S[f]\\NP)\/NP@: @\\O \\S. S(\\x. O(\\y. w(x, y)))@ (transitive, subject wide scope)
 --
+-- Clausal-complement shapes go to 'attitudeEntry' first (reporting verbs,
+-- with the fail-safe for unlisted ones).
+--
 -- Any other shape: 'Nothing'. That is deliberate (see the module header).
 openTemplate :: String -> CCat -> Maybe LexItem
+openTemplate w c | Just it <- attitudeEntry w c = Just it
 openTemplate w c = case c of
   CAtom "N" _ ->
     Just (LexTerm (Lam "x" TyE (App (pred1 lw) x_)) "noun (template)" Nothing)
@@ -313,6 +432,7 @@ coordTerm op ty0 a b = go ty0 (0 :: Int) []
     go TyT _ args = Just (wrap args (op (applyAll a args) (applyAll b args)))
     go (TyFun d r) n args = go r (n + 1) (args ++ [(n, d)])
     go TyE _ _ = Nothing
+    go TyS _ _ = Nothing
 
     argVar n = "c" ++ show n
     entVar n = "e" ++ show n

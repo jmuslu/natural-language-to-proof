@@ -1,7 +1,9 @@
 {-# LANGUAGE LambdaCase #-}
 
 -- | Montague-style simply-typed lambda calculus over the semantic types @e@ and
--- @t@, with generalized quantifiers as higher-order functions.
+-- @t@, with generalized quantifiers as higher-order functions, plus the world
+-- type @s@ of Gallin's Ty2 for attitude contexts (see
+-- "NL2Proof.Semantics.Intensional"; every other meaning stays extensional).
 --
 -- This module is the Stage 1 verification story in miniature. Composition is not
 -- merely /performed/, it is /type-checked/ ('typeOf'): a CCG derivation that
@@ -19,6 +21,7 @@ module NL2Proof.Semantics.Lambda
   , tyPred2
   , tyGQ
   , tyDet
+  , tyProp
     -- * Terms
   , Var
   , Term(..)
@@ -67,10 +70,15 @@ import Data.List (delete, intercalate, nub, sort, union)
 -- Types
 --------------------------------------------------------------------------------
 
--- | Semantic types: entities, truth values, and functions between them.
+-- | Semantic types: entities, truth values, worlds, and functions between them.
+--
+-- 'TyS' (worlds, Gallin's Ty2 index type) occurs only in attitude contexts: the
+-- proposition type @s -> t@ of a @that@-clause and the verbs that take one.
+-- Every other meaning is extensional and read at the actual world.
 data Ty
   = TyE
   | TyT
+  | TyS
   | TyFun Ty Ty
   deriving (Eq, Ord)
 
@@ -83,6 +91,7 @@ infixr 9 ~>
 instance Show Ty where
   show TyE           = "e"
   show TyT           = "t"
+  show TyS           = "s"
   show (TyFun a b)   = "(" ++ show a ++ "->" ++ show b ++ ")"
 
 -- | One-place predicate, @e -> t@.
@@ -104,6 +113,11 @@ tyGQ = tyPred1 ~> TyT
 -- | Determiner, @(e -> t) -> (e -> t) -> t@.
 tyDet :: Ty
 tyDet = tyPred1 ~> tyGQ
+
+-- | Proposition, @s -> t@: the set of worlds where a clause holds. The type of
+-- an embedded @that@-clause (CCGbank @S[em]@).
+tyProp :: Ty
+tyProp = TyS ~> TyT
 
 --------------------------------------------------------------------------------
 -- Terms
