@@ -3,7 +3,8 @@
 -- | Intensional types and attitude reports (Ty2, world-indexed twins):
 -- propositions as @\\w. P_w@, attitude verbs as relations to them, reported
 -- content kept out of the asserted claims (with source chains and the polarity
--- rule), factive presupposition, the fail-safe for unlisted reporting verbs,
+-- rule), factive presupposition, the fail-safe for unlisted reporting verbs
+-- (and its restriction to lemmas attested with a that-clause),
 -- fronted reports, opacity from contingent co-reference, adequacy of the
 -- context-relative interpretation, and the claim-kind guard.
 --
@@ -70,7 +71,8 @@ mini = (defaultSemModel tm pm rs Set.empty) { smAlpha = 0, smSeenRules = False }
       , ("believes", "(S[dcl]\\NP)/S[em]")
       , ("knows", "(S[dcl]\\NP)/S[em]"), ("know", "(S[b]\\NP)/S[em]")
       , ("told", "((S[dcl]\\NP)/S[em])/NP")
-      , ("noted", "(S[dcl]\\NP)/S[em]"), ("announced", "(S[dcl]\\NP)/S[dcl]")
+      , ("noted", "(S[dcl]\\NP)/S[em]"), ("noted", "(S[dcl]\\NP)/S[dcl]")
+      , ("announced", "(S[dcl]\\NP)/S[dcl]"), ("laments", "(S[dcl]\\S[dcl])/NP")
       , ("Bob", "N"), ("Alice", "N"), ("Ames", "N")
       , (",", ","), (".", ".")
       ]
@@ -371,9 +373,32 @@ failSafeChecks =
       (reportedClaims (tableOf ccg "Bob noted that the cat is red.") == [pc "red" ["cat"]]
         && pc "red" ["cat"] `notElem` factClaims (tableOf ccg "Bob noted that the cat is red.")
         && "unlisted-reporting-verb" `elem` decisionKinds (run1 ccg "Bob noted that the cat is red."))
-  , expect "unlisted 'announced' with a bare clause also fails toward not-asserting"
-      (reportedClaims (tableOf ccg "Bob announced the cat is red.") == [pc "red" ["cat"]]
-        && "unlisted-reporting-verb" `elem` decisionKinds (run1 ccg "Bob announced the cat is red."))
+  , expect "unlisted 'noted', attested with a that-clause, keeps the reported default for a bare clause"
+      (reportedClaims (tableOf ccg "Bob noted the cat is red.") == [pc "red" ["cat"]]
+        && pc "red" ["cat"] `notElem` factClaims (tableOf ccg "Bob noted the cat is red.")
+        && "unlisted-reporting-verb" `elem` decisionKinds (run1 ccg "Bob noted the cat is red."))
+  , expect "unlisted 'announced', never seen with a that-clause: no attitude reading of its bare clause, and nothing asserted"
+      (null (reportedClaims (tableOf ccg "Bob announced the cat is red."))
+        && pc "red" ["cat"] `notElem` factClaims (tableOf ccg "Bob announced the cat is red.")
+        && "unlisted-reporting-verb" `notElem` decisionKinds (run1 ccg "Bob announced the cat is red."))
+  , expectEq "the attested set is derived from the tag dictionary: lemmas seen with (S\\NP)/S[em]"
+      (True, True, False)
+      (let a = smThatAttested mini in (Set.member "noted" a, Set.member "say" a, Set.member "announced" a))
+  , expect "an unattested unlisted inverted quote stays reported (dropping it would let an asserted reading win)"
+      (not (Set.member "lament" (smThatAttested mini))
+        && reportedClaims (tableOf ccg "the cat is red , laments Bob.") == [pc "red" ["cat"]]
+        && pc "red" ["cat"] `notElem` factClaims (tableOf ccg "the cat is red , laments Bob."))
+  , expect "an explicit that-clause is reported whether or not the lemma is attested"
+      (case attitudeEntryWith (const False) "announced" (cc "(S[dcl]\\NP)/S[em]") of
+         Just (LexTerm _ _ (Just st)) -> stKind st == "unlisted-reporting-verb"
+         _ -> False)
+  , expectEq "only the bare unlisted shape needs attestation; fronted quotes and listed verbs do not"
+      [True, True, True, False, True, True]
+      [ maybe False (const True) (attitudeEntryWith seen w (cc c))
+      | (seen, w, c) <-
+          [ (const True, "added", "(S[dcl]\\S[dcl])\\NP"), (const False, "added", "(S[dcl]\\S[dcl])\\NP")
+          , (const True, "sees", "(S[dcl]\\NP)/S[dcl]"), (const False, "sees", "(S[dcl]\\NP)/S[dcl]")
+          , (const False, "said", "(S[dcl]\\NP)/S[dcl]"), (const False, "said", "(S[dcl]\\S[dcl])\\NP") ] ]
   , expect "unlisted fronted 'added' (CCGbank (S[dcl]\\S[dcl])\\NP) is reported too"
       (case attitudeEntry "added" (cc "(S[dcl]\\S[dcl])\\NP") of
          Just (LexTerm _ _ (Just st)) -> stKind st == "unlisted-reporting-verb"

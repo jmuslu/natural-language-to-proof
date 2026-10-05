@@ -39,7 +39,11 @@ module NL2Proof.Semantics.CCGSem
   , closedEntries
   , intensionalTable
   , attitudeEntry
+  , attitudeEntryWith
+  , thatClauseCat
+  , reportingLemma
   , openTemplate
+  , openTemplateWith
   , nameItem
   , lemma3sg
     -- * Sortal predicates
@@ -216,10 +220,27 @@ intensionalTable =
 --
 -- Two explicitly separate lists, "NL2Proof.Semantics.Intensional".'nonFactiveVerbs'
 -- and 'factiveVerbs', decide the class of a listed word. A word in neither
--- that the tagger offers a clausal-complement category is read as reporting
--- (non-factive) anyway: __the fail-safe__. @"added"@, @"noted"@,
--- @"announced"@ fail toward not-asserting, and the choice is a logged
--- 'NL2Proof.Trace.Decision'. Shapes (any @S@ feature on the result):
+-- is read as reporting (non-factive) anyway, __the fail-safe__, when the
+-- evidence for a clausal complement is good enough:
+--
+-- * an explicit @that@-clause (@S[em]@ argument): always. @that@ is a strong
+--   signal, and @"noted that P"@ fails toward not-asserting.
+-- * a fronted or inverted quote (@"P," Bob laments@, @"P," laments Bob@):
+--   always. Without the reported reading the quoted clause is still a
+--   sentence, and a comma coordination asserting it can win instead (measured:
+--   @"The cat is red, laments Bob."@ then asserts @red(cat)@).
+-- * a bare complement (@S[dcl]@ argument, with or without an addressee): only
+--   for a lemma /attested with a that-clause/ ('attitudeEntryWith''s
+--   predicate; the parser derives it from CCGbank, see
+--   "NL2Proof.Syntax.CCGSemParse".'NL2Proof.Syntax.CCGSemParse.smThatAttested').
+--   The WSJ tagger offers @(S[dcl]\\NP)\/S[dcl]@ to verbs that never report
+--   anything; without a that-clause in the corpus the category is not
+--   evidence of a reporting verb, and the entry gives no reading. That loses
+--   the reading and nothing else: no template gives the category an
+--   extensional meaning, so the complement is not asserted either way.
+--
+-- The fail-safe choice is a logged 'NL2Proof.Trace.Decision'. Shapes (any
+-- @S@ feature on the result):
 --
 -- * @(S\\NP)\/S[em]@: @\\p:s->t. \\S. S(\\x. v(x, p))@
 -- * @(S\\NP)\/S[dcl]@ (bare complement): the same term; the @S[dcl]@ argument
@@ -233,12 +254,21 @@ intensionalTable =
 --
 -- Factivity is a property of the lemma: a factive entry logs it, and the DRT
 -- stage projects the complement as a presupposition.
+--
+-- 'attitudeEntry' is the version without corpus evidence: every unlisted
+-- lemma counts as attested, so it reads at least as much as reported as the
+-- parser does.
 attitudeEntry :: String -> CCat -> Maybe LexItem
-attitudeEntry w c = do
+attitudeEntry = attitudeEntryWith (const True)
+
+-- | 'attitudeEntry' given which unlisted lemmas ('reportingLemma') are
+-- attested with a that-clause.
+attitudeEntryWith :: (String -> Bool) -> String -> CCat -> Maybe LexItem
+attitudeEntryWith attested w c = do
   (shape, term) <- attitudeShape c
   let (lemma, cls, listed) = case attitudeOf w of
         Just (l, a) -> (l, a, True)
-        Nothing     -> (lemma3sg (map toLower w), NonFactive, False)
+        Nothing     -> (reportingLemma w, NonFactive, False)
       st
         | not listed          = Just (failSafe shape)
         | shape == "bare"     = Just bareComplement
@@ -247,7 +277,35 @@ attitudeEntry w c = do
         | otherwise           = Nothing
       gloss = (if cls == Factive then "factive" else "non-factive") ++ " attitude verb ("
         ++ shape ++ (if listed then ")" else ", unlisted: fail-safe)")
-  Just (LexTerm (term lemma) gloss st)
+  if listed || shape /= "bare" || attested lemma
+    then Just (LexTerm (term lemma) gloss st)
+    else Nothing
+
+-- | The key an unlisted reporting verb is looked up by: lower-cased, then
+-- 'lemma3sg' (@Notes@, @notes@, @note@ are one key; @noted@ is another).
+reportingLemma :: String -> String
+reportingLemma = lemma3sg . map toLower
+
+-- | An explicit that-clause category: @(S\\NP)\/S[em]@ or
+-- @((S\\NP)\/S[em])\/NP@, any @S@ feature on the result. What a lemma must
+-- have been seen with in CCGbank to count as attested.
+thatClauseCat :: CCat -> Bool
+thatClauseCat c = fmap fst (attitudeShape c) `elem` [Just "that-clause", Just "addressee"]
+
+-- | The clausal-complement shapes, with the attitude term each takes.
+attitudeShape :: CCat -> Maybe (String, String -> Term)
+attitudeShape cat' = case cat' of
+  CSlash Fwd (CSlash Bwd r n _) (CAtom "S" fs) _
+    | isS r, isNP n, fs == em  -> Just ("that-clause", attitudeVerb)
+    | isS r, isNP n, fs == dcl -> Just ("bare", attitudeVerb)
+  CSlash Fwd (CSlash Fwd (CSlash Bwd r n _) (CAtom "S" fs) _) o _
+    | isS r, isNP n, isNP o, fs == em  -> Just ("addressee", addresseeVerb)
+    | isS r, isNP n, isNP o, fs == dcl -> Just ("bare", addresseeVerb)
+  CSlash _ (CSlash Bwd r a _) n _
+    | r == s dcl, a == s dcl, isNP n -> Just ("fronted", frontedVerb)
+  CSlash Fwd (CSlash Bwd (CSlash Bwd r a _) n _) o _
+    | r == s dcl, a == s dcl, isNP n, isNP o -> Just ("fronted", frontedAddresseeVerb)
+  _ -> Nothing
   where
     s fs = CAtom "S" fs
     isNP (CAtom "NP" _) = True
@@ -256,18 +314,6 @@ attitudeEntry w c = do
     isS _             = False
     em = [Feat "em"]
     dcl = [Feat "dcl"]
-    attitudeShape cat' = case cat' of
-      CSlash Fwd (CSlash Bwd r n _) (CAtom "S" fs) _
-        | isS r, isNP n, fs == em  -> Just ("that-clause", attitudeVerb)
-        | isS r, isNP n, fs == dcl -> Just ("bare", attitudeVerb)
-      CSlash Fwd (CSlash Fwd (CSlash Bwd r n _) (CAtom "S" fs) _) o _
-        | isS r, isNP n, isNP o, fs == em  -> Just ("addressee", addresseeVerb)
-        | isS r, isNP n, isNP o, fs == dcl -> Just ("bare", addresseeVerb)
-      CSlash _ (CSlash Bwd r a _) n _
-        | r == s dcl, a == s dcl, isNP n -> Just ("fronted", frontedVerb)
-      CSlash Fwd (CSlash Bwd (CSlash Bwd r a _) n _) o _
-        | r == s dcl, a == s dcl, isNP n, isNP o -> Just ("fronted", frontedAddresseeVerb)
-      _ -> Nothing
 
 -- | Factivity, as a stated lexical property.
 factivity :: Stipulation
@@ -345,13 +391,19 @@ closedEntries i w c
 -- * @S[f]\\NP@: @\\S. S(\\x. w(x))@ (predicative adjective or intransitive verb)
 -- * @(S[f]\\NP)\/NP@: @\\O \\S. S(\\x. O(\\y. w(x, y)))@ (transitive, subject wide scope)
 --
--- Clausal-complement shapes go to 'attitudeEntry' first (reporting verbs,
--- with the fail-safe for unlisted ones).
+-- Clausal-complement shapes go to 'attitudeEntryWith' first (reporting verbs,
+-- with the fail-safe for unlisted ones). 'openTemplate' assumes every
+-- unlisted lemma attested; the parser passes the CCGbank-derived set.
 --
 -- Any other shape: 'Nothing'. That is deliberate (see the module header).
 openTemplate :: String -> CCat -> Maybe LexItem
-openTemplate w c | Just it <- attitudeEntry w c = Just it
-openTemplate w c = case c of
+openTemplate = openTemplateWith (const True)
+
+-- | 'openTemplate' given which unlisted lemmas are attested with a
+-- that-clause (passed to 'attitudeEntryWith').
+openTemplateWith :: (String -> Bool) -> String -> CCat -> Maybe LexItem
+openTemplateWith attested w c | Just it <- attitudeEntryWith attested w c = Just it
+openTemplateWith _ w c = case c of
   CAtom "N" _ ->
     Just (LexTerm (Lam "x" TyE (App (pred1 lw) x_)) "noun (template)" Nothing)
   CSlash Fwd (CAtom "N" _) (CAtom "N" _) _ ->

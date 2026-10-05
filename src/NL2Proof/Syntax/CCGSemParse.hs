@@ -104,6 +104,15 @@ data SemModel = SemModel
     -- ^ Derived from 'smTags' once: the category prior as a map.
   , smPriorTotal   :: Double
     -- ^ Derived from 'smTags' once: total category count.
+  , smThatAttested :: Set.Set String
+    -- ^ Derived from 'smTags' once: every 'reportingLemma' of a word form the
+    -- tag dictionary has seen with an explicit that-clause category
+    -- ('thatClauseCat': @(S\\NP)\/S[em]@ or @((S\\NP)\/S[em])\/NP@). An
+    -- unlisted verb is read as reporting under a bare-complement category
+    -- only if its lemma is here (see 'attitudeEntryWith'). Computed
+    -- from the licensed corpus at load time, so no derived word list is
+    -- committed. On sections 02-21 it includes @noted@, @added@,
+    -- @announced@ and @see@ (@see that ...@).
   }
 
 -- | The search parameters of @ccg-supertag-parse@'s defaults (β = 0.01, k = 20,
@@ -127,6 +136,7 @@ defaultSemModel :: TagModel -> POSModel -> Rules -> Set.Set (CCat, CCat) -> SemM
 defaultSemModel tm pm rs seen =
   SemModel tm pm rs 0.01 20 40 1.0 20 True False seen True
     (M.fromList (tmPrior tm)) (fromIntegral (sum (map snd (tmPrior tm))))
+    (Set.fromList [ reportingLemma w | (w, cs) <- M.toList (tmWord tm), any (thatClauseCat . fst) cs ])
 
 -- | @$CCGBANK_DIR@ if set, else @~/ccgbank/ccgbank_1_1/data@ (the licensed
 -- corpus lives outside the repository and is never committed).
@@ -299,7 +309,8 @@ lexicalSigns m i w
       NameOrOther -> names ++ open
   where
     tags = offeredTags m (i == 0) w
-    open = [ LexSign c it s | (c, s) <- tags, Just it <- [openTemplate w c] ]
+    open = [ LexSign c it s | (c, s) <- tags
+                            , Just it <- [openTemplateWith (`Set.member` smThatAttested m) w c] ]
     names = [ LexSign (CAtom "NP" []) (nameItem w) s | (CAtom "N" _, s) <- tags ]
     isWordChar c = c `notElem` ".,;:!?\"'()"
 

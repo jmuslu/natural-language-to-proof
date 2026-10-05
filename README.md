@@ -8,7 +8,7 @@ by an external oracle. Nothing internal to the system counts as evidence.
 `text -> tokens -> CCG derivation -> typed lambda term -> DRS (+provenance) -> claims -> Genealogy -> oracle-gated grounding -> Fusion`
 
 - `src/NL2Proof/Syntax/` - tokenizer, categories, toy lexicon, CCG rules/derivation, CCGbank reader, CKY parser, supertagger
-- `src/NL2Proof/Semantics/` - typed lambda calculus; `Intensional` (Ty2: world-indexed twins `c_s`, propositions `\w. P_w`, attitude verbs, fail-safe for unlisted reporting verbs); `CCGSem` meanings for CCGbank categories
+- `src/NL2Proof/Semantics/` - typed lambda calculus; `Intensional` (Ty2: world-indexed twins `c_s`, propositions `\w. P_w`, attitude verbs, fail-safe for unlisted reporting verbs: that-clauses and fronted quotes always reported, bare complements only for lemmas CCGbank attests with a that-clause, derived at load); `CCGSem` meanings for CCGbank categories
 - `src/NL2Proof/Bench/` - ProofWriter gold parser and DRS -> triple/rule conversion
 - `src/NL2Proof/DRT/` - DRS types, construction, canonical claim form
 - `src/NL2Proof/Provenance.hs`, `Trace.hs` - source spans, decisions and diagnostics
