@@ -161,6 +161,23 @@ Real output for "Bob says that the cat is not red." (compare it with your Unit 2
 
 Things to notice: *not* attaches to *is* by backward crossed composition (`<Bx`), the that-clause is a proposition (`\w1:s. ...`, type `s->t`), and `red(cat)` sits two boxes down, so it is reported (`say(Bob)`) and never asserted.
 
+### Known deviations: when the tool disagrees with the textbook
+
+The tool shows what the system *does*. In the places below, the system differs from the textbook, so if your hand answer differs from the tool's output here, the system is wrong, not you. Spotting each one yourself, before checking this list, is a good test that you've understood the unit.
+
+| Unit | What the tool shows | Textbook answer | Matters for meaning? |
+|---|---|---|---|
+| 2 | "is not" combines by `<Bx` to `(S\NP)/(S[adj]\NP)` and the clause is bare `S` | the `[dcl]` feature carries through the combination, giving `S[dcl]` | no: bare `S` matches `S[dcl]` |
+| 2 | the final "." attaches deep inside the tree ("red .") | punctuation attaches at the top | no |
+| 2 | "round" has no `S[adj]\NP` reading, so "… is round" fails | it's an ordinary predicative adjective | yes: a coverage gap, open decision (a) |
+| 3, 4 | "Every cat that is red is big." doesn't parse | a standard relative clause, "every cat that is red" = `λQ. ∀x((cat(x) ∧ red(x)) → Q(x))` | yes: there's no meaning entry for relative "that" |
+| 4 | "The cat is red. It is big." asserts `big(?it_0)` | "it" refers to the cat | yes: names and definites become constants, not DRS referents, so a pronoun has nothing to bind to |
+| 5 | "Bob knows that P" lists P as both Reported and Presupposed | Presupposed only | no: it's never asserted either way |
+| 5 | "added" stays `added`, not `add` | the predicate should be the lemma, "add" | no: still handled safely as reported |
+| — | "Bob likes the cat and the dog." has a spurious second reading treating "the cat and the dog" as one thing, shown as `cat dog` | one reading: Bob likes both | only under `--all-readings` |
+
+These are queued as fixes for after the matching units.
+
 ---
 
 ## The invariants you should be able to state cold
