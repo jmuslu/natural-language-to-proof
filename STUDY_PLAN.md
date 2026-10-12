@@ -169,6 +169,7 @@ The tool shows what the system *does*. In the places below, the system differs f
 |---|---|---|---|
 | 2 | "is not" combines by `<Bx` to `(S\NP)/(S[adj]\NP)` and the clause is bare `S` | the `[dcl]` feature carries through the combination, giving `S[dcl]` | no: bare `S` matches `S[dcl]` |
 | 2 | the final "." attaches deep inside the tree ("red .") | punctuation attaches at the top | no |
+| 2 | "Bob likes and Anne hates the cat." fails at the parse stage (the category-only parse reaches S, but no meaning survives) | `>T` + `>B` make "Bob likes" an `S/NP`, and the two `S/NP`s coordinate | yes: non-constituent coordination has no semantics yet, so do Unit 2 exercise 2 on paper only |
 | 2 | "round" has no `S[adj]\NP` reading, so "… is round" fails | it's an ordinary predicative adjective | yes: a coverage gap, open decision (a) |
 | 3, 4 | "Every cat that is red is big." doesn't parse | a standard relative clause, "every cat that is red" = `λQ. ∀x((cat(x) ∧ red(x)) → Q(x))` | yes: there's no meaning entry for relative "that" |
 | 4 | "The cat is red. It is big." asserts `big(?it_0)` | "it" refers to the cat | yes: names and definites become constants, not DRS referents, so a pronoun has nothing to bind to |
