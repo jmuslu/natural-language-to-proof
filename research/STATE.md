@@ -2,7 +2,7 @@
 
 - Original ASTRA_GOAL remains active; linguistic-design-first redirect overrides phase order. Phases B–H unfinished. **No new model/LLM/answer-benchmark launches**: representative ProverQA >=90% exact/near-zero wrong gate CLOSED. Local independent fidelity/Explain diagnostics only. Default noun policy remains known-only.
 - Owner saved usage resets, full-access/no-approval continuation and useful parallelism remain authorized (also persisted ASTRA_GOAL). Shell works; never pass sandbox_permissions. Runtime actually observed root+8 running this continuation; not all32 slots tested. Specialists use isolated ~/astra-wt/<name>, own astra/<name> branches/files. Coordinator alone root source integration, STATE/LOG/cabal, staging/commits/push. Never main/tags/rawdata/secrets.
-- last pushed: 579db46 learner names (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
+- last pushed: cc0a2cb canonical gold admission (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
 
 ## Next three actions and active drivers
 
@@ -49,3 +49,11 @@
 - Active root source trial gold-canonical-admission(5c187c9), research/runs/gold-canonical-integration; fresh190/allgates and independent review pending. No next root merge until trial resolved.
 
 - Gold-admission result: review733bdb0 verifies all hashes and111 genuine passes. Learner/evidence queues completed through579db46. Current worker shell full-access verified; resumed independent implementation and gold tasks, no corpus loads authorized to workers.
+
+- Active next diagnostic: `python3 research/runs/baseline202.py`, research/runs/expanded202-baseline, frozen202; known-only, no model/answer benchmark. Independent results review required before expanding tracked replay membership.
+
+- Runtime check after this refresh: collaboration.list_agents actually reports root plus8 specialists running simultaneously, all revived with full-access shell. This confirms used9-agent concurrency, not all32. Largest measured reader298240KiB; global CCGbank cap remains3, implementation workers use corpus-free tests/sealed caches.
+
+- Expanded202 baseline COMPLETE/review approved:69exact36wrong96no-parse1incomplete, original190 fullobjectsunchanged. Four serial gold admissions next (PW674afe4,Proverconditional57bf9c1,Proveruniversal104429b,FOLIOafdc71b), one merge/allgates/push/cleanup each. Replay cache202, membership extended explicitly one at a time. FOLIO2wrong list-order-only, no semantic scope regression.
+
+- Active serial integration: proofwriter-definite-gold (674afe4), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/proofwriter-definite-gold; committing/pushing now.
