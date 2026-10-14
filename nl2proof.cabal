@@ -460,3 +460,13 @@ test-suite noun-lemma
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+-- Independent construction scope and boundary controls.
+test-suite everyone-closed
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          EveryoneClosedProposalSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
