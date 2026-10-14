@@ -1041,3 +1041,5 @@ These reviewed lessons expand the cards above with categories, derivations, type
 - [Particles and reflexives (C9–C10)](sections/design-particles-reflexives.md)
 
 - [Passives, modals and punctuation (C11–C12)](sections/design-passives-modals-punctuation.md)
+
+- [Natural-language residuals (C13)](sections/design-natural-residuals.md)
