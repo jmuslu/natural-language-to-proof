@@ -26,6 +26,12 @@
 module NL2Proof.Syntax.CCGSemParse
   ( -- * Model
     SemModel(..)
+  , EitherPolicy(..)
+  , OrOrigin
+  , ooOrProv
+  , ooEitherProv
+  , OrCarrierFailure(..)
+  , pairedOrOrigins
   , defaultSemModel
   , loadSemModel
   , ccgbankDataDir
@@ -65,7 +71,7 @@ module NL2Proof.Syntax.CCGSemParse
 
 import Control.Exception (IOException, try)
 import Control.Monad (foldM)
-import Data.Char (isAlpha, isLower, isUpper, toLower)
+import Data.Char (isPunctuation, isSymbol, isAscii, isAlpha, isLower, isUpper, toLower)
 import Data.List (foldl', isPrefixOf, isSuffixOf, sortBy)
 -- Strict maps for counting; the chart table must be the lazy map (it is
 -- defined by self-reference, as in "NL2Proof.Syntax.CCGParse").
@@ -79,6 +85,7 @@ import Text.Printf (printf)
 import NL2Proof.Provenance
 import NL2Proof.Semantics.CCGSem
 import NL2Proof.Semantics.Intensional (applyIntensional, isIntensionalTerm, liftsTo)
+import qualified NL2Proof.Semantics.OrOccurrence as OR
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.CCGBank (CCat(..), Dir(..), Feat(..), eraseFeatures, parseCCGCat)
 import NL2Proof.Syntax.CCGDeriv (AutoNode(..), leafHeaders, nodeCat, parseAuto)
@@ -96,7 +103,8 @@ import NL2Proof.Trace
 
 -- | Everything the parser learned from CCGbank, plus its search parameters.
 data SemModel = SemModel
-  { smNominalPolicy :: NominalNounPolicy
+  { smEitherPolicy :: EitherPolicy
+  , smNominalPolicy :: NominalNounPolicy
     -- ^ Explicit opt-in for context-licensed unknown nouns; default keeps v1.
   , smTags         :: TagModel
   , smPOS          :: POSModel
@@ -164,7 +172,7 @@ data SemModel = SemModel
 -- and adjective lists keep the cheaper search.
 defaultSemModel :: TagModel -> POSModel -> Rules -> Set.Set (CCat, CCat) -> SemModel
 defaultSemModel tm pm rs seen =
-  SemModel KnownNounsOnly tm pm rs 0.01 20 40 1.0 20 True False seen True
+  SemModel EitherLegacyDisabled KnownNounsOnly tm pm rs 0.01 20 40 1.0 20 True False seen True
     (M.fromList (tmPrior tm)) (fromIntegral (sum (map snd (tmPrior tm))))
     (Set.fromList [ reportingLemma w | (w, cs) <- M.toList (tmWord tm), any (thatClauseCat . fst) cs ])
     False
@@ -366,6 +374,8 @@ data NameLexOrigin = NameLexOrigin
   } deriving (Eq, Ord)
 data LexicalOrigin = OrdinaryOrigin | RigidNameChoice NameLexOrigin
   | ClosedNotChoice Int String CCat
+  | EitherChoice Int String CCat CCat
+  | ExplicitOrChoice Int String CCat
 
 -- Bound once to the selected lexical occurrence in the current parse context.
 data NominalNameOrigin = NominalNameOrigin
@@ -407,6 +417,11 @@ lexicalSigns m i w = map fst (lexicalChoices m i w)
 -- Preserve the exact lexical branch; category/term/notes cannot recover it.
 lexicalChoices :: SemModel -> Int -> String -> [(LexSign, LexicalOrigin)]
 lexicalChoices m i w
+  | smEitherPolicy m==EitherSurfaceInclusiveV1, markerWord "either" w =
+      [(LexSign c (LexTerm (Lam "v" (tyGQ ~> TyT) (Var "v"))
+          "pending either; requires direct explicit OR" Nothing) score,
+          EitherChoice i w c x)
+      | (c,score)<-tags, Just x<-[eitherCategory c]]
   | lw `elem` ["himself", "herself", "itself"] =
       [ (LexSign target (withNote (reflexiveNote original target) item) score, OrdinaryOrigin)
       | (original, score) <- tags, ordinaryReflexiveTag original
@@ -416,13 +431,18 @@ lexicalChoices m i w
   | isClosedClass w || all (not . isWordChar) w =
       [ (LexSign c' (relativeNote c c' it) s,
           if lw=="not" && c==nominalNotSource && c'==c
-          then ClosedNotChoice i w c else OrdinaryOrigin)
+          then ClosedNotChoice i w c
+          else if smEitherPolicy m==EitherSurfaceInclusiveV1 && markerWord "or" w
+               && c==CAtom "conj" [] && structuralOr it
+               then ExplicitOrChoice i w c else OrdinaryOrigin)
       | (c, s) <- tags, let c' = restrictiveTag c, it <- closedEntries i w c' ]
   | otherwise = case nameStatus m (i == 0) w of
       NotName     -> ordinary open
       NameOnly    -> names
       NameOrOther -> names ++ ordinary open
   where
+    structuralOr (LexStructural _) = True
+    structuralOr _ = False
     ordinary = map (\l -> (l, OrdinaryOrigin))
     ordinaryReflexiveTag (CAtom "N" fs) = null fs
     ordinaryReflexiveTag (CAtom "NP" fs) = all (== Feat "nb") fs
@@ -662,6 +682,211 @@ fusedN = CAtom "N" []
 fusedNP = CAtom "NP" []
 sourceRelCat = CSlash Fwd (CSlash Bwd fusedNP fusedNP []) fusedVPCat []
 
+-- Optional lexical authority and occurrence transport. Public SSign mutation
+-- cannot mint the private constructors below; every admission rechecks snapshot
+-- and selected provenance. Legacy signs have no payload at all.
+data EitherPolicy = EitherLegacyDisabled | EitherSurfaceInclusiveV1 deriving (Eq,Ord,Show)
+data OrOrigin = OrOrigin { ooOrProv :: Prov, ooEitherProv :: Maybe Prov } deriving (Eq,Ord)
+data OrCarrierFailure = OrPendingRoot | OrUnavailable OR.Failure
+  | OrSnapshotMismatch | OrInvalidOrigins deriving (Eq,Show)
+data Marker = Marker Int Prov CCat deriving (Eq,Ord)
+data PairCertificate = PairCertificate Marker Marker (Int,Int) (Int,Int) CCat deriving (Eq,Ord)
+data PairRole = OrOrdinary | EitherPending Marker CCat
+  | EitherLeft Marker (Int,Int) Prov CCat
+  | OrPaired (Set.Set PairCertificate) deriving (Eq,Ord)
+data DirectOrRight = DirectOrRight Marker (Int,Int) Prov CCat deriving (Eq,Ord)
+data OrState = OrState
+  { osEvidence :: OR.Evidence OrOrigin
+  , osRole :: PairRole
+  , osCover :: (Int,Int)
+  , osLeaves :: [(SourceId,Span,String)]
+  , osMarker :: Maybe Marker
+  , osRight :: Maybe DirectOrRight
+  }
+
+markerWord :: String -> String -> Bool
+markerWord wanted word = all isAscii word && map toLower word==wanted
+
+eitherCategory :: CCat -> Maybe CCat
+eitherCategory (CSlash Fwd x y []) | x==y, boundedVP x = Just x
+eitherCategory _ = Nothing
+boundedVP :: CCat -> Bool
+boundedVP (CSlash Bwd (CAtom "S" [Feat f]) (CAtom "NP" []) []) = f `elem` ["adj","dcl"]
+boundedVP _ = False
+
+ordinaryOrState :: SemModel -> (Int,Int) -> Prov -> Term -> Maybe OrState
+ordinaryOrState m cover pv tm
+ | smEitherPolicy m==EitherLegacyDisabled = Nothing
+ | otherwise = Just (OrState (OR.passiveEvidence [] tm M.empty) OrOrdinary cover (provLeaves pv) Nothing Nothing)
+
+lexicalOrState :: SemModel -> (Int,Int) -> Prov -> CCat -> Term -> LexicalOrigin -> Maybe OrState
+lexicalOrState m cover pv category tm origin = do
+ base <- ordinaryOrState m cover pv tm
+ case origin of
+   EitherChoice i word offered x
+     | cover==(i,i+1), category==offered, eitherCategory offered==Just x
+     , ProvLex _ _ actual<-pv, word==actual ->
+         do checked <- either (const Nothing) Just (OR.dispatch [] OR.PairedPending tm (osEvidence base))
+            pure base {osRole=EitherPending (Marker i pv offered) x,osEvidence=OR.resultEvidence checked}
+   ExplicitOrChoice i word offered
+     | cover==(i,i+1), category==offered, ProvLex _ _ actual<-pv, word==actual ->
+         pure base {osMarker=Just (Marker i pv offered)}
+   _ -> pure base
+
+ordinaryUnaryState :: SSign -> Term -> Maybe OrState
+ordinaryUnaryState sign tm = do
+ state <- ssOrState sign
+ case OR.dispatch [] OR.Ordinary tm (osEvidence state) of
+  Right result -> Just state {osEvidence=OR.resultEvidence result,osMarker=Nothing,osRight=Nothing}
+  Left _ -> Nothing -- callers disallow mandatory children before this path
+
+eitherMandatory :: SSign -> Bool
+eitherMandatory sign = maybe False ((/=OrOrdinary).osRole) (ssOrState sign)
+roleMode :: PairRole -> OR.Mode
+roleMode OrOrdinary = OR.Ordinary
+roleMode OrPaired{} = OR.PairedActive
+roleMode _ = OR.PairedPending
+rolePairs :: PairRole -> Set.Set PairCertificate
+rolePairs (OrPaired ps) = ps
+rolePairs _ = Set.empty
+pairOrigin :: PairCertificate -> OrOrigin
+pairOrigin (PairCertificate (Marker _ e _) (Marker _ o _) _ _ _) = OrOrigin o (Just e)
+eitherKey :: SSign -> Maybe (OR.PackingKey OrOrigin,PairRole)
+eitherKey sign = do
+ state <- ssOrState sign
+ if osRole state==OrOrdinary then Nothing else
+  let (_,origins)=OR.evidenceSnapshot(osEvidence state)
+  in Just (OR.PairedKey (roleMode(osRole state)) (canonical(ssSem sign)) origins,osRole state)
+
+stateMatches :: SSign -> OrState -> Bool
+stateMatches sign state = osLeaves state==provLeaves(ssProv sign)
+  && not(null(osLeaves state)) && length(provSources(ssProv sign))==1
+  && fst(osCover state)<snd(osCover state)
+  && all (\(_,sp,_)->spanWidth sp>0) (osLeaves state)
+  && and [spanEnd a<=spanStart b | ((_,a,_),(_,b,_))<-zip (osLeaves state) (drop 1(osLeaves state))]
+
+pairedOrOrigins :: SSign -> Either OrCarrierFailure (Maybe (Term,M.Map [Int] OrOrigin))
+pairedOrOrigins sign = case ssOrState sign of
+ Nothing -> Right Nothing
+ Just state | osRole state==OrOrdinary -> Right Nothing
+ Just state | OrPaired certificates<-osRole state -> do
+   if stateMatches sign state && ssCat sign==CAtom "S" [Feat "dcl"]
+      && ssCoord sign==Nothing && ssStructural sign==Nothing && osRight state==Nothing
+      then Right () else Left OrInvalidOrigins
+   case OR.evidenceFailure(osEvidence state) of
+     Just problem -> Left(OrUnavailable problem)
+     Nothing -> Right ()
+   let (snapshot,origins)=OR.evidenceSnapshot(osEvidence state)
+       actualPairs=[o | o<-M.elems origins, ooEitherProv o/=Nothing]
+       expected=Set.map pairOrigin certificates
+       present pv=all (`elem` osLeaves state)(provLeaves pv)
+       validOrigin o=case ooOrProv o of
+         p@(ProvLex _ _ word)->markerWord "or" word && present p
+           && maybe True (\e->case e of ProvLex _ _ w->markerWord "either" w && present e;_->False)(ooEitherProv o)
+         _->False
+   if snapshot==ssSem sign then Right () else Left OrSnapshotMismatch
+   if not(Set.null certificates) && length actualPairs==Set.size expected
+      && Set.fromList actualPairs==expected && all validOrigin(M.elems origins)
+      then Right () else Left OrInvalidOrigins
+   case OR.dispatch [] OR.PairedActive snapshot(osEvidence state) of
+     Left problem -> Left(OrUnavailable problem)
+     Right checked | OR.resultTerm checked==snapshot -> Right(Just(snapshot,origins))
+     _ -> Left OrSnapshotMismatch
+ Just _ -> Left OrPendingRoot
+
+eitherRootAllowed :: SSign -> Bool
+eitherRootAllowed sign = case pairedOrOrigins sign of Left _->False;Right _->True
+
+-- Existing semantic/construction checks run first. The optional layer never
+-- bypasses a nominal/fused/reflexive/conditional operation or changes legacy.
+semCombineEither :: SemModel -> Combinator -> CCat -> SSign -> SSign -> Maybe SSign
+semCombineEither m comb out left right = do
+ result <- semCombine comb out left right
+ if smEitherPolicy m==EitherLegacyDisabled then Just result
+ else do
+  l<-ssOrState left; r<-ssOrState right
+  if stateMatches left l && stateMatches right r && snd(osCover l)==fst(osCover r)
+     && provSources(ssProv left)==provSources(ssProv right) then Just () else Nothing
+  let cover=(fst(osCover l),snd(osCover r))
+      base=OrState (osEvidence l) OrOrdinary cover (osLeaves l++osLeaves r) Nothing Nothing
+      clean s=ssCoord s==Nothing && ssStructural s==Nothing && ssList s==Nothing
+        && ssFused s==FusedPlain && ssNominal s==NominalPlain
+        && not(ssOpenConditional s) && not(ssConditionalRaised s)
+      noPunctuation st=all (\(_,_,w)->not (not(null w) && all (\c->isPunctuation c || isSymbol c) w)) (osLeaves st)
+      freeOperand s st=clean s && noPunctuation st && osRole st==OrOrdinary && osRight st==Nothing
+        && OR.evidenceFailure(osEvidence st)==Nothing
+        && OR.evidenceSnapshot(osEvidence st)==(ssSem s,M.empty)
+      plainRole st=osRole st==OrOrdinary
+      activeRole st=case osRole st of OrPaired{}->True;_->False
+      finishWith role raw imports fresh state = do
+        evidence<-either (const Nothing) Just (OR.assembleEvidence [] (roleMode role) raw imports fresh)
+        checked<-either (const Nothing) Just (OR.dispatch [] (roleMode role) raw evidence)
+        if OR.resultTerm checked==ssSem result then
+          Just result {ssOrState=Just state {osRole=role,osEvidence=OR.resultEvidence checked}}
+          else Nothing
+      app role =
+        let (f,a,fs,as)=if comb==FwdApp then(left,right,l,r)else(right,left,r,l)
+            raw=App(ssSem f)(ssSem a)
+        in if applyIntensional(ssSem f)(ssSem a)==raw
+           then finishWith role raw [([0],ssSem f,osEvidence fs),([1],ssSem a,osEvidence as)] M.empty base
+           else Nothing
+      passiveUnavailable = case OR.dispatch [] OR.Ordinary (ssSem result)(osEvidence l) of
+        Right checked -> Just result {ssOrState=Just base {osEvidence=OR.resultEvidence checked}}
+        Left _ -> Nothing
+      directCoord role fresh = do
+        ty<-semTy out
+        layout<-coordTermLocated CoordOr ty (ssSem left)(ssSem right)
+        finishWith role (clTerm layout)
+          [(clLeftPath layout,ssSem left,osEvidence l),(clRightPath layout,ssSem right,osEvidence r)]
+          (M.singleton(clOperatorPath layout)fresh) base
+  case (osRole l,osRole r,comb) of
+   (EitherPending marker@(Marker i pv offered) x,OrOrdinary,FwdApp)
+     | out==x,ssCat left==offered,ssCat right==x,osCover l==(i,i+1)
+     , ssProv left==pv, freeOperand right r ->
+         app(EitherLeft marker (osCover r)(ssProv right)x)
+   (EitherLeft marker leftCover leftProv x,OrOrdinary,CoordApply)
+     | Just(DirectOrRight edge@(Marker k opv oc) rightCover rightProv rx)<-osRight r
+     , x==rx,out==x,ssCat left==x,maybe False (markerWord "or") (ssCoord right)
+     , leftCover==(fst(osCover l)+1,k),osCover r==(k,snd rightCover)
+     , fst rightCover==k+1,oc==CAtom "conj" []
+     , ssProv left==provRule "FwdApp" [markerProv marker,leftProv]
+     , ssProv right==provRule "CoordMark" [opv,rightProv]
+     , ssList left==Nothing,ssList right==Nothing
+     , ssFused right==FusedPlain,ssNominal right==NominalPlain
+     , not(ssOpenConditional right),not(ssConditionalRaised right)
+     , noPunctuation r
+     , OR.evidenceFailure(osEvidence r)==Nothing
+     , OR.evidenceSnapshot(osEvidence r)==(ssSem right,M.empty)
+     -> let certificate=PairCertificate marker edge leftCover rightCover x
+        in directCoord(OrPaired(Set.singleton certificate))(pairOrigin certificate)
+   (OrOrdinary,OrOrdinary,CoordMark)
+     | Just edge@(Marker k pv category)<-osMarker l
+     , markerWord "or"(provSurface pv),category==CAtom "conj" []
+     , osCover l==(k,k+1),ssProv left==pv
+     , ssStructural left/=Nothing, ssCoord right==Nothing ->
+        Just result {ssOrState=Just base {osEvidence=osEvidence r,
+          osRight=Just(DirectOrRight edge (osCover r)(ssProv right)(ssCat right))}}
+   (OrOrdinary,OrOrdinary,CoordApply)
+     | Just(DirectOrRight edge _ _ _)<-osRight r
+     , ssList left==Nothing,ssList right==Nothing,maybe False (markerWord "or") (ssCoord right) ->
+        directCoord OrOrdinary (OrOrigin(markerProv edge)Nothing)
+   (_,_,PunctRight)
+     | activeRole l,plainRole r,out==CAtom "S" [Feat "dcl"]
+     , ssStructural right==Just ".",ssCat right==CAtom "." []
+     , ssCat left==out,ssSem result==ssSem left ->
+         Just result {ssOrState=Just base {osRole=osRole l,osEvidence=osEvidence l}}
+   (_,_,_) | any (\st->roleMode(osRole st)==OR.PairedPending) [l,r] -> Nothing
+   (_,_,_) | activeRole l || activeRole r ->
+     if comb `elem` [FwdApp,BwdApp] && osRight l==Nothing && osRight r==Nothing
+        && all noPunctuation [st | st<-[l,r],plainRole st]
+        && not(any (isIntensionalTerm.ssSem)[left,right])
+     then app(OrPaired(Set.union(rolePairs(osRole l))(rolePairs(osRole r)))) else Nothing
+   (_,_,_) | comb `elem` [FwdApp,BwdApp] ->
+     case app OrOrdinary of Just good->Just good;Nothing->passiveUnavailable
+   _ -> passiveUnavailable
+  where markerProv(Marker _ pv _)=pv
+
+
 -- | A chart item.
 data SSign = SSign
   { ssCat   :: CCat
@@ -688,6 +913,8 @@ data SSign = SSign
     -- ^ Pending local restriction certificate; part of the packing identity.
   , ssNominal :: NominalRole
     -- ^ Local nominal capability or mandatory root-bound obligation.
+  , ssOrState :: Maybe OrState
+    -- ^ Nothing is the untouched legacy route; private evidence is occurrence-bound.
   , ssNotes :: [(Stipulation, Prov)]
     -- ^ Stipulations used anywhere in the derivation, with where.
   }
@@ -704,8 +931,8 @@ data SemParse = SemParse
     -- ^ Sentence-wide safety decisions, including a quote rejected entirely.
   }
 
-key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool, Maybe CoordList, FusedRole, NominalRole)
-key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s, ssList s, ssFused s, ssNominal s)
+key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool, Maybe CoordList, FusedRole, NominalRole, Maybe (OR.PackingKey OrOrigin, PairRole))
+key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s, ssList s, ssFused s, ssNominal s, eitherKey s)
 
 -- | Pack by 'key' (keep the best score; earlier wins ties) and keep the beam.
 packCell :: Int -> [SSign] -> [SSign]
@@ -736,7 +963,8 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
     -- Candidate evidence precedes usefulAt: up need not have a standalone term.
     particleSeeds =
       [ ((i, i+2), SSign hc (finish tm) pv (hs+ps) Nothing Nothing False False
-          Nothing FusedPlain NominalPlain ([(st,pv) | Just st <- [stip]] ++ [(evidence,pv)]))
+          Nothing FusedPlain NominalPlain
+          (ordinaryOrState m (i,i+2) pv (finish tm)) ([(st,pv) | Just st <- [stip]] ++ [(evidence,pv)]))
       | (i,(headToken,particleToken)) <- zip [0..] (zip toks (drop 1 toks))
       , (hc,hs) <- offeredTags m (i==0) (tokText headToken)
       , (pc,ps) <- offeredTags m False (tokText particleToken)
@@ -788,18 +1016,18 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
             certificate=NegativeNominalCertificate src i (i+2) (tokSpan copula)
               (tokSpan article) (tokText copula) (tokText article) cc ac origin ]
     annotated =
-      [ [(l,f,nominalCapability i t l origin) | (l,f,origin) <- original]
-          ++ [(l,FusedPlain,NominalNegator certificate)
+      [ [(l,f,nominalCapability i t l origin,origin) | (l,f,origin) <- original]
+          ++ [(l,FusedPlain,NominalNegator certificate,OrdinaryOrigin)
              | (l,_,ClosedNotChoice j word category) <- original
              , (certificate,_,_) <- nominalPairs, Just origin <- [nominalNegation certificate]
              , nnIndex origin==i, j==i, word==tokText t, category==nnCategory origin]
           ++ concat
           [ [(LexSign nominalCopulaInternal (LexTerm nominalCopulaMeaning
                   "licensed nominal predication" (Just (nominalReanalysisFor certificate))) cs,
-                  FusedPlain,NominalCopula certificate) | i==ncCopulaIndex certificate]
+                  FusedPlain,NominalCopula certificate,OrdinaryOrigin) | i==ncCopulaIndex certificate]
             ++ [(LexSign nominalArticleInternal (LexTerm nominalArticleMeaning
                   "licensed predicative article" (Just (nominalReanalysisFor certificate))) as,
-                  FusedPlain,NominalArticle certificate) | i==ncArticleIndex certificate]
+                  FusedPlain,NominalArticle certificate,OrdinaryOrigin) | i==ncArticleIndex certificate]
           | (certificate,cs,as) <- nominalPairs ]
       | (i,(t,original)) <- zip [0..] (zip toks fusedAnnotated) ]
     nominalCapability i t l origin
@@ -835,7 +1063,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       , det <- ordinary !! (i-1), lxCat det == nominalArticleSource ]
       ++ [ PairedNominalComplement certificate
          | (certificate,_,_) <- nominalPairs, i == ncArticleIndex certificate + 1 ]
-    lexs = map (map (\(l,_,_) -> l)) annotated
+    lexs = map (map (\(l,_,_,_) -> l)) annotated
 
     -- Sound category overapproximation of the two licensed semantic steps.
     -- Ordinary pairs are untouched; pending semantic roles are checked later.
@@ -862,7 +1090,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
               && sourcePair m (fcHeadCategory certificate) (CSlash Bwd fusedNP fusedNP []))
 
     leafSigns = M.fromList
-      [ (i, filter (usefulAt (i, i + 1) . ssCat) (map (mkLeaf t) ls))
+      [ (i, filter (usefulAt (i, i + 1) . ssCat) (map (mkLeaf i t) ls))
       | (i, (t, ls)) <- zip [0 :: Int ..] (zip toks annotated) ]
 
     -- Category-only forward pass.
@@ -919,16 +1147,17 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
 
     usefulAt ij c = c `Set.member` M.findWithDefault Set.empty ij useful
 
-    mkLeaf t (LexSign c it s, fused, nominal) =
+    mkLeaf i t (LexSign c it s, fused, nominal, origin) =
       let pv = ProvLex src (tokSpan t) (tokText t)
       in case it of
            LexTerm tm _ st ->
              -- The role belongs to the closed lexical entry, not a search for
              -- an if token anywhere in a completed constituent.
              SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False Nothing fused nominal
-               ([ (x, pv) | Just x <- [st] ] ++ fusedNotes fused pv ++ nominalOriginNotes nominal pv)
+               (lexicalOrState m (i,i+1) pv c (finish tm) origin) ([ (x, pv) | Just x <- [st] ] ++ fusedNotes fused pv ++ nominalOriginNotes nominal pv)
            LexStructural _ ->
-             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False Nothing FusedPlain NominalPlain []
+             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False Nothing FusedPlain NominalPlain
+               (lexicalOrState m (i,i+1) pv c (Con (tokText t) TyT) origin) []
 
     table :: ML.Map (Int, Int) [SSign]
     table = ML.fromList
@@ -951,7 +1180,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
           , r <- rs
           , nominalSeenPair m l r
           , (comb, out) <- outs
-          , Just p <- [semCombine comb out l r]
+          , Just p <- [semCombineEither m comb out l r]
           ]
 
     groups ij = M.toList (M.fromListWith (flip (++)) [ (ssCat x, [x]) | x <- ML.findWithDefault [] ij table ])
@@ -985,12 +1214,12 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
     isTypeRaise _                                = False
 
     unaries x
-      | ssCoord x /= Nothing || ssStructural x /= Nothing || pendingReflexive x || not (fusedUnaryAllowed x) || not (nominalUnaryAllowed x) = []
+      | ssCoord x /= Nothing || ssStructural x /= Nothing || pendingReflexive x || not (fusedUnaryAllowed x) || not (nominalUnaryAllowed x) || eitherMandatory x = []
       | otherwise =
           [ SSign to (finish (f (ssSem x))) pv (ssScore x - smUnaryPenalty m) Nothing Nothing
                   (pendingConditional to [x])
                   (pendingConditional to [x] && (ssConditionalRaised x || isTypeRaise to)) Nothing FusedPlain NominalPlain
-                  (ssNotes x ++ [ (st, pv) | Just st <- [mst] ]
+                  (ordinaryUnaryState x (finish (f (ssSem x)))) (ssNotes x ++ [ (st, pv) | Just st <- [mst] ]
                     ++ [(raisingNote, pv) | isTypeRaise to])
           | (fr, to) <- meaningful
           , unifiable (ssCat x) fr
@@ -1008,9 +1237,9 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
                    -- A root asserts: an embedded clause (S[em], a proposition)
                    -- standing alone is not a sentence meaning.
                    , semTy (ssCat s) == Just TyT
-                   , ssCoord s == Nothing, ssStructural s == Nothing, fusedRootAllowed s, nominalRootAllowed s ]
+                   , ssCoord s == Nothing, ssStructural s == Nothing, fusedRootAllowed s, nominalRootAllowed s, eitherRootAllowed s ]
           byMeaning = M.fromListWith (\new old -> if ssScore new > ssScore old then new else old)
-                        [ (canonicalAC (ssSem s), s) | s <- rs ]
+                        [ ((canonicalAC (ssSem s),eitherKey s), s) | s <- rs ]
       in sortBy (comparing (Down . ssScore)) (M.elems byMeaning)
 
     -- Inverted quote tags can be absent altogether: a comma-coordinated
@@ -1141,7 +1370,7 @@ semCombine comb0 out0 l r
     notes = ssNotes l ++ ssNotes r
     mk comb out tm coord = SSign out (finish tm) (pv comb) (ssScore l + ssScore r) coord Nothing
       (pendingConditional out [l, r])
-      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) Nothing FusedPlain NominalPlain notes
+      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) Nothing FusedPlain NominalPlain Nothing notes
 
     sem comb out = case comb of
       -- 'applyIntensional' is 'App' unless the functor declares an

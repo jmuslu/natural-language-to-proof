@@ -382,18 +382,30 @@ def file_hash(path):
 
 
 def validate_execution(value):
-    """Validate protocol metadata only; never interpret a sentence or gold."""
-    if not isinstance(value, dict) or set(value) != {'schema', 'parser', 'nominal_nouns'}:
-        raise ValueError('execution requires exact schema/parser/nominal_nouns keys')
-    if value['schema'] != 'nominal-policy-v1':
-        raise ValueError('invalid execution schema')
-    parser, policy = value['parser'], value['nominal_nouns']
-    allowed = {'hand': {'not-applicable'},
-               'default': {'known-only', 'context-unknown'},
-               'pos': {'known-only', 'context-unknown'}}
-    if not isinstance(parser, str) or parser not in allowed or not isinstance(policy, str) or policy not in allowed[parser]:
+    """Validate declared protocol metadata, not runtime capability or meaning."""
+    if not isinstance(value,dict):raise ValueError('execution must be an object')
+    schema=value.get('schema')
+    keys={'schema','parser','nominal_nouns'}
+    if schema == 'parser-policy-v2':keys.add('either_policy')
+    elif schema != 'nominal-policy-v1':raise ValueError('invalid execution schema')
+    if set(value) != keys:raise ValueError('execution requires exact schema-specific keys')
+    parser,policy=value['parser'],value['nominal_nouns']
+    allowed={'hand':{'not-applicable'},'default':{'known-only','context-unknown'},
+             'pos':{'known-only','context-unknown'}}
+    if not isinstance(parser,str) or parser not in allowed or not isinstance(policy,str) or policy not in allowed[parser]:
         raise ValueError('invalid execution parser/nominal policy combination')
+    if schema == 'parser-policy-v2':
+        if parser == 'hand' or value['either_policy'] not in ('legacy-disabled','surface-inclusive-v1'):
+            raise ValueError('invalid either policy or front end')
     return value
+
+
+class SingleEitherPolicy(argparse.Action):
+    """Reject repetition before launch, including argparse's accepted spellings."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        if getattr(namespace,self.dest,None) is not None:
+            parser.error('--either-policy may be supplied only once')
+        setattr(namespace,self.dest,values)
 
 
 def main():
@@ -403,6 +415,7 @@ def main():
     parser.add_argument('--parser',choices=['hand','default','pos'],required=True)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--nominal-nouns',choices=['known-only','context-unknown'])
+    parser.add_argument('--either-policy',choices=['legacy-disabled','surface-inclusive-v1'],action=SingleEitherPolicy)
     parser.add_argument('--timeout-seconds',type=float,default=600)
     parser.add_argument('--require-exact',action='store_true')
     args=parser.parse_args()
@@ -410,11 +423,15 @@ def main():
         parser.error('hand parser does not accept nominal policy')
     execution=validate_execution(dict(schema='nominal-policy-v1',parser=args.parser,nominal_nouns=
         'not-applicable' if args.parser == 'hand' else (args.nominal_nouns or 'known-only')))
+    if args.either_policy is not None:
+        if args.parser == 'hand':parser.error('hand parser does not accept either policy')
+        execution=validate_execution(dict(execution,schema='parser-policy-v2',either_policy=args.either_policy))
     cases=[validate_case(row) for row in read_jsonl(args.cases)]
     if len({row['id'] for row in cases})!=len(cases):raise ValueError('duplicate case IDs')
     binary=args.binary.resolve();binary_hash=file_hash(binary)
     flags={'hand':['--hand'],'default':[],'pos':['--pos-backoff']}[args.parser]
     if args.parser != 'hand':flags.append('--nominal-nouns='+execution['nominal_nouns'])
+    if args.either_policy is not None:flags.append('--either-policy='+args.either_policy)
     requests=[project_request(row) for row in cases]
     started=time.monotonic()
     process=subprocess.run([str(binary)]+flags,input=''.join(json.dumps(row,ensure_ascii=False)+'\n' for row in requests),

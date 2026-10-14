@@ -58,7 +58,7 @@ origin=ProvLex (SourceId "v2-origin") (Span 15 22) "blicket"
 sign category meaning provenance role=SSign
  {ssCat=cc category,ssSem=meaning,ssProv=provenance,ssScore=0,ssCoord=Nothing
  ,ssStructural=Nothing,ssOpenConditional=False,ssConditionalRaised=False,ssList=Nothing
- ,ssFused=FusedPlain,ssNominal=role,ssNotes=[]}
+ ,ssFused=FusedPlain,ssNominal=role,ssOrState=Nothing,ssNotes=[]}
 article=sign "N/N" (Lam "P" tyPred1 (Var "P"))
  (ProvLex (SourceId "v2-origin") (Span 13 14) "a") (NominalArticle certificate)
 noun=sign "N" (pred1 "blicket") origin (NominalNoun (NominalNounOrigin origin (cc "N") DictionaryCommonNoun))
