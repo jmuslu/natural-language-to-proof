@@ -1015,3 +1015,13 @@ classification. All 185 other selected meanings/statuses remain unchanged; no
 retained target reading is wrong. Three additional trace-only changes are
 reported separately. The default remains KnownNounsOnly, and this diagnostic
 neither establishes population coverage nor opens the model-launch gate.
+
+### Measured bounded nominal negation
+
+The [negative nominal result](NOMINAL_NEGATION_RESULT.md) extends the certified
+frame to **is not a/an N**, using actual closed-not origin and predicate
+negation below the subject quantifier. Default frozen190 gains two sole-exact readings; optional context-unknown
+gains five against its own prior baseline. Every other retained reading is
+unchanged in each comparison. The default stays known-only; unknown names,
+coordination and embedding acquire no extra license. Earlier construction cards
+record their stated checkpoints; this result supplies the newer bounded evidence.

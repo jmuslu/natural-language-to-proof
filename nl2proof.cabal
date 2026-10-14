@@ -500,3 +500,23 @@ test-suite nominal-name-origin
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+-- Independent construction scope and boundary controls.
+test-suite nominal-negation
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          NominalNegationPlanSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Actual closed-negation origin and escape controls.
+test-suite nominal-negation-origin
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          NominalNegationOriginSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
