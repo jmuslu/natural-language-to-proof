@@ -57,7 +57,7 @@ The implemented conditional comma guard blocks one known duplicated-consequent c
 
 ### C7 worked supplement: OR, XOR and neither are different scoped structures
 
-Let `P=red(Bob)`, `Q=big(Bob)`, and `VP(X)=S[X]\NP`. Implemented `or:conj` first makes a marked right constituent through `CoordMark`; `CoordApply` combines it with a matching left category. For adjective alternatives, `red + (or big)` yields `VP(adj)` and the copula yields `VP(dcl)`; applying Bob yields S[dcl]. At semantic type `V=Q→t`, the shared-subject operator is `λV W S.S(λx.V(lift(x))∨W(lift(x)))`. It preserves a single existential subject witness. Clause OR operates on `t,t`; these are not interchangeable category cases.
+Let `P=red(Bob)`, `Q=big(Bob)`, and `VP(X)=S[X]\NP`. Implemented `or:conj` first makes a marked right constituent through `CoordMark`; `CoordApply` combines it with a matching left category. For adjective alternatives, `red + (or big)` yields `VP(adj)` and the copula yields `VP(dcl)`; applying Bob yields S[dcl]. Write `Q_NP=(e→t)→t` for the generalized-quantifier type, distinct from the proposition Q above. At semantic type `V=Q_NP→t`, the shared-subject operator is `λV W S.S(λx.V(lift(x))∨W(lift(x)))`. It preserves a single existential subject witness. Clause OR operates on `t,t`; these are not interchangeable category cases.
 
 | Construction contract | Scoped DRS | Asserted | Embedded (preorder, with multiplicity) |
 | --- | --- | --- | --- |
