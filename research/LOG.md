@@ -2201,3 +2201,11 @@ Prediction:7 independent gold rows from b89930c (3universal,2conditional object 
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-nested-prontoqa; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;29 fidelity contracts; sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-nested-prontoqa.
 
 Result gold-nested-prontoqa: all merged-result gates passed,29 scorer contracts, sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration gold-reflexives (500e157)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-reflexives; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;29 fidelity contracts; sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-reflexives.
+
+FOLIO extension result:7 independently approved rows score0exact/2wrong/5no-parse on unchanged accepted conditional source. No semantic/type/instrumentation cases excluded. Observations sealed research/runs/folio-extended-baseline; replay verifies same binary and each source hash before incorporating these cases once their gold branch is merged.
+
+Result gold-reflexives: all merged-result gates passed,29 scorer contracts, sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.

@@ -15,3 +15,5 @@
 - Active doc/gold serial queue: nestedPronto5f23bb2,reflexives500e157,coverage5e69ab2,PWresidualb910abd; each merged separately with all gates and fidelity. FOLIO7 extension diagnostic pending/in progress under sharedslot, research/runs/folio-extended-baseline.
 
 - Active serial integration: gold-nested-prontoqa (5f23bb2), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-nested-prontoqa; committing/pushing now.
+
+- Active serial integration: gold-reflexives (500e157), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-reflexives; committing/pushing now.
