@@ -13,7 +13,6 @@ main = do
   let checks = [(w ++ " is reserved", isClosedClass w) | w <- ["some", "no", "each"]]
         ++ [(w ++ " determiner has intended normal form", entryIs w meaning)
            | (w, meaning) <- [("some", someTerm), ("no", TNot someTerm), ("each", eachTerm)]]
-        ++ [("intersective restriction emits noun head before modifier", modifierOrder)]
         ++ [(w ++ " retains established determiner meaning", entryIs w meaning)
            | (w, meaning) <- [("a", someTerm), ("an", someTerm), ("all", eachTerm), ("every", eachTerm)]]
         ++ [(w ++ " rejects incompatible category " ++ category,
@@ -38,7 +37,3 @@ main = do
     entryWith w predicate expected = any (matches predicate expected) (closedEntries 0 w (cc "NP[nb]/N"))
     matches predicate expected (LexTerm t _ _) = alphaEq (normalize (apply t [noun, predicate])) expected
     matches _ _ _ = False
-    modifierOrder = case openTemplate "red" (cc "N/N") of
-      Just (LexTerm t _ _) -> alphaEq (normalize (apply t [noun, entity "Mira"]))
-        (TAnd (App noun (entity "Mira")) (App scope (entity "Mira")))
-      _ -> False

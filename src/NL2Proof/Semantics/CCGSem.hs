@@ -415,7 +415,7 @@ closedEntries i w c
 -- conservative 'verbLemma', so known inflections share one predicate.
 --
 -- * @N@: @\\x. w(x)@
--- * @N\/N@: @\\P \\x. P(x) & w(x)@ (intersective; nested modifiers remain inside-out)
+-- * @N\/N@: @\\P \\x. w(x) & P(x)@ (intersective; preserves descriptive-name order)
 -- * @S[f]\\NP@: @\\S. S(\\x. w(x))@ (predicative adjective or intransitive verb)
 -- * @(S[f]\\NP)\/NP@: @\\O \\S. S(\\x. O(\\y. w(x, y)))@ (transitive, subject wide scope)
 --
@@ -435,7 +435,7 @@ openTemplateWith _ w c = case c of
   CAtom "N" _ ->
     Just (LexTerm (Lam "x" TyE (App (pred1 lw) x_)) "noun (template)" Nothing)
   CSlash Fwd (CAtom "N" _) (CAtom "N" _) _ ->
-    Just (LexTerm (Lam "P" tyPred1 (Lam "x" TyE (TAnd (App p_ x_) (App (pred1 lw) x_))))
+    Just (LexTerm (Lam "P" tyPred1 (Lam "x" TyE (TAnd (App (pred1 lw) x_) (App p_ x_))))
                   "intersective modifier (template)" Nothing)
   CSlash Bwd s@(CAtom "S" _) (CAtom "NP" _) _ ->
     Just (LexTerm (Lam "S" tyGQ (App (Var "S") (Lam "x" TyE (App (pred1 (predName s)) x_))))

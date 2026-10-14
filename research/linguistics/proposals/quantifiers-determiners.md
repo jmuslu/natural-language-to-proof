@@ -159,25 +159,27 @@ negated existentials, relative restriction, and claim nesting. Any change to
 `N/N` licensing needs its own contrastive tests. If another branch owns
 `CCGSem.hs`, the coordinator integrates this proposal rather than parallel edits.
 
-## Bounded implementation after independent review
+## Final bounded implementation after independent review
 
-Implemented exact `NP[nb]/N` some/no/each meanings with closed-word reservation
-and noun-first ordering in the existing intersective modifier template. No
-category injection, nominal copula change, or broader modifier licensing was
-added. `test/QuantifierProposalSpec.hs` now has 25 direct semantic checks: all
-pass, including scope contrasts, established determiners and incompatible-tag
-rejections. The earlier seven-failure report above is the pre-repair result.
+Implemented exact `NP[nb]/N` some/no/each meanings with closed-word reservation.
+No category injection, nominal copula change, or broader modifier licensing was
+added. `test/QuantifierProposalSpec.hs` has 24 passing semantic checks, including
+scope contrasts, established determiners and incompatible-tag rejections.
 Full independent fidelity and release gates remain required on integration.
 
-### Remaining multi-modifier structural failure
+### Deferred modifier ordering: preserve definite identity
 
-The noun-first change repairs a **single** intersective modifier. Composition
-of *blue young cats* still produces conditions `cat, young, blue`, because the
-inner modifier combines first. The independent convention expects noun head
-then modifiers in surface order: `cat, blue, young`. Both have equivalent truth
-conditions for intersective adjectives, but structural fidelity remains wrong.
-`test/QuantifierModifierOrderKnownFailure.hs` records that expected order without
-copying parser output; it is intentionally separate from cabal and the 25 green
-acceptance checks. Repairing composition-wide ordering needs a later reviewed
-representation decision. Do not claim that all modifier ordering is solved or
-weaken gold to accept the inside-out sequence.
+An interim head-first modifier change exposed a genuine identity regression:
+*the bald eagle* denoted `eagle bald`. `describeIota` intentionally derives a
+rigid unique name from ordered predicate content; it has no retained syntactic
+head or POS information from which to reconstruct the old descriptive name.
+The coordinator and reviewer therefore withdrew **all modifier-order production
+changes**. Some/no/each remain implemented. The final direct quantifier suite
+has 24 green checks; the single-modifier order check was moved, not discarded,
+into `test/QuantifierModifierOrderKnownFailure.hs` alongside a multi-modifier
+case. Current output is `red,cat` and `blue,young,cat`, against independently
+expected `cat,red` and `cat,blue,young`. This diagnostic remains outside cabal
+and exits1 with both known failures. All original bald-eagle identity tests
+remain unchanged. A future modifier repair must preserve identity/provenance
+and meet gold ordering together; this branch does not claim modifier fidelity.
+The seven-failure report above is historical pre-repair evidence.
