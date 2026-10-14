@@ -15,7 +15,7 @@ for pass in OracleAccessors ReportedAccessors; do
     "$ROOT/test/compile-pass/$pass.hs" > "$BUILD/positive-$pass.log" 2>&1
 done
 
-for name in ConfirmedClaimUpdate ConfirmedOracleUpdate ConfirmedConstructor FusedConstructor FusedClaimUpdate FusedOracleUpdate ReportedConstructor ReportedChainUpdate ReportedConfirm PresupposedConfirm EmbeddedConfirm ClaimKindConstructor RawCanonConfirm ExtractedEmbeddedConfirm ClaimKindCoerce RawAssertedClaim CandidateConfirm FactClaimUpdate; do
+for name in ConfirmedClaimUpdate ConfirmedOracleUpdate ConfirmedConstructor FusedConstructor FusedClaimUpdate FusedOracleUpdate ReportedConstructor ReportedChainUpdate ReportedConfirm PresupposedConfirm EmbeddedConfirm ClaimKindConstructor RawCanonConfirm ExtractedEmbeddedConfirm ClaimKindCoerce RawAssertedClaim CandidateConfirm FactClaimUpdate GenealogyVerdict; do
   log="$BUILD/$name.log"
   if ghc -fno-code -i"$ROOT/src" -outputdir "$BUILD/$name" \
     "$ROOT/test/compile-fail/$name.hs" > "$log" 2>&1; then
@@ -28,6 +28,7 @@ for name in ConfirmedClaimUpdate ConfirmedOracleUpdate ConfirmedConstructor Fuse
     ClaimKindCoerce) expected="Couldn't match type.*Embedded.*Asserted" ;;
     RawAssertedClaim) expected="Variable not in scope:.*assertedClaim" ;;
     CandidateConfirm) expected="Variable not in scope:.*asCandidate" ;;
+    GenealogyVerdict) expected="Couldn't match expected type.*Confirmed.*actual type.*Verdict" ;;
     ReportedConfirm) expected="A reported claim cannot be confirmed" ;;
     PresupposedConfirm) expected="A presupposed claim cannot be confirmed" ;;
     EmbeddedConfirm) expected="An embedded claim cannot be confirmed" ;;

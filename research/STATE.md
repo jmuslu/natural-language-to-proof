@@ -1,14 +1,15 @@
 # Research state
 
-- Phase: C production algebra + D solver/export integration; A/B complete and pushed. E baselines active.
-- Last commit: `7afac4d` (pushed, oracle gate18 negatives); prior B `24c3cc2`. Branch `astra/research`.
+- Phase: D solver hardening and E comparisons; A/B/C complete and pushed, F generated benchmark ready, G audits documented.
+- Last commit: `abf7364`; preparing separate graph-capability gate commit. Branch `astra/research`.
 - Next three actions:
-  1. Commit/push verified C algebra + D infrastructure checkpoint; all gates passed1138, Python38.
-  2. Snapshot compiled persistent parser and collect gold-free caches on all four120-item benchmark samples.
-  3. Evaluate Horn/FOL with top/skeptical/credulous policies, then generate C graph prompts and fallback experiments.
-- Parser caches: `bash research/run-parser-caches.sh` for all480 sample items twice (default/POS), outputs `research/runs/phase-d/parses-{default,pos}.jsonl`; one model load per condition.
-- Running jobs: inventory agent FOLIO-low complete92/120; contemporaneous ProverQA-high session94974 and ProntoQA-low session61855, outputs `research/runs/phase-e-baselines/`. Root phase-cd gates complete green; logs `research/runs/phase-cd/`. Parser caches still active.
-- C candidate:53/53 properties/regressions, old Substrate114/114 compatibility; production integration complete, full gates pending. F64 generated benchmark matches independent expected outcomes; raw F run queued with inventory agent.
-- D candidate: Python solver/runner38/38; Haskell exporter22/22, shared reading API and Explain migration complete. z3-solver4.15.3.0 in research/.venv.
-- B results: default exact86.7% theory/90.5% q/32 whole; POS93.0%/95.6%/65 whole of120. 0 converted-wrong,16 typed/rejected bad meanings; round repaired, kind no JJ remains unsupported. Real-corpus8/8.
-- Open questions: retained wrong coordination alternatives; beam/cap completeness, FOL vs signed Horn benchmark conventions, graph source/capability binding. No main/tag changes.
+  1. Commit/push the passing19-case oracle gate separately, then fix the reproduced malformed-DRS crash and Horn deadline overrun.
+  2. Integrate ProofWriter-only domain policy and register/run the64-case retraction executable; run Python checks and full gates.
+  3. Seal parser caches by benchmark, measure B policies, then C graph and residual-translation pilots and full A/B/C/D comparisons.
+- Parser jobs: session69989 runs `bash research/run-parser-caches.sh`;480 items each default/POS, outputs `research/runs/phase-d/parses-{default,pos}.jsonl`. At latest check52/47 records, still ProverQA. Binary snapshotted.
+- Gates: graph-capability-gate complete1138 Haskell checks/11 suites,19 negative+2 positive oracle clients, all Explain checks.
+- D: original38 Python checks; audit regressions currently RED:8 malformed-condition errors and10ms Horn join takes0.983s. Domain adapter17green. Prover pilot12 B zero coverage for all policies.
+- E: all raw baselines complete. Current Prover low90/high89 of120; FOLIO low92 versus historicalhigh99; Pronto low116 versus historicalhigh120. Graph prompt reviewed; llm hardening and independent audit before calls.
+- F: production graph64/64 exact labels/support, rawlow63/64; benchmark adapter registration pending.
+- G: restored Threading loses pronoun coverage; Alternatives modifier/head asymmetry; SEAMS audit includes scoped-claim caveat.
+- Open: parser semantic errors, beam/cap completeness, benchmark domain conventions, fallback translation quality, costs and paired comparisons. No main/tag changes.

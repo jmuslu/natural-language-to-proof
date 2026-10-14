@@ -1023,3 +1023,139 @@ Explain cases passed after shared-reading refactor. Python38 tests passed. One
 nonfunctional name-shadow warning remains in JSON serializer, tracked for cleanup.
 Core C and scoped D infrastructure are ready for checkpoint; benchmark/cache and
 fallback experiments remain active, with no empirical accuracy claim from tests.
+
+### 2026-10-14 01:35 UTC — Phase E contemporaneous high complete; F raw pilot suite prediction
+Contemporaneous ProverQA-high finished120/120 with no operational/tool guard errors. Prediction for rescoring: high will match or beat low90/120; current input overhead should be close to low, not historical high. Command: `python3 research/runs/phase-e-baselines/summarize.py proverqa > research/runs/phase-e-baselines/proverqa-current-summary.jsonl`.
+F64 raw weak model prediction before calls: weakest cases will be retraction through conjunctive supports, cycles, and weak-versus-oracle boundaries; expect below exact graph64/64 despite explicit protocol. Prompt inspected: bench/retraction/spec.py reads only context/statement, no fixture or label. Command: `python3 research/runs/phase-e-baselines/run_guarded.py retraction > research/runs/phase-e-baselines/retraction-low.log 2>&1`; wrapper calls unchanged `python3 bench/common/run_codex.py retraction gpt-5.5 low 64 2`, stopping on error/tool use. Existing Pronto low uses2calls; F uses2 (total<=4). Common lenient parser is unsuitable for F labels; final scoring will use bench/retraction/score.py.
+
+### D-audit0 prediction — malformed JSON and inner-loop resource bounds, 2026-10-14
+
+Independent read-only review of the Python solver/runner after38 green tests.
+Prediction from source inspection: non-object conditions or query conditions raise
+uncaught AttributeError instead of an abstaining unsupported result; Horn joins
+check the deadline only before a whole rule and can significantly exceed1ms even
+on25 facts with a three-variable body. A2s outer subprocess deadline bounds the
+probe. Expected correct FOL controls: nonempty-domain universal-to-existential
+entailment True; reversing forall/exists cannot be proved True. Also inspect the
+ProntoQA Unknown mapping (policy question: Uncertain is off its two-label space).
+No production edits. Command:
+
+```
+research/.venv/bin/python research/runs/solver-audit/audit.py > research/runs/solver-audit/audit.log 2>&1
+```
+
+C/D checkpoint: `abf7364`, pushed to origin astra/research.
+
+## 2026-10-13 — Separate graph-capability gate strengthening prediction
+
+The new graph admission API requires an actual Confirmed capability, while an
+ordinary Verdict constructor must remain insufficient. Add the already checked
+GenealogyVerdict fixture to the oracle gate, without changing/removing prior cases.
+Prediction: nineteen negative checks, two positive consumers, and every other
+release gate pass. Exact command:
+`bash research/run-gates.sh graph-capability-gate > research/runs/graph-capability-gate-driver.log 2>&1`.
+This gate change will be its own commit per ASTRA_GOAL §0.6.
+
+## 2026-10-13 — D solver operational pilot prediction
+
+Prediction: the first twelve fixed ProverQA-hard items have low parser+solver
+coverage, especially under skeptical/capped enumeration; classical disjunction
+support alone will not overcome lexical/structural gaps. This is an operational
+pilot, not a powered empirical comparison. The first twelve complete parser
+records were sealed into an independent cache with their original fingerprints.
+Exact command: `research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/proverqa-pilot12.jsonl --out-dir research/runs/phase-d/pilot12 --benches proverqa --limit 12 --timeout-ms 2000 > research/runs/phase-d/pilot12-driver.log 2>&1`.
+
+### 2026-10-14 01:39 UTC — Phase E graph/translation runner red prediction
+Prediction: pure tests for label/gold prompt isolation, unsupported-scope residuals, scoped translation validation/freshening, retained parser successes, hash-resume checks, and hybrid routing/cost will fail because llm.py is absent. No C or translation model calls authorized yet; first render is reviewed by root. Exact command after writing tests: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-red.log 2>&1`. Fresh high result contradicts predicted improvement:89/120 vs low90/120, paired highonly3/lowonly4,p1; current high and low input means identical14460.7833, output311.8083vs175.0083; all120 rows firstattempt/noerrors/tools.
+
+### 2026-10-14 Phase D explicit domain-policy tests: red prediction
+
+The gold-free control confirms strict Unknown versus explicit-policy True for both signed Horn and Z3. The current cache audit contains no ProofWriter records yet, so no real ProofWriter policy comparison is claimed. Add17 tests before production adapter implementation: strict identity, scoped positive guard removal with localized quantifier provenance, preserved consequences/facts/negative/nested/modal content, nonempty range-restricted bodies, immutable input and auditable removed-guard decisions, and signed solver effects. Prediction: import fails because domain.py does not exist. Exact command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_domain.py -v > research/runs/phase-g/domain-red.log 2>&1`.
+
+### D-audit0 result and D-audit1 prediction, 2026-10-14
+
+All8 malformed-condition probes raised uncaught AttributeError as predicted (two
+backends × scalar/null/list theory conditions and scalar query). FOL controls pass:
+nonempty-domain entailment True; invalid quantifier reversal Unknown. ProntoQA
+maps Unknown to Uncertain, outside its allowed True/False labels; this is flagged
+as a coverage-policy question, not a soundness counterexample. The1ms Horn probe
+returned resource-limit in0.002238s, likely before the large join; this does not
+establish the suspected inner-loop overrun. Give the same25-fact/3-variable rule a
+10ms allowance to reach the join, bounding the entire probe at2s. Prediction:
+substantial overrun because the nested match loops do not check the deadline.
+
+```
+timeout 2s research/.venv/bin/python research/runs/solver-audit/timeout_case.py 10 > research/runs/solver-audit/timeout-10ms.log 2>&1
+```
+
+## 2026-10-13 — D malformed condition regression prediction
+
+Independent audit found non-object conditions escaping as AttributeError in both
+backends. Prediction: the new regression errors before an explicit DRS condition
+shape check; valid FOL/Horn cases remain unchanged. Exact command:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_solver.py -v > research/runs/d-malformed-red.log 2>&1`.
+
+Phase D domain-policy red result: import failure at missing domain module, as predicted. Implemented only the new domain.py module; general solver, Pipeline and cache sources are unchanged. Prediction: all17 domain tests pass, including explicit Horn/Z3 Unknown-to-signed-proof changes and scope-preservation negatives. Exact command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_domain.py -v > research/runs/phase-g/domain-green.log 2>&1`.
+
+### F-score audit prediction, 2026-10-14
+
+A read-through found a local lenient-scoring ambiguity: an explicit marker may
+currently accept the first of two competing labels in the same answer segment.
+Added `Final answer: Established / Unsupported -> None` to the existing test;
+expect red, then restrict a marker's answer segment to one distinct label. This
+changes scoring only, not the frozen sample or model prompt. Commands:
+
+```
+RETRACTION_BENCH_BIN="$PWD/research/runs/strength-design/retraction-bench" python3 -m unittest discover -s bench/retraction -p 'test_*.py' > research/runs/strength-design/retraction-marker-red.log 2>&1
+```
+
+Malformed-condition red result: eight subtest errors from AttributeError, as
+predicted. A second audit reproduced a72x Horn timeout overrun during a cubic
+join (25 facts,10ms budget,0.723s elapsed), because checks occurred only between
+rules. Prediction: the new25-fact regression also fails a generous250ms bound
+before loop-internal budget checks. Exact command:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_solver.py -v > research/runs/d-resource-red.log 2>&1`.
+
+F-score red result: the new ambiguity assertion failed as predicted (Established
+was accepted). Updated only the local scorer to reject multiple labels in the
+last marked answer segment. Prediction for rerun: all5 tests pass, including this
+additional assertion; graph score remains64/64 because graph replies are exact.
+
+```
+RETRACTION_BENCH_BIN="$PWD/research/runs/strength-design/retraction-bench" python3 -m unittest discover -s bench/retraction -p 'test_*.py' > research/runs/strength-design/retraction-marker-fixed.log 2>&1
+python3 bench/retraction/score.py bench/retraction/results/graph.jsonl > research/runs/strength-design/retraction-graph-score.json
+```
+
+### D-audit1 result and F-score audit result, 2026-10-14
+
+The10ms Horn join probe completed in0.722886s with resource-limit: roughly72× its
+stated budget. This establishes delayed resource enforcement inside one rule,
+not a logically incorrect answer. Reported to coordinator with the malformed-
+condition crashes; no root solver/runner production files edited by this agent.
+
+The local F scorer's marked-answer ambiguity fix passes all5 tests. Graph strict
+and lenient outcomes remain64/64. No frozen narrative or sample changed. The
+scorer now rejects competing labels after an explicit answer marker as documented.
+
+### 2026-10-14 01:48 UTC — graph runner green attempt and Pronto/F scoring prediction
+Red runner test failed with expected ModuleNotFoundError for llm.py. Implemented explicit graph projections, scoped translation validation, whole-sentence replacement, fresh binding names, and routed-cost hybrid. Prediction: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-green.log 2>&1` should pass19 semantic tests (no model calls); first concrete prompt rendering may expose backend/export incompatibilities. Command: `research/.venv/bin/python bench/reasoning/llm.py prepare --bench proverqa --parses research/runs/phase-d/parses-default.jsonl --backend z3 --or-semantics proverqa --limit 1 --output research/runs/phase-e-baselines/proverqa-graph-prompt-pilot.jsonl`. Pronto finished120/120 no errors/tools. Prediction remains near ceiling strict120 or119; command `python3 research/runs/phase-e-baselines/summarize.py prontoqa > research/runs/phase-e-baselines/prontoqa-low-summary.jsonl`.
+
+### 2026-10-14 01:39 UTC — baseline completion; F scoring prediction; timestamp correction
+The previous two runner entries used manually advanced timestamps01:39/01:48; wall clock is now2026-10-14 01:39 UTC, and those entries actually preceded this entry. Sequence, commands and predictions remain correct; subsequent logs use datetime UTC. Graph tests18/18 green (prediction said19, actual count18), first prompt prepared successfully. Pronto low116/120, four True→False errors, versus savedhigh120/120; paired exactp.125, zeroerrors/tools, allfirstattempt; inputmean14321.0417/output26.55. Raw F finished64/64, zeroerrors/tools. Before local scoring prediction: explicit protocol probably makes raw accuracy high, but conjunction/retraction weakness may remain. Exact command: `python3 bench/retraction/score.py bench/retraction/results/results_gpt-5.5__low.jsonl > research/runs/phase-e-baselines/retraction-low-summary.json`.
+
+Phase D domain adapter green:17/17 tests passed (including Horn and Z3 signed controls). Phase G six-seam decision audit written to research/SEAMS.md using existing B/C/D/G measurements. Added a static caveat that bare CanonCond confirmation/fusion does not carry the surrounding ctUniverse; the whole-DRS exporter avoids losing binding scope. No new claim of a production exploit or corpus domain-policy improvement is made. Initial cache snapshot15 ProverQA records contained3 direct bound sortals,0 ProofWriter; only gold-free structures inspected.
+
+### 2026-10-14 01:40 UTC — graph runner hardening prediction
+Code review found a binary-label prompt bug (Pronto false incorrectly also described as neither), missing legacy ProofWriter label adapter, and translation schema accepting model provenance. Before fixes, extend tests for binary labels, strict duplicate/provenance rejection, retained-scope alignment, and explicit abstain/translation routing; predict these expose failures. Exact command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-hardening-red.log 2>&1`. F raw scored63/64 strict=lenient, sole factive Conflict→WeakOnly; family conjunction/cycles/rules each8/8 falsifies predicted main weaknesses. No model calls in hardening.
+
+### 2026-10-14 01:40 UTC — graph hardening green prediction
+Hardening red21tests exposed binary-label wording, accepting model provenance, and absent explicit fallback API (2failures/1error). Fixed these and duplicate-key validation; ProofWriter legacy labels covered. Prediction:22tests pass, and regenerated first Prover prompt preserves prior premises/residuals while adding query-reading counts. Commands: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-hardening-green.log 2>&1`; `research/.venv/bin/python bench/reasoning/llm.py prepare --bench proverqa --parses research/runs/phase-d/parses-default.jsonl --backend z3 --or-semantics proverqa --limit 1 --output research/runs/phase-e-baselines/proverqa-graph-prompt-pilot.jsonl`. No model calls.
+
+## 2026-10-14 — graph capability gate result
+
+All four gates passed on the graph-capability-gate run:1138 Haskell checks in11
+suites,19 negative oracle clients and2 positive clients, all Explain checks. The
+isolated gate change adds the already-rejected GenealogyVerdict regression so a
+bare Verdict can never substitute for a sealed Confirmed witness. Prediction held;
+this strengthens the gate and changes no production behavior. This gate-only
+checkpoint follows abf7364; solver audit fixes and Phase F remain unstaged.
