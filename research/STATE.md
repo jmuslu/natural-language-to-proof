@@ -1,6 +1,6 @@
 # Research state
 
-Last pushed: 7677a43; pending reviewed source merge b92f219 on astra/research.
+Last pushed: 0bc2323; reviewed either source and results committed on astra/research.
 
 Original ASTRA_GOAL remains active; linguistic design first overrides phase order.
 No new model/LLM/answer benchmarks until representative ProverQA >=90% exact and
@@ -13,8 +13,8 @@ Never main/tags/raw datasets/secrets. Explicit staging and all gates before push
 
 ## Next three actions
 
-1. Final independent prose approval, explicitly stage and commit current either
-   source merge plus cabal/result/learner docs/STATE/LOG; push origin astra/research.
+1. Source/result/prose approved (87d1658), committed and pushed0bc2323.
+   Resume reviewed docs queue below; all gates per serial merge.
    Source/default and optional results already independently approved. No source
    changes after gates. Default all208 observations byte-identical accepted
    baseline d3e34d6a;70 exact/36 strictwrong/101 no-parse/1 incomplete. Explicit
@@ -58,3 +58,5 @@ research/{plot-risk-coverage.py,requirements-figures.txt}. No stash/reset/add-al
 State history in ignored research/runs/state-before-either-release.md;
 worktree evidence archives retained. Original B–H unfinished. Inventories and
 CONSTRUCTIONS/DESIGN delivered; further construction fidelity work remains.
+
+- Active serial integration: prover-panel-contract (37b9776), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/prover-panel-contract; committing/pushing now.
