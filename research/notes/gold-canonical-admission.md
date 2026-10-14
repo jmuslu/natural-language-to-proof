@@ -22,3 +22,19 @@ original2expected failures. The14new prototype controls pass. Haskell synthetic
 canonicalizer witness confirms nested repeated r0 declaration survives. All
 fixture hashes rechecked unchanged after tests; frozen190 hash explicitly checked
 against freeze.json. No gold production policy is claimed implemented.
+
+## Authorized production candidate
+
+Review approved d1ef6a9; root explicitly authorized gold-only helper wiring.
+Added validate_gold_references after existing validate_meaning in validate_case.
+No observation/scoring/exporter changes. Called both original xfail test methods
+directly; unchanged assertions pass. Removed exactly their2decorators. Unique
+14controls now call production validator, no recursive prototype; noncanonical
+and duplicate observed structures remain wrong-but-typed.
+
+Full111/111tests pass with accepted NOMINAL_PROTOCOL_EXPORTER, zero skips/xfail.
+Exporter SHA5fb8272a294621f315df69a168f2ec340930f26710648701c55b607b9bb0dba5
+verified against accepted report. All audited fixture hashes unchanged; all
+worktree/root20files177rows185readings plus frozen190198readings admit unchanged.
+No CCG loads. Root will need its integration gates/fresh190 after source hashes
+change; this local result is not authorization to reuse stale execution seals.

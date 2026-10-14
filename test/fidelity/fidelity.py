@@ -163,6 +163,60 @@ def semantics_contract_id(row):
     return identifier
 
 
+def validate_gold_references(drs_value, reading_index=0):
+    """Gold-only policy after schema/scope validation; never applied to observations.
+
+    Mirror canonicalize's first-reference traversal. Additionally require a
+    single declaration per identity, a gold policy stricter than the exporter.
+    Claim copies are not new declarations; each allowed reading starts afresh.
+    """
+    encountered = set()
+    declarations = set()
+
+    def reference(name, path, declaration=False):
+        if declaration:
+            if name in declarations:
+                raise ValueError(f'gold[{reading_index}] duplicate declaration {name} at {path}')
+            declarations.add(name)
+        if name not in encountered:
+            expected = f'r{len(encountered)}'
+            if name != expected:
+                raise ValueError(f'gold[{reading_index}] first occurrence {name}, expected {expected} at {path}')
+            encountered.add(name)
+
+    def term(value, path):
+        if 'ref' in value:
+            reference(value['ref'], path)
+
+    def drs(value, path):
+        for index, name in enumerate(value['universe']):
+            reference(name, path + ('universe', index), declaration=True)
+        for index, condition in enumerate(value['conditions']):
+            cond(condition, path + ('conditions', index))
+
+    def cond(value, path):
+        tag = value['tag']
+        if tag == 'pred':
+            for index, argument in enumerate(value['args']):
+                term(argument, path + ('args', index))
+        elif tag == 'eq':
+            term(value['left'], path + ('left',))
+            term(value['right'], path + ('right',))
+        elif tag in ('not', 'presup'):
+            drs(value['body'], path + ('body',))
+        elif tag in ('imp', 'or'):
+            drs(value['left'], path + ('left',))
+            drs(value['right'], path + ('right',))
+        elif tag == 'att':
+            for index, holder in enumerate(value['holders']):
+                term(holder, path + ('holders', index))
+            drs(value['body'], path + ('body',))
+        else:
+            raise ValueError('unexpected condition after schema validation')
+
+    drs(drs_value, ('drs',))
+
+
 def validate_case(row):
     if not isinstance(row,dict) or not {'id','construction','text','origin','gold'}<=set(row):
         raise ValueError('case requires id, construction, text, origin, gold')
@@ -170,7 +224,9 @@ def validate_case(row):
     if not isinstance(row['origin'],dict) or row['origin'].get('kind') not in ('authored-control','benchmark-adapted'):
         raise ValueError('origin must declare authored-control or benchmark-adapted')
     if not isinstance(row['gold'],list) or not row['gold']:raise ValueError('gold must list manual allowed readings')
-    for value in row['gold']:validate_meaning(value)
+    for reading_index, value in enumerate(row['gold']):
+        validate_meaning(value)
+        validate_gold_references(value['drs'], reading_index)
     semantics_contract_id(row)
     return row
 

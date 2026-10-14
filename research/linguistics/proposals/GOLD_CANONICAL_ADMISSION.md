@@ -1,9 +1,10 @@
 # Canonical-reference admission for independently authored gold
 
-Proposal based on accepted `b2e5dc4`; no production validator/scorer/exporter or
-fixture has changed. The two expected failures in
-`test/fidelity/test_scope_contract_review.py` remain intact. New independent
-controls and a **test-local prototype** live in
+Reviewed design based on accepted `b2e5dc4`, now a bounded implementation
+candidate awaiting final source review. The gold-only helper is wired through
+validate_case; observation/scorer/exporter behavior and fixtures are unchanged.
+The two original rejection assertions now pass unchanged; only their
+expectedFailure decorators were removed. Independent regressions live in
 `test/fidelity/test_gold_canonical_admission_proposal.py`.
 
 ## Two different contracts
@@ -57,10 +58,9 @@ still checks root universe retention, schema, claim-reference membership and
 explicit disjunction annotation coverage. This change neither computes the
 expected claim classification nor certifies the manual claim labels as correct.
 
-The test prototype returns its input without mutation. A future reviewed
-implementation should expose a clearly gold-specific helper called from
-`validate_case` after ordinary meaning validation, with reading index and path
-in its error. Do not call it on observations in evaluate_case, matches,
+The helper returns control without mutating input. The reviewed implementation
+exposes validate_gold_references, called from `validate_case` after ordinary
+meaning validation, with reading index and path in its error. Do not call it on observations in evaluate_case, matches,
 first_difference, response validation or replay comparison. Do not normalize
 values, merge alternatives, remove fixtures, or change denominators/statuses.
 
@@ -72,8 +72,8 @@ equality, attitude holders, shared numbering across presupposition/negation,
 disjunction numbering versus accessibility, claim copies and independent allowed
 readings. A valid no-binder case remains valid. Noncanonical and duplicate-binder
 observations still score wrong-but-typed. Existing free-reference rejection is
-not weakened. These tests exercise the prototype; they do **not** claim that
-production validate_case now implements it.
+not weakened. The original prototype tests now exercise production validate_case directly;
+no duplicate prototype or recursive validation wrapper remains.
 
 Read-only fixture audit at branch base:
 
@@ -91,7 +91,7 @@ row/reading count and error list in ignored
 observing any parser result or changing a fixture. No semantic score is inferred
 from admission success.
 
-## Review and implementation boundary
+## Review and implementation boundary (original plan)
 
 Keep both original expected-failure assertions while this is a proposal. After
 independent approval and actual production wiring, remove only the expectedFailure
@@ -99,9 +99,32 @@ decorators if their unchanged assertions pass for the intended reasons, and
 retain explicit regression tests that observations still receive existing
 statuses. That is resolution of a reviewed gold policy, not deleting failing
 requirements to make a test count green. Root owns the integration and gates.
-No corpus/model/benchmark launch or production patch is part of this task.
+The initial proposal contained no production patch; subsequent bounded wiring
+was explicitly authorized after review. No corpus/model/benchmark launch occurs.
 
 Validation of this proposal: full Python discovery ran 111 tests (107 passed,
 2 skipped, the original 2 expected failures); all 14 new prototype controls pass.
 All audited fixture bytes were rechecked unchanged after validation. The two
 skips are not silently counted as passes. No production admission fix is claimed.
+
+## Bounded implementation checkpoint
+
+After reviewer approval of d1ef6a9 and explicit coordinator source authorization,
+validate_gold_references is called only from validate_case, after each reading's
+existing validate_meaning. Original expected-failure assertions were invoked
+unchanged and passed before their two decorators were removed. The unique test
+file now calls production validation directly; its historical acceptance check
+was replaced by the already reviewed rejection assertion, not a recursive helper.
+No changes to observation_error, evaluate_case, matches, summarize, exporter or
+fixtures were made.
+
+The full suite with NOMINAL_PROTOCOL_EXPORTER bound to the accepted
+nominal-policy-integration/fidelity-candidate passes **111/111**, with zero skips
+and zero expected failures. The binary hash was checked against its accepted
+fresh.json: `5fb8272a294621f315df69a168f2ec340930f26710648701c55b607b9bb0dba5`.
+Its protocol checks use hand mode and invalid flags only; no CCGbank load occurs.
+Both noncanonical and duplicate-declaration observation controls still return
+wrong_but_typed, not error. All177 committed gold rows and frozen190 rows pass
+production admission with every byte hash unchanged; current root's20fixture
+files were independently checked too. This admits fixtures, not semantic claims.
+Final source review and coordinator integration gates remain required.
