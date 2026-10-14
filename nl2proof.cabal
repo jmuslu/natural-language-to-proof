@@ -324,3 +324,21 @@ test-suite scope-oracle
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+-- Gold-free scoped meanings for independently authored construction fidelity tests.
+executable nl2proof-fidelity-json
+    import:           warnings
+    hs-source-dirs:   test/fidelity
+    main-is:          Export.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- POS-licensed proper names must retain rigid meanings across N and NP tags.
+test-suite name-sem
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          NameSemSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof

@@ -314,8 +314,9 @@ data LexSign = LexSign
 
 -- | Every interpretable reading of token @i@: offered categories filtered
 -- through the semantic lexicon. Closed-class words use only their table
--- entries; names turn each offered @N@ into a name @NP@; everything else uses
--- the open-class templates.
+-- entries; licensed names lift offered @N@ or use an already offered ordinary
+-- @NP@. The category alone never licenses a name. Everything else uses the
+-- open-class templates.
 lexicalSigns :: SemModel -> Int -> String -> [LexSign]
 lexicalSigns m i w
   | isClosedClass w || all (not . isWordChar) w =
@@ -329,7 +330,30 @@ lexicalSigns m i w
     tags = offeredTags m (i == 0) w
     open = [ LexSign c (tagNote c it) s | (c, s) <- tags ++ thatTags ++ posTags
                             , Just it <- [openTemplateWith (`Set.member` smThatAttested m) w c] ]
-    names = [ LexSign (CAtom "NP" []) (nameItem w) s | (CAtom "N" _, s) <- tags ]
+    names = [ LexSign c' (withNote (nameNote c) (nameItem w)) s
+            | (c, s) <- tags, Just c' <- [nameCategory c] ]
+    -- NP[nb] is non-bare, not an expletive or a pending conjunct. Keep that
+    -- ordinary NP feature; do not erase expl/thr/conj to create an individual.
+    nameCategory (CAtom "N" _) = Just (CAtom "NP" [])
+    nameCategory c@(CAtom "NP" fs)
+      | all (== Feat "nb") fs = Just c
+    nameCategory _ = Nothing
+    nameNote c = Stipulation
+      { stKind = "name-lexicon"
+      , stChoice = "rigid name from " ++ show c
+      -- These are available lexical alternatives, not necessarily complete
+      -- sentence readings. NameOnly generates none; do not invent a candidate
+      -- that would make the decision trace report a false ambiguity count.
+      , stAlternatives = case nameStatus m (i == 0) w of
+          NameOrOther -> [show c' ++ ": " ++ gloss
+                         | LexSign c' (LexTerm _ gloss _) _ <- open]
+          _ -> []
+      , stWhy = case posCounts (smPOS m) (lookupForm m (i == 0) w) of
+          ((p, _) : _) -> "dictionary majority POS " ++ p
+            ++ " licenses the proper-name meaning; N lifts to NP and ordinary NP keeps its category"
+          [] | i == 0 -> "unseen sentence-initial capital: the existing casing policy offers a name alternative alongside open-class meanings; capitalization here does not prove identity"
+             | otherwise -> "unseen noninitial capital: the existing casing policy licenses a name; the category alone is not name evidence"
+      }
     isWordChar c = c `notElem` ".,;:!?\"'()"
     lw = map toLower w
     restrictiveTag c

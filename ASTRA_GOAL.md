@@ -93,6 +93,86 @@ The owner's aversions are part of the spec: no stochastic core (probabilistic pa
 
 These phases are an order, not a cage. If you find something more important, do it and explain why in the log. Each phase lists questions to answer and a definition of done. For every experiment, **write your prediction in `research/LOG.md` before you run it.** Then record the result and whether the prediction held.
 
+
+### Owner amendment: linguistic design first (2026-10-14)
+
+This amendment overrides the original phase order. The bottleneck is linguistic
+design, not further end-to-end benchmark runs.
+
+1. Pause new benchmark and LLM launches. Let already-running jobs finish and save
+   their outputs. Launch no new A/C/D runs until item6 below is met.
+2. Recover the finite construction inventory of every theory/question sentence in
+   ProverQA, ProofWriter and ProntoQA, with construction frequency counts. Audit a
+   FOLIO sample and identify constructions outside the generated template set.
+   Deliver `research/linguistics/CONSTRUCTIONS.md`.
+3. For each construction, specify CCGbank word categories and derivation; closed-
+   class lambda terms and open-class templates with Montague types; intended DRS
+   and Asserted/Reported/Presupposed/Embedded claims; current Explain behavior and
+   first divergence; and a general category/template or closed-class fix. Compare
+   with Boxer (Bos2008) and ccg2lambda English semantic_templates_en*.yaml
+   (Mineshima etal.2015), explaining adopt/adapt/reject decisions. Address N/NP and
+   unary N-to-NP, proper names, particles/PP ambiguity, reflexives, conjunction,
+   coordination, S[adj]/S[pss]/S[ng], and punctuation. Deliver learner-facing
+   `research/linguistics/DESIGN.md`, tied to STUDY_PLAN Units2(categories),
+   3(interface), and4(DRS), explaining why the templates are appropriate.
+4. Build a hand-checked gold set under `test/fidelity/`, at least2–3 benchmark-
+   derived sentences per construction with expected canonical DRS/claim table,
+   plus a runner scoring exact, wrong-but-typed, and no-parse per construction.
+   Meaning fidelity, especially wrong-but-typed counts, is now the main metric.
+5. Implement the general rules in frequency order. After each, rerun fidelity and
+   coverage, report per construction, and never trade fidelity for coverage. Keep
+   STUDY_PLAN's Known deviations truthful.
+6. Resume Phase E C/D with Flash-Lite/Gemma26B only after ProverQA construction
+   fidelity is high (target>=90% exact sentences and near-zero wrong-but-typed).
+
+All section0 ground rules remain in force. Full benchmark datasets and bulk
+outputs remain uncommitted; compact authored/gold samples and aggregate counts
+may be committed. The original later phases remain pending behind this gate.
+
+### Owner amendment: parallelism and continuation (2026-10-14)
+
+The owner explicitly grants full permission to use any available saved Codex
+account usage resets as needed to continue this research goal, without asking
+again. Usage limits do not cancel the goal: resume after resets, preserve all
+uncommitted work, and retain the linguistic-design-first redirect and fidelity
+gate. This authorization persists across coordinator/session refreshes.
+
+The owner authorizes all saved usage resets and requests greater parallelism,
+including specialist subagents spawned by subagents. Use available concurrency
+for independent work, with explicit file ownership and independent fidelity review.
+The owner also authorized changing local Codex configuration: the requested cap is
+now eight subagents (`agents.max_concurrent_threads_per_session = 8`). The previous running
+session rejected a fourth subagent; configuration on disk is not evidence that
+the active runtime accepted it. A CLI resume or app refresh must verify the actual
+available slots before claiming a larger team.
+
+After any refresh, model switch, CLI resume, usage reset, or context loss, read
+`research/STATE.md` first and resume its next three actions on this same branch.
+Retain the linguistic-design-first amendment above: no new answer benchmarks or
+LLM runs until the fidelity gate is met. Do not restart completed phases or lose
+uncommitted work. The existing task and its original definition of done remain
+active; these operational changes do not replace the research objective.
+
+### Owner amendment: isolated worktrees and memory (2026-10-14)
+
+Run about eight useful concurrent specialists in separate `~/astra-wt/<name>`
+worktrees on `astra/<name>` branches, created from `astra/research`. Verify actual
+spawns rather than equating the stated32-thread limit with observed capacity.
+Separate benchmark inventory workers, benchmark gold authors, construction-family
+design/implementation workers, and independent review. Workers commit only their
+own explicit paths and keep notes in `research/notes/<name>.md`. The coordinator
+alone edits STATE.md, LOG.md and nl2proof.cabal on astra/research, reviews/merges
+one branch at a time, reruns fidelity after each merge, and runs all release gates
+on the merged result before pushing. Remove merged/abandoned worktrees; preserve
+all original dirty work and transfer needed current artifacts explicitly.
+
+The machine has15GiB RAM. Measure one Explain CCGbank load peak RSS before parallel
+loads and record it in LOG. Bound simultaneous loaders by floor(10GB / peak RSS)
+using shared locks/tokens, with a conservative lower limit permitted. Prefer sealed
+parse caches. Full-access/no-approval restart is owner-authorized because bwrap
+network namespace initialization is broken. These operations do not relax the
+linguistic redirect, fidelity gate, saved-reset authorization or data/branch rules.
+
 ### Phase A: Orient (short)
 
 - Build, run all gates, run the explain tool on the sentences in STUDY_PLAN's Known deviations table, and confirm each deviation reproduces.

@@ -648,7 +648,7 @@ itemSource _ w it = case it of
   LexTerm _ gloss _
     | isClosedClass w || all (`elem` ".,;:!?\"'()") w ->
         "closed-class entry (CCGSem table, keyed by word+category): " ++ gloss
-    | gloss == "proper name" -> "proper name (CCGSem.nameItem; POS dictionary says NNP)"
+    | gloss == "proper name" -> "proper name (CCGSem.nameItem; POS/casing policy, see name-lexicon decision)"
     | otherwise -> "open-class template (CCGSem, by category shape): " ++ gloss
 
 shortSource :: String -> String

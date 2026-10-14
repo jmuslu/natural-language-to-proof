@@ -1550,3 +1550,525 @@ adapter, standalone scoring, deterministic F benchmark and G seam probes.
 LLM provider adaptation and plotting are intentionally still in progress and
 untracked; they will receive their own verified checkpoint. All datasets, caches
 and model replies remain local/ignored.
+
+### 2026-10-14 01:55 UTC — plotting smoke and incomplete-report rejection prediction
+
+Pinned Matplotlib3.10.7 installed successfully in research/.venv with resolved versions recorded in research/requirements-figures.txt. New plot-risk-coverage.py consumes report.py JSON only, requires matched complete default/POS matrices and request identities, plots all observed threshold curves for every policy, and annotates zero-answer points without imputing precision. Prediction: a hand-generated24-run plotting fixture writes SVG/PDF in ignored research/runs/figure-smoke; a copy with pending IDs is rejected without a final plot. No real partial benchmark is plotted.
+
+Exact commands: `research/.venv/bin/python research/runs/figure-smoke/make-fixture.py`; `research/.venv/bin/python research/plot-risk-coverage.py research/runs/figure-smoke/report.json --out-dir research/runs/figure-smoke > research/runs/figure-smoke/render.log 2>&1`; `research/.venv/bin/python research/plot-risk-coverage.py research/runs/figure-smoke/incomplete.json --out-dir research/runs/figure-smoke/rejected > research/runs/figure-smoke/reject.log 2>&1`.
+
+### E-primary-small-model baseline result, 2026-10-14
+
+Primary historical raw reports match all supplied strict scores. Format compliance
+is a large issue for Gemma26: ProverQA strict37/120 with47 answered, but lenient82/120;
+FOLIO77 strict/81 lenient with116 strict answered; ProofWriter60/69 with103 strict
+answered; ProntoQA109/109 with120 answered. Flash-Lite is61,81,75,96 respectively
+under both parsers with120 answers each. Therefore a strict-score advantage alone
+cannot establish improved reasoning; every C/D comparison retains both parsers.
+Gemma final-attempt-only retry costs affect7 Prover rows(10retries),5 FOLIO(5),
+26 ProofWriter(37),6 ProntoQA(7); Flash-Lite has8 PW retry rows(8). Reports mark
+those total costs unknown and keep their reported usage as a lower bound.
+C/D zero completed rows are pending, not observed zero accuracy, and paired claims
+are withheld. Inventory plans primary files <bench>-flash-lite-c120-scored.jsonl
+and <bench>-gemma26b-c120-scored.jsonl under research/runs/phase-e-baselines.
+The old GPT C main was interrupted at25 Prover/3 FOLIO records and remains an
+exploratory partial run with possible unreported in-flight cost; it is not primary.
+
+### 2026-10-14 01:56 UTC — plotting smoke visual inspection prediction
+
+Synthetic24-run plotting smoke succeeded, producing61KiB SVG and26KiB PDF in ignored output. Re-render the same synthetic chart to a temporary PNG only for visual inspection (final research/figures stays SVG/PDF only). Prediction: all six facets, labels, zero-answer annotations and eight legend styles remain legible with no clipping.
+
+Exact command: `research/.venv/bin/python research/runs/figure-smoke/preview.py > research/runs/figure-smoke/preview.log 2>&1`.
+
+### 2026-10-14 01:57 UTC — plotting smoke result
+
+The synthetic24-run figure rendered successfully (61KiB SVG,26KiB PDF), with60 zero-answer threshold points omitted and explicitly annotated. Visual inspection of the ignored PNG preview confirmed all six facets, labels and legend are legible with no clipping. The deliberately incomplete report exited1 with `incomplete run; refusing a final figure`; no rejected output directory was created. Final figures remain pending complete default/POS matrix reports. No inference code or benchmark predictions changed.
+
+### 2026-10-14 01:57 UTC — Gemini/Gemma provider adapter red prediction
+Implement primary user-selected weak models via unchanged common/run_gemini.call, requiring pre-sourced environment before lazyimport (never unit-test with realkey/module). Predictions: new mock-only tests fail for absent provider adapter, provider-specific hashes/usage aliases, DailyQuota stop, and8s scheduling. Also protect PWlenient Unknown normalization while sourceversionchanges for newprimary. Exact command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-gemini-red.log 2>&1`. No actual Gemini request beforegreen and rootprotocol.
+
+## 2026-10-14 — remaining B matrix predictions
+
+Default/POS caches have passed all ProofWriter records (444/401 total), and the
+sealed FOLIO default120 cache is complete. Predict FOLIO remains low coverage with
+Z3 at least as expressive as Horn, ProofWriter gains some proof coverage under the
+explicit domain policy, and POS improves coverage without proving English fidelity.
+Ranking-mass filtering will sacrifice much coverage on ambiguous long theories.
+No chosen backend/policy depends on these forthcoming labels. Commands for the
+next sequential default batch:
+`research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/folio-default120.jsonl --out-dir research/runs/phase-d/folio-default-matrix --benches folio --limit 120 --timeout-ms 2000 > research/runs/phase-d/folio-default-matrix.log 2>&1`
+`python3 research/seal-parser-cache.py research/runs/phase-d/parses-default.jsonl proofwriter research/runs/phase-d/proofwriter-default120.jsonl`
+`research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/proofwriter-default120.jsonl --out-dir research/runs/phase-d/proofwriter-default-matrix --benches proofwriter --limit 120 --timeout-ms 2000 > research/runs/phase-d/proofwriter-default-matrix.log 2>&1`
+`research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/proofwriter-default120.jsonl --out-dir research/runs/phase-d/proofwriter-default-domain-matrix --benches proofwriter --domain-policy proofwriter --limit 120 --timeout-ms 2000 > research/runs/phase-d/proofwriter-default-domain-matrix.log 2>&1`.
+
+### E-provider-usage prediction, 2026-10-14
+
+Primary Google documentation (accessed2026-10-14) defines promptTokenCount as
+including cachedContentTokenCount; candidatesTokenCount and thoughtsTokenCount
+are separate output counters; totalTokenCount includes prompt, tool-use prompts,
+thoughts and candidates. Source: https://ai.google.dev/api/generate-content#UsageMetadata.
+Existing report already aliases basic Gemini fields but lacks native-field
+aggregates, tool-input accounting and reported-total consistency diagnostics.
+Tests will preserve original usage dictionaries, count cache/thoughts exactly once,
+retain authoritative reported totals if components disagree, and keep retry totals
+unknown. Prediction before fix: basic aliases pass but native counters, tool totals
+and inconsistent-total cases fail. No provider calls/key access.
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-provider-red.log 2>&1
+```
+
+### 2026-10-14 01:57 UTC — Gemini/Gemma adapter green prediction
+35tests red with3failures/4errors as predicted. Implemented lazy env-required provider adapter, native usage retention/validity, explicit no-tools API request guard, provider-specific preamble/hash, DailyQuota errorrows with unknownattemptcount,8s startspacing and throttlemetadata, plus PWlenient mapping. Prediction:35mock-only tests pass; exact command `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-gemini-green.log 2>&1`. No module import using realkey or network in tests.
+
+### E-provider-usage red result and green prediction, 2026-10-14
+
+Of22 tests,18 pass and four fail at the expected absent fields/ignored native total.
+Added visible-output and tool-input counters, raw numeric provider aggregates,
+reported versus computed totals, discrepancy IDs, and missing-component counts;
+input records remain untouched. Prediction: all22 tests pass. Then refresh saved
+baseline reports and compare every empirical Gemini native total with its component
+sum; expect equality on ordinary text rows, while retry costs remain incomplete.
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-provider-tests.log 2>&1
+research/.venv/bin/python research/runs/phase-e-reports/run-primary.py > research/runs/phase-e-reports/primary-provider.log 2>&1
+```
+
+### 2026-10-14 01:58 UTC — three answered FOLIO errors: first-divergence audit prediction
+
+Root reports completed default FOLIO Z3 top3/120 answered, all three wrong; policy and inference source remain frozen. Prediction: at least one false proof originates in a well-typed but unfaithful premise/query meaning (scope, lexical role or negation), rather than missing premises alone. A valid proof from faithfully represented accepted premises remains monotonic despite other missing content; missing text cannot by itself excuse a wrong signed proof. Inspect every answered item and its saved proof support, original text, selected lambda forms and complete scoped DRS. Labels are used only for this post-inference diagnosis, never sent to a parser/model or used to change predictions. No new CCG load planned.
+
+Exact command: `research/.venv/bin/python research/runs/phase-g/audit-folio-answers.py > research/runs/phase-g/folio-answered-audit.log 2>&1`.
+
+### 2026-10-14 01:58 UTC — PRIMARY Flash-Lite/Gemma26 fixed12 C pilot predictions
+Root authorizes specified primary weak models now;35mocktests green and same reviewed graphprompt. Prediction: bothAPI pilots return12responses with nativeusage/no tools, though Gemma may give non-strict answer formatting (savedrawstrict37/120vslenient82/120). Semantic graph errors may harm both; do not tune based on labels. Pace8s minimum startinterval/model, one sequentialworker/model, two modelsparallel. Ownerkey is only sourced insideexecutionprocess with shelltracingdisabled; nokeyfilecontents/keyoutput requested. Exact commands, each inside `set +x; set -a; source /home/gram/.config/nl2proof/gemini.env; set +a; exec ...`:
+`research/.venv/bin/python bench/reasoning/llm.py call --bench proverqa --parses research/runs/phase-d/proverqa-pilot12.jsonl --backend z3 --or-semantics proverqa --limit 12 --mode graph --provider gemini --model gemini-3.1-flash-lite --effort budget0 --pace-seconds 8 --output research/runs/phase-e-baselines/proverqa-flash-lite-c-pilot12-raw.jsonl > research/runs/phase-e-baselines/proverqa-flash-lite-c-pilot12.log 2>&1`
+`research/.venv/bin/python bench/reasoning/llm.py call --bench proverqa --parses research/runs/phase-d/proverqa-pilot12.jsonl --backend z3 --or-semantics proverqa --limit 12 --mode graph --provider gemini --model gemma-4-26b-a4b-it --effort minimal --pace-seconds 8 --output research/runs/phase-e-baselines/proverqa-gemma26b-c-pilot12-raw.jsonl > research/runs/phase-e-baselines/proverqa-gemma26b-c-pilot12.log 2>&1`
+Firstdailyquota/error stops scheduling; commonAPIcall honors retryDelay and exponentialbackoff on429. Pilots excluded from main120 cost/metrics.
+
+### E-provider-usage result and completed-default-matrix reporting prediction, 2026-10-14
+
+All22 report tests pass. Across960 primary historical Gemini rows (two models ×
+four benchmarks ×120), native totalTokenCount agrees with the sum of reported
+prompt, candidate, thought and tool-input counters on every row. No input/output
+component is missing. Native/provider totals are preserved; multi-attempt costs
+remain lower bounds. Missing thoughts fields remain unreported rather than zero.
+
+Root reports completed default ProverQA/FOLIO matrices. Prediction for analysis:
+all18 Prover configurations have zero answers, so every observed-mass selective
+risk is undefined. FOLIO Horn has no answers; Z3 top/skeptical has3 wrong answers
+and credulous1 wrong answer, so nonempty retained subsets have risk1. No threshold
+selection occurs. Report all configurations with explicit parser/backend/reading/
+domain/disjunction/mass metadata. Do not report the still-running PW matrix yet.
+
+```
+research/.venv/bin/python research/runs/phase-e-reports/run-matrix.py --benches proverqa folio --parser-variant default > research/runs/phase-e-reports/default-matrices.log 2>&1
+```
+
+### 2026-10-14 01:59 UTC — prospective top-cache projection equivalence prediction
+Root observed fullcacheholds~3GB/modelprocess despite Cusingfirst theory/query. Beforechangingloader, predict pruningonlynonfirsttheories/queries preserves exact graph, prompt, promptHash, requestHash and sourcecache/configmetadata for all12sealedpilot records. Allsentence readings/counts, search/truncatedflags preserved. Exact command `research/.venv/bin/python research/runs/phase-e-baselines/check_top_projection.py > research/runs/phase-e-baselines/top-projection-equivalence.json`. No networkcalls; source remainsfrozen until currentpilots scored.
+
+### E-default-matrix report result and primary-manifest update prediction, 2026-10-14
+
+Completed reports include all18 default ProverQA policies and12 FOLIO policies,
+with120 validated request hashes per run and no pending items. ProverQA mass is0
+for every item because each complete document has at least one unparsed sentence;
+all curves therefore have one observed threshold and zero answers. FOLIO observed
+masses are0,.5329501403555674,1; all nonempty retained subsets have risk1. Higher
+mass does not rescue English correctness on this sample.
+
+Update primary manifests to declared Flash-Lite/Gemma26B C paths and analogous D
+paths, add the prespecified B outputs when present, and raw-small versus raw-strong
+paired counts. Expected existing A scores unchanged; completed B Prover0/0 and
+FOLIO3answered/0correct, PW Horn37answered/22correct; missing C/D remain pending.
+The D target names are proposed output paths, not fabricated results. Command:
+
+```
+research/.venv/bin/python research/runs/phase-e-reports/run-primary.py > research/runs/phase-e-reports/primary-baselines-with-b.log 2>&1
+```
+
+### 2026-10-14 02:00 UTC — FOLIO three-answer audit result
+
+All three first divergences occur in selected lambda semantics, before DRS lowering or solver: folio-val-121 treats Some as predicate some(x), generic-universalizes both premises and query, and Z3 correctly chains the wrong universals (supportp0,p1; True vs Uncertain). folio-val-163 turns never into positive never(x), also universalizes Some and keeps hawk/hawks and lands/land distinct; it returns two-countermodel Unknown vs False. folio-val-15 turns four sides into a generic universally quantified four(y)&sides(y), losing cardinal semantics and the bridge to four-sided; Unknown vs True. All exported pairs complete=true/residuals=[], so structural completeness is not English fidelity. Items121 and15 have mass1, retained by .8/.95 thresholds with zero selective precision. Prediction supported for the signed false proof; the other two wrong answers are incorrect Unknowns from semantic loss. No dataset-noise explanation or new source/policy mutation. SEAMS records bounded exact examples/IDs; primary FINDINGS draft note at research/runs/phase-g/folio-findings-note.md.
+
+### E-primary-manifest B/raw result, 2026-10-14
+
+Updated manifests now resolve completed primary B files and retain planned C/D
+paths with pending placeholders. Primary B is0/120 answered on ProverQA,3/120
+answered with0 correct on FOLIO,37/120 answered with22 correct on ProofWriter;
+ProntoQA remains pending. Raw small/strong paired results expose the scoring
+sensitivity: Gemma26 versus current GPT-high on ProverQA has strict discordances
+4small-only/56strong-only, but lenient9/16 (exact paired p=.22952). Versus historical
+GPT-high the lenient discordances are7/15 (p=.13380). Flash-Lite versus current
+GPT-high has8/36 under both parsers (p=.00002545). These remain historical/fresh
+and provider/prompt-confounded raw comparisons, not evidence for graph assistance.
+Primary C/D paired claims remain withheld while those runs are pending.
+
+### 2026-10-14 02:00 UTC — GPT translation pilot residual diagnosis prediction
+Pilot0/12correct with1answered is known; beforeexamining reasoncounts, predict mostabstentionspartialtheory fromuntranslatedsentences, with fewer schema/merge rejections. Exact command `python3 research/runs/phase-e-baselines/summarize_translation.py > research/runs/phase-e-baselines/proverqa-translate-pilot12-diagnosis.json`. This characterizes archivedeffortcontrol, not primaryweak evidence; no prompt changes/no calls.
+
+## 2026-10-14 — default B results and POS/Pronto batch prediction
+
+Default ProverQA completed120: zero answers for both backends, all three reading
+policies, inclusive/exclusive disjunction and every fixed mass threshold. Z3top:
+73partial-theory,45incomplete-query,2no-reading; non-top89combination-cap,
+29disagreement,2no-reading. Predictionlowcoverage held at its limiting case;
+no answered precision exists and D routes every item to C. Default FOLIO:
+Horn0 answers; Z3top/skeptical3answered0correct; credulous1answered0correct.
+The three errors have concrete lexical/quantifier failures, not demonstrated
+label noise. Agent is documenting exact bounded cases. Full default cache480
+complete; POS469 at last check, through all ProofWriter.
+
+Prediction for remaining defaultPronto and POS: POS may recover queries/theories
+but does not repair phrasal/reflexive, some/never/cardinality semantics. Prover
+coverage should remain very low. Pronto may gain signed-Horn proofs yet binary
+logical Unknown must abstain. Sequential commands in the next batch:
+`research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/proverqa-pos120.jsonl --out-dir research/runs/phase-d/proverqa-pos-matrix --benches proverqa --limit 120 --timeout-ms 2000 > research/runs/phase-d/proverqa-pos-matrix.log 2>&1`
+For each bench folio,proofwriter,prontoqa: seal with
+`python3 research/seal-parser-cache.py research/runs/phase-d/parses-pos.jsonl BENCH research/runs/phase-d/BENCH-pos120.jsonl`, then
+`research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/BENCH-pos120.jsonl --out-dir research/runs/phase-d/BENCH-pos-matrix --benches BENCH --limit 120 --timeout-ms 2000 > research/runs/phase-d/BENCH-pos-matrix.log 2>&1`.
+Also PW POS domain:
+`research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/proofwriter-pos120.jsonl --out-dir research/runs/phase-d/proofwriter-pos-domain-matrix --benches proofwriter --domain-policy proofwriter --limit 120 --timeout-ms 2000 > research/runs/phase-d/proofwriter-pos-domain-matrix.log 2>&1`.
+DefaultPronto sealing/matrix uses those same Pronto commands with pos replaced by default.
+
+### 2026-10-14 02:01 UTC — paired plot provenance identity smoke prediction
+
+Completed default report metadata matches the planned schema. Default/POS reports reuse run names, so embedded plot provenance keys now include parser variant to preserve both source hashes and zero-answer counts. Prediction: splitting the synthetic24-run fixture into two12-run reports with identical run names still plots24 conditions and retains24 distinct embedded source identities; no matrix is omitted.
+
+Exact command: `research/.venv/bin/python research/plot-risk-coverage.py research/runs/figure-smoke/default.json research/runs/figure-smoke/pos.json --out-dir research/runs/figure-smoke/paired > research/runs/figure-smoke/paired.log 2>&1`.
+
+### 2026-10-14 02:02 UTC — Flash pilot scoring and Gemma per-minute backoff
+Flash12responses complete allfirstattempt/noerrors/tools; observed nativepromptinput5149–24653tokens andoutput2–3tokens. Gemma6complete; item58 required2attempts, item31 returned500 then429InputTokensPerModelPerMinute-FreeTier with44s retryDelay honored bycommonrunner. No dailyquota/reset assumption; no repeatedmanualcalls. Beforegoldjoin predictFlash12strictvalidlabels butsemantic gainuncertain/likelynegative with wrongselectedparses. Exact command `research/.venv/bin/python bench/reasoning/llm.py score --bench proverqa --parses research/runs/phase-d/proverqa-pilot12.jsonl --backend z3 --or-semantics proverqa --limit 12 --mode graph --provider gemini --model gemini-3.1-flash-lite --effort budget0 --pace-seconds 8 --raw research/runs/phase-e-baselines/proverqa-flash-lite-c-pilot12-raw.jsonl --output research/runs/phase-e-baselines/proverqa-flash-lite-c-pilot12-scored.jsonl > research/runs/phase-e-baselines/proverqa-flash-lite-c-pilot12-summary.json`.
+
+### Gemini-adapter independent audit prediction, 2026-10-14
+
+Read-only source review finds the env check precedes lazy common-provider import,
+and the provider prompt receives only id/prompt with the Gemini preamble policy.
+Prediction for isolated mocks: no environment key causes no provider import or
+fallback file read; a dummy environment plus mocked post transmits only the safe
+prompt. Two possible operational gaps need reproduction: a429 retryDelay1s causes
+an internal2s wait (outer8s pacing does not cover retries); resuming after an error
+appends a second row for the same ID, while scoring rejects duplicates. A separate
+Horn fixture predicts known p(a), p→q facts yield q(a) through solver.answer but no
+C consequences when the English query has no parse. No real credentials are read,
+no key is printed, all HTTP calls and sleeps are mocked, no models are called.
+
+```
+research/.venv/bin/python research/runs/solver-audit/provider_audit.py > research/runs/solver-audit/provider-audit.log 2>&1
+```
+
+## 2026-10-14 — query-independent Horn context regression prediction
+
+Independent C audit finds that an unparsed query suppresses all Horn consequences,
+even when its theory has a supported p→q proof. This needlessly removes graph
+context from the residual-query fallback. Add a query=None closure-only mode to
+the same Horn loop: expose derived facts/supports while always abstaining on the
+missing query. No new solver, sentinel predicate or Z3 grounding enumeration.
+Prediction: two new regressions fail before the hook (unsupported instead of
+closure-only/contradiction); existing query-bearing inference is unchanged. Command:
+`PYTHONPATH=bench/reasoning research/.venv/bin/python -m unittest test_solver -v > research/runs/d-queryless-red.log 2>&1`.
+
+Queryless Horn red result: both new tests failed as predicted. The same loop now
+accepts query=None to expose closure-only facts while always leaving answer=None;
+contradictions/resource limits retain fail-closed behavior. Prediction: all83
+solver/runner/domain/report checks pass; query-bearing B semantics unchanged.
+Command: `PYTHONPATH=bench/reasoning research/.venv/bin/python -m unittest test_solver test_runner test_domain test_report -v > research/runs/d-queryless-green.log 2>&1`.
+
+### Gemini-adapter independent audit result, 2026-10-14
+
+Mock controls pass for missing-env import rejection, env-only provider import with
+fallback-file access forbidden, and actual common-provider payload containing only
+the safe prompt without the sentinel gold label. No network calls or credential
+file reads occurred. Reproduced:429 retryDelay1s requests a2s internal sleep before
+the second post, outside the outer8s pacing; an error row followed by resumed success
+creates2 raw rows for1 ID, which the scorer's duplicate guard rejects. Both issues
+were sent to root/inventory before main120. The Horn queryless C gap is also
+confirmed: C emits no consequences, while the existing solver derives glow(Ada)
+from blue(Ada) plus the implication with exact support[p0,p1]. Root is adding a
+queryless hook to the same closure implementation; inventory will keep the query
+status incomplete while exposing conditional, asserted-unconfirmed consequences.
+
+## 2026-10-14 — owner redirect: constructions and meaning fidelity
+
+Owner overrides phase order: no new benchmark/LLM runs; already-running jobs may
+finish and outputs are retained. Construction inventory across generated datasets,
+Boxer/ccg2lambda category/template comparison, learner-facing DESIGN, and a
+hand-checked per-construction canonical DRS/claim-table gold set now precede more
+A/C/D runs. Wrong-but-typed count is the primary metric. Implement general rules
+in frequency order without fidelity regressions; C/D stay paused until ProverQA
+fidelity is>=90% exact and near-zero wrong-but-typed. Amendment recorded in
+ASTRA_GOAL §3 and STATE. Agents redirected to inventory, published design, and
+fidelity runner respectively. Existing queued launches are being disabled.
+
+Operational pause: suspended only the batch-parent bashPID124795 (SIGSTOP),
+leaving its already-running ProverPOS matrix child124800 active. A watcher will
+remove the stopped parent after the child exits, preventing its queued FOLIO/PW/
+Pronto matrices from launching. DefaultPronto already-running child124903 continues
+to completion. This is queue cancellation, not an inference failure.
+
+### 2026-10-14 02:08 UTC — OWNER redirect: all model work quiescent; linguistic inventory next
+Owner pauses new benchmark/LLM runs and prioritizes construction inventory, compiler design and translation fidelity. Allcalls nowfinished/stopped: GPT graphpartials25Prover+3FOLIO archived; GPT translation12complete; Flash primarypilot12complete; Gemma primarypilot12complete, attempts[1,1,2,1,1,1,4,2,2,1,2,2], nofinalerrorrow. LastGemma24,653-input item succeeded afterone429retry, so no15k singlepromptlimit assumption is warranted. Flashstrictpilot1correct/3valid/12; authoritative lenient report requested separately toseparateformatting fromreasoning. Solverhash changed duringGemmapilot forHornclosurehook, so stockhash-strictscore cannotreplay; report.py mayrescore raw labels independently againstsamplewithoutnewinference. No model sessions remainactive; no newkeyaccess.
+Known deferred operational repairs: enforce minspacing oncommonGemini internalretries, retainallfailedattemptcost whenresuming into uniqueID resultfiles, and compact repeatednestedprovenance whilepreserving semanticDRS/provenance roots; do notlaunch newpilots ormain120 untilownerresumes experiments. Top-cache prospective pruning equality passed12/12 butproductionloader unchanged. Provideradapter source remains35testsgreen. Datasetmetadata returnedtoroot; exhaustive linguistic split pending.
+
+### Meaning-fidelity harness contract prediction, 2026-10-14
+
+Owner redirects work to linguistic meaning fidelity; new model/benchmark inference
+is paused. Root authorizes a gold-free exporter and manual-gold evaluator under
+test/fidelity. First contract tests require: gold/request separation, complete scope
+and claim-kind equality, preserved duplicates/order, wrong selected versus correct
+alternative distinction, separate no-parse/type-failure/incomplete categories,
+scoped gold validation, and optional either annotations. Prediction: initial import
+fails before implementation. Four authored hand controls will later test actual
+pipeline integration; expected gold is written independently, never captured from
+parser output or derived with production splitClaims.
+
+```
+python3 -m unittest discover -s test/fidelity -p 'test_fidelity.py' > research/runs/solver-audit/fidelity-contract-red.log 2>&1
+```
+
+## 2026-10-14T02:11:17.089499+00:00 — ProofWriter exhaustive input inventory prediction
+
+Prediction: the110 local ProofWriter JSONL files will expose a small closed family of controlled forms, plus a substantially more varied NatLang paraphrase layer. Stage/add and depth-extension files duplicate inputs; therefore physical occurrences and global distinct text counts must both be reported, with standard/stage/abduct and CWA/OWA separated. NatLang sentences are the presented surface, not their synthetic triple/rule paraphrases. Read only theory, sentences/mappings, triples/rules text, question/abduction question text and record metadata; never use answer/proof/representation fields to classify constructions. Exclude allInferences, proofDetails, abduction answers. First extract a local SQLite count DB, validate surface reconstruction, then classify unique text and inspect every unresolved family. Exact commands: `python3 research/linguistics/inventory-proofwriter.py extract --root /home/gram/data/proofwriter/proofwriter-dataset-V2020.12.3 --work research/runs/linguistics/proofwriter`; `python3 research/linguistics/inventory-proofwriter.py summarize --work research/runs/linguistics/proofwriter --output research/linguistics/proofwriter-counts.json`. No model or benchmark execution.
+
+### 2026-10-14T02:12:22Z — Primary-source linguistic design audit (read-only)
+
+Read Bos2008 and Mineshima etal.2015 papers, plus official ccg2lambda English
+templates at a68cb264413791150011c347c64a7b35e2f7270d and template/category
+selection code. No new benchmark, LLM, parser-model load or production edit.
+Research notes: research/linguistics/REFERENCES.md and TEMPLATE_COMPARISON.md.
+The notes distinguish published mechanisms from our proposed gold: two-slot NP
+restriction, feature-sensitive voice, local reflexive binding, shared-witness
+coordination, particles/PP and punctuation. Static source counterexamples include
+sentence-or conjoining, arity-only erasure fallback, different never scope in
+2015/event files, and flat modal conjunction. No upstream runtime claim is made.
+Downloaded reference files stay ignored under research/runs/linguistics-sources/.
+Attempted delegated Boxer child at owner's request; tool rejected thread limit;
+continued both source audits directly. No experiment prediction required for
+source reading/writing alone; future acceptance probes must log predictions.
+
+### 2026-10-14 — generated-language extraction and construction clustering prediction
+
+Owner confirms all usage resets may be used; work continues autonomously. All three
+specialist child spawns hit the runtime four-agent limit; existing agents remain
+active. Prediction: ProverQA has a small outer clause grammar but a much richer VP
+lexicon than ProntoQA. Inventory will count every available input occurrence and
+unique surface separately, including ProntoQA demonstrations, excluding solution
+fields. FOLIO uses its existing120 sample, preserving premise boundaries. Coarse
+construction counts alone cannot establish semantic correctness: nested operators
+and lexical constructions will also be counted. Unclassified forms stay explicit.
+Command: `python3 research/linguistics/inventory-other.py --data /home/gram/data --work research/runs/linguistics/other --output research/linguistics/other-counts.json`.
+
+### Meaning-fidelity contract red result and first green prediction, 2026-10-14
+
+The initial10 tests fail at the absent fidelity module as predicted. Implemented
+structural gold validation and evaluation, strict id/text projection, a Haskell
+observation executable reusing production Canonical/Claims, and four independently
+authored hand controls: rigid fact, whole negation, shared existential witness,
+and attributed report. Prediction:10 Python contracts pass; GHC compiles with
+-Wall -Werror; the hand pipeline matches all4 scoped DRS/claim-table expectations.
+No licensed data or model inference is required for these controls.
+
+```
+python3 -m unittest discover -s test/fidelity -p 'test_fidelity.py' > research/runs/solver-audit/fidelity-contract-tests.log 2>&1
+ghc -O1 -Wall -Werror -isrc -outputdir research/runs/fidelity/build test/fidelity/Export.hs -o research/runs/fidelity/fidelity-json > research/runs/fidelity/build.log 2>&1
+python3 test/fidelity/run.py --cases test/fidelity/hand-controls.jsonl --binary research/runs/fidelity/fidelity-json --parser hand --output research/runs/fidelity/hand-controls-report.json --require-exact > research/runs/fidelity/hand-controls.log 2>&1
+```
+
+### 2026-10-14T02:14:54Z — Name N/NP diagnosis prediction
+
+Prediction: default corpus lexical assignment will lose an already-NP proper
+name because names accepts only offered N. Unseen initial capitals may retain
+both rigid and generic common-noun readings; ordinary initial capitals with
+attested lower-case evidence should remain non-name. Batch hand-authored minimal
+controls for benchmark names and one observed ProverQA sentence, no new benchmark.
+Command: `dist-newstyle/build/x86_64-linux/ghc-9.4.7/nl2proof-0.1.0.0/x/nl2proof-explain/build/nl2proof-explain/nl2proof-explain --all-readings < research/runs/linguistics-names/explain-input.txt > research/runs/linguistics-names/explain-before.log 2>&1`.
+
+### Fidelity exporter build correction and control prediction
+
+The first direct `-Wall -Werror` build stopped on an existing `Bench/JSON.hs:31` name-shadowing warning before compiling the exporter. This is an instrumentation build failure, not a parser result. Prediction remains four authored hand controls exact; retry with the repository's non-fatal warning policy and inspect all new exporter warnings.
+
+Commands:
+
+```sh
+ghc -O1 -Wall -isrc -outputdir research/runs/fidelity/build test/fidelity/Export.hs -o research/runs/fidelity/fidelity-json > research/runs/fidelity/build.log 2>&1
+python3 test/fidelity/run.py --cases test/fidelity/hand-controls.jsonl --binary research/runs/fidelity/fidelity-json --parser hand --output research/runs/fidelity/hand-controls-report.json --require-exact > research/runs/fidelity/hand-controls.log 2>&1
+```
+
+Inventory extraction audit: interrupted the initial local-only extraction after
+several minutes; traceback identified repeated pathlib.relative_to in every
+sentence as unnecessary overhead. Hoisted per-file paths. A shortest-sentence
+audit also exposed Dr./Mr. abbreviation fragments: inventory now preserves those
+abbreviations, independently of the production tokenizer's punctuation splitting.
+Prediction: rerun completes quickly with intact titled names. Same command as
+above; this is input-language analysis, not a new answer benchmark.
+
+### Fidelity exporter and hand-control result
+
+The exporter now compiles without new warnings (renamed its local training-tree count to avoid shadowing). All four independently authored hand controls are exact on the selected DRS **and** claim table; all four also have an exact returned reading. No parse/type/incomplete/error cases occurred. This checks the measurement seam, not benchmark coverage. Artifacts: `research/runs/fidelity/hand-controls-report.json`, `.observations.jsonl`, `.stderr.log`; build/control logs adjacent. Gold was specified before executing the parser.
+
+### Fidelity schema and parser-boundary hardening prediction
+
+The optional disjunction metadata currently checks shape only; prediction: a path pointing to a predicate or using a negative index is wrongly accepted. Add red tests requiring actual disjunction targets and unique paths, then reject malformed annotations. Separately, the Haskell protocol is expected already to reject extra gold keys and duplicate keys while still responding to a subsequent clean request. Commands:
+
+```sh
+python3 -m unittest discover -s test/fidelity -p 'test_fidelity.py' > research/runs/fidelity/schema-path-red.log 2>&1
+python3 -m unittest discover -s test/fidelity -p 'test_fidelity.py' > research/runs/fidelity/schema-path-green.log 2>&1
+python3 research/runs/fidelity/check-protocol.py > research/runs/fidelity/protocol.log 2>&1
+```
+
+### 2026-10-14T02:17:34.636098+00:00 — ProofWriter inventory integrity checks prediction
+
+Prediction: extraction retains the NatLang presented sentence once despite multiple synthetic mappings; questions and abduction targets remain inputs while labels/proofs/abducted answers cannot affect output. Punctuation expansion preserves occurrence mass and remains idempotent, including overlap with an existing sentence. Controlled examples cover pronoun binding/ellipsis/negative transitive/birds modal without erasing their surface cues. Exact command: `python3 research/runs/linguistics/proofwriter/check_inventory.py > research/runs/linguistics/proofwriter/check-inventory.log 2>&1`.
+
+### 2026-10-14T02:18:06Z — Name diagnosis result and test-first prediction
+
+Default corpus Explain loaded39604 trees in83.5s. Legend at sentence start is
+truecased to a common noun and yields a generic universal; inside If Legend it
+yields the rigid constant. Brecken/Abdullah have both rigid and generic readings,
+with rigid selected in the copular controls. White things/Cats stay ordinary.
+The direct-NP omission is a separate source defect, not the explanation of all
+three benchmark names. Initial prediction was partly confirmed; corpus names
+here did not require direct-NP recovery. Explain also labels every name as
+POS-NNP even when capitalization fallback supplies it; fix wording honestly.
+
+Root approved bounded name N/NP repair and gloss correction. Prediction for
+preimplementation tests: POS-licensed direct NP/NP[nb] lexical, composition, DRS
+and claims cases fail; existing N→NP and casing/common-word controls pass.
+Command: `runghc -isrc -itest test/NameSemSpec.hs > research/runs/linguistics-names/test-red.log 2>&1`.
+
+### 2026-10-14T02:18:50.269676+00:00 — ProofWriter punctuation authority repair prediction
+
+Validation exposed thousands of NatLang dictionary/theory mismatches: `sentences` often replaces sentence stops with semicolons, but some semicolons are genuine. Prediction: aligning each mapped text unit against normalized `theory`, allowing only period/semicolon alternatives at matching positions, will recover exact presented punctuation without changing words, order, or roles; any unmatched record must remain explicit. After the currently running extraction completes, rebuild only files with reconstruction mismatches, then count punctuation-delimited sentences. Exact commands: `python3 research/linguistics/inventory-proofwriter.py repair-surface --root /home/gram/data/proofwriter/proofwriter-dataset-V2020.12.3 --work research/runs/linguistics/proofwriter > research/runs/linguistics/proofwriter/repair-surface.log 2>&1`; rerun the already recorded summarize command.
+
+### 2026-10-14T02:19:01Z — Name repair red result and green prediction
+
+Before source edits NameSemSpec passed15/26, failed11 exactly in licensed
+already-NP lexical/composition/DRS/claim cases; controls passed. Minimal repair
+now admits ordinary NP and NP[nb] only through existing NameStatus policy,
+preserves the category/score, and records actual POS versus capitalization
+license in a name-lexicon Decision. Expletive/thr/conj NP remain excluded.
+Explain's generic source gloss no longer falsely claims POS-NNP for unseen names.
+Prediction: all26 focused checks now pass; existing semantic-repair and CCGSem
+regressions remain green. Legend ambiguity remains unresolved and its desired
+rigid gold is not weakened.
+Commands: `runghc -isrc -itest test/NameSemSpec.hs > research/runs/linguistics-names/test-green.log 2>&1`; `runghc -isrc -itest test/SemanticRepairSpec.hs > research/runs/linguistics-names/repair-regression.log 2>&1`; `runghc -isrc -itest test/CCGSemSpec.hs > research/runs/linguistics-names/ccgsem-regression.log 2>&1`.
+
+### Fidelity boundary hardening result and ProntoQA gold plan
+
+The annotation red tests reproduced both flaws (a predicate accepted as an OR marker target, and malformed universe raising TypeError). Fixed validation without changing the schema; 12 contract tests pass. The live hand exporter rejects extra gold fields and duplicate request keys and then successfully parses the following clean request (`research/runs/fidelity/protocol.log`).
+
+Input-only inspection of ProntoQA source contexts identifies these actual forms: named nominal/adjectival/negative copulas; bare-plural and Every/Each universals; Everything-relative conjunction/disjunction restrictors; ground and universal predicate conjunction; ground three-way predicate disjunction. No answer, proof, or solver labels are used to author meanings. Predicate nominals will be direct unary classification, not fresh existential equality; names retain written case; fictional ontology plural nouns use singular predicate lemmas. Bare plurals receive the benchmark's generic universal reading. Relative Everything has no additional artificial thing restriction. Three-way disjunction permits both associations, explicitly enumerated before parsing. Prediction: current corpus parser has substantial no-parse/typed-wrong failures on fictional words and copular nominals; selected exactness will be far below the four hand controls, and POS may improve availability without ensuring meaning.
+
+Gold-authoring and validation (all semantic values entered manually in the script, source read only to verify text references):
+
+```sh
+python3 research/runs/fidelity/author-pronto.py
+python3 -m unittest discover -s test/fidelity -p 'test_fidelity.py' > research/runs/fidelity/pronto-schema-tests.log 2>&1
+```
+
+Default/POS measurement commands, to run after building one frozen executable and coordinating with production parser work:
+
+```sh
+python3 test/fidelity/run.py --cases test/fidelity/prontoqa.jsonl --binary research/runs/fidelity/fidelity-json --parser default --output research/runs/fidelity/pronto-default-report.json
+python3 test/fidelity/run.py --cases test/fidelity/prontoqa.jsonl --binary research/runs/fidelity/fidelity-json --parser pos --output research/runs/fidelity/pronto-pos-report.json
+```
+
+### 2026-10-14 — owner-authorized concurrency configuration and resume continuity
+
+Owner requests more effective parallel work and authorizes changing local Codex
+configuration or supplying a server command. Set only
+`agents.max_concurrent_threads_per_session = 8` in the existing user config; parsed
+TOML equality verified every unrelated setting unchanged. `codex features list`
+loads the resulting config successfully. `--strict-config features list` is not a
+supported CLI combination (exit1), so that invocation is not a strict validation.
+A real fourth-subagent attempt (`fidelity_audit`) still received agent thread limit
+reached. Thus the active runtime still has3 subagent slots, despite the requested
+new local limit. Goal amendment and STATE retain same-task continuation, all usage
+resets, file ownership, and the benchmark pause across a possible CLI resume.
+
+Root inventory initial aggregate: ProverQA17,345 input sentence occurrences and
+17,285 unique surfaces; ProntoQA819,128 and177,560; FOLIO120sample744 premises/query
+units and439 unique surfaces. Outer families are provisional, not a claim of
+complete semantic coverage; nested operators and VP lexical constructions next.
+All pre-redirect solver matrices finished and queued new runs were canceled.
+
+### 2026-10-14T02:20:20.914770+00:00 — Inventory integrity result
+
+All5 mock/text-only integrity checks pass. Extended aggregate records separate physical variant/world/split counts, per-file SHA256, standard120 sentence frequencies, and global distinct strings. No empirical parser/model result is inferred from surface family coverage.
+
+### Manual ProntoQA construction gold ready
+
+`test/fidelity/prontoqa.jsonl` now contains 25 exact source sentences across 11 construction groups, each with 2–3 examples. Full manual DRS and independent claim lists pass scope/schema validation; all 12 runner contract tests pass. Source lookup in `research/runs/fidelity/author-pronto.py` only verifies input strings and item references. No parser observation, answer label, or proof chain entered any expectation. The generation script is a local authoring aid, not a production semantics implementation. README records direct predicative-nominal classification, singular fictional-noun lemmas, bare-plural universal reading, unrestricted Everything, and predeclared disjunction associations. Default/POS baseline awaits a stable build snapshot coordinated with the category-repair worker.
+
+### 2026-10-14T02:20:38Z — Name repair targeted results
+
+NameSemSpec26/26, SemanticRepairSpec29/29, CCGSemSpec89/89 pass after the
+bounded source repair. Prediction held. General licensing policy and Legend's
+known wrong-but-typed initial reading remain unchanged. NAMES.md records the
+corpus first-divergence table, typed derivation, DRS/claims, source choice and a
+separate unimplemented document-evidence proposal. No benchmark rerun occurred.
+Source stable for parent integration build/gates and optimized corpus controls.
+
+### 2026-10-14 inventory recovery after coordinator refresh
+Prediction before measurement: repaired ProofWriter extraction covers all 110 physical JSONL files; summarization will preserve source counts apart from explicit multi-sentence expansion. Existing ProverQA/ProntoQA/FOLIO totals should reproduce. These are text inventories, not answer benchmarks or model launches. Commands: `python3 research/linguistics/inventory-proofwriter.py summarize --work research/runs/linguistics/proofwriter --output research/linguistics/proofwriter-counts.json`; `python3 research/runs/linguistics/proofwriter/check_inventory.py`; `python3 research/linguistics/inventory-other.py --data /home/gram/data --work research/runs/linguistics/other-refresh --output research/linguistics/other-counts.json`. Raw text remains in ignored research/runs.
+
+### 2026-10-14T02:42:43.684994+00:00 — Independent bounded name repair review
+
+Prediction before execution: `cabal test name-sem --test-show-details=direct` should retain all 26 passing hand-authored checks. The change preserves POS/casing licensing and category scores while adding ordinary NP/NP[nb] name meanings; it does not resolve initial Legend truecasing or bare-object semantics. No model or answer benchmark is launched. Review will also inspect lexical decision provenance and add a focused check if current tests omit its contract.
+
+### 2026-10-14 — full-access coordinator recovery and integration prediction
+
+Owner-authorized restart resolves bwrap namespace failures: branch/status/rg reads succeed. Four stalled specialists resumed, with shell checks, and a fifth ProverQA gold specialist spawned; this proves at least five worker slots, not the configured maximum. All uncommitted work is preserved. No new model or answer benchmark launch is authorized before the fidelity gate.
+
+Prediction before integration checks: preserved name repair adds 26 passing checks to the prior 1,169 Haskell checks; fidelity runner contract tests and hand controls stay green. Required commands: `cabal build all`, `cabal test all`, `scripts/check-oracle-boundary.sh`, `scripts/check-explain.sh`; logs under `research/runs/recovery-gates/`. These are build/regression gates, not answer benchmarks.
+
+Name review baseline result: 26/26 passed. Trace inspection found an invented common-noun alternative even under NameOnly. Root authorized a metadata-only correction. Prediction before red check: `runghc -isrc -itest test/NameSemSpec.hs` will pass 28/30 and fail the two new factual-alternatives checks; score/evidence checks should pass. Intended change records actual open lexical candidates only for NameOrOther and no alternatives for a forced NameOnly candidate. These are lexical alternatives, not proof that another whole-sentence reading exists.
+
+### 2026-10-14 — independent fidelity scorer hardening prediction
+
+Prediction before tests: new contract mutations exposing omitted inclusive-OR annotations, claim references absent from the DRS, and malformed observation counts will fail against the current scorer. After focused fixes these checks and preserved existing contracts will pass. Commands: `python3 -m unittest discover -s test/fidelity -p 'test_fidelity.py'`; fixture validation via `validate_case` only. No parser, benchmark, solver, or model launch. Expected meanings remain independently authored; Pronto OR annotations explicitly encode its documented inclusive semantics.
+
+### 2026-10-14T02:44:00.292441+00:00 — construction design Explain prediction
+
+Prediction: closed `if`/`not`, adjective copula, simple `all` and the bounded
+subject-relative repair will preserve their fragment meaning; predicative nominal,
+`each`/`some`/`everything`, reflexive, particle, passive/progressive auxiliary and
+modal gaps will first appear at tags/lexical meanings/derivation, before DRS or
+claim extraction. Fictional plurals may be mistaken for rigid names. This is a
+small hand-authored linguistic diagnostic, not an answer benchmark or model run.
+Use an immutable copy of the existing Explain executable, SHA256 `701f94da16be317c070765c7002a8460e55497a41b48bf0bcfa5027deb84b07d`;
+its original compiled source snapshot is not inferred from current source hashes.
+Exact command: `research/runs/linguistics-design/explain-frozen --all-readings < research/runs/linguistics-design/input.txt > research/runs/linguistics-design/explain.log 2>&1`.
+
+Name trace red result: predicted 28/30 passed, with exactly the two new alternatives checks failing. Implemented only factual lexical-alternative metadata. Prediction before green check: `runghc -isrc -itest test/NameSemSpec.hs` should pass 30/30 with all existing DRS/claim expectations unchanged.
+
+Name review green result: `runghc -isrc -itest test/NameSemSpec.hs` passed 30/30, matching the prediction. `git diff --check` passed. Existing licensed N/NP repair, 26 original semantic/scope controls, casing policy, and category scores are preserved. Updated STUDY_PLAN repaired-seams table and NAMES with bounded repair and remaining initial Legend failure. No answer benchmark/model/LLM launch; no commit from specialist. Root owns full build/release gates.
+
+Result: red phase produced two expected failures (missing OR annotations and invalid claim references) plus the malformed-count TypeError, confirming the prediction. After fixes, all 16 scorer contracts pass; all four hand controls and 25 Pronto fixtures validate. Inclusive annotations were added only from independently documented Pronto meaning and authored gold paths. Malformed observations now remain `error` in the denominator. No canonical sequencing restriction, parser/Haskell edit, or benchmark/model launch was introduced.
+
+### 2026-10-14 — owner parallel ownership refinement and pending checks
+
+Coordinator alone now owns STATE, LOG, cabal configuration, shared production source and commits. Eight concurrent specialists accepted; worker outputs use isolated gold/proposal/section files. Inventory is split by benchmark in successive available slots; root merges sections. Existing name metadata edits completed before the ownership change are frozen for coordinator review.
+
+Predictions before checks: ProofWriter summary reconciles all110 file manifests, role/family/file totals and reports any controlled-unexpected rows; `python3 research/linguistics/test_inventory.py` should preserve five integrity checks. ProverQA 24 authored rows (12 outer families, two each) should pass `PYTHONPATH=test/fidelity python3 -c 'from fidelity import read_jsonl,validate_case; rows=read_jsonl("test/fidelity/proverqa.jsonl"); [validate_case(x) for x in rows]; print(len(rows))'`; this cannot establish population fidelity and modal coverage remains blocked. FOLIO roughly12 independently authored existential/negated-existential/relational cases should pass the analogous schema command on test/fidelity/folio.jsonl; temporal never and unsupported cardinality are explicitly gaps. No parser answers/model runs are launched by these validations.
+
+### 2026-10-14 — isolated worktree transition and memory preflight
+
+Owner supersedes shared-worker editing with isolated astra/<name> worktrees. All workers frozen pending transfer; root preserves full dirty tree. No CCGbank loader is active (`ps` inspected). Prediction: one frozen Explain corpus load on a compact sentence will fit below10GiB; measure actual peak with `/usr/bin/time -v -o research/runs/recovery-gates/explain-rss.txt research/runs/linguistics-design/explain-frozen --stage=claims "Bob is red." > research/runs/recovery-gates/explain-rss-output.txt 2>&1`. Limit will be floor(10GiB / measured peak), capped conservatively if needed; no other corpus load until recorded. Existing cache files preferred.
+
+First integration build passed, oracle boundary passed, Explain smoke passed; cabal test hit concurrently added name trace red tests, so failed name-sem while other suites passed. Worker fixed trace and reports30/30 focused tests; rerun full gates on frozen snapshot. Fidelity hardened contracts17/17, FOLIO12 and Prover24 schema validations passed independently, still no population gate evidence.
+
+### 2026-10-14 — memory measurement and frozen integration result
+
+Frozen Explain corpus load completed successfully in85.21s, peak RSS163,072KiB (166,985,728 bytes), no swap. floor(10,000,000,000 /166,985,728)=59 load-only slots; actual admission is conservatively capped at2 because parsing larger sentences can exceed the measured load and the15GiB machine also runs agents/builds. Shared flock token directory `/home/gram/astra-wt/.ccgbank-slots`, limit2. Prefer sealed caches; all new corpus-loading commands must use scripts/with-ccgbank-slot.py.
+
+Frozen build and all13 Haskell suites now pass (1,199 checks expected from prior1,169+name30). Re-run oracle and Explain gates after final metadata source change; run17 fidelity contract checks and hand controls. Prediction: boundary and smoke gates stay green and4/4 hand controls remain exact.
+
+### 2026-10-14 — live fidelity protocol catches synthetic-test gap
+
+Hand4 controls returned4 instrumentation errors: exporter JNum renders integral counts/indices as JSON1.0, while reviewer hardening wrongly demanded Python int. Prediction: add wire-format regression first (fails), accept only finite mathematically integral int/float excluding bool/negative/fractional/nonfinite, then all18 contracts and hand4 exact pass. Production exporter need not change.
+
+### 2026-10-14 — reviewed foundation checkpoint
+
+Final frozen gates pass: cabal build all, all13 suites1199checks, oracle negatives/positive clients, Explain smoke. Fidelity wire regression red then green18/18; hand4/4 exact. Bounded name repair independently approved against source template and30 controls, without claiming Legend fixed. Foundation stages only listed repair/harness/Pronto/reference/operations files; unfinished inventory/gold/design/provider/solver/report artifacts preserved. Integration is not a resume-gate claim.
