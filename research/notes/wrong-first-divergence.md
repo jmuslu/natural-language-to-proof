@@ -57,3 +57,25 @@ validates this loader contract/input list. Command in proposal now includes glob
 slot wrapper and /usr/bin/time -v. Pre-load prediction: target eligibility may be
 zero; POS/category absence, mixed support and spelling/base gate failures remain
 open. No extractor load has run; reviewer approval is still pending.
+
+## Authorized targeted extraction, prediction before launch
+
+Reviewer approved counting logic conditional on corpus snapshot provenance; root
+now authorizes one extraction after this requirement. Added inert --paths mode
+using production enumeration. The ignored seal_extract.py records ordered 2000
+paths, missing/readable statuses and SHA-256 of readable bytes before and after;
+source/extractor/wrapper/runner/command/output digests accompany the run. It
+aborts on unreadable input, nonzero extraction, changed source/input or tree/file
+count mismatch. Lazy read failures during Haskell evaluation are fatal; no
+partial output may be called complete. Prediction remains zero-to-unknown
+applicability, not a promised exact gain. Exact command is the existing proposal's
+global wrapper + /usr/bin/time -v runghc --extract; no parser or chart is loaded.
+
+Completed exactly one authorized targeted extraction. Exit0; seal complete=true;
+input/source hashes unchanged;39604trees,1875readable125missing,0invalid lines.
+Peak248960KiB,wall4:17.56. Only hawks of three motivating predicates meets narrow
+adjective gate; mammals/excels OOV must remain protected. Pets/animals/humans
+base POS mixedJJ+NN, frog absent explain conservative noun-rule abstention.
+Compact evidence and exact seals appended to proposal; no parser/sourcefilter
+changes or revised fidelity statuses. Full ignored adjective-admission-evidence
+bundle must be archived alongside wrong-first-divergence before worktree cleanup.

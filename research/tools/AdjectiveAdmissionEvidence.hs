@@ -87,5 +87,6 @@ main = do
   args <- getArgs
   case args of
     ["--self-test"] -> selfTest
+    ["--paths",dir] -> putStrLn (renderJSON (JArr (map JStr (ccgbankTrainFiles dir))))
     ["--extract",dir] -> foldM addFile empty (ccgbankTrainFiles dir) >>= putStrLn . emit
-    _ -> die "Usage: AdjectiveAdmissionEvidence --self-test | --extract CCGbank_DATA_DIR (separate authorization required)"
+    _ -> die "Usage: AdjectiveAdmissionEvidence --self-test | --paths DIR | --extract CCGbank_DATA_DIR (separate authorization required)"

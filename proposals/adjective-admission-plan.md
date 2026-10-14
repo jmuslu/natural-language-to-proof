@@ -154,3 +154,67 @@ so the proposed exclusion may apply to none; no number of exact gains is
 predicted. Distinguish absent own adjective category, absent word, and contrary
 POS evidence explicitly. For pets/animals/humans/frogs, full surface/base support
 can explain the existing noun-rule gate without changing its conservative policy.
+
+## Authorized evidence result (one extraction)
+
+The reviewer-approved projection ran once after the coordinator's conditional
+approval. Exit 0; **39604** accepted trees, zero invalid nonheader lines,
+**1875** readable files and **125** missing files across the ordered 2000 paths.
+Before/after readable-file bytes and missing statuses agree; all recorded source
+hashes agree. Peak RSS **248960 KiB**, wall time **4:17.56** (interpreted runghc).
+The source remains unchanged apart from the extractor's inert --paths mode.
+
+Compact dictionary evidence from this extraction:
+
+| Form | Own categories (counts) | POS counts | Consequence |
+|---|---|---|---|
+| hawks | N:1 | NNS:1 | Known form, no own adjective tag: meets proposed adjective exclusion. |
+| hawk | N:2 | NN:2 | Existing noun-normalization base evidence is sufficient. |
+| mammals / mammal | absent / absent | absent / absent | OOV; proposed exclusion must abstain. |
+| excels | absent | absent | OOV; proposed exclusion must abstain. |
+| excel | finite intransitive S[dcl]\\NP:1 | VBP:1 | Base attestation alone does not license an inflected category transfer. |
+| pets | N:1 | NNS:1 | Meets proposed adjective exclusion, but the audited noun route is separate. |
+| pet | N:1, N/N:5 | JJ:4, NN:2 | Mixed base POS blocks accepted noun normalization. |
+| animals | N:17 | NNS:17 | Meets proposed adjective exclusion, not a repair of its noun predicate. |
+| animal | N:5, N/N:11, S[adj]\\NP:2 | JJ:4, NN:14 | Mixed base POS blocks accepted noun normalization. |
+| humans | N:12 | NNS:12 | Meets proposed adjective exclusion, not a repair of its noun predicate. |
+| human | N:2, N/N:63, adverbial modifier:1, S[adj]\\NP:1 | JJ:62, NN:5 | Mixed base POS blocks accepted noun normalization. |
+| frogs | N:1 | NNS:1 | Meets proposed adjective exclusion, not a repair of its noun predicate. |
+| frog | absent | absent | Missing base support blocks accepted noun normalization. |
+
+The full category spelling of human's one adverbial modifier is retained only in
+the compact target JSON. Category counts need not equal a specific POS count:
+these dictionaries preserve independent category and modified-POS marginals.
+
+Thus among the three motivating predicate forms, **only hawks** meets this
+proposal's evidence gate. Mammals/excels cannot be covered by silently broadening
+it. An offered adjective for hawks has no own-word attestation in this snapshot;
+its appearance is compatible with smoothed prior support. Explain's internal
+category path remains a compatible reconstruction, not an original lexical-choice
+witness. Actual preserved-exact-control dictionary evidence was not in the
+14-form authorization and remains a prerequisite before filter acceptance.
+
+No fresh sentence was parsed and no exact/wrong/no-parse status was recomputed.
+Removing hawks' adjective candidate may reveal a faithful nominal derivation,
+no complete derivation, or another wrong reading; an exact gain remains unknown.
+The noun-base findings explain conservative abstention without authorizing a
+relaxation to NN+JJ bases or inventing an absent frog lemma. The extracted snapshot
+is sealed before/after this pass; matching historical tree counts alone does not
+prove byte identity to the older Explain corpus if its original file digest
+manifest is unavailable. No original-corpus identity beyond that is asserted.
+
+Ignored evidence directory: `research/runs/adjective-admission-evidence/`.
+`seal_extract.py` is the executed provenance wrapper; `invocation.json` records
+command, prediction, all production source/extractor/wrapper hashes; ordered
+paths and before/after manifests preserve the complete input read status without
+corpus contents. `seal.json` marks completion only after nonzero/read/change/count
+checks. A lazy Haskell read failure would abort, not produce certified partial data.
+
+Seals:
+
+- Both input manifests: `3aabcf673307bc84fabde549cb729dd39137ac6def1f216f98ef46c768d8a1c6`.
+- Compact target JSON: `e78b3105e61240d971711ddb851218e493e37f647cf74c80ac6a49b71d2f4837`.
+- Invocation: `996236ffd62617673b106fda2eb44b45653393f92b915a623df78a0d44aa2a00`.
+
+Archive these ignored artifacts before worktree removal. Review of this result
+and any rejection-diagnostic interface remains required before source changes.
