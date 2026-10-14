@@ -27,7 +27,9 @@ module NL2Proof.Syntax.CCGSemParse
   ( -- * Model
     SemModel(..)
   , EitherPolicy(..)
-  , OrOrigin(..)
+  , OrOrigin
+  , ooOrProv
+  , ooEitherProv
   , OrCarrierFailure(..)
   , pairedOrOrigins
   , defaultSemModel
@@ -69,7 +71,7 @@ module NL2Proof.Syntax.CCGSemParse
 
 import Control.Exception (IOException, try)
 import Control.Monad (foldM)
-import Data.Char (isAscii, isAlpha, isLower, isUpper, toLower)
+import Data.Char (isPunctuation, isSymbol, isAscii, isAlpha, isLower, isUpper, toLower)
 import Data.List (foldl', isPrefixOf, isSuffixOf, sortBy)
 -- Strict maps for counting; the chart table must be the lazy map (it is
 -- defined by self-reference, as in "NL2Proof.Syntax.CCGParse").
@@ -720,15 +722,16 @@ ordinaryOrState m cover pv tm
 lexicalOrState :: SemModel -> (Int,Int) -> Prov -> CCat -> Term -> LexicalOrigin -> Maybe OrState
 lexicalOrState m cover pv category tm origin = do
  base <- ordinaryOrState m cover pv tm
- pure $ case origin of
+ case origin of
    EitherChoice i word offered x
      | cover==(i,i+1), category==offered, eitherCategory offered==Just x
      , ProvLex _ _ actual<-pv, word==actual ->
-         base {osRole=EitherPending (Marker i pv offered) x}
+         do checked <- either (const Nothing) Just (OR.dispatch [] OR.PairedPending tm (osEvidence base))
+            pure base {osRole=EitherPending (Marker i pv offered) x,osEvidence=OR.resultEvidence checked}
    ExplicitOrChoice i word offered
      | cover==(i,i+1), category==offered, ProvLex _ _ actual<-pv, word==actual ->
-         base {osMarker=Just (Marker i pv offered)}
-   _ -> base
+         pure base {osMarker=Just (Marker i pv offered)}
+   _ -> pure base
 
 ordinaryUnaryState :: SSign -> Term -> Maybe OrState
 ordinaryUnaryState sign tm = do
@@ -809,7 +812,7 @@ semCombineEither m comb out left right = do
       clean s=ssCoord s==Nothing && ssStructural s==Nothing && ssList s==Nothing
         && ssFused s==FusedPlain && ssNominal s==NominalPlain
         && not(ssOpenConditional s) && not(ssConditionalRaised s)
-      noPunctuation st=all (\(_,_,w)->w `notElem` [",",".",";",":","!","?"]) (osLeaves st)
+      noPunctuation st=all (\(_,_,w)->not (not(null w) && all (\c->isPunctuation c || isSymbol c) w)) (osLeaves st)
       freeOperand s st=clean s && noPunctuation st && osRole st==OrOrdinary && osRight st==Nothing
         && OR.evidenceFailure(osEvidence st)==Nothing
         && OR.evidenceSnapshot(osEvidence st)==(ssSem s,M.empty)
@@ -875,6 +878,7 @@ semCombineEither m comb out left right = do
    (_,_,_) | any (\st->roleMode(osRole st)==OR.PairedPending) [l,r] -> Nothing
    (_,_,_) | activeRole l || activeRole r ->
      if comb `elem` [FwdApp,BwdApp] && osRight l==Nothing && osRight r==Nothing
+        && all noPunctuation [st | st<-[l,r],plainRole st]
         && not(any (isIntensionalTerm.ssSem)[left,right])
      then app(OrPaired(Set.union(rolePairs(osRole l))(rolePairs(osRole r)))) else Nothing
    (_,_,_) | comb `elem` [FwdApp,BwdApp] ->
