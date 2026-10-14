@@ -2415,3 +2415,13 @@ Result acceptance-manifest: all merged-result gates passed,scorer contracts (cou
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/explain-list-audit; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/explain-list-audit.
 
 Result explain-list-audit: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration quantifier-priorities (e07ec3f)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/quantifier-priorities; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/quantifier-priorities.
+
+### 2026-10-14 — nominal-universal source preflight
+
+Source8e2a6ad reviewed fortrial; test directEvery/each lexicalN+a/anN with existingstrictPOS capability before relaxing it. Prediction:59focusedchecks establish intended directproperty meanings, but frozen167 may show no coveragegain because lexical/nesting/name restrictions remain; require zero exactregressions and zero newlywrong selections. Worker may build its own fidelity executable and run one locked167preflight against samefrozeninputs, no benchmark/LLM. Preserve source/binary/case/observationsdigests. This never substitutes for rootmerged fullgates/freshset beforelanding.
+
+Result quantifier-priorities: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
