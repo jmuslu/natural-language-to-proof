@@ -1033,3 +1033,5 @@ These reviewed lessons expand the cards above with categories, derivations, type
 - [Names and nominal predication (C1–C2)](sections/design-names-nominals.md)
 
 - [Quantifiers and determiners (C3)](sections/design-quantifiers.md)
+
+- [Negation, conditionals and disjunction (C4–C5, C7)](sections/design-operators.md)
