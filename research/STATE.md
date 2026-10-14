@@ -12,3 +12,5 @@
 - Memory: Explain CCGbank load peak163072KiB,85.21s, no swap. 10GB formula floor59; effective cap2 to allow larger parse/build memory. Every corpus-loading process must use `python3 /home/gram/nl2proof-astra/scripts/with-ccgbank-slot.py COMMAND`; shared locks /home/gram/astra-wt/.ccgbank-slots. Prefer sealed root research/runs caches. Default diagnostic85-input load finished21exact/24wrong/40no-parse; Prover7/24exact. Sealed replay and source hashes in research/runs/integration-fidelity. No corpus process active.
 - Recovery artifacts: research/runs/recovery-gates/; original dirty snapshot safely copied to research/runs/worktree-transfer/ (manifest40files), and needed artifacts copied into each worktree. Some branches contain unrelated copied dirt: never stage it indiscriminately.
 - Scope: explicit staging, predictions before experiments, gates before push origin astra/research; no secrets/raw datasets/main/tags. Sole coordinator this session.
+
+- Active serial integration: inventory-proverqa (b6278c2), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/inventory-proverqa; committing/pushing now.
