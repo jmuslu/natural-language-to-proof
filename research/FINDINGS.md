@@ -1,6 +1,6 @@
 # Research findings — working decision document
 
-Status: Phase B measured; C–H in progress. This is not the final synthesis.
+Status: Phases B/C measured; D/E/F/G in progress. This is not the final synthesis.
 Results are from branch `astra/research`; commands/predictions are in `LOG.md`.
 
 ## Meaning and oracle admission
@@ -76,15 +76,55 @@ sense distinction is supported by data. This is a limitation in disambiguation,
 not a claim that perception is non-factive. Primary sources: [Dietz, §3](https://link.springer.com/article/10.1007/s11098-017-0929-y)
 and [Voinov 2013](https://www.cambridge.org/core/journals/language-and-cognition/article/abs/seeing-is-trying-the-relation-of-visual-perception-to-attemptive-modality-in-the-worlds-languages/A0F8846B72AEB95F3A22E02B614CB86B).
 
+## Strength and exact retraction
+
+Production Genealogy and Fusion now implement minimal antichains of evidence sets:
+union across alternative proofs, pairwise union along conjunctive proofs, followed
+by removal of redundant supersets. Evidence classes stay attached to each path.
+An oracle-only path grounds a claim; a remaining report, presupposition or translated
+path stays weak. A bare `Verdict.Confirmed` cannot create such a path: an actual
+confirmation capability is required. Graph derivations assume valid supplied rules;
+they do not themselves mint oracle tokens or establish source authenticity.
+
+The 53-check production suite covers all 20 antichains over three evidence tokens,
+8,000 triples per ternary law, 32,768 cyclic-graph valuations and 32,768 withdrawal
+configurations. All pass, as do the original 114 substrate checks. The five reproduced
+old support-query regressions are fixed. Optimized property runtime was 6.62 seconds,
+21,760 KiB maximum RSS. Independent binary alternatives produce exactly 1,024 minimal
+environments at ten pairs: exact provenance can grow exponentially and has no hidden
+cap. See `STRENGTH.md` for proof sketches, alternatives rejected and API limits.
+
+Fusion now preserves per-claim oracle alternatives and refuses to flatten existential
+consequents during mechanical detachment. It remains intentionally weaker than a full
+FOL solver. Source-dependent rules must be represented as evidence dependencies in the
+graph; a free-text rule name alone does not capture a source dependency.
+
+## Restored modules: keep diagnostic-only
+
+On ten hand-authored discourse cases (27 sentences, all parsed), flat resolution
+resolved 10/12 pronouns; the two intended scope barriers stayed unresolved.
+Committed Threading resolved 3/12 and Permissive 5/12, with no gains over flat.
+Both lose named/definite candidates; later antecedents can fall off the modeled
+frontier. The modifier/scope generator also has an object/subject inconsistency:
+a three-modifier stack produced four object candidates but only one subject
+candidate, and unknown fake defaults to Intersective. Merely wiring these modules
+would not repair those meanings. Details and reproducible drivers: `RESTORED.md`.
+
+**Recommendation:** do not wire either restored subsystem into the default Pipeline.
+Keep the small diagnostic modules while these concrete defects remain visible;
+probabilistic ranking and solver reading-policy measurements are still pending.
+
 ## Remaining decisions and evidence
 
-- Strength/retraction: finite antichain prototype laws pass; production integration
-  and final results remain pending. See `STRENGTH.md`.
-- Solver/error handling: pinned Z3 environment installed; 31 Horn/FOL contract tests
-  pass, including partial-theory abstention and scope. Corpus benchmark results pending.
-- Graph-context thesis: saved high-effort results use the same item IDs, but CLI
-  prompt overhead has changed. Fresh low baselines are running; a contemporaneous
-  high ProverQA run will check the primary comparison. Low/high are effort settings
-  of gpt-5.5, not different model sizes.
-- Guarantee benchmark, restored modules, seam audit, merge guide and final next
-  three recommendations: pending Phases F–H.
+- Solver/error handling: pinned Z34.15.3.0;38 Python contract tests and22 scoped
+  exporter tests pass. The full Haskell gates pass1,138 checks across11 suites.
+  Benchmark parser caches are running; solver coverage/precision remain pending.
+- Graph-context thesis: fresh low ProverQA is90/120 (75.0%, Wilson95%66.6–81.9),
+  identical aggregate accuracy to historical high. Paired discordances3/3,
+  exact McNemar p=1.0. A contemporaneous high control is running because saved
+  runs had different CLI overhead. Low/high are effort settings, not model sizes.
+- Guarantee benchmark:64 deterministic generated cases exactly match independent
+  template expectations for labels and source support. This tests structured
+  admission, not unrestricted English parsing. Raw-model comparison is pending.
+- Fallback comparisons, final seam synthesis, merge guide and next three priorities:
+  pending remaining D–H work.

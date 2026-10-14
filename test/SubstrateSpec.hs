@@ -67,6 +67,13 @@ confirmFixture o c = case assertedClaims (fixtureDRS [c]) of
   [(a, _)] -> confirm o a
   _ -> Nothing
 
+-- | Grounded graph fixtures require the same typed oracle capability as the
+-- production bridge. A bare diagnostic Verdict cannot create a strong seed.
+addConfirmedFixture :: Node -> Genealogy -> Genealogy
+addConfirmedFixture n = case confirmFixture yesOracle (nodeClaim n) of
+  Just token -> addConfirmedNode (nodeId n) (nodeProv n) token
+  Nothing -> error "fixture oracle refused an explicitly authored assertion"
+
 -- | A unary claim about a named individual.
 cl :: String -> CanonCond
 cl n = CanPred n [CConstT "a"]
@@ -127,8 +134,8 @@ twoSupport =
     . addJustification (premise (NodeId 0) "oracle")
     . addNode (node 3 (cl "y")) Unknown
     . addNode (node 2 (cl "x")) Unknown
-    . addNode (node 1 (cl "q")) Confirmed
-    . addNode (node 0 (cl "p")) Confirmed
+    . addConfirmedFixture (node 1 (cl "q"))
+    . addConfirmedFixture (node 0 (cl "p"))
     $ emptyGenealogy
 
 --------------------------------------------------------------------------------
@@ -217,7 +224,7 @@ supportChecks =
   where
     onePremise =
       addJustification (premise (NodeId 0) "oracle")
-        (addNode (node 0 (cl "p")) Confirmed emptyGenealogy)
+        (addConfirmedFixture (node 0 (cl "p")) emptyGenealogy)
 
 --------------------------------------------------------------------------------
 -- 3. Genealogy: a claim cannot ground itself
@@ -274,7 +281,7 @@ cycleChecks =
         . addJustification (premise (NodeId 2) "oracle")
         . addJustification (derivation (NodeId 1) "b" [NodeId 0])
         . addJustification (derivation (NodeId 0) "a" [NodeId 1])
-        . addNode (node 2 (cl "r")) Confirmed
+        . addConfirmedFixture (node 2 (cl "r"))
         . addNode (node 1 (cl "q")) Unknown
         . addNode (node 0 (cl "p")) Unknown
         $ emptyGenealogy
@@ -341,8 +348,8 @@ retractionChecks =
     converged =
       addJustification (premise (NodeId 1) "oracle")
         . addJustification (premise (NodeId 0) "oracle")
-        . addNode (node 1 (cl "p")) Confirmed
-        . addNode (node 0 (cl "p")) Confirmed
+        . addConfirmedFixture (node 1 (cl "p"))
+        . addConfirmedFixture (node 0 (cl "p"))
         $ emptyGenealogy
 
 --------------------------------------------------------------------------------
@@ -576,14 +583,14 @@ scalarBlindSpotChecks =
              (addNode (node i (cl ("j" ++ show i))) Unknown g))
         (addJustification (premise (NodeId 1) "oracle")
            (addJustification (premise (NodeId 0) "oracle")
-              (addNode (node 1 (cl "q")) Confirmed
-                 (addNode (node 0 (cl "p")) Confirmed emptyGenealogy))))
+              (addConfirmedFixture (node 1 (cl "q"))
+                 (addConfirmedFixture (node 0 (cl "p")) emptyGenealogy))))
         [2 .. k + 1]
 
     -- One confirmed premise whose derivation covers [a,b) of the source.
     groundedOver a b =
       addJustification (premise (NodeId 0) "oracle")
-        (addNode (nodeP 0 (cl "p") (pvAt a b)) Confirmed emptyGenealogy)
+        (addConfirmedFixture (nodeP 0 (cl "p") (pvAt a b)) emptyGenealogy)
 
     -- The same claim twice. Same derivation in one graph, different in the
     -- other; both grounded, so the difference is corroboration and nothing else.
@@ -593,8 +600,8 @@ scalarBlindSpotChecks =
     twice p1 p2 =
       addJustification (premise (NodeId 1) "oracle")
         (addJustification (premise (NodeId 0) "oracle")
-           (addNode (nodeP 1 (cl "p") p2) Confirmed
-              (addNode (nodeP 0 (cl "p") p1) Confirmed emptyGenealogy)))
+           (addConfirmedFixture (nodeP 1 (cl "p") p2)
+              (addConfirmedFixture (nodeP 0 (cl "p") p1) emptyGenealogy)))
 
 --------------------------------------------------------------------------------
 -- 7. End to end, on the real front end

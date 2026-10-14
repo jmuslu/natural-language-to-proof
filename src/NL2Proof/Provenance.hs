@@ -39,12 +39,24 @@ module NL2Proof.Provenance
   , provRuleNames
   , provDepth
   , provSize
+    -- * Minimal alternative support
+  , Support
+  , supportZero
+  , supportOne
+  , supportAtom
+  , supportFromEnvironments
+  , supportEnvironments
+  , supportPlus
+  , supportTimes
+  , supportWithout
+  , supportHolds
     -- * Rendering
   , renderProvInline
   , renderProvTree
   ) where
 
 import Data.List (intercalate, nub, sortOn)
+import qualified Data.Set as S
 
 --------------------------------------------------------------------------------
 -- Sources and spans
@@ -203,3 +215,50 @@ renderProvTree = unlines . go 0
         [pad n ++ "lex " ++ show w ++ " @" ++ show s ++ "[" ++ show sp ++ "]"]
       ProvRule r ks -> (pad n ++ show r) : concatMap (go (n + 1)) ks
     pad n = replicate (2 * n) ' '
+
+--------------------------------------------------------------------------------
+-- Minimal alternative support
+--------------------------------------------------------------------------------
+
+-- | PosBool in minimal DNF: each inner set is a sufficient environment and the
+-- outer set holds independent alternatives. Subsumed environments are removed.
+-- This finite absorptive semiring preserves exact source-withdrawal distinctions,
+-- not proof multiplicity or numerical confidence. The constructor is hidden to
+-- preserve normalization; see research/STRENGTH.md for laws and termination.
+newtype Support a = Support (S.Set (S.Set a))
+  deriving (Eq, Ord, Show)
+
+supportFromEnvironments :: Ord a => [[a]] -> Support a
+supportFromEnvironments = normalize . S.fromList . map S.fromList
+
+normalize :: Ord a => S.Set (S.Set a) -> Support a
+normalize candidates = Support $ S.filter minimal candidates
+  where
+    minimal candidate = not $ any (`S.isProperSubsetOf` candidate) candidates
+
+supportEnvironments :: Support a -> [[a]]
+supportEnvironments (Support envs) = map S.toAscList (S.toAscList envs)
+
+supportZero :: Support a
+supportZero = Support S.empty
+
+supportOne :: Support a
+supportOne = Support (S.singleton S.empty)
+
+supportAtom :: a -> Support a
+supportAtom = Support . S.singleton . S.singleton
+
+supportPlus :: Ord a => Support a -> Support a -> Support a
+supportPlus (Support a) (Support b) = normalize (S.union a b)
+
+supportTimes :: Ord a => Support a -> Support a -> Support a
+supportTimes (Support a) (Support b) = normalize $ S.fromList
+  [ S.union x y | x <- S.toList a, y <- S.toList b ]
+
+-- | Reject entire derivations requiring disabled evidence. Removing individual
+-- atoms from environments would turn invalid derivations into unconditional ones.
+supportWithout :: (a -> Bool) -> Support a -> Support a
+supportWithout disabled (Support envs) = Support $ S.filter (not . any disabled) envs
+
+supportHolds :: Ord a => S.Set a -> Support a -> Bool
+supportHolds active (Support envs) = any (`S.isSubsetOf` active) envs

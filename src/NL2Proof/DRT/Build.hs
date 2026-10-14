@@ -210,8 +210,9 @@ predicatesOn v = nub . go
 -- @context@.
 --
 -- __The heuristic, stated explicitly:__ pick the accessible referent whose
--- introducing words sit latest in the text. Nothing else — no gender agreement,
--- no number agreement, no salience weighting, no world knowledge.
+-- introducing words sit latest in the text. Main-box constants are candidates
+-- too. Neuter it excludes attitude participants conservatively; there is no
+-- general gender/number agreement, salience weighting or world knowledge.
 --
 -- "Latest in the text" rather than "last added to the universe": see
 -- 'recencyOrdered'. The two agree today and stop agreeing the moment a

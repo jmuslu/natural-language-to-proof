@@ -11,22 +11,12 @@
 -- So reading this stage as establishing anything is a mistake. It removes
 -- duplicate storage; truth was settled upstream.
 --
--- == And bookkeeping is only safe here because verification already happened
+-- == Preserve the confirmation alternatives
 --
--- Merging two assertions of one claim destroys the fact that there were two.
--- Upstream of an oracle that would be catastrophic — independent corroboration
--- is information, and "two sources agree" must stay distinguishable from "one
--- source said it once" while truth is still undecided.
---
--- Downstream of the oracle it is safe, and for a precise reason: truth was
--- already settled in stage 2, so collapsing multiplicity here is only avoiding
--- storing the same confirmed fact five times. Nothing is being /established/ by
--- the merge.
---
--- The ordering is load-bearing. Verification needs retention; fusion needs
--- collapse; and they have to happen in that order, because a collapse performed
--- first destroys the derivation record that retraction depends on
--- ("NL2Proof.Genealogy").
+-- Claims share storage, but their support labels retain each independent oracle
+-- confirmation. Withdrawing one oracle removes just those environments. Repeated
+-- copies of the same oracle/claim identity are idempotent, not corroboration.
+-- The claim table and genealogy keep the richer extraction provenance upstream.
 --
 -- == The gate
 --
@@ -39,6 +29,8 @@ module NL2Proof.Fusion
   , fusedClaims
   , fusedOracles
   , fusedDropped
+  , fusedSupport
+  , withoutOracle
   , fuse
   , fusedContains
   , withoutClaim
@@ -47,55 +39,70 @@ module NL2Proof.Fusion
   , compressionRatio
     -- * Mechanical entailment over a confirmed base
   , entailedFrom
+  , entailedWithSupport
   , detachable
     -- * Rendering
   , renderFused
   ) where
 
 import Data.List (nub, sort)
+import qualified Data.Map.Strict as M
 
 import NL2Proof.DRT.Canonical
+import NL2Proof.Provenance
 import NL2Proof.Verify.Oracle
 
 --------------------------------------------------------------------------------
 -- Fused output
 --------------------------------------------------------------------------------
 
--- | A deduplicated set of confirmed claims, with the loss measured.
+-- | Deduplicated confirmed claims with their alternative oracle dependencies.
 --
 -- 'fusedDropped' exists for the same reason it did on the old branch: drift you
 -- have measured is different in kind from drift you have decided not to look at.
 -- Abstract and positional: neither construction nor exported record updates can
 -- introduce an unconfirmed claim. Only 'fuse' constructs a base; 'withoutClaim'
 -- can weaken one for novelty checks.
-data Fused = MkFused [CanonCond] [String] Int
+data Fused = MkFused
+  (M.Map CanonCond (Support (String, CanonCond))) [String] Int
   deriving (Eq, Show)
 
 -- | Sorted, deduplicated claims, each confirmed by an oracle.
 fusedClaims :: Fused -> [CanonCond]
-fusedClaims (MkFused claims _ _) = claims
+fusedClaims (MkFused claims _ _) = M.keys claims
 
--- | Oracles contributing to the original confirmed base.
+-- | Oracles contributing to the original confirmed base, except withdrawn ones.
 fusedOracles :: Fused -> [String]
 fusedOracles (MkFused _ oracles _) = oracles
 
--- | Redundant confirmations removed by fusion.
 fusedDropped :: Fused -> Int
 fusedDropped (MkFused _ _ dropped) = dropped
 
-fuse :: [Confirmed] -> Fused
-fuse cs = MkFused kept (sort (nub (map confOracle cs))) (length cs - length kept)
-  where
-    kept = dedupe (map confClaim cs)
+-- | Minimal alternative sets of (oracle, exact claim) confirmation identities.
+-- These explanatory identities are not Confirmed capabilities: only fuse can
+-- construct the certified base from the actual capabilities.
+fusedSupport :: Fused -> CanonCond -> Support (String, CanonCond)
+fusedSupport (MkFused claims _ _) c = M.findWithDefault supportZero c claims
 
--- | Remove a claim from a certified base. This can only discard confirmation,
--- never introduce it; reward uses it to ask whether the rest entails a claim.
+fuse :: [Confirmed] -> Fused
+fuse cs = MkFused kept (sort (nub (map confOracle cs))) (length cs - M.size kept)
+  where
+    kept = M.fromListWith supportPlus
+      [(confClaim c, supportAtom (confOracle c, confClaim c)) | c <- cs]
+
+-- | Weakening cannot introduce an unconfirmed claim.
 withoutClaim :: CanonCond -> Fused -> Fused
 withoutClaim claim (MkFused claims oracles dropped) =
-  MkFused (filter (/= claim) claims) oracles dropped
+  MkFused (M.delete claim claims) oracles dropped
+
+-- | Withdraw one oracle's contributions; independent confirmations survive.
+withoutOracle :: String -> Fused -> Fused
+withoutOracle oracle (MkFused claims oracles dropped) =
+  MkFused (M.filter (/= supportZero) (M.map (supportWithout ((== oracle) . fst)) claims))
+    (filter (/= oracle) oracles) dropped
 
 fusedContains :: Fused -> CanonCond -> Bool
-fusedContains f c = c `elem` fusedClaims f
+fusedContains (MkFused claims _ _) c = M.member c claims
 
 --------------------------------------------------------------------------------
 -- Box-level compression
@@ -154,26 +161,40 @@ dedupe = squash . sort
 -- here, because "a proof was found" is exactly the signal the standing
 -- limitations forbid rewarding on its own.
 entailedFrom :: Fused -> [CanonCond]
-entailedFrom f = go (fusedClaims f)
+entailedFrom = M.keys . entailedWithSupport
+
+-- | Every material-implication proof retains the rule's confirmation and all
+-- premise confirmations. Alternatives sum; conjunctive requirements multiply.
+-- This proves a consequence from certified premises without minting a new
+-- Confirmed capability. The finite antichain fixed point terminates on cycles.
+entailedWithSupport :: Fused -> M.Map CanonCond (Support (String, CanonCond))
+entailedWithSupport (MkFused initial _ _) = go initial
   where
-    go base =
-      let new = nub [c | c <- concatMap (detachable base) base, c `notElem` base]
-      in if null new then base else go (base ++ new)
+    go old =
+      let new = M.unionWith supportPlus old $ M.fromListWith supportPlus
+            [(c, supportTimes ruleSupport (foldl supportTimes supportOne
+                   [M.findWithDefault supportZero p old | p <- canonConds antecedent]))
+            | (rule@(CanImp antecedent _), ruleSupport) <- M.toList old
+            , c <- detachable (M.keys old) rule]
+      in if new == old then old else go new
 
 -- | Modus ponens on one condition, with its side condition made explicit.
 --
 -- @CanImp a b@ detaches to @b@'s conditions when every condition of @a@ is in the
--- base — __and when @a@ binds no referent__.
+-- base — __and when neither box binds a referent__.
 --
 -- That second requirement is not a technicality. In DRT a duplex condition whose
 -- antecedent box has a non-empty universe is a __universal quantification__, not
 -- a material implication. Detaching from it without producing a witness would be
 -- unsound: from "every student reads a book" and "student(r0)" you may conclude
 -- something, but not by treating the duplex as @P -> Q@ over closed formulas.
--- So the guard is @null (canonUniverse a)@ and the incompleteness is accepted.
+-- Both boxes must bind no referent. An existential consequent cannot be
+-- flattened into free literals either; that would lose the existential scope.
+-- The incompleteness is accepted; a scoped FOL backend handles those cases.
 detachable :: [CanonCond] -> CanonCond -> [CanonCond]
 detachable base (CanImp a b)
   | null (canonUniverse a)
+  , null (canonUniverse b)
   , all (`elem` base) (canonConds a)
   = canonConds b
 detachable _ _ = []

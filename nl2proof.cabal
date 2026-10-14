@@ -63,6 +63,7 @@ library
                       NL2Proof.Reward
                       NL2Proof.Bench.JSON
                       NL2Proof.Bench.ProofWriter
+                      NL2Proof.Bench.Export
                       NL2Proof.Readings.Modifier
                       NL2Proof.Readings.Alternatives
                       NL2Proof.Discourse.SDRT
@@ -274,6 +275,34 @@ test-suite semantic-repair
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          SemanticRepairSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Exact support algebra and capability-backed graph regression properties.
+test-suite strength-spec
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          StrengthSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- One model load for gold-free, scoped JSONL benchmark requests.
+executable nl2proof-parse-json
+    import:           warnings
+    hs-source-dirs:   tools
+    main-is:          ParseJSON.hs
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+    ghc-options:      -threaded -rtsopts
+
+test-suite export
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ExportSpec.hs
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof

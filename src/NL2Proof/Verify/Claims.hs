@@ -245,7 +245,9 @@ retractionImpact s ct = (before, after, before - after)
 
 -- | Turn a claim table into a genealogy, asking the oracle about each fact.
 --
--- Every fact becomes a __premise__ node carrying the oracle's verdict. Derived
+-- Every fact becomes a __premise__ node carrying the oracle's verdict. Only a
+-- successful typed confirmation contributes oracle evidence; uncovered or refuted
+-- assertions retain weak evidence and never ground the graph. Derived
 -- nodes are added afterwards by whatever does the deriving; this function only
 -- establishes the grounded floor.
 --
@@ -261,9 +263,10 @@ genealogyOf :: Oracle -> ClaimTable -> Genealogy
 genealogyOf o ct =
   foldl add emptyGenealogy (zip (map NodeId [0 ..]) (ctFacts ct))
   where
-    add g (i, f) =
-      addJustification (premise i "oracle-premise")
-        (addNode (Node i (factClaim f) (factProv f)) (check o (factClaim f)) g)
+    add g (i, f) = case confirm o (factAssertion f) of
+      Just token -> addConfirmedNode i (factProv f) token g
+      Nothing -> setVerdict i (check o (factClaim f))
+        (addAssertedNode i (factProv f) (factAssertion f) g)
 
 --------------------------------------------------------------------------------
 -- Rendering

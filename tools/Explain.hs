@@ -23,7 +23,7 @@ module Main (main) where
 import Control.Exception (SomeException, evaluate, try)
 import Control.Monad (when)
 import Data.Char (isSpace)
-import Data.List (intercalate, isPrefixOf, nub, sortOn)
+import Data.List (find, intercalate, isPrefixOf, nub, sortOn)
 import qualified Data.Map as M
 import GHC.Clock (getMonotonicTime)
 import System.Environment (getArgs)
@@ -298,7 +298,7 @@ explainSentence choice o r = SentenceExplain
     parses = srParses r
     nReadings = length parses
     shown = if oAll o then parses else take 1 parses
-    readings = [ mkReading choice r s (if k == 0 then srDRS r else Nothing) | (k, s) <- zip [0 :: Int ..] shown ]
+    readings = map (mkReading choice r) shown
     selTree = case readings of { (rd : _) -> rdTree rd; [] -> Nothing }
     selLeaves = maybe [] dtLeaves selTree
 
@@ -480,38 +480,21 @@ explainSentence choice o r = SentenceExplain
 -- Readings: replay, type check, DRS
 --------------------------------------------------------------------------------
 
-mkReading :: ParserChoice -> SentenceResult -> H.Sign -> Maybe DRS -> Reading
-mkReading choice r s pipelineDRS = Reading s tree form drs
+mkReading :: ParserChoice -> SentenceResult -> H.Sign -> Reading
+mkReading choice r s = Reading s tree form drs
   where
     tree = case choice of
       CCGBankParser m -> replayCCG m (srTokens r) s
       HandLexicon lx  -> replayHand lx s
-    form = case typeOf [] (H.sSem s) of
-      Right t | t == catTy (H.sCat s) -> Right (normalize (H.sSem s))
-              | otherwise -> Left ("meaning has type " ++ showTy t ++ " but category "
-                                     ++ show (H.sCat s) ++ " demands " ++ showTy (catTy (H.sCat s)))
-      Left e -> Left (renderTypeError e)
-    -- The selected reading's DRS is the pipeline's own. Others are built with
-    -- the same exported steps the pipeline's back end runs.
-    drs = case (pipelineDRS, form) of
-      (Just d, _) -> Just d
-      (Nothing, Right nf) -> Just (localDRS choice r s nf)
-      _ -> Nothing
-
-localDRS :: ParserChoice -> SentenceResult -> H.Sign -> Term -> DRS
-localDRS choice r s nf = case choice of
-  HandLexicon lx ->
-    fst (projectPresuppositions (toDRS (buildProvIndex lx (H.sProv s)) (H.sProv s) nf))
-  CCGBankParser m ->
-    let toks = srTokens r
-        spans = [ sp | (_, sp, _) <- provLeaves (H.sProv s) ]
-        idx = M.fromList
-          [ (c, ProvLex (SourceId "input") (tokSpan t) (tokText t))
-          | (i, t) <- zip [0 ..] toks, tokSpan t `elem` spans
-          , LexSign _ (LexTerm tm _ _) _ <- lexicalSigns m i (tokText t)
-          , c <- constNames tm ]
-        (d1, _) = resolveLocalAnaphora idx (toDRS idx (H.sProv s) nf)
-    in fst (projectPresuppositions d1)
+    shared = find ((== s) . rrSign) (srReadings r)
+    -- The same translated reading feeds display and solver export. Replaying
+    -- syntax for the tree above never reconstructs a second semantic meaning.
+    form = case shared of
+      Just reading -> case rrForm reading of
+        Just nf -> Right nf
+        Nothing -> Left (intercalate "; " (map diagMsg (traceDiagnostics (rrTrace reading))))
+      Nothing -> Left "candidate absent from shared pipeline readings"
+    drs = shared >>= rrDRS
 
 -- | A chart candidate during replay.
 data Cand = Cand

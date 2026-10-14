@@ -827,3 +827,199 @@ the expected reasons; two positive consumers compiled. Build, all nine suites
 and Explain gate passed. The corrected optional real-corpus suite also passed
 8/8; kind remains unsupported as explicitly tested. Python D/E contract tests
 passed38/38. Gate-only checkpoint ready.
+
+Gate-strengthening checkpoint: `7afac4d`, pushed to origin astra/research. Source freeze released for C/D integration.
+
+### C6 prediction — production integration, 2026-10-14
+
+B and the separate oracle gate checkpoint are now pushed and production edits
+released by the coordinator. Copied the already-tested Provenance/Genealogy/Fusion
+candidate and minimal typed Claims bridge; migrated existing Substrate fixtures to
+actual confirmation tokens. Prediction: production sources preserve the candidate
+results, Strength53/53 and Substrate114/114; the verdict-forgery negative still
+fails for the expected token/verdict type mismatch. Exact commands (reusing private
+object directories, now importing production `src` only):
+
+```
+ghc -O1 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -isrc -itest -outputdir research/runs/strength-design/candidate-build test/StrengthSpec.hs -o research/runs/strength-design/strength-spec > research/runs/strength-design/production-build.log 2>&1
+research/runs/strength-design/strength-spec > research/runs/strength-design/production-test.log 2>&1
+ghc -O1 -isrc -itest -outputdir research/runs/strength-design/substrate-build test/SubstrateSpec.hs -o research/runs/strength-design/substrate-spec > research/runs/strength-design/substrate-production-build.log 2>&1
+research/runs/strength-design/substrate-spec > research/runs/strength-design/substrate-production-test.log 2>&1
+ghc -fno-code -isrc -outputdir research/runs/strength-design/negative-build test/compile-fail/GenealogyVerdict.hs > research/runs/strength-design/negative-production.log 2>&1
+```
+
+The coordinator separately registers the suite and owns all mandatory integrated
+gates, STATE, commits, and push. This integration does not change the gate script.
+
+### 2026-10-14 Phase D shared backend and exporter: green-run prediction
+
+After B and oracle-gate checkpoints were pushed, implemented `ReadingResult`/`srReadings` through the existing Pipeline backend. Selected fields still use the first candidate, while every alternative receives its own type check, normalized form, local resolution/projection, score and notes. Added the base-only JSON serializer and persistent gold-free exporter. Prediction: all 22 export checks pass; all 29 semantic repair checks remain unchanged. Exact commands: `runghc -isrc -itest test/ExportSpec.hs > research/runs/phase-d/export-green.log 2>&1`; `runghc -isrc -itest test/SemanticRepairSpec.hs > research/runs/phase-d/semantic-regression.log 2>&1`. A compiler failure is an implementation issue, not a measured language result.
+
+D integration refactor: Explain now consumes shared per-reading Pipeline normal
+forms and DRSs instead of reimplementing the alternative-reading DRS conversion.
+Prediction: existing Explain gate outputs retain their semantics, while every
+displayed/exported alternative has one translation path. Full integrated gate
+command will be recorded once both agents declare stable. No admission policy
+change is intended by this refactor.
+
+### C6 result — production targeted checks, 2026-10-14
+
+Production-source builds succeeded, Strength passed **53/53**, and Substrate passed
+**114/114**. The GenealogyVerdict fixture failed for the intended `Confirmed` token
+versus `Verdict` mismatch. No compatibility fix was needed after copying the tested
+candidate. Production logs are `production-{build,test}.log`,
+`substrate-production-{build,test}.log`, and `negative-production.log` under
+research/runs/strength-design/. Full combined gates remain coordinator-owned.
+
+Phase D shared export green result: 22/22 export checks and 29/29 semantic repairs passed; `git diff --check` clean. Prediction for the persistent-process smoke: four request lines produce four JSON response lines, the third rejects the unwhitelisted label key, and the fourth succeeds after that error. The first query's cross-context existential anaphor is incomplete/residual; the second context and query are complete. Exact command: `runghc -isrc tools/ParseJSON.hs --hand < research/runs/phase-d/export-smoke.jsonl > research/runs/phase-d/export-smoke-output.jsonl 2> research/runs/phase-d/export-smoke-stderr.log`; validation: `python3 research/runs/phase-d/check-export-smoke.py`.
+
+Phase D persistent smoke passed: four JSONL responses, third rejects label, fourth succeeds; context existential query remains residual; simple context/query are complete. Output and validator are ignored under research/runs/phase-d.
+
+## 2026-10-13 — C/D integrated release gate prediction
+
+Prediction: all existing suites plus Strength53 and Export22 pass (1,138 checks),
+along with the eighteen-case oracle boundary and eight-case Explain gate. Shared
+all-reading translation should preserve selected behavior; the new source-bound
+support algebra should retain old114 Substrate checks with token-backed fixtures.
+Exact command: `bash research/run-gates.sh phase-cd > research/runs/phase-cd-driver.log 2>&1`.
+The additional GenealogyVerdict compile-fail fixture already rejects individually;
+it will join the release script in another separate gate-strengthening commit.
+Python contract command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_*.py' -v > research/runs/d-python-integrated.log 2>&1`.
+
+## 2026-10-13 21:29 America/New_York — E/A-low ProntoQA prediction
+
+Prediction: the fixed 120 five-hop fictional ProntoQA items will remain near the
+saved high-effort ceiling (120/120), with strict-valid outputs and zero tool use.
+Command (to start once FOLIO-low exits):
+`python3 research/runs/phase-e-baselines/run_guarded.py prontoqa > research/runs/phase-e-baselines/prontoqa-full.log 2>&1`.
+Underlying unchanged runner: `python3 bench/common/run_codex.py prontoqa gpt-5.5 low 120 2`.
+No labels or explanations enter prompt_body; only context and statement. The
+contemporaneous ProverQA-high run remains independent; total concurrency stays4.
+Results pending.
+
+## 2026-10-13 21:29 America/New_York — E FOLIO-low analysis prediction
+
+Prediction: the completed run will have full operational/valid-label coverage;
+low strict accuracy will not exceed historical high's99/120. Command after
+completion: `python3 research/runs/phase-e-baselines/summarize.py folio > research/runs/phase-e-baselines/folio-low-summary.jsonl`.
+Report strict/lenient, coverage, answered precision, end-to-end accuracy, Wilson,
+paired exact McNemar and token usage. FOLIO's known label-noise caveat remains.
+
+E FOLIO-low result: 120 successful unique first-attempt rows, zero tools/errors,
+100% valid-answer coverage. Strict and lenient accuracy92/120=76.67%, Wilson95%
+[68.34%,83.33%]; answered precision and end-to-end accuracy are the same because
+coverage is complete. Historical high99/120; paired both-correct91,both-wrong20,
+low-only1,high-only8, exact McNemar p=.0390625. Mean low tokens input14,283.775,
+output77.042,reasoning70.225; historical high input16,704.225,output170.408,
+reasoning163. Prediction held. The historical reference's overhead drift and
+FOLIO label noise preclude treating this as a clean causal effort estimate.
+ProntoQA-low now active; contemporaneous ProverQA-high continues independently.
+Commit: baseline summary pending final conditions.
+
+### F0 prediction — generated guarantee benchmark tests first, 2026-10-14
+
+Approved protocol:64 synthetic items,8 families, seed20261013; Established,
+WeakOnly, Unsupported, Conflict. Conflict denotes attributed evidence on both
+polarities, not oracle truth or explosion. The model sees only protocol+narrative;
+the graph adapter sees only structured fixtures; gold is independent template case
+analysis. Before generator/adapter implementation, the new tests should fail at
+missing `generate` import, establishing a red target. Command:
+
+```
+python3 -m unittest discover -s bench/retraction -p 'test_*.py' > research/runs/strength-design/retraction-red.log 2>&1
+```
+
+No model calls or parser-fidelity claim are part of this structured admission test.
+
+### 2026-10-14 Phase G Threading/SDRT evidence: prediction
+
+Compare unchanged flat discourse against Committed and Permissive Threading on ten handcrafted texts, using the hand attitude lexicon plus a transparent definite-determiner fixture (no corpus model load). Prediction: both SDRT policies regress named/definite antecedents because their rankings contain Ref only; Committed additionally loses antecedents after coordinating interludes, and last-edge-only Permissive loses them by four sentences. Neither should leak referents through negation or attitude barriers. This is a capability/safety probe, not an estimate of natural-discourse accuracy. Exact command: `runghc -isrc research/runs/phase-g/ThreadingProbe.hs > research/runs/phase-g/threading.jsonl 2> research/runs/phase-g/threading.stderr`.
+
+### 2026-10-14 Phase G Alternatives/Modifier evidence: prediction
+
+Probe five handwritten sentences with the hand fragment plus explicitly intersective fake/gun fixtures to expose the existing class table's limitation. Prediction: Every student reads a book generates two closed, typed scope readings; relatives and negative quantifiers remain one; the ancient/Chinese/red stack generates unlicensed fused alternatives as well as its licensed Chinese-dragon candidate. `classifyModifier fake` defaults Intersective, so annotation alone cannot correct the deliberately supplied intersective fake-gun meaning. Generated well-typed alternatives are not asserted facts or validated lexical readings. Exact command: `runghc -isrc research/runs/phase-g/AlternativesProbe.hs > research/runs/phase-g/alternatives.jsonl 2> research/runs/phase-g/alternatives.stderr`.
+
+Phase G Threading result: all27 sentences in10 authored texts parsed;12 pronouns total. Flat resolves10 and preserves the2 intended negation/report barriers. Committed resolves3, losing7 resolutions across6 texts; Permissive resolves5, losing5 across5 texts. Neither improves a case. The Alternatives probe initially failed to compile because composition operators adjacent to JStr were read as module qualification; corrected without changing its hypothesis. Drivers are now preserved as research/probe-threading.hs and research/probe-alternatives.hs for reproducibility. Prediction unchanged for the five Alternatives cases. Exact rerun: `runghc -isrc research/probe-alternatives.hs > research/runs/phase-g/alternatives.jsonl 2> research/runs/phase-g/alternatives.stderr`.
+
+Phase G Alternatives first result: scope predictions2/1/1 confirmed and all returned forms closed/typed. The subject modifier-stack prediction was wrong: both stack/fake subject examples returned only the surface reading. Inspection explains why: modifierChains collects every unary predicate on the variable, including the intransitive verb sleep, then treats the final predicate as noun head; the actual noun fails its all-modifiers test. Add matched object-position controls. Prediction: `John sees an ancient Chinese red dragon` generates4 candidates (surface plus3 fusions, only Chinese-dragon fusion class-licensed); `John sees a fake gun` generates2, fake classified Intersective with unlicensed fusion. Exact command: `runghc -isrc research/probe-alternatives.hs > research/runs/phase-g/alternatives-seven.jsonl 2> research/runs/phase-g/alternatives-seven.stderr`.
+
+## 2026-10-13 — D/E gold-free benchmark parser cache prediction
+
+Prediction: the ProverQA-hard and FOLIO samples have many residual sentences;
+ProofWriter coverage improves with POS backoff, while ProntoQA invented words
+remain a dictionary coverage problem. Skeptical enumeration may hit its explicit
+64-pair cap on ambiguous theories. No solver or accuracy result is inferred from
+parse success. Each inference request contains exactly id/context/statement;
+labels/gold FOL never cross the parser process boundary.
+Exact command: `bash research/run-parser-caches.sh`. It snapshots the built
+`nl2proof-parse-json` executable and runs
+`research/.venv/bin/python bench/reasoning/run.py parse --bench all --limit 120 --binary research/runs/phase-d/parser --output research/runs/phase-d/parses-default.jsonl`
+and the same command with `--pos-backoff --output research/runs/phase-d/parses-pos.jsonl`.
+The four fixed sample files have globally unique string IDs. Each cache fingerprints
+the exact request and executable/configuration. ProverQA is processed first.
+
+### F0 result and F1 prediction — independent fixtures versus production graph, 2026-10-14
+
+F0 failed as expected at `ModuleNotFoundError: generate`. Implemented the seeded
+generator, gold-isolated prompt, and new adapter using production Genealogy with
+typed authored DRS admission. Prediction: all64 independently specified template
+outcomes agree with production labels, class-correlated source environments and
+both groundedness booleans; four Python tests pass, including prompt isolation and
+unknown-class fail-closed behavior. Query polarity doubles the four withdrawal
+regimes in each family; this is64 designed cases, not64 independent random draws.
+Commands:
+
+```
+ghc -O1 -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -isrc -outputdir research/runs/strength-design/retraction-build tools/RetractionBench.hs -o research/runs/strength-design/retraction-bench > research/runs/strength-design/retraction-build.log 2>&1
+python3 bench/retraction/generate.py --seed 20261013 --output bench/retraction/sample.jsonl
+RETRACTION_BENCH_BIN="$PWD/research/runs/strength-design/retraction-bench" python3 -m unittest discover -s bench/retraction -p 'test_*.py' > research/runs/strength-design/retraction-tests.log 2>&1
+```
+
+Phase G Alternatives follow-up confirmed the object-position control predictions: scope counts2/1/1 on quantifier/relative/negation probes; subject modifier stacks1 each; object Chinese stack4 alternatives with only Chinese fusion licensed; object fake fixture2 with fake still Intersective/unlicensed fusion. All seven cases' returned terms are closed and type t. Preserved both drivers and exact case/metric/command recommendations in research/RESTORED.md. Recommendation: no default SDRT/Threading integration, no unvalidated coupling/ranking admission; preserve scope generation as a bounded opt-in experiment.
+
+### F1 result and F2 prediction — local scoring and graph artifact, 2026-10-14
+
+F1 passes all4 tests, including exact64/64 template outcomes. The adapter compiles
+with no own warnings; the JSON dependency emits its existing renderJSON shadowing
+warning. The shared lenient scorer is hardcoded to True/False/Uncertain, so this
+four-label benchmark needs local parsing. Added parser tests first: the run below
+should fail at missing score import, then pass5/5 after local implementation.
+Prediction: graph evaluator emits64 correct labels and64 exact support records;
+all families8/8. Model prompts/sample are now frozen for the raw baseline.
+
+```
+RETRACTION_BENCH_BIN="$PWD/research/runs/strength-design/retraction-bench" python3 -m unittest discover -s bench/retraction -p 'test_*.py' > research/runs/strength-design/retraction-score-red.log 2>&1
+```
+
+F2 red result: expected missing `score` import. Implemented local four-label
+parser and graph output evaluator. Follow-up commands under the same prediction:
+
+```
+RETRACTION_BENCH_BIN="$PWD/research/runs/strength-design/retraction-bench" python3 -m unittest discover -s bench/retraction -p 'test_*.py' > research/runs/strength-design/retraction-final-tests.log 2>&1
+python3 bench/retraction/evaluate_graph.py --binary research/runs/strength-design/retraction-bench --output bench/retraction/results/graph.jsonl > research/runs/strength-design/retraction-graph-summary.json
+python3 bench/retraction/score.py bench/retraction/results/graph.jsonl > research/runs/strength-design/retraction-graph-score.json
+```
+
+### F2 result — graph benchmark and scoring ready, 2026-10-14
+
+All5 tests pass (0.154s), including all64 independent exact support records. Graph
+label score64/64, support/class/source score64/64, all8 families8/8; subprocess
+evaluation0.071111s. Label mix: Established18, WeakOnly20, Unsupported18, Conflict8.
+Sample is66021 bytes of locally authored synthetic data. Five checks are seeded
+reproducibility/family balance; gold-isolated prompts; template-vs-production exact
+outputs; malformed admission fail-closed; generic four-label strict/lenient scoring.
+Graph raw outcomes live in ignored bench/retraction/results/graph.jsonl; summaries
+in research/runs/strength-design/retraction-graph-{summary,score}.json. README
+records commands, caveats, and the pending raw-model comparison. No parser-fidelity
+or independent-sampling accuracy claim follows from these designed fixtures.
+
+### 2026-10-14 Phase G/D sortal-policy probe: prediction
+
+CCGSem sortal constants are `person` and `thing`; Bench.ProofWriter's comparison adapter removes positive bound sortals while the general Python backends retain them. Predict that `red(Bob)` plus `person(x) & red(x) -> big(x)` gives Unknown in both Horn and FOL without person(Bob), while explicitly removing this benchmark-domain guard yields True. This is a strengthening dataset convention, not general English-equivalent normalization. Audit only newline-terminated cache records and their gold-free DRSs; no benchmark labels or gold logic opened. Early caches currently contain ProverQA, so do not apply ProofWriter policy to them. Exact command: `research/.venv/bin/python research/runs/phase-g/domain-probe.py > research/runs/phase-g/domain-probe.log`.
+
+C/D integrated gate result: build passed; all eleven suites (1,138 checks) passed;
+eighteen negative oracle checks and two positive consumers passed; all eight
+Explain cases passed after shared-reading refactor. Python38 tests passed. One
+nonfunctional name-shadow warning remains in JSON serializer, tracked for cleanup.
+Core C and scoped D infrastructure are ready for checkpoint; benchmark/cache and
+fallback experiments remain active, with no empirical accuracy claim from tests.

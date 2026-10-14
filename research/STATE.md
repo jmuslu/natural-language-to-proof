@@ -1,13 +1,14 @@
 # Research state
 
-- Phase: B complete; separate oracle-gate strengthening; A complete. Independent C design, D solver, E raw baselines active.
-- Last commit: `24c3cc2` (pushed); branch `astra/research`. Required reading complete.
+- Phase: C production algebra + D solver/export integration; A/B complete and pushed. E baselines active.
+- Last commit: `7afac4d` (pushed, oracle gate18 negatives); prior B `24c3cc2`. Branch `astra/research`.
 - Next three actions:
-  1. Commit/push gate-only checkpoint (all gates passed); then integrate C production algebra.
-  2. Release agents to production C algebra and D exporter once gate checkpoint is pushed.
-  3. Integrate persistent parser export with Python Horn/Z3 backends and measure B/C/D benchmark conditions.
-- Results: B default theory exact86.7%, POS93.0%; whole32/120 versus65/120; zero converted-wrong but16 typed/rejected bad DRSs. POS repairs round, not kind (no JJ evidence). Corpus6/7 before expectation correction; local29/29. D inference31/31 green.
-- Optional corpus verification complete8/8; `research/runs/phase-b/corpus-release.log`. Python D/E tests38/38.
-- Running jobs: root `bash research/run-gates.sh oracle-gate-strengthening`, logs `research/runs/oracle-gate-strengthening/`. Inventory agent ProverQA-low complete90/120; fresh ProverQA-high session94974 and FOLIO-low session43060, then ProntoQA, logs `research/runs/phase-e-baselines/`. Other B corpus/coverage/Explain jobs complete. Strength agent new tests prepared, existing source frozen until checkpoints. Semantics agent B doc updates and D exporter new files only.
-- Tools: research/.venv z3-solver4.15.3.0 installed successfully.
-- Open questions: retained spurious coordination readings, dictionary-POS limits, source capability binding in graph, FOL versus signed Horn semantics. No main/tag changes.
+  1. Commit/push verified C algebra + D infrastructure checkpoint; all gates passed1138, Python38.
+  2. Snapshot compiled persistent parser and collect gold-free caches on all four120-item benchmark samples.
+  3. Evaluate Horn/FOL with top/skeptical/credulous policies, then generate C graph prompts and fallback experiments.
+- Parser caches: `bash research/run-parser-caches.sh` for all480 sample items twice (default/POS), outputs `research/runs/phase-d/parses-{default,pos}.jsonl`; one model load per condition.
+- Running jobs: inventory agent FOLIO-low complete92/120; contemporaneous ProverQA-high session94974 and ProntoQA-low session61855, outputs `research/runs/phase-e-baselines/`. Root phase-cd gates complete green; logs `research/runs/phase-cd/`. Parser caches still active.
+- C candidate:53/53 properties/regressions, old Substrate114/114 compatibility; production integration complete, full gates pending. F64 generated benchmark matches independent expected outcomes; raw F run queued with inventory agent.
+- D candidate: Python solver/runner38/38; Haskell exporter22/22, shared reading API and Explain migration complete. z3-solver4.15.3.0 in research/.venv.
+- B results: default exact86.7% theory/90.5% q/32 whole; POS93.0%/95.6%/65 whole of120. 0 converted-wrong,16 typed/rejected bad meanings; round repaired, kind no JJ remains unsupported. Real-corpus8/8.
+- Open questions: retained wrong coordination alternatives; beam/cap completeness, FOL vs signed Horn benchmark conventions, graph source/capability binding. No main/tag changes.

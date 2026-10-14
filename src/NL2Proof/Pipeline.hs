@@ -23,7 +23,8 @@
 -- are one shared back end, so both are held to the same discipline.
 module NL2Proof.Pipeline
   ( -- * Results
-    SentenceResult(..)
+    ReadingResult(..)
+  , SentenceResult(..)
   , PipelineResult(..)
     -- * Running
   , ParserChoice(..)
@@ -38,7 +39,7 @@ module NL2Proof.Pipeline
   , renderSentenceResult
   ) where
 
-import Data.List (intercalate, nub, sort)
+import Data.List (find, intercalate, nub, sort)
 import qualified Data.Map as M
 
 import NL2Proof.Collapse.Class
@@ -59,6 +60,17 @@ import NL2Proof.Trace
 -- Results
 --------------------------------------------------------------------------------
 
+-- | One returned parser candidate after the shared type check and DRS steps.
+-- Failed type checks remain explicit, with no fabricated form or box. Parser
+-- scores describe search ranking only, and are absent for the hand fragment.
+data ReadingResult = ReadingResult
+  { rrSign  :: Sign
+  , rrForm  :: Maybe Term
+  , rrDRS   :: Maybe DRS
+  , rrScore :: Maybe Double
+  , rrTrace :: Trace
+  }
+
 data SentenceResult = SentenceResult
   { srSentence :: Sentence
   , srLattice  :: Lattice
@@ -68,7 +80,9 @@ data SentenceResult = SentenceResult
   , srUnknown  :: [Token]
     -- ^ Raw tokens no candidate unit covers.
   , srParses   :: [Sign]
-    -- ^ __All__ derivations, not the selected one.
+    -- ^ All returned derivations, within the front end's search bounds.
+  , srReadings :: [ReadingResult]
+    -- ^ Every returned candidate uses the same back end as the selected one.
   , srChosen   :: Maybe Sign
   , srForm     :: Maybe Term
     -- ^ Beta-normal form of the chosen derivation's meaning.
@@ -158,6 +172,7 @@ processHand lexicon src sent =
     , srTokens = toks
     , srUnknown = unknown
     , srParses = parses
+    , srReadings = readings
     , srChosen = chosen
     , srForm = form
     , srDRS = drs
@@ -196,7 +211,7 @@ processHand lexicon src sent =
 
     parses = parse lexicon src lat S
 
-    (chosen, form, drs, backTrace) =
+    (chosen, form, drs, readings, backTrace) =
       backEnd
         BackEnd
           { beTieBreak =
@@ -207,6 +222,7 @@ processHand lexicon src sent =
               let (d1, t1) = projectPresuppositions d
               in (d1, t1 <> reportDefiniteDecisions (sProv sg) (normalize (sSem sg)))
           , beNotes = const mempty
+          , beScore = const Nothing
           }
         src sent (null unknown) parses
 
@@ -221,6 +237,7 @@ processCCG model src sent =
     , srTokens = toks
     , srUnknown = unknown
     , srParses = parses
+    , srReadings = readings
     , srChosen = chosen
     , srForm = form
     , srDRS = drs
@@ -241,9 +258,10 @@ processCCG model src sent =
     roots = spRoots sp
     parses = map toSign roots
     toSign s = Sign (maybe S id (ccatToCat (ssCat s))) (ssSem s) (ssProv s)
-    -- The back end always selects the first candidate, so the stipulations to
-    -- log are those of the first root.
-    chosenNotes = case roots of { (r : _) -> ssNotes r; [] -> [] }
+    -- Keep notes and score attached to their own candidate. Matching both
+    -- derivation provenance and meaning avoids borrowing the selected root's
+    -- stipulations for a distinct alternative with the same surface words.
+    rootFor sg = find (\root -> ssProv root == sProv sg && ssSem root == sSem sg) roots
 
     -- Word-level provenance from the chosen derivation's own leaves: each leaf
     -- token maps the constants of its interpretable readings to its span.
@@ -257,7 +275,7 @@ processCCG model src sent =
            , c <- constNames tm
            ]
 
-    (chosen, form, drs, backTrace) =
+    (chosen, form, drs, readings, backTrace) =
       backEnd
         BackEnd
           { beTieBreak =
@@ -269,7 +287,7 @@ processCCG model src sent =
               let (d1, t1) = resolveLocalAnaphora (provIndexFor sg) d
                   (d2, t2) = projectPresuppositions d1
               in (d2, t1 <> t2 <> reportDefiniteDecisions (sProv sg) (sSem sg))
-          , beNotes = \_ ->
+          , beNotes = \sg ->
               foldMap
                 (\(st, p) ->
                    note
@@ -280,7 +298,8 @@ processCCG model src sent =
                        , decWhy = stWhy st
                        , decProv = p
                        })
-                chosenNotes
+                (maybe [] ssNotes (rootFor sg))
+          , beScore = fmap ssScore . rootFor
           }
         src sent (null unknown) parses
 
@@ -302,12 +321,13 @@ data BackEnd = BackEnd
     -- ^ Sentence-internal DRS steps after translation (the CCGbank path
     -- resolves donkey anaphora here; both project factive presuppositions).
   , beNotes     :: Sign -> Trace
-    -- ^ Decisions the chosen derivation's entries stipulated.
+    -- ^ Decisions this derivation's entries stipulated.
+  , beScore     :: Sign -> Maybe Double
   }
 
 -- | Selection, verification and translation: shared by both front ends.
-backEnd :: BackEnd -> SourceId -> Sentence -> Bool -> [Sign] -> (Maybe Sign, Maybe Term, Maybe DRS, Trace)
-backEnd be src sent wordsCovered parses = (chosen, form, drs, parseTrace <> typeTrace)
+backEnd :: BackEnd -> SourceId -> Sentence -> Bool -> [Sign] -> (Maybe Sign, Maybe Term, Maybe DRS, [ReadingResult], Trace)
+backEnd be src sent wordsCovered parses = (chosen, form, drs, readings, parseTrace <> typeTrace)
   where
     sentProvFallback =
       provRule "sentence" [ProvLex src (sentSpan sent) (sentText sent)]
@@ -347,38 +367,31 @@ backEnd be src sent wordsCovered parses = (chosen, form, drs, parseTrace <> type
                 }
         )
 
-    -- Verification: the chosen meaning must inhabit the type its category
-    -- demands. This is mechanical, and a failure is fatal for this sentence.
-    (form, drs, typeTrace) = case chosen of
-      Nothing -> (Nothing, Nothing, mempty)
-      Just s -> case typeOf [] (sSem s) of
-        Right t
-          | t == catTy (sCat s) ->
-              let nf = normalize (sSem s)
-                  (d, postTrace) = bePostDRS be s (toDRS (beProvIndex be s) (sProv s) nf)
-              in (Just nf, Just d, beNotes be s <> postTrace)
-        Right t ->
-          ( Nothing
-          , Nothing
-          , flag
-              Diagnostic
-                { diagKind = TypeCheckFailure
-                , diagMsg =
-                    "meaning has type " ++ show t ++ " but category "
-                      ++ show (sCat s) ++ " demands " ++ show (catTy (sCat s))
-                , diagProv = sProv s
-                }
-          )
-        Left err ->
-          ( Nothing
-          , Nothing
-          , flag
-              Diagnostic
-                { diagKind = TypeCheckFailure
-                , diagMsg = renderTypeError err
-                , diagProv = sProv s
-                }
-          )
+    -- Translation is independent of selection. Keeping it lazy means ordinary
+    -- callers still pay only for the selected reading; all-reading consumers
+    -- request every candidate through exactly the same operations.
+    readings = map translate parses
+    (form, drs, typeTrace) = case readings of
+      [] -> (Nothing, Nothing, mempty)
+      first:_ -> (rrForm first, rrDRS first, rrTrace first)
+
+    translate sg =
+      let result f d tr = ReadingResult sg f d (beScore be sg) tr
+          failure message = result Nothing Nothing $ flag Diagnostic
+            { diagKind = TypeCheckFailure
+            , diagMsg = message
+            , diagProv = sProv sg
+            }
+      in case typeOf [] (sSem sg) of
+        Right ty
+          | ty == catTy (sCat sg) ->
+              let nf = normalize (sSem sg)
+                  (box, postTrace) = bePostDRS be sg (toDRS (beProvIndex be sg) (sProv sg) nf)
+              in result (Just nf) (Just box) (beNotes be sg <> postTrace)
+        Right ty -> failure
+          ("meaning has type " ++ show ty ++ " but category "
+            ++ show (sCat sg) ++ " demands " ++ show (catTy (sCat sg)))
+        Left err -> failure (renderTypeError err)
 
 --------------------------------------------------------------------------------
 -- Ambiguity detection

@@ -1,89 +1,25 @@
--- | The derivation DAG: addressable claims, justifications, grounded support,
--- and precise retraction.
+{-# LANGUAGE DataKinds #-}
+
+-- | Addressable claims and exact alternative evidence support. Labels are the
+-- least fixed point of the antichain semiring in Provenance: conjunction combines
+-- required evidence and alternatives retain independent sufficient environments.
+-- Unseeded cycles remain unsupported. Weak evidence never creates oracle evidence.
 --
--- == Why this is a different object from 'Prov'
---
--- "NL2Proof.Provenance" is a __tree__, the initial algebra of a functor, and
--- every question you can ask of it is a fold. Two things are therefore not
--- expressible in it, and both are now load-bearing rather than theoretical:
---
--- 1. __Cross-derivation convergence.__ "Is there a path from A to B" is a
---    reachability question. A fold over a tree cannot answer it, and two
---    independent derivations of one claim are two separate trees with no
---    structure relating them.
--- 2. __Retraction.__ When an oracle reverses its own earlier answer, the system
---    has to find every claim that depended on that answer and withdraw
---    /precisely those/. A tree has no node identity to address and no edges to
---    follow backwards.
---
--- So this is a graph with named nodes, not a richer tree — and it is
--- load-bearing rather than a refinement, because retraction is not optional
--- once an external oracle can change its mind.
---
--- == Support is a least fixed point, and that is the anti-self-agreement property
---
--- A node is __grounded__ when it has at least one justification whose
--- antecedents are all grounded, bottoming out in premises the oracle confirmed.
--- 'grounded' computes the __least__ fixed point of that rule.
---
--- Taking the least rather than the greatest fixed point is the whole point, and
--- it is worth being explicit about why:
---
--- > A claim cannot ground itself, directly or around a cycle.
---
--- If @A@ justifies @B@ and @B@ justifies @A@ with no confirmed premise beneath
--- either, the greatest fixed point contains both — they are mutually consistent
--- — and the least fixed point contains neither. Mutual consistency is exactly
--- the self-agreement that must not be mistaken for truth, so the least fixed
--- point is the formal statement of the constraint the whole pipeline is built
--- around. It is asserted as a check, not left as a remark.
---
--- == Precise retraction is a difference of fixed points
---
--- 'retract' flips a premise's verdict, recomputes 'grounded', and returns the
--- set difference. That is what makes it precise. The naive answer — everything
--- transitively downstream, which 'dependents' computes — over-retracts, because
--- a claim with a second independent derivation keeps its support. The gap
--- between the two is measurable, and 'retractionReport' measures it.
+-- A justification is a supplied inference, not a proof checker. Callers supplying
+-- arbitrary derivations are responsible for their validity. Oracle seeds require
+-- a Confirmed capability; graph conclusions never mint Confirmed or a Fused base.
 module NL2Proof.Genealogy
-  ( -- * Nodes
-    NodeId(..)
-  , Node(..)
-    -- * Justifications
-  , Justification(..)
-  , premise
-  , derivation
-    -- * The graph
-  , Genealogy(..)
-  , emptyGenealogy
-  , addNode
-  , addJustification
-  , nodeAt
-  , nodeIds
-  , verdictOf
-  , setVerdict
-    -- * Support
-  , grounded
-  , isGrounded
-  , justificationsFor
-  , supportingJustifications
-    -- * Reachability
-  , antecedentsOf
-  , dependents
-  , premisesUnder
-    -- * Convergence
-  , independentSupports
-  , hasIndependentSupport
-  , convergentNodes
-  , corroboratedNodes
-    -- * Retraction
-  , retract
-  , RetractionReport(..)
-  , retractionReport
-  , survivesRetractionOf
-    -- * Rendering
-  , renderGenealogy
-  , renderRetractionReport
+  ( NodeId(..), Node(..), Justification(..), premise, derivation
+  , Genealogy, gNodes, gJusts, gVerdicts
+  , emptyGenealogy, addNode, addJustification, nodeAt, nodeIds, verdictOf, setVerdict
+  , Evidence, EvidenceClass(..), evidenceNode, evidenceClaim, evidenceClass, evidenceSources, evidenceProv
+  , addConfirmedNode, addAssertedNode, addReportedNode, addPresupposedNode, addTranslatedNode
+  , supportLabels, supportOf, grounded, isGrounded, justificationsFor, supportingJustifications
+  , antecedentsOf, dependents, premisesUnder
+  , independentSupports, hasIndependentSupport, convergentNodes, corroboratedNodes
+  , retract, RetractionReport(..), retractionReport, survivesRetractionOf
+  , SupportChange(..), withdrawSource
+  , renderGenealogy, renderRetractionReport
   ) where
 
 import Data.List (nub, sort)
@@ -92,82 +28,92 @@ import qualified Data.Set as S
 
 import NL2Proof.DRT.Canonical
 import NL2Proof.Provenance
+import NL2Proof.Verify.ClaimKind (Claim, ClaimKind(Asserted), claimCond)
 import NL2Proof.Verify.Oracle
+import NL2Proof.Verify.Reported
 
---------------------------------------------------------------------------------
--- Nodes
---------------------------------------------------------------------------------
+newtype NodeId = NodeId Int deriving (Eq, Ord)
+instance Show NodeId where show (NodeId i) = "n" ++ show i
 
--- | Addressable identity, which is the property 'Prov' lacks.
---
--- Structural identity is not enough: two claims can be structurally identical
--- and still need to be separate nodes, because they were derived differently and
--- one of those derivations may later be withdrawn.
-newtype NodeId = NodeId Int
-  deriving (Eq, Ord)
-
-instance Show NodeId where
-  show (NodeId i) = "n" ++ show i
-
--- | One claim in the graph.
---
--- 'nodeProv' keeps the Stage 1 derivation tree. The tree is still the right
--- object for "which words produced this" — it is only the wrong object for
--- reachability and retraction, which is what the surrounding graph supplies. The
--- two coexist rather than one replacing the other.
-data Node = Node
-  { nodeId    :: NodeId
-  , nodeClaim :: CanonCond
-  , nodeProv  :: Prov
-  }
+data Node = Node { nodeId :: NodeId, nodeClaim :: CanonCond, nodeProv :: Prov }
   deriving (Eq, Show)
 
---------------------------------------------------------------------------------
--- Justifications
---------------------------------------------------------------------------------
-
--- | @jRule@ applied to @jAntecedents@ yields @jTarget@.
---
--- A node may have several justifications; that is the representation of
--- independent derivations, and it is why a list rather than a single parent
--- pointer. An empty antecedent list marks a __premise__ — a claim offered
--- directly to the oracle rather than derived from other claims.
 data Justification = Justification
-  { jTarget      :: NodeId
-  , jRule        :: String
-  , jAntecedents :: [NodeId]
-  }
+  { jTarget :: NodeId, jRule :: String, jAntecedents :: [NodeId] }
   deriving (Eq, Show)
 
 premise :: NodeId -> String -> Justification
-premise t rule = Justification t rule []
+premise target rule = Justification target rule []
 
 derivation :: NodeId -> String -> [NodeId] -> Justification
 derivation = Justification
 
---------------------------------------------------------------------------------
--- The graph
---------------------------------------------------------------------------------
+-- | Descriptive classes, not capabilities: no admission function accepts this
+-- enum. Only addConfirmedNode may construct an OracleConfirmed evidence value.
+data EvidenceClass
+  = OracleConfirmed String
+  | AssertedUnconfirmed
+  | ReportedEvidence [Attribution]
+  | PresupposedEvidence
+  | LLMTranslatedEvidence String
+  deriving (Eq, Ord, Show)
 
-data Genealogy = Genealogy
-  { gNodes    :: M.Map NodeId Node
-  , gJusts    :: [Justification]
-  , gVerdicts :: M.Map NodeId Verdict
-    -- ^ Oracle verdicts. Only consulted for premises; a derived node's status
-    -- comes from its antecedents, never from a verdict recorded against it.
-  }
+-- | Immutable evidence tied to its node and exact claim. The hidden positional
+-- constructor prevents class/claim/source record updates. Oracle evidence is
+-- minted only from an actual Confirmed capability.
+data Evidence = Evidence NodeId CanonCond EvidenceClass [SourceId] Prov
+  deriving (Eq, Ord, Show)
+
+evidenceNode :: Evidence -> NodeId
+evidenceNode (Evidence i _ _ _ _) = i
+
+evidenceClaim :: Evidence -> CanonCond
+evidenceClaim (Evidence _ c _ _ _) = c
+
+evidenceClass :: Evidence -> EvidenceClass
+evidenceClass (Evidence _ _ k _ _) = k
+
+evidenceSources :: Evidence -> [SourceId]
+evidenceSources (Evidence _ _ _ ss _) = ss
+
+evidenceProv :: Evidence -> Prov
+evidenceProv (Evidence _ _ _ _ p) = p
+
+isOracleEvidence :: Evidence -> Bool
+isOracleEvidence e = case evidenceClass e of OracleConfirmed _ -> True; _ -> False
+
+-- Positional and abstract: exported accessors cannot mutate certified seeds or
+-- replace the content of a node underneath its evidence.
+data Genealogy = Graph
+  (M.Map NodeId Node) [Justification] (M.Map NodeId Verdict)
+  (M.Map NodeId [Evidence]) (S.Set SourceId)
+
+gNodes :: Genealogy -> M.Map NodeId Node
+gNodes (Graph ns _ _ _ _) = ns
+
+gJusts :: Genealogy -> [Justification]
+gJusts (Graph _ js _ _ _) = js
+
+gVerdicts :: Genealogy -> M.Map NodeId Verdict
+gVerdicts (Graph _ _ vs _ _) = vs
 
 emptyGenealogy :: Genealogy
-emptyGenealogy = Genealogy M.empty [] M.empty
+emptyGenealogy = Graph M.empty [] M.empty M.empty S.empty
 
+-- | Record a node and diagnostic verdict, with no oracle capability. Replacing
+-- a node drops its local evidence; changing its claim also invalidates incident
+-- justifications, whose logical meaning depended on the previous node content.
 addNode :: Node -> Verdict -> Genealogy -> Genealogy
-addNode n v g =
-  g { gNodes = M.insert (nodeId n) n (gNodes g)
-    , gVerdicts = M.insert (nodeId n) v (gVerdicts g)
-    }
+addNode n v (Graph ns js vs es revoked) =
+  Graph (M.insert i n ns) validJusts (M.insert i v vs) (M.delete i es) revoked
+  where
+    i = nodeId n
+    changed = maybe False ((/= nodeClaim n) . nodeClaim) (M.lookup i ns)
+    validJusts = if changed then filter (\j -> jTarget j /= i && i `notElem` jAntecedents j) js else js
 
 addJustification :: Justification -> Genealogy -> Genealogy
-addJustification j g = g { gJusts = gJusts g ++ [j] }
+addJustification j (Graph ns js vs es revoked) =
+  Graph ns (if j `elem` js then js else js ++ [j]) vs es revoked
 
 nodeAt :: Genealogy -> NodeId -> Maybe Node
 nodeAt g i = M.lookup i (gNodes g)
@@ -175,38 +121,85 @@ nodeAt g i = M.lookup i (gNodes g)
 nodeIds :: Genealogy -> [NodeId]
 nodeIds = M.keys . gNodes
 
--- | Recorded verdict, defaulting to 'Unknown'. A node with no oracle answer is
--- uncovered, which is not the same as refuted — see
--- "NL2Proof.Verify.Oracle".
 verdictOf :: Genealogy -> NodeId -> Verdict
 verdictOf g i = M.findWithDefault Unknown i (gVerdicts g)
 
+-- | Refuting/uncovering revokes local oracle evidence. Setting a bare Confirmed
+-- verdict does not manufacture or revive a capability. Weak testimony remains
+-- attributable even when an oracle disagrees with it.
 setVerdict :: NodeId -> Verdict -> Genealogy -> Genealogy
-setVerdict i v g = g { gVerdicts = M.insert i v (gVerdicts g) }
+setVerdict i v (Graph ns js vs es revoked) =
+  Graph ns js (M.insert i v vs) es' revoked
+  where es' = if v == Confirmed then es else M.adjust (filter (not . isOracleEvidence)) i es
 
---------------------------------------------------------------------------------
--- Support
---------------------------------------------------------------------------------
-
--- | The least set of nodes with grounded support.
---
--- Iterated to a fixed point from the empty set. The rule is monotone in the
--- accumulator, so the iteration converges and converges to the /least/ fixed
--- point — which is what excludes circular support. See the module header.
-grounded :: Genealogy -> S.Set NodeId
-grounded g = go S.empty
+-- Same-claim admissions add alternative evidence. Distinct claim replacement
+-- goes through addNode so stale certificates and incident edges cannot survive.
+installEvidence :: NodeId -> CanonCond -> Prov -> EvidenceClass -> [SourceId] -> Verdict -> Genealogy -> Genealogy
+installEvidence i c p kind sources verdict g =
+  case prepared of
+    Graph ns js vs es revoked ->
+      addJustification (premise i "evidence") $ Graph
+        (M.insert i (Node i c p) ns) js (M.insert i keptVerdict vs)
+        (M.insertWith (\new old -> nub (old ++ new)) i [ev] es) revoked
   where
-    ids = nodeIds g
+    same = maybe False ((== c) . nodeClaim) (nodeAt g i)
+    prepared = if same then g else addNode (Node i c p) verdict g
+    keptVerdict = if same && verdict == Unknown then verdictOf g i else verdict
+    ev = Evidence i c kind (sort (nub (sources ++ provSources p))) p
 
-    go acc =
-      let acc' = S.union acc (S.fromList [i | i <- ids, supported acc i])
-      in if S.size acc' == S.size acc then acc else go acc'
+addConfirmedNode :: NodeId -> Prov -> Confirmed -> Genealogy -> Genealogy
+addConfirmedNode i p token =
+  installEvidence i (confClaim token) p (OracleConfirmed (confOracle token))
+    [SourceId ("oracle:" ++ confOracle token)] Confirmed
 
-    supported acc i = any (ok acc) (justificationsFor g i)
+addAssertedNode :: NodeId -> Prov -> Claim 'Asserted -> Genealogy -> Genealogy
+addAssertedNode i p c = installEvidence i (claimCond c) p AssertedUnconfirmed [] Unknown
 
-    ok acc j
-      | null (jAntecedents j) = isConfirmed (verdictOf g (jTarget j))
-      | otherwise             = all (`S.member` acc) (jAntecedents j)
+addReportedNode :: NodeId -> Reported -> Genealogy -> Genealogy
+addReportedNode i r = installEvidence i (reportedContent r) (reportedProv r)
+  (ReportedEvidence (reportedChain r)) speakers Unknown
+  where speakers = [SourceId ("speaker:" ++ renderCTerm h) | a <- reportedChain r, h <- attHolders a]
+
+addPresupposedNode :: NodeId -> Presupposed -> Genealogy -> Genealogy
+addPresupposedNode i p = installEvidence i (claimCond (presupposedClaim' p)) (presupposedProv p) PresupposedEvidence [] Unknown
+
+addTranslatedNode :: NodeId -> String -> CanonCond -> Prov -> Genealogy -> Genealogy
+addTranslatedNode i model c p = installEvidence i c p (LLMTranslatedEvidence model) [] Unknown
+
+activeEvidence :: Genealogy -> NodeId -> [Evidence]
+activeEvidence (Graph ns _ _ es revoked) i =
+  [e | e <- M.findWithDefault [] i es
+     , Just n <- [M.lookup i ns], evidenceClaim e == nodeClaim n
+     , all (`S.notMember` revoked) (evidenceSources e)]
+
+-- | Least fixed point on a finite inventory of evidence. Empty antecedents
+-- denote evidence premises, never the unconditional multiplicative identity.
+supportLabels :: Genealogy -> M.Map NodeId (Support Evidence)
+supportLabels g = go (M.fromList [(i,supportZero) | i <- nodeIds g])
+  where
+    go old = let next = M.mapWithKey (step old) old
+             in if next == old then old else go next
+    step old i previous = foldl supportPlus previous
+      [ if null (jAntecedents j)
+          then foldl supportPlus supportZero (map supportAtom (activeEvidence g i))
+          else foldl supportTimes supportOne
+                 [M.findWithDefault supportZero a old | a <- jAntecedents j]
+      | j <- justificationsFor g i ]
+
+supportOf :: Genealogy -> NodeId -> Support Evidence
+supportOf g i = M.findWithDefault supportZero i (supportLabels g)
+
+strongSupport :: Support Evidence -> Bool
+strongSupport = any (all isOracleEvidence) . supportEnvironments
+
+supportedIds :: M.Map NodeId (Support Evidence) -> S.Set NodeId
+supportedIds = M.keysSet . M.filter (not . null . supportEnvironments)
+
+strongIds :: M.Map NodeId (Support Evidence) -> S.Set NodeId
+strongIds = M.keysSet . M.filter strongSupport
+
+grounded :: Genealogy -> S.Set NodeId
+grounded = strongIds . supportLabels
 
 isGrounded :: Genealogy -> NodeId -> Bool
 isGrounded g i = i `S.member` grounded g
@@ -214,218 +207,114 @@ isGrounded g i = i `S.member` grounded g
 justificationsFor :: Genealogy -> NodeId -> [Justification]
 justificationsFor g i = [j | j <- gJusts g, jTarget j == i]
 
--- | The justifications that are actually carrying a node, i.e. those whose
--- antecedents are all grounded (or which are confirmed premises).
---
--- Distinct from 'justificationsFor': a node can have five justifications and be
--- held up by one of them. Retraction cares about which.
 supportingJustifications :: Genealogy -> NodeId -> [Justification]
 supportingJustifications g i =
-  [ j
-  | j <- justificationsFor g i
-  , if null (jAntecedents j)
-      then isConfirmed (verdictOf g i)
-      else all (`S.member` gr) (jAntecedents j)
-  ]
-  where
-    gr = grounded g
+  [j | j <- justificationsFor g i
+     , if null (jAntecedents j) then any isOracleEvidence (activeEvidence g i)
+       else all (`S.member` gr) (jAntecedents j)]
+  where gr = grounded g
 
---------------------------------------------------------------------------------
--- Reachability
---------------------------------------------------------------------------------
-
--- | Transitive antecedents: everything this node's derivations rest on.
 antecedentsOf :: Genealogy -> NodeId -> [NodeId]
 antecedentsOf g = S.toList . close S.empty . (: [])
   where
     close seen [] = seen
-    close seen (i : rest)
+    close seen (i:rest)
       | i `S.member` seen = close seen rest
-      | otherwise =
-          let ups = concatMap jAntecedents (justificationsFor g i)
-          in close (S.insert i seen) (ups ++ rest)
+      | otherwise = close (S.insert i seen) (concatMap jAntecedents (justificationsFor g i) ++ rest)
 
--- | Transitive consequents: everything that mentions this node as an antecedent,
--- at any depth.
---
--- __This is the over-retraction answer.__ Kept precisely so the difference
--- against 'retract' can be measured rather than argued about.
 dependents :: Genealogy -> NodeId -> [NodeId]
 dependents g i0 = S.toList (S.delete i0 (close S.empty [i0]))
   where
     close seen [] = seen
-    close seen (i : rest)
+    close seen (i:rest)
       | i `S.member` seen = close seen rest
-      | otherwise =
-          let downs = [jTarget j | j <- gJusts g, i `elem` jAntecedents j]
-          in close (S.insert i seen) (downs ++ rest)
+      | otherwise = close (S.insert i seen) ([jTarget j | j <- gJusts g, i `elem` jAntecedents j] ++ rest)
 
--- | Premises in a node's ancestry: the nodes whose oracle verdicts it ultimately
--- rests on.
+-- | Structural ancestry for inspection, not a minimal-support calculation.
 premisesUnder :: Genealogy -> NodeId -> [NodeId]
-premisesUnder g i =
-  [ a
-  | a <- antecedentsOf g i
-  , any (null . jAntecedents) (justificationsFor g a)
-  ]
+premisesUnder g i = [a | a <- antecedentsOf g i, any (null . jAntecedents) (justificationsFor g a)]
 
---------------------------------------------------------------------------------
--- Convergence
---------------------------------------------------------------------------------
-
--- | For each justification of a node, the set of premises it rests on.
---
--- Two justifications are __independent__ when these sets are disjoint: they draw
--- on no common oracle answer, so no single reversal can take both down.
+-- | Minimal active oracle environments projected to premise-node identities.
+-- Nested alternatives remain separate; unsupported premises do not contribute.
+-- Independence here concerns node retraction. Use the full evidence labels for
+-- source independence: two different nodes may depend on the same document.
 independentSupports :: Genealogy -> NodeId -> [[NodeId]]
-independentSupports g i =
-  [ sort (nub (concatMap (premisesUnder g) (jAntecedents j)))
-  | j <- justificationsFor g i
-  , not (null (jAntecedents j))
-  ]
+independentSupports g i = supportEnvironments $ supportFromEnvironments
+  [map evidenceNode env | env <- supportEnvironments (supportOf g i), all isOracleEvidence env]
 
--- | Does some pair of this node's justifications rest on disjoint premise sets?
---
--- __Vacuously 'False' on a premise-only graph__, because 'independentSupports'
--- skips justifications with no antecedents. Every graph
--- 'NL2Proof.Verify.Claims.genealogyOf' currently builds is premise-only, so this
--- measures /derivation-level/ independence and is not the corroboration signal
--- for the present pipeline. 'corroboratedNodes' is.
 hasIndependentSupport :: Genealogy -> NodeId -> Bool
-hasIndependentSupport g i =
-  or
-    [ S.null (S.intersection a b)
-    | (a, k) <- zip sups [0 :: Int ..]
-    , (b, l) <- zip sups [0 ..]
-    , k < l
-    , not (S.null a)
-    , not (S.null b)
-    ]
-  where
-    sups = map S.fromList (independentSupports g i)
+hasIndependentSupport g i = or
+  [not (S.null a) && not (S.null b) && S.null (S.intersection a b)
+  | (k,a) <- zip [0 :: Int ..] supports, (l,b) <- zip [0 ..] supports, k < l]
+  where supports = map S.fromList (independentSupports g i)
 
--- | Nodes whose claim is asserted by more than one node.
---
--- This is the cross-derivation convergence signal, and it matters beyond
--- bookkeeping: the standing limitation "provable does not mean faithful" says a
--- single statement's provability is an unsafe reward, because the policy can
--- drift toward easily-provable statements. Independent extraction paths arriving
--- at the same claim is a signal that /is/ safe to use, and this is where it
--- becomes visible.
 convergentNodes :: Genealogy -> [(CanonCond, [NodeId])]
-convergentNodes g =
-  [ (claim, map nodeId group) | (claim, group) <- claimGroups g, length group > 1 ]
+convergentNodes g = [(c,map nodeId ns) | (c,ns) <- claimGroups g, length ns > 1]
 
--- | Claims asserted by more than one node __via derivations that differ__.
---
--- This is the corroboration signal, and the distinctness requirement is what
--- makes it one rather than a repetition counter. 'convergentNodes' groups by
--- claim identity alone, which is the right question for fusion — those are
--- precisely the nodes it will merge — and the wrong question for reward: the
--- same claim reached by the same derivation twice is a duplicate, and a signal
--- that paid for it would pay a policy for repeating itself. Two derivations that
--- differ are evidence the extraction does not rest on a single fragile path.
---
--- What this does __not__ establish is independence of the /oracle answers/. An
--- oracle is a function of the claim, so two nodes carrying the same claim receive
--- the same verdict and one reversal takes both down. The signal is about the
--- extraction, not a second opinion on the truth, and it is admissible for exactly
--- that reason: it is a fact about how the claim was reached from the input, not
--- something the system establishes about the claim itself.
 corroboratedNodes :: Genealogy -> [(CanonCond, [NodeId])]
-corroboratedNodes g =
-  [ (claim, map nodeId group)
-  | (claim, group) <- claimGroups g
-  , length (nub (map nodeProv group)) > 1
-  ]
+corroboratedNodes g = [(c,map nodeId ns) | (c,ns) <- claimGroups g, length (nub (map nodeProv ns)) > 1]
 
 claimGroups :: Genealogy -> [(CanonCond, [Node])]
-claimGroups g =
-  [ (claim, [n | n <- ns, nodeClaim n == claim])
-  | claim <- nub (map nodeClaim ns)
-  ]
-  where
-    ns = M.elems (gNodes g)
+claimGroups g = [(c,[n | n <- ns, nodeClaim n == c]) | c <- nub (map nodeClaim ns)]
+  where ns = M.elems (gNodes g)
 
---------------------------------------------------------------------------------
--- Retraction
---------------------------------------------------------------------------------
-
--- | Reverse a premise's verdict and report exactly which nodes lost support.
---
--- The returned list is the difference of the grounded sets before and after. It
--- is /precisely/ the nodes that lost all grounded support — not everything
--- downstream. A claim with a second, independent derivation appears in
--- 'dependents' and not here, which is the entire reason this module exists.
+-- | Revoke this node's direct evidence, then report exact losses of strong
+-- support. Independently derived support for the node may survive.
 retract :: NodeId -> Genealogy -> (Genealogy, [NodeId])
-retract i g = (g', S.toList (before `S.difference` after))
+retract i g@(Graph ns js vs es revoked) =
+  (after,S.toList (grounded g `S.difference` grounded after))
+  where after = Graph ns js (M.insert i Refuted vs) (M.delete i es) revoked
+
+data SupportChange = SupportChange
+  { scLostSupport :: [NodeId]
+  , scLostGrounding :: [NodeId]
+  , scSurvived :: [NodeId]
+  } deriving (Eq, Show)
+
+-- | Source revocations persist in the returned graph. The report distinguishes
+-- losing every environment from losing the final oracle-only environment.
+withdrawSource :: SourceId -> Genealogy -> (Genealogy, SupportChange)
+withdrawSource source g@(Graph ns js vs es revoked) = (after,change)
   where
-    before = grounded g
-    g' = setVerdict i Refuted g
-    after = grounded g'
+    after = Graph ns js vs es (S.insert source revoked)
+    beforeLabels = supportLabels g
+    afterLabels = supportLabels after
+    change = SupportChange
+      (S.toList (supportedIds beforeLabels `S.difference` supportedIds afterLabels))
+      (S.toList (strongIds beforeLabels `S.difference` strongIds afterLabels))
+      [i | i <- S.toList (supportedIds afterLabels), M.lookup i beforeLabels /= M.lookup i afterLabels]
 
 data RetractionReport = RetractionReport
-  { rrTarget    :: NodeId
-  , rrGroundedBefore :: Int
-  , rrGroundedAfter  :: Int
-  , rrLost      :: [NodeId]
-    -- ^ Precise: lost all grounded support.
-  , rrDownstream :: [NodeId]
-    -- ^ Coarse: transitively depends on the target, whether or not it survived.
-  , rrSurvived  :: [NodeId]
-    -- ^ Downstream but still grounded — the ones an over-eager retraction would
-    -- have destroyed.
+  { rrTarget :: NodeId, rrGroundedBefore :: Int, rrGroundedAfter :: Int
+  , rrLost :: [NodeId], rrDownstream :: [NodeId], rrSurvived :: [NodeId]
   }
 
 retractionReport :: NodeId -> Genealogy -> RetractionReport
-retractionReport i g =
-  RetractionReport
-    { rrTarget = i
-    , rrGroundedBefore = S.size (grounded g)
-    , rrGroundedAfter = S.size (grounded g')
-    , rrLost = lost
-    , rrDownstream = down
-    , rrSurvived = [d | d <- down, d `notElem` lost]
-    }
+retractionReport i g = RetractionReport i (S.size before) (S.size after) lost down
+  [d | d <- down, d `S.member` before, d `S.member` after]
   where
-    (g', lost) = retract i g
+    (g',lost) = retract i g
+    before = grounded g; after = grounded g'
     down = dependents g i
 
 survivesRetractionOf :: NodeId -> NodeId -> Genealogy -> Bool
-survivesRetractionOf target subject g = subject `notElem` snd (retract target g)
-
---------------------------------------------------------------------------------
--- Rendering
---------------------------------------------------------------------------------
+survivesRetractionOf target subject g = isGrounded g subject && isGrounded (fst (retract target g)) subject
 
 renderGenealogy :: Genealogy -> String
-renderGenealogy g =
-  unlines $
-    ["nodes:"]
-      ++ [ "  " ++ show (nodeId n) ++ mark (nodeId n)
-             ++ "  " ++ renderCanonCond (nodeClaim n)
-             ++ "  [" ++ renderVerdict (verdictOf g (nodeId n)) ++ "]"
-         | n <- M.elems (gNodes g)
-         ]
-      ++ ["justifications:"]
-      ++ [ "  " ++ show (jTarget j) ++ " <- " ++ jRule j
-             ++ (if null (jAntecedents j)
-                   then " (premise)"
-                   else " " ++ show (jAntecedents j))
-         | j <- gJusts g
-         ]
-      ++ [ "grounded: " ++ show (S.toList (grounded g)) ]
-  where
-    gr = grounded g
-    mark i = if i `S.member` gr then " [grounded]" else " [unsupported]"
+renderGenealogy g = unlines $
+  ["nodes:"] ++
+  ["  " ++ show (nodeId n) ++ (if nodeId n `S.member` gr then " [grounded]" else " [unconfirmed]")
+     ++ "  " ++ renderCanonCond (nodeClaim n) ++ "  [" ++ renderVerdict (verdictOf g (nodeId n)) ++ "]"
+  | n <- M.elems (gNodes g)] ++
+  ["justifications:"] ++
+  ["  " ++ show (jTarget j) ++ " <- " ++ jRule j ++ if null (jAntecedents j) then " (premise)" else " " ++ show (jAntecedents j)
+  | j <- gJusts g] ++ ["grounded: " ++ show (S.toList gr)]
+  where gr = grounded g
 
 renderRetractionReport :: RetractionReport -> String
-renderRetractionReport r =
-  unlines
-    [ "retracting " ++ show (rrTarget r)
-    , "  grounded: " ++ show (rrGroundedBefore r) ++ " -> " ++ show (rrGroundedAfter r)
-    , "  lost (precise):      " ++ show (rrLost r)
-    , "  downstream (coarse): " ++ show (rrDownstream r)
-    , "  survived downstream: " ++ show (rrSurvived r)
-        ++ "  <- what the coarse answer would have destroyed"
-    ]
+renderRetractionReport r = unlines
+  ["retracting " ++ show (rrTarget r)
+  ,"  grounded: " ++ show (rrGroundedBefore r) ++ " -> " ++ show (rrGroundedAfter r)
+  ,"  lost (precise):      " ++ show (rrLost r)
+  ,"  downstream (coarse): " ++ show (rrDownstream r)
+  ,"  survived downstream: " ++ show (rrSurvived r)]

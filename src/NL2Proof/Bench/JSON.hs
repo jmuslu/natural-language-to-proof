@@ -1,4 +1,4 @@
--- | A minimal JSON reader, enough for the ProofWriter @.jsonl@ files.
+-- | Minimal JSON input/output for benchmark JSONL and the scoped parser protocol.
 --
 -- Written here because the project depends only on @base@ and @containers@.
 -- It parses the full JSON grammar (objects, arrays, strings with escapes,
@@ -6,12 +6,15 @@
 module NL2Proof.Bench.JSON
   ( JValue(..)
   , parseJSON
+  , renderJSON
   , field
   , str
   , obj
   ) where
 
-import Data.Char (chr, isDigit, isHexDigit, isSpace, digitToInt)
+import Data.Char (chr, ord, isDigit, isHexDigit, isSpace, digitToInt)
+import Data.List (intercalate)
+import Numeric (showHex)
 
 data JValue
   = JObj [(String, JValue)]
@@ -21,6 +24,26 @@ data JValue
   | JBool Bool
   | JNull
   deriving (Eq, Show)
+
+-- | Serialize one JSON value without embedded record separators. Non-finite
+-- machine doubles have no JSON representation and are emitted as null.
+renderJSON :: JValue -> String
+renderJSON value = case value of
+  JObj fields -> "{" ++ intercalate "," [quote key ++ ":" ++ renderJSON v | (key,v) <- fields] ++ "}"
+  JArr items -> "[" ++ intercalate "," (map renderJSON items) ++ "]"
+  JStr text -> quote text
+  JNum numberValue | isNaN numberValue || isInfinite numberValue -> "null"
+                   | otherwise -> show numberValue
+  JBool True -> "true"
+  JBool False -> "false"
+  JNull -> "null"
+  where
+    quote text = "\"" ++ concatMap escape text ++ "\""
+    escape '\"' = "\\\""
+    escape '\\' = "\\\\"
+    escape c
+      | ord c < 0x20 = let hex = showHex (ord c) "" in "\\u" ++ replicate (4-length hex) '0' ++ hex
+      | otherwise = [c]
 
 parseJSON :: String -> Either String JValue
 parseJSON s = case value (skip s) of
