@@ -333,8 +333,8 @@ The wrong `cat(x)⇒red(x)∧big(x)` says every cat is red and is not acceptable
 slot. Names, determiners, verbs, negation and coordination then must all migrate
 together; its NP-relative term is not well typed as a drop-in replacement in our
 `Q` interface. The current noun-level repair can remain bounded while this is
-weighed. A quantified pronoun such as *everything* needs an explicit construction
-that exposes a restrictor; do not pretend it already contains an ordinary noun.
+weighed. The bounded quantified-pronoun construction below exposes a restrictor
+explicitly; it does not pretend the pronoun already contains an ordinary noun.
 
 **Gold obligation:** unrestricted Pronto `Everything that P or Q is R` requires
 `∀x((P(x)∨Q(x))→R(x))`. The x binder is in the implication antecedent universe,
@@ -746,3 +746,27 @@ readings become no-parse, and every exact result is preserved. This removes
 invalid derivations; it does not yet supply the missing correct readings.
 The historical121 panel remains34/25/62, and semantic-contract partitions
 stay separate. The ProverQA construction gate is still closed.
+
+### Bounded Everything/Someone relative construction
+
+An adjacent, source-licensed quantified head and subject relative can receive
+paired internal categories `NP/N` and `N/(S[dcl]\NP)`. The relative denotes
+`λV x.V(lift(x))`; the head supplies unrestricted universal quantification for
+Everything or person-restricted existential quantification for Someone.
+These are disclosed internal reanalyses, not claimed original CCGbank tags.
+
+An occurrence-specific certificate allows exactly two direct applications:
+relative operator plus finite gapped VP yields a property, then its matching
+head consumes that property. Pending states cannot undergo raising, composition,
+coordination, punctuation absorption or root admission. Their full identities
+participate in chart packing, and the category prepass preserves the paired
+source evidence. Ordinary relatives and standalone Someone remain available;
+Something's unresolved domain convention is explicitly deferred.
+
+Eighty-nine independent controls cover adjective meanings, Asserted/Embedded
+scope, standalone Everything, role transitions, origin mismatch and packing.
+They require the general composition-feature repair above. All release gates
+pass, and every selected meaning and status in the frozen154-row panel remains
+unchanged. This establishes a bounded capability with **no measured gain in
+the current benchmark-derived gold**; nominal-heavy relatives still need the
+missing predication construction. The historical121 stays34/25/62.

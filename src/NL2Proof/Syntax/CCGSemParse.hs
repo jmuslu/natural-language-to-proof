@@ -12,7 +12,7 @@
 -- discipline:
 --
 -- * Two items with the same category, pending conditional obligations,
---   pending coordinator and
+--   occurrence-bound relative certificates, pending coordinator and
 --   equivalent meaning — equal up to alpha-renaming and associativity,
 --   commutativity and idempotence of @&@ ('simplifyConj', 'canonicalAC'), all
 --   sound — are one item — spurious ambiguity, which changes nothing above it. The
@@ -37,6 +37,12 @@ module NL2Proof.Syntax.CCGSemParse
   , lexicalSigns
     -- * Chart
   , SSign(..)
+  , FusedCertificate(..)
+  , FusedRole(..)
+  , fusedTransition
+  , fusedUnaryAllowed
+  , fusedRootAllowed
+  , packCell
   , SemParse(..)
   , semParse
   , syntacticParse
@@ -434,6 +440,35 @@ lexicalSigns m i w
 -- Chart
 --------------------------------------------------------------------------------
 
+-- | A closed lexical reanalysis is tied to two adjacent input occurrences.
+-- Original categories and spans are retained, not inferred from rendered terms.
+data FusedCertificate = FusedCertificate
+  { fcSource :: SourceId
+  , fcHeadIndex :: Int
+  , fcRelativeIndex :: Int
+  , fcHeadSpan :: Span
+  , fcRelativeSpan :: Span
+  , fcHeadWord :: String
+  , fcRelativeWord :: String
+  , fcHeadCategory :: CCat
+  , fcRelativeCategory :: CCat
+  } deriving (Eq, Ord, Show)
+
+data FusedRole
+  = FusedPlain
+  | FusedHead FusedCertificate
+  | FusedRelOp FusedCertificate
+  | FusedProperty FusedCertificate
+  deriving (Eq, Ord, Show)
+
+fusedHeadCat, fusedRelCat, fusedVPCat, fusedN, fusedNP, sourceRelCat :: CCat
+fusedHeadCat = CSlash Fwd fusedNP fusedN []
+fusedRelCat = CSlash Fwd fusedN fusedVPCat []
+fusedVPCat = CSlash Bwd (CAtom "S" [Feat "dcl"]) fusedNP []
+fusedN = CAtom "N" []
+fusedNP = CAtom "NP" []
+sourceRelCat = CSlash Fwd (CSlash Bwd fusedNP fusedNP []) fusedVPCat []
+
 -- | A chart item.
 data SSign = SSign
   { ssCat   :: CCat
@@ -454,6 +489,8 @@ data SSign = SSign
   , ssConditionalRaised :: Bool
     -- ^ The pending role has passed through an actual unary type-raising step.
     -- An isomorphic lexical category alone does not license a raised guard.
+  , ssFused :: FusedRole
+    -- ^ Pending local restriction certificate; part of the packing identity.
   , ssNotes :: [(Stipulation, Prov)]
     -- ^ Stipulations used anywhere in the derivation, with where.
   }
@@ -470,8 +507,8 @@ data SemParse = SemParse
     -- ^ Sentence-wide safety decisions, including a quote rejected entirely.
   }
 
-key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool)
-key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s)
+key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool, FusedRole)
+key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s, ssFused s)
 
 -- | Pack by 'key' (keep the best score; earlier wins ties) and keep the beam.
 packCell :: Int -> [SSign] -> [SSign]
@@ -496,11 +533,40 @@ semParse :: SemModel -> SourceId -> [Token] -> SemParse
 semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
   where
     n = length toks
-    lexs = [ lexicalSigns m i (tokText t) | (i, t) <- zip [0 ..] toks ]
+    ordinary = [ lexicalSigns m i (tokText t) | (i, t) <- zip [0 ..] toks ]
+    -- Source tags, not invented internal tags, license the paired candidates.
+    fusedPairs =
+      [ (certificate, hs, rs, headEntry, relEntry)
+      | (i, (headToken, relToken)) <- zip [0..] (zip toks (drop 1 toks))
+      , Just (headEntry, relEntry) <- [restrictedPronounEntries (tokText headToken)]
+      , map toLower (tokText relToken) `elem` ["that", "who", "which"]
+      , (hc, hs) <- offeredTags m (i == 0) (tokText headToken), hc == fusedNP
+      , (rc, rs) <- offeredTags m False (tokText relToken), rc == sourceRelCat
+      , let certificate = FusedCertificate src i (i+1) (tokSpan headToken)
+              (tokSpan relToken) (tokText headToken) (tokText relToken) hc rc ]
+    annotated =
+      [ [(l,FusedPlain) | l <- original] ++ concat
+          [ [(LexSign fusedHeadCat headEntry hs, FusedHead certificate) | i == fcHeadIndex certificate]
+            ++ [(LexSign fusedRelCat relEntry rs, FusedRelOp certificate) | i == fcRelativeIndex certificate]
+          | (certificate,hs,rs,headEntry,relEntry) <- fusedPairs ]
+      | (i, original) <- zip [0..] ordinary ]
+    lexs = map (map fst) annotated
+
+    -- Sound category overapproximation of the two licensed semantic steps.
+    -- Ordinary pairs are untouched; pending semantic roles are checked later.
+    categoryPairAt i k left right = seenPair m left right || any mapsSource fusedPairs
+      where
+        mapsSource (certificate,_,_,_,_) =
+          (i == fcRelativeIndex certificate && k == i+1
+           && left == fusedRelCat && right == fusedVPCat
+           && sourcePair m (fcRelativeCategory certificate) right)
+          || (i == fcHeadIndex certificate && k == i+1
+              && left == fusedHeadCat && right == fusedN
+              && sourcePair m (fcHeadCategory certificate) (CSlash Bwd fusedNP fusedNP []))
 
     leafSigns = M.fromList
       [ (i, filter (usefulAt (i, i + 1) . ssCat) (map (mkLeaf t) ls))
-      | (i, (t, ls)) <- zip [0 :: Int ..] (zip toks lexs) ]
+      | (i, (t, ls)) <- zip [0 :: Int ..] (zip toks annotated) ]
 
     -- Category-only forward pass.
     catTable :: ML.Map (Int, Int) (Set.Set CCat)
@@ -513,7 +579,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
           | k <- [i + 1 .. j - 1]
           , l <- Set.toList (ML.findWithDefault Set.empty (i, k) catTable)
           , r <- Set.toList (ML.findWithDefault Set.empty (k, j) catTable)
-          , seenPair m l r
+          , categoryPairAt i k l r
           , (_, out) <- combineNamed allCombinators l r
           ]
     closeCats s0 = go (2 :: Int) s0
@@ -540,7 +606,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
             split _ u a k =
               let ls = ML.findWithDefault Set.empty (i, k) catTable
                   rs = ML.findWithDefault Set.empty (k, j) catTable
-                  pairs = [ (l, r) | l <- Set.toList ls, r <- Set.toList rs, seenPair m l r
+                  pairs = [ (l, r) | l <- Set.toList ls, r <- Set.toList rs, categoryPairAt i k l r
                                    , any ((`Set.member` u) . snd) (combineNamed allCombinators l r) ]
               in M.insertWith Set.union (k, j) (Set.fromList (map snd pairs))
                    (M.insertWith Set.union (i, k) (Set.fromList (map fst pairs)) a)
@@ -555,16 +621,16 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
 
     usefulAt ij c = c `Set.member` M.findWithDefault Set.empty ij useful
 
-    mkLeaf t (LexSign c it s) =
+    mkLeaf t (LexSign c it s, fused) =
       let pv = ProvLex src (tokSpan t) (tokText t)
       in case it of
            LexTerm tm _ st ->
              -- The role belongs to the closed lexical entry, not a search for
              -- an if token anywhere in a completed constituent.
-             SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False
-               [ (x, pv) | Just x <- [st] ]
+             SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False fused
+               ([ (x, pv) | Just x <- [st] ] ++ fusedNotes fused pv)
            LexStructural _ ->
-             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False []
+             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False FusedPlain []
 
     table :: ML.Map (Int, Int) [SSign]
     table = ML.fromList
@@ -579,11 +645,12 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
             -- decided once per category pair and only then per item pair.
           , (lc, ls) <- groups (i, k)
           , (rc, rs) <- groups (k, j)
-          , seenPair m lc rc
+          , categoryPairAt i k lc rc
           , let outs = [ co | co@(_, out) <- combineNamed allCombinators lc rc, usefulAt (i, j) out ]
           , not (null outs)
           , l <- ls
           , r <- rs
+          , fusedSeenPair m l r
           , (comb, out) <- outs
           , Just p <- [semCombine comb out l r]
           ]
@@ -619,11 +686,11 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
     isTypeRaise _                                = False
 
     unaries x
-      | ssCoord x /= Nothing || ssStructural x /= Nothing || pendingReflexive x = []
+      | ssCoord x /= Nothing || ssStructural x /= Nothing || pendingReflexive x || not (fusedUnaryAllowed x) = []
       | otherwise =
           [ SSign to (finish (f (ssSem x))) pv (ssScore x - smUnaryPenalty m) Nothing Nothing
                   (pendingConditional to [x])
-                  (pendingConditional to [x] && (ssConditionalRaised x || isTypeRaise to))
+                  (pendingConditional to [x] && (ssConditionalRaised x || isTypeRaise to)) FusedPlain
                   (ssNotes x ++ [ (st, pv) | Just st <- [mst] ]
                     ++ [(raisingNote, pv) | isTypeRaise to])
           | (fr, to) <- meaningful
@@ -642,7 +709,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
                    -- A root asserts: an embedded clause (S[em], a proposition)
                    -- standing alone is not a sentence meaning.
                    , semTy (ssCat s) == Just TyT
-                   , ssCoord s == Nothing, ssStructural s == Nothing ]
+                   , ssCoord s == Nothing, ssStructural s == Nothing, fusedRootAllowed s ]
           byMeaning = M.fromListWith (\new old -> if ssScore new > ssScore old then new else old)
                         [ (canonicalAC (ssSem s), s) | s <- rs ]
       in sortBy (comparing (Down . ssScore)) (M.elems byMeaning)
@@ -718,7 +785,16 @@ pendingReflexive sign = case ssCat sign of
 semCombine :: Combinator -> CCat -> SSign -> SSign -> Maybe SSign
 semCombine comb0 out0 l r
   | any pendingReflexive [l, r], not localBinding = Nothing
-  | otherwise = sem comb0 out0 >>= emGuard
+  | otherwise = do
+      role <- fusedTransition comb0 out0 l r
+      result <- sem comb0 out0 >>= emGuard
+      let discharged = case (ssFused l, ssFused r, role) of
+            (FusedHead _, FusedProperty _, FusedPlain) ->
+              [(Stipulation "fused-relative-discharge"
+                 "quantified head consumes its own relative restriction"
+                 [] "paired input occurrences and source categories agree", ssProv result)]
+            _ -> []
+      pure result { ssFused = role, ssNotes = ssNotes result ++ discharged }
   where
     localBinding = comb0 == BwdApp && not (pendingReflexive l)
       && pendingReflexive r && plain l && plain r
@@ -758,7 +834,7 @@ semCombine comb0 out0 l r
     notes = ssNotes l ++ ssNotes r
     mk comb out tm coord = SSign out (finish tm) (pv comb) (ssScore l + ssScore r) coord Nothing
       (pendingConditional out [l, r])
-      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) notes
+      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) FusedPlain notes
 
     sem comb out = case comb of
       -- 'applyIntensional' is 'App' unless the functor declares an
@@ -795,6 +871,83 @@ semCombine comb0 out0 l r
 
     compose comb out f g (Just zTy) = Just (mk comb out (composeTerm zTy f g) Nothing)
     compose _ _ _ _ Nothing = Nothing
+
+-- | Source-category evidence for the two internal reanalysis applications.
+-- Do not turn a licensed local reanalysis into a global unseen-pair exception.
+sourcePair :: SemModel -> CCat -> CCat -> Bool
+sourcePair model left right = not (smSeenRules model)
+  || (eraseFeatures left, eraseFeatures right) `Set.member` smSeen model
+
+fusedSeenPair :: SemModel -> SSign -> SSign -> Bool
+fusedSeenPair model left right = case (ssFused left, ssFused right) of
+  (FusedPlain,FusedPlain) -> seenPair model (ssCat left) (ssCat right)
+  (FusedRelOp certificate,FusedPlain) ->
+    sourcePair model (fcRelativeCategory certificate) (ssCat right)
+  (FusedHead certificate,FusedProperty other) -> certificate == other
+    && sourcePair model (fcHeadCategory certificate) (CSlash Bwd fusedNP fusedNP [])
+  _ -> False
+
+fusedNotes :: FusedRole -> Prov -> [(Stipulation,Prov)]
+fusedNotes FusedPlain _ = []
+fusedNotes role pv = [(Stipulation "fused-relative-reanalysis"
+  (show role) []
+  "offered NP head and subject-relative category form a local restriction pair; no arbitrary NP inversion", pv)]
+
+-- | Exact local transition contract. No pending sign passes through raising,
+-- composition, coordination or punctuation, and category equality alone never
+-- discharges a head. Ordinary signs retain the existing combinator behavior.
+-- Token adjacency is guaranteed by pair minting and adjacent chart spans; the
+-- exported helper checks identity/source ordering, not arbitrary forged signs.
+fusedTransition :: Combinator -> CCat -> SSign -> SSign -> Maybe FusedRole
+fusedTransition comb out left right = case (ssFused left, ssFused right) of
+  (FusedPlain,FusedPlain) -> Just FusedPlain
+  (FusedRelOp certificate,FusedPlain)
+    | comb == FwdApp, out == fusedN, ssCat left == fusedRelCat
+    , ssCat right == fusedVPCat, clean left, clean right
+    , validCertificate certificate, relativeLeaf certificate (ssProv left)
+    , sameSourceAfter certificate (fcRelativeSpan certificate) (ssProv right)
+    , coherent left, coherent right -> Just (FusedProperty certificate)
+  (FusedHead certificate,FusedProperty other)
+    | comb == FwdApp, out == fusedNP, certificate == other
+    , ssCat left == fusedHeadCat, ssCat right == fusedN
+    , clean left, clean right, validCertificate certificate
+    , headLeaf certificate (ssProv left), propertyOrigin certificate (ssProv right)
+    , coherent left, coherent right -> Just FusedPlain
+  _ -> Nothing
+  where
+    clean sign = ssCoord sign == Nothing && ssStructural sign == Nothing
+    coherent sign = case semTy (ssCat sign) of
+      Just ty -> typeOf [] (ssSem sign) == Right ty
+      Nothing -> False
+    relativeLeaf certificate = (== ProvLex (fcSource certificate)
+      (fcRelativeSpan certificate) (fcRelativeWord certificate))
+    headLeaf certificate = (== ProvLex (fcSource certificate)
+      (fcHeadSpan certificate) (fcHeadWord certificate))
+    propertyOrigin certificate (ProvRule (RuleName "FwdApp") [relative,body]) =
+      relativeLeaf certificate relative
+      && sameSourceAfter certificate (fcRelativeSpan certificate) body
+    propertyOrigin _ _ = False
+
+validCertificate :: FusedCertificate -> Bool
+validCertificate certificate = fcRelativeIndex certificate == fcHeadIndex certificate + 1
+  && fcHeadIndex certificate >= 0
+  && fcHeadCategory certificate == fusedNP
+  && fcRelativeCategory certificate == sourceRelCat
+  && map toLower (fcHeadWord certificate) `elem` ["everything","someone"]
+  && map toLower (fcRelativeWord certificate) `elem` ["that","who","which"]
+  && spanEnd (fcHeadSpan certificate) <= spanStart (fcRelativeSpan certificate)
+
+sameSourceAfter :: FusedCertificate -> Span -> Prov -> Bool
+sameSourceAfter certificate before pv = provSources pv == [fcSource certificate]
+  && case provSpan pv of
+       Just span' -> spanEnd before <= spanStart span'
+       Nothing -> False
+
+fusedUnaryAllowed :: SSign -> Bool
+fusedUnaryAllowed = (==FusedPlain) . ssFused
+
+fusedRootAllowed :: SSign -> Bool
+fusedRootAllowed = (==FusedPlain) . ssFused
 
 -- | The exact closed lexical key supplies the syntactic role. Human-readable
 -- glosses may change without changing grammar; alternate conditional categories

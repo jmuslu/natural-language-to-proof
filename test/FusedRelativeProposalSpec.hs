@@ -1,7 +1,9 @@
--- | Independent red specification for fused indefinite-pronoun relatives.
+-- | Independent acceptance contract for restricted quantified-pronoun relatives.
 -- Run: runghc -isrc -itest test/FusedRelativeProposalSpec.hs
 -- No corpus/model load. These authored adjective controls isolate quantifier
--- restriction from nominal copulas. Not a release suite until reviewed/repaired.
+-- restriction from nominal copulas. Something remains separately deferred.
+-- Before the general composition-feature repair, three matrix-negation checks
+-- deliberately remain red; do not omit them to admit the dependent candidate.
 module Main (main) where
 
 import qualified Data.Set as Set
@@ -12,7 +14,9 @@ import NL2Proof.DRT.Canonical
 import NL2Proof.Pipeline
 import NL2Proof.Provenance
 import NL2Proof.Semantics.CCGSem
-import NL2Proof.Syntax.CCGBank (CCat, parseCCGCat)
+import NL2Proof.Semantics.Lambda
+import NL2Proof.Syntax.CCGBank (CCat, parseCCGCat, eraseFeatures)
+import NL2Proof.Syntax.CCGRules (Combinator(..), allCombinators)
 import NL2Proof.Syntax.CCGParse (Rules(..))
 import NL2Proof.Syntax.CCGSemParse
 import NL2Proof.Syntax.CCGSupertag (buildPOSModel, buildTagModel)
@@ -112,9 +116,9 @@ main = do
   if args == ["--deferred-something"]
     then runChecks "DEFERRED Something domain policy (not implementation gate)"
       (concatMap checkCase [c | c@(Case text _ _ _) <- cases, "Something " `isPrefixOf` text])
-    else runChecks "KNOWN Everything/Someone restriction gap"
+    else runChecks "fused-relative Everything/Someone"
       (concatMap checkCase [c | c@(Case text _ _ _) <- cases, not ("Something " `isPrefixOf` text)]
-       ++ boundaryChecks)
+       ++ boundaryChecks ++ certificateChecks)
 
 boundaryChecks :: [Check]
 boundaryChecks =
@@ -190,3 +194,113 @@ negativeCases =
      "Everything that is red is big.")
  ,("composition cannot hide an orphan relative property",raised,
      "That is red and blue is big.")]
+
+-- Exercise the ACTUAL production transition, unary/root and packing functions.
+-- Independent well-typed signs make illicit paths possible without relying on
+-- the category chart to prune them accidentally.
+certificate :: FusedCertificate
+certificate = FusedCertificate (SourceId "certificate-control") 0 1
+  (Span 0 10) (Span 11 15) "Everything" "that"
+  (cc "NP") (cc "(NP\\NP)/(S[dcl]\\NP)")
+
+termOf :: LexItem -> Term
+termOf (LexTerm term _ _) = term
+termOf _ = error "expected lexical meaning"
+
+headSign, relativeSign, vpSign, propertySign :: SSign
+headSign = plainSign (cc "NP/N") (termOf headEntry)
+  (ProvLex (fcSource certificate) (fcHeadSpan certificate) "Everything")
+  (FusedHead certificate)
+  where Just (headEntry,_) = restrictedPronounEntries "everything"
+relativeSign = plainSign (cc "N/(S[dcl]\\NP)") (termOf relativeEntry)
+  (ProvLex (fcSource certificate) (fcRelativeSpan certificate) "that")
+  (FusedRelOp certificate)
+  where Just (_,relativeEntry) = restrictedPronounEntries "everything"
+vpSign = plainSign (cc "S[dcl]\\NP")
+  (Lam "Q" tyGQ (App (Var "Q") (pred1 "red")))
+  (provRule "FwdApp" [ProvLex (fcSource certificate) (Span 16 18) "is",
+                       ProvLex (fcSource certificate) (Span 19 22) "red"]) FusedPlain
+propertySign = plainSign (cc "N")
+  (normalize (App (ssSem relativeSign) (ssSem vpSign)))
+  (provRule "FwdApp" [ssProv relativeSign,ssProv vpSign]) (FusedProperty certificate)
+
+plainSign :: CCat -> Term -> Prov -> FusedRole -> SSign
+plainSign category meaning provenance role = SSign
+  { ssCat=category,ssSem=meaning,ssProv=provenance,ssScore=0
+  , ssCoord=Nothing,ssStructural=Nothing,ssOpenConditional=False
+  , ssConditionalRaised=False,ssFused=role,ssNotes=[] }
+
+certificateChecks :: [Check]
+certificateChecks =
+ [expectEq "standalone Someone retains person sortal"
+    (Just (Canonical [CRef 0] [person,red]))
+    (canonicalize <$> srDRS (sentence "Someone is red."))
+ ,expectEq "deferred Something retains existing standalone thing sortal"
+    (Just (Canonical [CRef 0] [atom "thing",red]))
+    (canonicalize <$> srDRS (sentence "Something is red."))
+ ,expect "deferred Something has no paired restricted entry"
+    (restrictedPronounEntries "something" == Nothing)
+ ,expectEq "actual RelOp application certifies the property"
+    (Just (FusedProperty certificate))
+    (fusedTransition FwdApp (cc "N") relativeSign vpSign)
+ ,expectEq "actual equal-occurrence head/property application discharges"
+    (Just FusedPlain) (fusedTransition FwdApp (cc "NP") headSign propertySign)
+ ,expect "ordinary N cannot counterfeit a certified property"
+    (fusedTransition FwdApp (cc "NP") headSign
+      (propertySign {ssFused=FusedPlain}) == Nothing)
+ ,expect "different occurrence cannot discharge a head"
+    (fusedTransition FwdApp (cc "NP") headSign
+      (propertySign {ssFused=FusedProperty other}) == Nothing)
+ ,expect "foreign-source VP cannot acquire this relative certificate"
+    (fusedTransition FwdApp (cc "N") relativeSign
+      (vpSign {ssProv=ProvLex (SourceId "foreign") (Span 16 22) "is red"}) == Nothing)
+ ,expect "a raised lexical relativizer is not an original relative leaf"
+    (fusedTransition FwdApp (cc "N")
+      (relativeSign {ssProv=provRule "unary raised" [ssProv relativeSign]}) vpSign == Nothing)
+ ,expect "a copied property without original relative application is rejected"
+    (fusedTransition FwdApp (cc "NP") headSign
+      (propertySign {ssProv=ssProv vpSign}) == Nothing)
+ ,expect "pending marker cannot be coordinated even with correct category"
+    (fusedTransition FwdApp (cc "N") relativeSign
+      (vpSign {ssCoord=Just "and"}) == Nothing)
+ ,expect "source category mismatch cannot mint a valid certificate"
+    (fusedTransition FwdApp (cc "N")
+      (relativeSign {ssFused=FusedRelOp (certificate {fcRelativeCategory=cc "N/(S[dcl]\\NP)"})})
+      vpSign == Nothing)
+ ,expect "actual packing retains Plain and distinct occurrence certificates"
+    (let xs=packCell 10 [propertySign,propertySign {ssScore=2},
+             propertySign {ssFused=FusedPlain,ssScore=100},
+             propertySign {ssFused=FusedProperty other,ssScore=200}]
+     in length xs==3 && any (\x -> ssFused x==FusedProperty certificate && ssScore x==2) xs)
+ ,expect "actual packing distinguishes every pending role at same term/category"
+    (length (packCell 10 [propertySign {ssFused=role} | role <- roles]) == length roles)
+ ,expect "source-seen-pair mapping reaches valid fused root without internal pair evidence"
+    (scopedResult seenModel == Just (Canonical [] [rule [red] [big]]))
+ ,expect "missing source relative/body pair does not inherit a global bypass"
+    (scopedResult (seenModel {smSeen=Set.delete relPair (smSeen seenModel)}) == Nothing)
+ ,expect "missing source head/modifier pair does not inherit a global bypass"
+    (scopedResult (seenModel {smSeen=Set.delete headPair (smSeen seenModel)}) == Nothing)
+ ] ++
+ [expect ("pending unary/root rejection for "++show role)
+    (let sign=propertySign {ssFused=role}
+     in not (fusedUnaryAllowed sign) && not (fusedRootAllowed sign))
+ | role <- tail roles] ++
+ [expect ("pending transition rejects "++show comb++" / "++show (ssFused l,ssFused r))
+    (fusedTransition comb out l r == Nothing)
+ | comb <- allCombinators
+ , (l,r,out) <- [(relativeSign,vpSign,cc "N"),(headSign,propertySign,cc "NP"),
+                 (propertySign,vpSign,cc "S[dcl]")]
+ , comb /= FwdApp || ssFused l == FusedProperty certificate]
+ where
+   other=certificate {fcHeadIndex=3,fcRelativeIndex=4}
+   roles=[FusedPlain,FusedHead certificate,FusedRelOp certificate,FusedProperty certificate]
+   pair a b=(eraseFeatures (cc a),eraseFeatures (cc b))
+   relPair=pair "(NP\\NP)/(S[dcl]\\NP)" "S[dcl]\\NP"
+   headPair=pair "NP" "NP\\NP"
+   seenModel=mini {smSeenRules=True,smSeen=Set.fromList
+     [relPair,headPair,pair "(S[dcl]\\NP)/(S[adj]\\NP)" "S[adj]\\NP",
+      pair "NP" "S[dcl]\\NP",pair "S[dcl]\\NP" ".",pair "S[dcl]" "."]}
+   scopedResult model=case prSentences (runPipelineWith (CCGBankParser model)
+                 (SourceId "fused-source-pairs") "Everything that is red is big.") of
+     [s] -> canonicalize <$> srDRS s
+     _ -> Nothing
