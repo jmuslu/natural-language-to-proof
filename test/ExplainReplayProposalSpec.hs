@@ -25,6 +25,9 @@ model = (defaultSemModel tags poses (Rules [] []) Set.empty)
       ,("is","(S[dcl]\\NP)/(S[adj]\\NP)","VBZ")
       ,("red","S[adj]\\NP","JJ"),("blue","S[adj]\\NP","JJ")
       ,("calm","S[adj]\\NP","JJ")
+       ,("gives","S[dcl]\\NP","VBZ"),("give","S[b]\\NP","VB")
+      ,("up","(S\\NP)\\(S\\NP)","RP")
+      ,("not","(S\\NP)/(S\\NP)","RB")
       ,("defends","(S[dcl]\\NP)/NP","VBZ")
       ,("defend","(S[b]\\NP)/NP","VB"),("herself","NP","PRP")
       ,("does","(S[dcl]\\NP)/(S[b]\\NP)","VBZ")
@@ -80,6 +83,8 @@ main=runChecks "explain-replay-proposal" $
  ,fixture "fused restriction" "Everything that is red is blue"
     [TForall "x" TyE (TImp (at "red" (Var "x")) (at "blue" (Var "x")))]
  ,fixture "local reflexive" "Mira defends herself" [apply (pred2 "defend") [mira,mira]]
+ ,fixture "adjacent two-token particle seed" "Mira gives up" [at "give_up" mira]
+ ,fixture "negative two-token particle seed" "Mira does not give up" [TNot (at "give_up" mira)]
  ,fixture "conditional boundary" conditionalText [TImp (at "red" mira) (at "blue" mira)]]
  ++[expect "conditional forged path is absent from production"
       (all ((/=H.sProv conditionalForgery).ssProv)(roots conditionalText))

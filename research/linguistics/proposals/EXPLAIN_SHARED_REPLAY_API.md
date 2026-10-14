@@ -1,15 +1,15 @@
 # Minimal shared production replay interface
 
-Proposed against research `990760f`, following the reviewed
+Updated against accepted research `59955b6`, following the reviewed
 [replay audit](EXPLAIN_LIST_REPLAY.md). This change is not implemented here.
 Independent tests of the **current** production and renderer code now establish
-four concrete failures without a corpus/model load. No new parser grammar,
+six concrete failures without a corpus/model load. No new parser grammar,
 semantic template, public claim type or solver behavior is proposed.
 
 ## Measured starting contract
 
-`python3 test/run-explain-replay-proposal.py` runs14 corpus-free checks:10pass,
-4fail. Its temporary Explain copy changes only the module declaration to expose
+`python3 test/run-explain-replay-proposal.py` runs18 corpus-free checks:12pass,
+6fail. Its temporary Explain copy changes only the module declaration to expose
 private functions. A small authored tag/POS model supplies all lexical observations;
 no CCGbank files are read. Expected meanings and forbidden provenance trees are
 hand-specified, not generated from renderer outputs.
@@ -19,6 +19,7 @@ hand-specified, not generated from renderer outputs.
 | Ordinary unary predicate | Intended meaning | Replays |
 | Three-member comma/final-OR list | Intended OR meaning | No replay |
 | Everything + restrictive that | Intended universal restriction | No replay |
+| Positive/negative adjacent give-up span seeds | Intended lexical meaning and negation | No replay |
 | Local direct-object reflexive | Intended diagonal relation | Replays |
 | Ordinary comma conditional | Intended implication | Replays |
 | Forged comma coordination of conditional and then operators | Path absent from production | Accepts forged target/path |
@@ -42,8 +43,9 @@ but precise about inputs and outputs:
 data SemContext
 prepareSemContext :: SemModel -> SourceId -> [Token] -> SemContext
 
--- Raw annotated alternatives before usefulAt/beam pruning.
-semanticLeaves :: SemContext -> Int -> [SSign]
+-- Raw annotated alternatives before usefulAt/beam pruning, including licensed
+-- multi-token seeds with original token provenance. Span is the existing source span.
+semanticSeeds :: SemContext -> Span -> [SSign]
 
 -- Applies the existing guarded unary constructor for a recorded output category.
 -- May return more than one compatible source-category candidate.
@@ -71,7 +73,7 @@ inside the existing parser; they are search operations, not renderer semantics.
 
 1. Move the current `ordinary`, `fusedPairs`, `annotated`, `mkLeaf`, `meaningful`
    and selective `clusterCoord` preparation into the shared context preparation.
-   Keep `spLexical` as a projection of those annotated entries. `semanticLeaves`
+   Keep `spLexical` as a projection of those annotated entries. `semanticSeeds`
    returns the same prepared signs before chart-specific `usefulAt` filtering.
    Source IDs/spans come from the original sentence's tokens, not from display
    text. Do not use ordinary `lexicalSigns` alone for fused forms.
@@ -86,7 +88,7 @@ inside the existing parser; they are search operations, not renderer semantics.
    caller. `semCombine` itself continues to own list/reflexive/fused/conditional
    transitions and intensional type checks unchanged.
 4. Factor the existing root conditions: ordinary S-compatible category, TyT,
-   no pending coordinator/structural item and discharged fused state. Preserve
+   no pending coordinator/structural item and discharged fused and nominal states. Preserve
    sentence-wide root safety checks (including quotation/nonrestrictive policies)
    where production applies them; the renderer must not claim a candidate is a
    production-admissible root based solely on this local predicate. Its input is
@@ -109,7 +111,7 @@ children, replacing its duplicate cat/term/coord/struct semantic fields:
 data Cand = Cand { cSign :: SSign, cTree :: DT }
 ```
 
-Leaf lookup calls `semanticLeaves` and restricts provenance to the exact recorded
+Seed lookup calls `semanticSeeds` and restricts provenance to the exact recorded
 source/span/word. Unary and binary replay enumerate only operations named by the
 recorded `ProvRule`, using the shared functions above. The tree's term/category
 come from the returned `SSign`; the renderer never recomputes `coordTerm` itself.
@@ -182,14 +184,14 @@ when a certificate cannot be reconstructed.
 
 ## Acceptance and implementation sequence
 
-1. Reviewer approves this refactor contract and the14 current checks. Preserve
+1. Reviewer approves this refactor contract and the18 current checks. Preserve
    their independent meanings and forbidden paths when adding the shared interface.
 2. Extract preparation/transitions without policy edits; existing parser/claim
    suites and frozen deterministic fixture outputs must remain unchanged. Add
    direct lifecycle controls for paired sources, pending unary rejection and
    list identity deduplication at the shared helper boundary.
 3. Switch Explain to the shared calls and retire its copied `semComb` logic.
-   All14 owned proposal checks should pass. Add list punctuation/mixed-edge,
+   All18 owned proposal checks should pass. Add list punctuation/mixed-edge,
    fused wrong-pair/source, raised conditional and forged reflexive controls from
    the original audit. Add a root-mismatch fallback check preserving Pipeline
    DRS/claims and a wording check for compatible-reconstruction terminology.
@@ -201,3 +203,46 @@ The included test runner is temporary proposal instrumentation. Production test
 registration should target a proper library replay adapter or an explicit testing
 interface, avoiding a permanent module-header rewrite. No test expects the parser
 to accept forged roots, and no test constructs or forges a `CoordList` certificate.
+
+## Accepted nominal and particle extraction requirements
+
+Reviewer requirements are part of this contract: preparation, transitions and
+identity must include the current nominal roles and every guard, including
+future reviewed v2 changes; this plan does not freeze the older leaf-only state.
+`semanticSeeds(context, span)` returns licensed single-token and multi-token
+seeds. The accepted adjacent give-up construction spans two original tokens,
+keeps both lexical source leaves and its explicit construction provenance, and
+starts NominalPlain. Replay first matches a complete seed's recorded provenance
+and span; it must not pretend the seed is an ordinary binary CCG rule or mint
+its lexical sense from final term equality. Display the construction operation
+and original source categories separately from normal combinators.
+
+`semanticRoot` above is a LOCAL transition-compatibility check unless all
+sentence-wide admission policies are shared too. To label a reconstruction
+production-admissible, factor and apply the existing quotation/nonrestrictive
+and other sentence-level checks; fabricated-target tests must exercise these.
+Beam survival and exact original derivation remain distinct claims.
+
+Added public parser/renderer tests use independently specified positive and
+negative give_up meanings with a tiny authored observed-tag model, not corpus
+outputs. They require every retained real multi-token root to reconstruct.
+No fabricated binary operation stands in for a lexical span seed. Extraction
+must preserve scoring, ordering, packing and the two unary rounds exactly.
+First land and review the source-only extraction; switch renderer separately.
+
+## Frozen-binary particle observation
+
+Accepted59955b6 Explain (manifest verified, one globally token-limited load)
+processed only the three frozen particle texts. Each has the intended final
+formula/DRS/claim status and no Pipeline failure; all three derivation sections
+explicitly fall back to raw provenance, and lambda leaf tables are empty.
+Positive gives-up source is S[dcl]\NP, negative give-up source S[b]\NP,
+with offered up:(S\NP)\(S\NP). Raw provenance retains both original
+leaves under particle-lexeme:give_up. The earliest identified unsupported replay
+node is this construction: Explain's two-child branch only recognizes named
+CCG combinators, so no seed candidate can survive. This is source-supported
+localization of observed fallback, not an existing renderer diagnostic.
+No deviation from the three independent declared meanings was observed.
+The proposed span-seed accessor fixes the abstraction boundary; manufacturing
+a binary rule or certifying a seed from root equality would misrepresent it.
+See own notes for preserved evidence and the frozen binary digest.
