@@ -57,7 +57,7 @@ excluded by v1 even though their consequent shape matches. No bare-plural
 family profile has this positive single article consequent shape; its overall
 184,577 occurrences are not all equivalent to “add a plural subject license.”
 
-## Lexical eligibility is a separate, presently unidentified intersection
+## Lexical eligibility requires a separate join
 
 WORD does not prove lexical N. Candidate v1 additionally requires:
 
@@ -72,26 +72,100 @@ WORD does not prove lexical N. Candidate v1 additionally requires:
 4. Retained candidate through bounded chart search and correct final selected
    meaning. Surface inventory says nothing about these outcomes.
 
-The aggregate contains no token/profile join or dictionary counts. Consequently
-all86,788 structurally matching occurrences remain **lexically unassessed** in
-this audit. Dictionary-unknown, conflicting-POS, and fully licensed counts are
-`null` in the [machine-readable result](../pronto-nominal-coverage.json), not
-zero and not86,788. A lexical table without frequency-linked sentence membership
-would still not identify the joint eligibility count. No rate is extrapolated
-from a handful of sealed gold traces or from the generator vocabulary.
+The structural aggregate alone contains no token/profile join or dictionary
+counts. Its lexical fields remain null by design. A subsequent authorized,
+bounded join now supplies **POS-policy evidence**, not full route eligibility,
+in [pronto-nominal-pos-eligibility.json](../pronto-nominal-pos-eligibility.json).
 
-To resolve that next, an independently authorized input-only join must retain
-subject/predicate token identities locally and intersect both with a sealed
-lexical evidence snapshot from the same parser source/model configuration.
-Emit aggregate exclusion counts only; separate unknown POS, conflicting POS,
-missing source tags, morphology uncertainty, and missing source pairs. Predict
-those diagnostics before running them. Do not turn dictionary availability into
-a semantic-fidelity result or infer absence of a source category from a pruned
-selected derivation alone. No such join/load was run for this proposal.
+### Observed local POS gate: zero supported opportunities
+
+The existing cached input frequencies reproduced all819,128 occurrences and
+177,560 unique strings, including exactly86,788/1,402 direct-positive
+opportunities. They contain38 distinct interior noun keys and772 distinct
+subject–predicate key pairs. The cache hash was recorded at recovery; agreement
+with the committed totals is a conservation check, not authentication of the
+original cache producer.
+
+A single slot-wrapped streaming pass used the same `ccgbankTrainFiles` sections
+02–21 and `parseAuto`-accepted-line contract as the loader. POS counts come from
+`leafHeaders` of accepted lines, category counts from `leafPairs` of parsed
+annotation trees. No SemModel was built or English sentence parsed. Of2,000
+candidate paths,1,875 were readable and125 missing; none unreadable or changed.
+There were39,604 accepted annotation trees and zero rejected lines. These are
+observations of the local readable snapshot, not corpus-wide absence proofs.
+
+| POS policy class | Distinct noun keys | Weighted noun-token occurrences |
+|---|---:|---:|
+| No POS observations | 38 | 173,576 |
+| Contrary JJ/JJR/JJS/NNP/NNPS observations | 0 | 0 |
+| NN/NNS observed without contrary observations | 0 | 0 |
+| Other POS only | 0 | 0 |
+
+Both nouns are unknown in every one of the86,788 opportunities (1,402 unique
+strings). Consequently **0 of the measured opportunities satisfies v1's
+necessary positive NN/NNS condition in this snapshot**. This is a stronger
+lexical diagnosis than the previous aggregate-only uncertainty, but it is not
+a measured parser or fidelity rate. The keys also have no category attestations;
+that does **not** show that N would be absent from offered tags, because the
+supertagger can supply OOV-prior categories. Source-category offers/pruning,
+seen pairs, lemma correctness, and chart survival remain unmeasured.
+`actual_nominal_route_eligible` remains null in the result; the observed failure
+of a necessary POS condition is reported separately and explicitly.
+
+Lookup is exact literal case because both noun tokens follow other tokens.
+There is no sentence-initial truecasing or invented lowercase lexicon. The
+classifier uses all observed POS counts, so even one contrary adjective/name
+observation would block noun support. The JSON count adapter narrowly normalizes
+finite integral `JNum` values such as4.0; booleans, fractional weights, NaN and
+infinity fail validation. Tests cover the actual emitted numeric format.
+
+The [join tool](../pronto-nominal-pos-join.py) recovers frequency-linked keys
+locally, seals source snapshots, validates evidence membership/conservation,
+and emits only compact counts. The [bounded extractor](../../tools/ProntoNominalPOSEvidence.hs)
+adapts the names worker's7d85eb1 accepted-line contract with an explicit target
+keyfile. Per-key counts and the2,000-entry file manifest stay ignored. The
+compact output records source commit, extractor/source/context digests, cache
+and join digests, and training-file manifest digest. Scanner source was frozen
+through the pass. Runtime4:41.37; peak RSS263,936KiB.
+
+Reproduction, with local evidence under ignored runs (the corpus scan is a
+separately authorized diagnostic and must use the shared lock):
+
+```
+python3 research/linguistics/pronto-nominal-pos-join.py recover \
+  --cache /home/gram/nl2proof-astra/research/runs/linguistics/other-refresh/prontoqa-unique.jsonl \
+  --output research/runs/pronto-pos-join/input-pairs.json
+python3 research/linguistics/pronto-nominal-pos-join.py snapshot \
+  --keys research/runs/pronto-pos-join/input-pairs.keys.txt \
+  --extractor research/tools/ProntoNominalPOSEvidence.hs \
+  --output research/runs/pronto-pos-join/scan-source-manifest.json
+python3 /home/gram/nl2proof-astra/scripts/with-ccgbank-slot.py \
+  runghc -isrc research/tools/ProntoNominalPOSEvidence.hs \
+  /home/gram/ccgbank/ccgbank_1_1/data \
+  research/runs/pronto-pos-join/input-pairs.keys.txt \
+  research/runs/pronto-pos-join/training-manifest.jsonl \
+  > research/runs/pronto-pos-join/lexical-evidence.json
+python3 research/linguistics/pronto-nominal-pos-join.py join \
+  --pairs research/runs/pronto-pos-join/input-pairs.json \
+  --evidence research/runs/pronto-pos-join/lexical-evidence.json \
+  --manifest research/runs/pronto-pos-join/training-manifest.jsonl \
+  --extractor research/tools/ProntoNominalPOSEvidence.hs \
+  --scan-sources research/runs/pronto-pos-join/scan-source-manifest.json \
+  --scan-context research/runs/pronto-pos-join/scan-source-manifest.context.json \
+  --output research/linguistics/pronto-nominal-pos-eligibility.json
+```
+
+Recorded initial-run context is named `scan-context.json`; the reproduction
+command emits `scan-source-manifest.context.json`. Source commit/context digests
+will change on a later checkout; counts are comparable only with the same input
+and local training snapshot. No second corpus scan was run to test this recipe:
+recovery and snapshot values were independently reproduced, and normal/python-O
+joins over the saved evidence produced byte-identical compact results.
 
 ## What this implies for the next design decision
 
-The initial generic capability is useful but deliberately narrow. Its86,788
+The initial generic capability is deliberately narrow, and the observed
+unknown-POS condition blocks its Pronto surface opportunity in this snapshot. Its86,788
 occurrences comprise only1,402 unique strings; a broad fidelity claim from that
 number would be misleading. Named single positive nominal clauses have a larger
 occurrence opportunity but depend on independently justified name admission.
