@@ -2497,3 +2497,13 @@ Prediction: tokenizer changes fix boundary controls; bounded nominal v1 fixes au
 ### 2026-10-14 — bounded nominal universal release
 
 Nominal8e2a6ad merged without source changes;59 independent controls registered. All23Haskell suites(1634checks), build/oracle/Explain,77Python(75pass2existingexpectedfailures),hand4 pass. Fresh16789.05s retains49exact26wrong91no-parse1incomplete and every selected object; observations digest identical to tokenizer baseline. Independent reviewer rehashed candidate binary/source/cases/observations and approved landing. No measured corpus gain; Pronto POS inventory independently explains v1 necessary-gate failure on all86788 matching surface opportunities in observed snapshot. DESIGN and STUDY_PLAN scoped updates reviewed. Next particle then further bounded source trials; model/benchmark gate closed.
+
+### 2026-10-14 — source trial particle-implementation-plan (c8b34c4)
+
+Prediction: Licensed adjacent give-up is predicted to repair the three independently frozen particle cases; preserve every other exact result and introduce no new wrong-but-typed case. Actual survival and selected readings remain unmeasured. Frozen167 cases and separate semantic contracts retained; previous accepted binary nominal-universal-integration. Commands: merge --no-ff --no-commit astra/particle-implementation-plan; register particle-lexeme; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/particle-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+Particle integration compatibility: initialize new nominal role to NominalPlain on the complete particle span, as reviewer prescribed; no pending nominal capability is minted.
+
+### 2026-10-14 — particle release result
+
+Prediction held: three independent give-up controls change no-parse→exact, all164other statuses and selected objects unchanged. Frozen16752exact26wrong88no-parse1incomplete; one source sentence and two authored controls, no population extrapolation. All24Haskell suites(1669checks),build/oracle/Explain,77Python75pass2existingexpectedfailures,hand4 pass. Reviewer61a7638 independently verified source,binary,cases,observations and each changed DRS/claim boundary. Only merged-source adaptation beyondc8b34c4 is NominalPlain initialization. ASTRA operational cap paragraph clarified historical8 vs owner32 and observed9running, without claiming tested32capacity. No model/benchmarklaunch.

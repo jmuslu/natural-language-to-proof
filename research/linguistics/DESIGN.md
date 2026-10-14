@@ -880,3 +880,25 @@ surface occurrences. This establishes failure of a necessary v1 condition in
 the measured training snapshot, not a full parser-coverage measurement. An
 explicit context-licensed unknown-noun policy is a separate reviewed proposal;
 it must preserve this route's obligations and be tested independently.
+
+### Adjacent intransitive give-up lexeme
+
+The bounded particle route now licenses adjacent finite `gives up` or base
+`give up` from the original offered intransitive head and backward VP-modifier
+categories. One complete two-token seed enters both the category and semantic
+charts before usefulness filtering. Its meaning is the independently specified
+unary `give_up` predicate; both original token spans, categories and scores are
+retained in provenance. Ordinary alternatives survive. There is no general
+identity meaning for *up*, no transitive-to-intransitive conversion, and no
+unfulfilled obligation carried by the completed lexical VP.
+
+Thirty-five independent controls cover scope, original evidence, competing
+categories, malformed continuations and repeated source positions. Full release
+gates pass. On frozen167, the one unchanged ProverQA source and two authored
+particle controls change no-parse→exact; all164 other statuses and selected
+meanings remain unchanged. Totals are52 exact,26 wrong-but-typed,88 no-parse and
+1 incomplete across separate contracts. Positive `give_up(Raul)` is Asserted;
+for the negative case, only its enclosing negation is Asserted and the atom is
+Embedded. This measures that licensed sense and those three controls, not general
+particle or ProverQA population coverage. Explain's separate derivation replay
+still needs the shared span-seed API before it can justify this construction.

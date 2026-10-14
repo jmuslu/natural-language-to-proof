@@ -587,6 +587,23 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
   where
     n = length toks
     ordinary = [ lexicalSigns m i (tokText t) | (i, t) <- zip [0 ..] toks ]
+    -- One immutable certificate list drives both category and semantic seeds.
+    -- Candidate evidence precedes usefulAt: up need not have a standalone term.
+    particleSeeds =
+      [ ((i, i+2), SSign hc (finish tm) pv (hs+ps) Nothing Nothing False False
+          Nothing FusedPlain NominalPlain ([(st,pv) | Just st <- [stip]] ++ [(evidence,pv)]))
+      | (i,(headToken,particleToken)) <- zip [0..] (zip toks (drop 1 toks))
+      , (hc,hs) <- offeredTags m (i==0) (tokText headToken)
+      , (pc,ps) <- offeredTags m False (tokText particleToken)
+      , Just (LexTerm tm _ stip) <- [particleLexeme (tokText headToken) hc (tokText particleToken) pc]
+      , let pv = provRule "particle-lexeme:give_up"
+                   [ProvLex src (tokSpan headToken) (tokText headToken)
+                   ,ProvLex src (tokSpan particleToken) (tokText particleToken)]
+            evidence = Stipulation "particle-source-certificate"
+              (show hc ++ " + " ++ show pc) []
+              ("original adjacent tokens " ++ show i ++ "," ++ show (i+1)
+               ++ "; offered log scores " ++ show hs ++ "," ++ show ps) ]
+    particleAt ij = [sign | (spanKey,sign) <- particleSeeds, spanKey == ij]
     -- Source tags, not invented internal tags, license the paired candidates.
     fusedPairs =
       [ (certificate, hs, rs, headEntry, relEntry)
@@ -665,7 +682,8 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       [ ((i, j), catCell i j) | len <- [1 .. n], i <- [0 .. n - len], let j = i + len ]
     catCell i j
       | j == i + 1 = closeCats (Set.fromList [ lxCat l | l <- lexs !! i ])
-      | otherwise = closeCats $ Set.fromList
+      | otherwise = closeCats $ Set.union
+          (Set.fromList (map ssCat (particleAt (i,j)))) $ Set.fromList
           [ out
           | k <- [i + 1 .. j - 1]
           , l <- Set.toList (ML.findWithDefault Set.empty (i, k) catTable)
@@ -729,7 +747,8 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
 
     cell i j
       | j == i + 1 = closeUnary (i, j) (packCell (smBeam m) (M.findWithDefault [] i leafSigns))
-      | otherwise = closeUnary (i, j) $ packCell (smBeam m)
+      | otherwise = closeUnary (i, j) $ packCell (smBeam m) $
+          filter (usefulAt (i,j) . ssCat) (particleAt (i,j)) ++
           [ p
           | k <- [i + 1 .. j - 1]
             -- Combinability depends only on the two categories, so it is
