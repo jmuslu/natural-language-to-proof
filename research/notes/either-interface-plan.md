@@ -1,0 +1,9 @@
+# Either interface investigation
+
+Base fedfbfd; isolated branch astra/either-interface-plan. Shell works with inherited full access. Read STATE then GOAL. No production changes or corpus loads.
+
+Prediction before miniature execution: plain adjective OR and AND retain their independent meanings; paired adjective either/or fails because either lacks a closed lexical entry. Reserving either without pairing is insufficient. Shared fallback provenance cannot assign only the antecedent OR an either marker in a two-OR conditional. Unpaired markers must not be silently erased. Tests below are public-pipeline corpus-free diagnostics, not a benchmark or fidelity population estimate.
+
+Executed `runghc -isrc -itest test/EitherInterfaceProposalSpec.hs` against fedfbfd. Initial compile corrected reported/presupposed partition types; final semantic expectations are independent Canonical boxes and claim preorder, not toDRS-generated expected values. Outcome: 7/11 pass, four expected red: two positive paired adjective orders, lexical reservation, precise antecedent-only OR annotation through the old lowering API. Plain OR/AND, three unmatched/repeated-marker negatives, single-OR historical marker, and multiple-OR conservative abstention pass. No production code changed and no corpus loaded. The old lowering API cannot express the location requested by the final test; this is an explicit missing-interface demonstration, not a claim of new parser evidence for a conditional.
+
+Proposal keeps NP-choice, sentence-initial, mixed/list, conditional, negation/report and raised/composed extensions deferred until occurrence annotation and all-retained-reading tests are reviewed. Root selected cache used only for already frozen statuses. Existing seven operator gold rows untouched/outside173. Reviewer requested on live proposal/tests before any source implementation.
