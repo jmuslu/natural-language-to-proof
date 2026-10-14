@@ -220,11 +220,23 @@ binaryPairs (AutoTree _ kids) =
         [(eraseFeatures ca, eraseFeatures cb)]
       _ -> []
 
+-- | The stated reflexive construction licenses a new category pair even
+-- when absent from the corpus. Semantic application additionally requires
+-- lexical leaves and the closed reflexive marker; this shape alone is not
+-- evidence of local binding.
+localReflexiveVP :: CCat -> CCat -> Maybe CCat
+localReflexiveVP left right = case left of
+  CSlash Fwd vp@(CSlash Bwd (CAtom "S" [Feat feature]) (CAtom "NP" []) [])
+              (CAtom "NP" []) []
+    | feature `elem` ["dcl", "b"], right == CSlash Bwd vp left [] -> Just vp
+  _ -> Nothing
+
 -- | Is a binary combination of these two categories allowed ('smSeenRules')?
 seenPair :: SemModel -> CCat -> CCat -> Bool
 seenPair m l r = not (smSeenRules m)
   || (eraseFeatures l, eraseFeatures r) `Set.member` smSeen m
   || relativePair l r
+  || localReflexiveVP l r /= Nothing
   where
     -- The restrictive relative is interpreted below the determiner even
     -- when CCGbank attaches it at NP. Its two local combinations are licensed
@@ -320,6 +332,12 @@ data LexSign = LexSign
 -- open-class templates.
 lexicalSigns :: SemModel -> Int -> String -> [LexSign]
 lexicalSigns m i w
+  | lw `elem` ["himself", "herself", "itself"] =
+      [ LexSign target (withNote (reflexiveNote original target) item) score
+      | (original, score) <- tags, ordinaryReflexiveTag original
+      , feature <- ["dcl", "b"]
+      , let target = cat ("(S[" ++ feature ++ "]\\NP)\\((S[" ++ feature ++ "]\\NP)/NP)")
+      , item <- closedEntries i w target ]
   | isClosedClass w || all (not . isWordChar) w =
       [ LexSign c' (relativeNote c c' it) s
       | (c, s) <- tags, let c' = restrictiveTag c, it <- closedEntries i w c' ]
@@ -328,6 +346,13 @@ lexicalSigns m i w
       NameOnly    -> names
       NameOrOther -> names ++ open
   where
+    ordinaryReflexiveTag (CAtom "N" fs) = null fs
+    ordinaryReflexiveTag (CAtom "NP" fs) = all (== Feat "nb") fs
+    ordinaryReflexiveTag _ = False
+    reflexiveNote original target = Stipulation "reflexive-local-binding"
+      ("direct-object reflexive: " ++ show original ++ " -> " ++ show target) []
+      ("recognized reflexive reanalysis " ++ show original ++ " -> " ++ show target
+        ++ "; local lexical transitive subject binds its object, not a discourse antecedent")
     tags = offeredTags m (i == 0) w
     open = [ LexSign c (tagNote c it) s | (c, s) <- tags ++ thatTags ++ posTags
                             , Just it <- [openTemplateWith (`Set.member` smThatAttested m) w c] ]
@@ -594,7 +619,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
     isTypeRaise _                                = False
 
     unaries x
-      | ssCoord x /= Nothing || ssStructural x /= Nothing = []
+      | ssCoord x /= Nothing || ssStructural x /= Nothing || pendingReflexive x = []
       | otherwise =
           [ SSign to (finish (f (ssSem x))) pv (ssScore x - smUnaryPenalty m) Nothing Nothing
                   (pendingConditional to [x])
@@ -675,12 +700,40 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
           , decProv = provRule "quote-safety" [ProvLex src (tokSpan t) (tokText t) | t <- toks]
           }
 
+-- | The special diagonal category remains pending only until direct-object
+-- binding. Its note then survives on an ordinary VP as provenance, not a ban
+-- on subsequent composition. Checking the category also blocks unmarked
+-- lookalikes from using ordinary combinators to bypass the local-domain gate.
+pendingReflexive :: SSign -> Bool
+pendingReflexive sign = case ssCat sign of
+  CSlash Bwd vp (CSlash Fwd vp' (CAtom "NP" _) _) _ ->
+    vp == vp' && case vp of
+      CSlash Bwd (CAtom "S" _) (CAtom "NP" _) _ -> True
+      _ -> False
+  _ -> False
+
 -- | The sign a combinator application yields from two adjacent items, if the
 -- semantics admits it: each combinator of 'combineNamed' has one fixed semantic
 -- operation.
 semCombine :: Combinator -> CCat -> SSign -> SSign -> Maybe SSign
-semCombine comb0 out0 l r = sem comb0 out0 >>= emGuard
+semCombine comb0 out0 l r
+  | any pendingReflexive [l, r], not localBinding = Nothing
+  | otherwise = sem comb0 out0 >>= emGuard
   where
+    localBinding = comb0 == BwdApp && not (pendingReflexive l)
+      && pendingReflexive r && plain l && plain r
+      && lexical (ssProv l) && lexical (ssProv r)
+      && any (\(note, prov) -> stKind note == "reflexive-local-binding"
+                              && prov == ssProv r) (ssNotes r)
+      && case localReflexiveVP (ssCat l) (ssCat r) of
+        Just vp -> out0 == vp
+          && case (semTy (ssCat l), semTy (ssCat r)) of
+               (Just lt, Just rt) -> typeOf [] (ssSem l) == Right lt
+                                 && typeOf [] (ssSem r) == Right rt
+               _ -> False
+        Nothing -> False
+    lexical (ProvLex _ _ _) = True
+    lexical _ = False
     -- Feature unification treats @S@ as a wildcard for @S[em]@, but the two
     -- differ in semantic type (@t@ versus @s -> t@, see
     -- 'NL2Proof.Syntax.Category.catTy'), and an entry with a declared

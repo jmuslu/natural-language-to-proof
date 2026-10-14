@@ -371,3 +371,13 @@ test-suite conditional-boundary
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+-- Local object reflexives share their lexical transitive subject referent.
+test-suite reflexive-local
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ReflexiveProposalSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof

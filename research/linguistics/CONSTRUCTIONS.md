@@ -565,3 +565,13 @@ fragments; split the 137 unclassified strings into actual constructions; then
 supply two or three independent DRS/claim examples per construction. The 22
 hand-audited exemplars establish required design cases, not a substitute for that
 work. No parser fidelity or benchmark accuracy is claimed in this section.
+
+## ProofWriter residual follow-up
+
+The [source-checked residual audit](sections/proofwriter-residual.md) accounts
+for all156 occurrences/12 strings still labeled UNCLASSIFIED by the original
+surface inventory:36/6 missing-copula fragments,48/5 association/reflexive
+idioms with despite-passives, and72/1 possessive-cheeks predication. These counts
+include repeated physical dataset locations; they are not156 independent
+constructions. Syntactic accounting does not establish their semantic fidelity
+or repair context-dependent possessive antecedents.

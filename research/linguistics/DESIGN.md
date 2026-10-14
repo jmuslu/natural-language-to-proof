@@ -385,14 +385,17 @@ and a logged resolution choice. A reflexive can initially be `NP`, but requires
 a local coargument-binding obligation; choosing the most recent discourse entity
 is insufficient.
 
-**Proposed construction:** a logged object-reflexive reanalysis
+**Implemented bounded construction:** a logged object-reflexive reanalysis
 `(S\NP)\((S\NP)/NP)` has term
 `λR Q.Q(λx.R(lift(x))(lift(x))) : (Q→Q→t)→V`.
 Backward application to a transitive verb produces the reflexive VP, then
 application to the subject gives `see(Bob,Bob)` or
 `∀x(cat(x)→see(x,x))`. This is a proposed derived category, not an assertion that
-CCGbank assigns it lexically. A binding feature carried to local composition is
-another coherent implementation route.
+CCGbank assigns it lexically. The implementation requires a closed reflexive
+lexical leaf and a direct finite/base lexical transitive governor; it rejects
+unary raising, composition and punctuation before the binding step. Both the
+new category pair and its semantic application must be licensed. After binding,
+the resulting VP can undergo ordinary subject application or auxiliary negation.
 
 **Unit 4:** named `[ | see(Bob,Bob)]` has A the ground atom. Universal
 `[ | [x | cat(x)]⇒[ | see(x,x)]]` has A the implication and E the two atoms.
@@ -708,3 +711,19 @@ Fourteen direct controls pass. Fresh114-row fidelity changes24/33/57 to
 binding cases become exact, with no status regressions. A separate synthetic
 raising audit still exposes a pre-existing implication-direction error; it is
 retained as a known failure, not counted as fixed by this boundary guard.
+
+### Local direct-object reflexive repair
+
+Closed `himself/herself/itself` entries reanalyse offered ordinary N/NP tags
+with the diagonal meaning in C10. Unsupported reflexive forms are reserved
+from open-class fallback. The new route requires exact finite/base local
+transitive categories, two lexical leaves and the closed binding stipulation.
+Twenty-one independent controls cover named/quantified subjects, negation,
+locality, unsupported neighboring categories and the corpus-rule pair filter.
+
+On the frozen121-row diagnostic (119 distinct texts), all seven reflexive rows
+change wrong-but-typed→exact; the other114 statuses do not change. Totals become
+34 exact/25 wrong/62 no-parse from27/32/62. Named identity, quantified diagonal
+binding and negated scope now match the independently authored DRS/claims.
+This does not cover plural, exempt/logophoric, PP or nonlocal reflexives. All
+release gates pass; the ProverQA construction gate remains closed.

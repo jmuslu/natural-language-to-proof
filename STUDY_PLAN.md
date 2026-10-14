@@ -188,8 +188,8 @@ the85-case starter diagnostic improves only `pronto-each-1`, to22 exact,
 23 wrong-but-typed and40 no-parse. ProverQA remains7/24 exact, so the owner’s
 fidelity gate is closed. Modifier order still differs from independent gold;
 reordering predicates naively also renames definite identifiers. Newly audited
-nested conditionals can select `(A→B)∧B`, reflexives introduce a separate
-universal object, and unseen initial bare plurals can be selected as names.
+the original nested-conditional and reflexive failures are recorded below;
+unseen initial bare plurals can still be selected as names.
 These are meaning failures, even when they type-check. See the
 [construction inventory](research/linguistics/CONSTRUCTIONS.md) and
 [Units2/3/4 construction design](research/linguistics/DESIGN.md) for scope,
@@ -202,6 +202,13 @@ independent regression rows change wrong→exact (expanded114:27/30/57).
 Synthetic raised composition can still reverse implication direction. The
 nominal-copula candidate was rejected after six exact→wrong regressions and
 remains on a local experimental branch; it is not production behavior.
+
+Local singular direct-object reflexives now bind the lexical finite/base
+transitive subject to both argument positions. All seven independent reflexive
+rows become exact, including quantified and negated scopes, with no other status
+changes in the frozen121 cases (34exact/25wrong/62no-parse). Twenty-one new
+controls and all release gates pass. PP, plural and nonlocal reflexives remain
+outside this bounded rule; the construction fidelity gate remains closed.
 
 The broader ambiguity policy is still a separate inference obligation. Passing the highest-ranked reading does not establish a skeptical conclusion across the parser's bounded candidate set.
 

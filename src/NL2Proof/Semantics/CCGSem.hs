@@ -191,6 +191,14 @@ subjectRelative :: Term
 subjectRelative = Lam "V" (tyGQ ~> TyT) (Lam "N" tyPred1 (Lam "x" TyE
   (TAnd (App (Var "N") x_) (App (Var "V") (liftE x_)))))
 
+-- | Local direct-object binding: apply the subject quantifier once, with
+-- the same individual in the verb's object and subject slots. The parser
+-- licenses this only against a lexical finite/base transitive governor.
+localReflexive :: Term
+localReflexive = Lam "R" (tyGQ ~> tyGQ ~> TyT) (Lam "S" tyGQ
+  (App (Var "S") (Lam "x" TyE
+    (App (App (Var "R") (liftE x_)) (liftE x_)))))
+
 -- | The closed-class table: @(word, category, entry)@. Lower-case keys. The
 -- pronoun entries take the token position, hence the function.
 closedTable :: Int -> [(String, CCat, LexItem)]
@@ -214,6 +222,11 @@ closedTable i =
      , ("and", cat "conj", LexStructural "coordinator (and)")
      , ("or", cat "conj", LexStructural "coordinator (or)")
      ]
+  ++ [ (w, cat ("(S[" ++ f ++ "]\\NP)\\((S[" ++ f ++ "]\\NP)/NP)"),
+          LexTerm localReflexive "local object reflexive" (Just
+            (Stipulation "reflexive-local-binding" "local subject fills both verb arguments" []
+              "only lexical finite/base transitive direct-object binding is licensed")))
+     | w <- ["himself", "herself", "itself"], f <- ["dcl", "b"] ]
   ++ [ (w, cat "NP", LexTerm (pronoun w i) "pronoun" Nothing) | w <- ["it", "they"] ]
   ++ [ ("did", cat "(S[dcl]\\NP)/(S[b]\\NP)", LexTerm vpIdentity "do-support auxiliary (past)" Nothing) ]
   ++ [ (w, cat "(N\\N)/(S[dcl]\\NP)", LexTerm subjectRelative "restrictive subject relative" Nothing)
@@ -390,7 +403,8 @@ failSafe shape = Stipulation
 closedClassWords :: [String]
 closedClassWords =
   [ "the", "all", "every", "each", "a", "an", "some", "no", "is", "are", "does", "do", "not", "if"
-  , "then", "something", "someone", "things", "people", "and", "or", "it"
+  , "himself", "herself", "itself", "themselves", "myself", "yourself"
+  , "yourselves", "ourselves", "oneself", "then", "something", "someone", "things", "people", "and", "or", "it"
   , "they", "did", "that", "which", "who" ]
 
 isClosedClass :: String -> Bool
