@@ -59,6 +59,9 @@ main = runChecks "universal nominal independent proposal"
  ++ transitionChecks ++ boundaryChecks ++ ordinaryChecks)
 
 
+-- Mechanical evidence wrapper: all original assertions retain the v1 policy.
+known p c = NominalNounOrigin p c DictionaryCommonNoun
+
 cc :: String -> CCat
 cc = either error id . parseCCGCat
 cert :: NominalCertificate
@@ -75,18 +78,18 @@ sign category term origin role = SSign
  ,ssNominal=role,ssNotes=[]}
 article, noun, copula, predicateSign, pending, subjectNoun, determiner, subject, complete :: SSign
 article=sign "N/N" (Lam "P" tyPred1 (Var "P")) (leaf (Span 13 14) "a") (NominalArticle cert)
-noun=sign "N" (pred1 "animal") origin (NominalNoun origin (cc "N"))
+noun=sign "N" (pred1 "animal") origin (NominalNoun (known origin (cc "N")))
  where origin=leaf (Span 15 21) "animal"
 copula=sign "(S[dcl]\\NP)/N"
  (Lam "P" tyPred1 (Lam "Q" tyGQ (App (Var "Q") (Var "P"))))
  (leaf (Span 10 12) "is") (NominalCopula cert)
 predicateSign=sign "N" (pred1 "animal")
  (provRule "FwdApp" [ssProv article,ssProv noun])
- (NominalPredicate cert (ssProv noun) (cc "N"))
+ (NominalPredicate cert (known (ssProv noun) (cc "N")))
 pending=sign "S[dcl]\\NP" (normalize (App (ssSem copula) (ssSem predicateSign)))
  (provRule "FwdApp" [ssProv copula,ssProv predicateSign])
- (NominalPending cert (ssProv noun) (cc "N"))
-subjectNoun=sign "N" (pred1 "cat") origin (NominalNoun origin (cc "N"))
+ (NominalPending cert (known (ssProv noun) (cc "N")))
+subjectNoun=sign "N" (pred1 "cat") origin (NominalNoun (known origin (cc "N")))
  where origin=leaf (Span 6 9) "cat"
 determiner=sign "NP[nb]/N"
  (Lam "P" tyPred1 (Lam "Q" tyPred1 (TForall "x" TyE
@@ -95,10 +98,10 @@ determiner=sign "NP[nb]/N"
  where origin=leaf (Span 0 5) "Every"
 subject=sign "NP[nb]" (normalize (App (ssSem determiner) (ssSem subjectNoun)))
  (provRule "FwdApp" [ssProv determiner,ssProv subjectNoun])
- (NominalUniversalSubject (ssProv determiner) (cc "NP[nb]/N") (ssProv subjectNoun) (cc "N"))
+ (NominalUniversalSubject (ssProv determiner) (cc "NP[nb]/N") (known (ssProv subjectNoun) (cc "N")))
 complete=sign "S[dcl]" (normalize (App (ssSem pending) (ssSem subject)))
  (provRule "BwdApp" [ssProv subject,ssProv pending])
- (NominalComplete cert (ssProv subject) (ssProv noun))
+ (NominalComplete cert (ssProv subject) (known (ssProv subjectNoun) (cc "N")) (known (ssProv noun) (cc "N")))
 
 period :: SSign
 period=(sign "." (Con "." TyT) (leaf (Span 21 22) ".") NominalPlain)
@@ -124,7 +127,7 @@ transitionChecks =
  ,expect "different occurrence cannot discharge copula" $
     nominalTransition FwdApp (cc "S[dcl]\\NP") copula
       (predicateSign {ssNominal=NominalPredicate (cert {ncCopulaIndex=7,ncArticleIndex=8})
-                      (ssProv noun) (cc "N")}) == Nothing
+                      (known (ssProv noun) (cc "N"))}) == Nothing
  ,expect "foreign source cannot capture property" $
     nominalTransition FwdApp (cc "N") article
       (noun {ssProv=ProvLex (SourceId "foreign") (Span 15 21) "animal"}) == Nothing
@@ -151,7 +154,7 @@ transitionChecks =
     (length (packCell 20 [subject,subject {ssNominal=NominalPlain}]))
  ,expectEq "packing retains same property with different origin" 2
     (length (packCell 20 [predicateSign,predicateSign {ssNominal=NominalPredicate
-       (cert {ncSource=SourceId "other"}) (ssProv noun) (cc "N")}]))
+       (cert {ncSource=SourceId "other"}) (known (ssProv noun) (cc "N"))}]))
  ] ++ [expect ("pending path rejects "++show combinator)
        (nominalTransition combinator (cc "S[dcl]") subject pending==Nothing)
        | combinator <- allCombinators, combinator/=BwdApp]
