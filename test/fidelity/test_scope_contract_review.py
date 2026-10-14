@@ -139,6 +139,8 @@ class FidelityScopeReview(unittest.TestCase):
     def test_gold_cannot_redeclare_enclosing_canonical_binder(self):
         # Canonical reference identity is global, not a lexical variable name
         # whose nested redeclaration may harmlessly shadow the outer binding.
+        # This requests stricter gold policy: canonicalize itself preserves
+        # duplicate declarations and can export this structure.
         p = pred('cat', {'ref': 'r0'})
         q = pred('dog', {'ref': 'r0'})
         neg = {'tag': 'not', 'body': box([q], ['r0'])}

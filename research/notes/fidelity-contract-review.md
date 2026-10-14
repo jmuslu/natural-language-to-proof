@@ -51,7 +51,10 @@ renaming regressions.
 global reference identity; the inner binder cannot be assumed an innocent new
 variable with the same spelling. For an independent nested witness it must use
 r1, whereas a coreference use of the outer witness needs no new declaration.
-The expected-failure test requests rejection of this ambiguous/malformed gold.
+The expected-failure test requests a stricter, independently chosen well-formed
+gold policy. Current Haskell canonicalize preserves repeated universe declarations
+and can export this exact structure; it does not reject them. Thus this is not
+an impossible canonical export or a demonstrated canonicalizer violation.
 Check any intended repeated-declaration convention before changing admission;
 this audit does not silently redefine canonicalization or existing DRS semantics.
 The current code checks each universe's uniqueness independently and unions bound
