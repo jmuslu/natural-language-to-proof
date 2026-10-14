@@ -1003,3 +1003,15 @@ The totals are 60 exact, 25 wrong-but-typed, 87 no-parse and one incomplete acro
 separate contracts. This is one measured source repair, not general named-nominal
 coverage. All 29 Haskell suites and the remaining release gates pass. Independent review
 verified all source/artifact hashes and the complete comparison before landing.
+
+
+### Measured optional nominal policy
+
+The [paired 190-case result](NOMINAL_POLICY_RESULT.md) uses one accepted binary
+and fixed gold with explicit execution-policy seals. Enabling the bounded unknown
+noun hypothesis changes five no-parse cases to exact: two universal Pronto
+classifications, two named Pronto classifications and Abraham's archaeologist
+classification. All 185 other selected meanings/statuses remain unchanged; no
+retained target reading is wrong. Three additional trace-only changes are
+reported separately. The default remains KnownNounsOnly, and this diagnostic
+neither establishes population coverage nor opens the model-launch gate.

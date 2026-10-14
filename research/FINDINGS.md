@@ -11,11 +11,40 @@ for inventory scope, rejected alternatives and the remaining original phases.
 The construction inventories and learner-facing [design](linguistics/DESIGN.md)
 cover ProverQA, all110 ProofWriter files, ProntoQA and the FOLIO sample; see
 [construction accounting](linguistics/CONSTRUCTIONS.md). Surface counts are not
-semantic coverage. The accepted154-case diagnostic at `8c390f0` contains47exact,
-26wrong-but-typed,80no-parse and1incomplete. These are bookkeeping totals across
-disclosed semantic contracts, not a pooled acceptance score or population
-estimate. The ProverQA starter is10/24 exact; representative construction gold
-and denominator work remain unfinished. The >=90% gate is closed.
+semantic coverage. The accepted source checkpoint `d83adaa` has29 Haskell suites
+with1,851 checks and97 Python checks (95 pass, two documented expected failures
+requesting stricter gold-admission policy). Build, oracle boundary, Explain and
+hand controls pass. The fixed173-case default diagnostic has60 exact,25
+wrong-but-typed,87 no-parse and one incomplete result. Extending it with17
+independently reviewed cases preserves every old result and gives63/32/94/1.
+These mixed-contract totals do not certify a representative acceptance panel.
+The ProverQA starter remains10/24; the >=90% gate stays closed.
+
+[The paired nominal-policy result](linguistics/NOMINAL_POLICY_RESULT.md) compares
+one binary on that frozen190-case panel. The optional context-unknown policy
+repairs five previously unparsed classifications, giving68/32/89/1 without a
+selected-meaning regression. Every retained target reading is exact or absent;
+three additional cases change trace annotations only. Keep KnownNounsOnly as the
+default: five diagnostic gains do not establish safety across unrestricted
+English or quantify the86,788 Pronto structural opportunities. That frequency
+count is input-only, and all38 relevant nonce noun keys lack observed dictionary
+POS evidence in the measured snapshot.
+
+The accepted implementation deliberately uses bounded, occurrence-checked
+construction licenses. Recent exact gains include three give-up cases, seven
+Everyone cases (six authored), and one attested-name nominal case. Regular noun
+normalization improves three restriction predicates but leaves their full
+meanings wrong. Record those as partial progress. The licenses and independent
+controls protect scope and source evidence, but their growing implementation
+cost is a reason to consolidate shared construction mechanics after behavior is
+stable, not to relax guards or import templates wholesale.
+
+The practical next steps are to integrate the completed learner cards and gold,
+finish the reviewed bounded nominal-negation trial, and establish independently
+reviewed representative gold before any acceptance claim. Existing plan-only
+counts, type-correct parses and more elaborate Explain renderings cannot replace
+that evidence. Explain's compatible reconstruction is not necessarily the
+original lexical derivation; its reported first mismatch requires qualification.
 
 Accepted local-reflexive rules repair seven wrong meanings. A composition-feature
 repair removes three wrong negative-relative meanings to honest no-parse.
