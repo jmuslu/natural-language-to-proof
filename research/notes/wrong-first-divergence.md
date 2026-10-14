@@ -24,3 +24,15 @@ pets/animals/humans/frogs do not expose the exact failed POS/base gate. Kind in
 the comma example is selected N coordination rather than adjective modification.
 See research/linguistics/WRONG_FIRST_DIVERGENCE.md for all 26 evidence offsets.
 Ignored run artifacts must be archived by the coordinator before worktree removal.
+
+## Follow-up: adjective admission proposal
+
+Full-access shell works; preserved 1659575 and ignored trace bundle. Inspected
+actual offeredTags/lexicalSigns/POS-backoff source without a corpus load. Added
+proposals/adjective-admission-plan.md and independent miniature controls only.
+Proposed filter targets known, category-unattested S[adj]\\NP with exactly NNS
+or VBZ support; unknown/ambiguous/attested adjective paths abstain. This is not
+claimed applicable to hawks/mammals/excels without missing dictionary evidence.
+Focused runghc controls: 16 pass, 2 deliberate red rejection assertions. Preserved
+round/kind/unknown/JJ backoff and alternate categories. No production edits,
+source trial, parser load, gold mutation or benchmark occurred. Review required.
