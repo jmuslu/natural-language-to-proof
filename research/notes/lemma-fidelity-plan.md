@@ -18,3 +18,17 @@ in an adjective-preservation assertion. Corrected test comparison to canonicalAC
 Actual source verbLemma excels already excel; do not misdiagnose that row as a
 missing suffix rule. Nominal proposed normalization must live at category+POS-
 evidenced lexical interface, leaving reportingLemma/attestation untouched.
+
+Reviewer refinement before implementation: replace the ambiguous appended-s
+spelling prose with exact lower-ASCII envelope excluding every -es ending,
+including legitimate cranes. Add axes/bases with competing singulars, news,
+species, compounds, capitalized surface and conflicting POS controls. Prediction:
+the same2 positive reds remain (lanterns/gardens), with23 preservation checks
+passing; no actual CCGbank POS availability or fidelity gain is predicted.
+
+Final refined controls include minority-name evidence too:26checks,24pass and2
+intendedred. Exact spelling envelope now lowerASCII len>=4 final s excluding
+es/ss/us/is/ews; original/base POS support exactlyNNS/NN. This deliberately defers
+valid cranes and -ews nouns to avoid broad inference. Source predicates remain
+unchanged; target benchmark lexical evidence is still unobserved. Reviewer must
+approve refined contract before any source implementation.
