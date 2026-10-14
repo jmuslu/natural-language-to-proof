@@ -153,7 +153,9 @@ until its domain policy is separately approved.
 sentence because it contains these words or because another ordinary derivation
 exists. For example, `Everything and someone who is red is big` can have ordinary
 coordination of a complete standalone universal NP with a completed restricted
-existential NP. It must not become a blanket negative sentence test merely to
+existential NP. Similarly, a completed restricted NP may coordinate with a bare
+common-noun NP; `Everything that is red and cat is big` is not a sound blanket
+negative for rejecting pending Property/ordinary-N coordination. It must not become a blanket negative sentence test merely to
 forbid coordination of two *pending* heads. The transition-level CoordApply check,
 not a surface phrase filter, is the required safeguard.
 
@@ -311,7 +313,8 @@ rejection checks passed. All-returned-reading checks were then added before
 rerunning, with the additional prediction recorded in the notes. These controls
 are not registered as a green release suite and no failing test was removed.
 
-The current default run includes Everything/Someone only plus the expanded local
+The current default run includes the six restricted Everything/Someone cases,
+three standalone unrestricted Everything cases, and the expanded local
 licensing controls. The three unchanged Something controls remain runnable with
 `--deferred-something`, explicitly outside the first implementation gate. This
 separates an unresolved semantic policy from a clear construction repair; it does

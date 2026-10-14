@@ -73,3 +73,17 @@ No shared source, cabal or committed fidelity gold changed. Static diff check
 passed after removing one extra trailing blank line. Reviewer requested before
 source implementation; the contract now specifies packing identity and source
 seen-pair/prepass obligations rather than relying on category labels alone.
+
+Reviewer approved table as concrete enough for bounded investigation, with two
+corrections before implementation. Removed second overbroad whole-sentence
+negative `Everything that is red and cat is big`: a completed quantified NP
+could coordinate with an ordinary bare-cat NP. Its pending-state rejection
+remains mandatory at transition level, not by text. Added3independent standalone
+Everything DRS/claim/all-reading controls: red, red-and-blue, and not-red, all
+unrestricted universals with empty antecedent conditions. Closing/reserving this
+head must preserve correct unrestricted meanings outside relatives too.
+Prediction before revised run:11/41pass30fail; deferred Something remains0/9.
+Revised run matched11/41pass30fail. Reviewer corrections now incorporated;
+standalone Everything remains explicit expected-red, and no whole-sentence
+negative suppresses a legitimate completed-NP coordination path. Source work
+will occur on a separate coordinator-created branch/worktree.

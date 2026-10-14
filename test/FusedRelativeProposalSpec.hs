@@ -81,6 +81,9 @@ cases =
      [person,red,blue,cold] [person,red,blue,cold] []
  , existential "Someone who is red is not big."
      [person,red,neg big] [person,red,neg big] [big]
+ , universal "Everything is red." [] [red] [red]
+ , universal "Everything is red and blue." [] [red,blue] [red,blue]
+ , universal "Everything is not red." [] [neg red] [neg red,red]
  ]
   where
     universal text lhs rhs embedded =
@@ -179,8 +182,6 @@ negativeCases =
      "Everything that and who is red is big.")
  ,("mixed noun/property coordination is not a relative certificate",mini,
      "Everything cat and that is red is big.")
- ,("completed property cannot conjoin ordinary noun to extend certificate",mini,
-     "Everything that is red and cat is big.")
  ,("forged internal head tag is not an offered ordinary NP origin",
      miniWith "NP/N" "(NP\\NP)/(S[dcl]\\NP)",
      "Everything that is red is big.")
