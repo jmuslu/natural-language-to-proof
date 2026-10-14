@@ -82,6 +82,9 @@ choose :: [Feat] -> [Feat] -> [Feat]
 choose [] gs = gs
 choose fs _ = fs
 
+-- Composition applies this independently to both surviving ends: an inner
+-- endomodifier constrains the composed argument as well as an outer modifier
+-- constraining the composed result.
 -- The identity of the modifier's two category occurrences is the evidence
 -- that their features should covary. No arbitrary atom-name substitution.
 specialize :: CCat -> CCat -> CCat -> CCat
@@ -156,16 +159,16 @@ step BwdApp l r = case r of
   CSlash Bwd x y _ | unifiable y l -> [specialize x y l]
   _ -> []
 step FwdComp l r = case (l, r) of
-  (CSlash Fwd x y _, CSlash Fwd y' z _) | unifiable y y' -> [CSlash Fwd (specialize x y y') z []]
+  (CSlash Fwd x y _, CSlash Fwd y' z _) | unifiable y y' -> [CSlash Fwd (specialize x y y') (specialize z y' y) []]
   _ -> []
 step BwdComp l r = case (l, r) of
-  (CSlash Bwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Bwd (specialize x y' y) z []]
+  (CSlash Bwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Bwd (specialize x y' y) (specialize z y y') []]
   _ -> []
 step FwdXComp l r = case (l, r) of
-  (CSlash Fwd x y _, CSlash Bwd y' z _) | unifiable y y' -> [CSlash Bwd (specialize x y y') z []]
+  (CSlash Fwd x y _, CSlash Bwd y' z _) | unifiable y y' -> [CSlash Bwd (specialize x y y') (specialize z y' y) []]
   _ -> []
 step BwdXComp l r = case (l, r) of
-  (CSlash Fwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Fwd (specialize x y' y) z []]
+  (CSlash Fwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Fwd (specialize x y' y) (specialize z y y') []]
   _ -> []
 step CoordMark l r
   | isCoordinator l = [addConjFeat r]

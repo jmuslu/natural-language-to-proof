@@ -727,3 +727,22 @@ change wrong-but-typed→exact; the other114 statuses do not change. Totals beco
 binding and negated scope now match the independently authored DRS/claims.
 This does not cover plural, exempt/logophoric, PP or nonlocal reflexives. All
 release gates pass; the ProverQA construction gate remains closed.
+
+### Composition preserves the remaining argument's features
+
+Both surviving ends of composition now preserve a matched whole-category
+endomodifier's feature dependency. For forward crossed composition
+`X/Y  Y'\Z → X\Z`, if `Y'` and `Z` are the same complete category, matching
+`Y'` to `Y` also specializes `Z`. The other three composition rules apply the
+same principle with their argument orientation. Unrelated bare `S` subterms
+are not unified as one variable.
+
+For example, copular `is` plus backward `not` cannot forget that the remaining
+left argument is an adjective VP and consume an already finite `is red` VP.
+Both VPs have Montague type `Q→t`; the type checker alone cannot detect this
+category mismatch. Sixteen direct feature/type controls and all release gates
+pass. In the frozen154-row diagnostic, three wrong FOLIO negative-relative
+readings become no-parse, and every exact result is preserved. This removes
+invalid derivations; it does not yet supply the missing correct readings.
+The historical121 panel remains34/25/62, and semantic-contract partitions
+stay separate. The ProverQA construction gate is still closed.
