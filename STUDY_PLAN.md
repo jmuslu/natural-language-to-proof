@@ -195,6 +195,14 @@ These are meaning failures, even when they type-check. See the
 [Units2/3/4 construction design](research/linguistics/DESIGN.md) for scope,
 first divergences, and proposed repairs.
 
+The conditional-comma guard now prevents pending `if A` and `then` modifiers
+from being pointwise conjoined into `(A→B)∧B`; completed clause coordination
+survives. Fourteen direct controls and the full release gates pass. Three
+independent regression rows change wrong→exact (expanded114:27/30/57).
+Synthetic raised composition can still reverse implication direction. The
+nominal-copula candidate was rejected after six exact→wrong regressions and
+remains on a local experimental branch; it is not production behavior.
+
 The broader ambiguity policy is still a separate inference obligation. Passing the highest-ranked reading does not establish a skeptical conclusion across the parser's bounded candidate set.
 
 ---

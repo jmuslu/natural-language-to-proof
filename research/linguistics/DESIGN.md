@@ -676,3 +676,35 @@ the two ProverQA possessive cases from wrong-but-typed to exact:24 exact,
 33 wrong-but-typed,57 no-parse. Starter ProverQA is9/24 exact; expanded
 construction coverage remains incomplete. This is lexical identity recovery,
 not a general morphology or noun-number repair.
+
+### Rejected default nominal-copula candidate
+
+A typed lexical nominal-copula elaborator passed55 focused scope, identity,
+discourse and claim-status checks, but failed the independent corpus fidelity
+check. On the same114 rows,24 exact/33 wrong/57 no-parse became33/67/14:
+15 newly exact, six formerly exact now wrong, and28 newly wrong-but-typed.
+Six Explain regressions independently confirmed the problem. Adjectives such
+as `cold` acquired a bare-generic NP analysis, and the equative fallback
+made `Anne is cold` a universal equation instead of `cold(Anne)`.
+
+The default change was rejected and is preserved only on the local experimental
+`astra/nominal-candidate` branch (`91645ae` source, `c2bff11` failure analysis).
+Direct term correctness does not license a newly available syntactic route.
+Bare N→NP generic meanings and explicit `every` meanings have the same lambda
+shape; a term-only exception cannot distinguish them. Future activation needs
+local NP-origin licensing, carried through composition/coordination and packing,
+as well as independent name and relative-scope repairs. A whole-sentence cue
+filter, altered gold, or increased parse coverage would not resolve this failure.
+
+### Conditional delimiter repair
+
+The reviewed chart rule now carries an open-conditional obligation from the
+exact closed lexical entry through composition, punctuation and actual unary
+raising. Comma coordination cannot conjoin pending clause modifiers; a complete
+sentence discharges the obligation. Ordinary comma clauses and explicit `and/or`
+remain available. The two role bits participate in chart packing.
+Fourteen direct controls pass. Fresh114-row fidelity changes24/33/57 to
+27 exact/30 wrong/57 no-parse: the starter binding conditional and both nested
+binding cases become exact, with no status regressions. A separate synthetic
+raising audit still exposes a pre-existing implication-direction error; it is
+retained as a known failure, not counted as fixed by this boundary guard.
