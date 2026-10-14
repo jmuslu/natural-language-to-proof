@@ -338,7 +338,7 @@ own those files; reviewer approval and integrated gates are still required.
 | Prover `sentence_either_or-1/2` | Explicit NOT-both is a second asserted condition; repeated embedded atoms retained | Marker attachment and elliptical predicate coordination |
 | FOLIO `some-not-1/2` | One existential witness outside NOT | Negative nominal copula shares witness; no universal strengthening |
 | FOLIO `or-1/2` | Inclusive predicate OR, invariant to predicate ordering in truth conditions | Structural order is still preserved by the scorer |
-| ProofWriter `pw-cond-generic-1/2`, `pw-cond-generic-coord-1/2` | Accessible antecedent witness, shared across conjoined properties | Strict surface thing restriction versus declared dataset domain policy |
+| ProofWriter `pw-cond-generic-1/2`, `pw-cond-generic-coord-1/2` | Accessible antecedent witness, shared across conjoined properties | Preserve unrestricted something under the documented fragment convention; explicit people/things sortals remain distinct; pronoun accessibility still needs validation |
 | Pronto `pronto-restrict-or-1/2` | Restrictor OR stays inside universal antecedent | Everything lexical meaning and relative attachment are separate earlier seams |
 | Pronto `pronto-ground-or-1/2/3` | Three alternatives share the named subject | Review accepted structural associations independently of parser ranking |
 

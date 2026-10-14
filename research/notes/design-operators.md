@@ -18,3 +18,8 @@ proposal. Inspected transferred ProverQA/FOLIO/ProofWriter/Pronto gold IDs and
 meanings. No corpus loading, model, solver, benchmark, or new parse experiment.
 No production source edits. Coordinator must request independent review before
 implementation and run integration fidelity/release gates before pushing.
+
+Review correction: ProofWriter conditional something gold intentionally uses an
+unrestricted domain under its documented fragment convention, with no thing
+predicate. Corrected the crosswalk to preserve that convention and distinguish
+explicit people/things sortals; pronoun accessibility remains to be validated.
