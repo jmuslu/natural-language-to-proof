@@ -434,6 +434,12 @@ lexicalSigns m i w
 -- Chart
 --------------------------------------------------------------------------------
 
+-- | A same-category coordinate chain, certified by chart rules rather than by
+-- inspecting logical terms. Nothing means comma edges have no overt operator.
+-- Explicit incompatible subtrees remain atomic members with their provenance.
+data CoordList = CoordList CCat (Maybe String) [(Term, Prov)] [(String, Prov)]
+  deriving (Eq, Ord)
+
 -- | A chart item.
 data SSign = SSign
   { ssCat   :: CCat
@@ -454,6 +460,8 @@ data SSign = SSign
   , ssConditionalRaised :: Bool
     -- ^ The pending role has passed through an actual unary type-raising step.
     -- An isomorphic lexical category alone does not license a raised guard.
+  , ssList :: Maybe CoordList
+    -- ^ Only coordination/punctuation carry a list across their own boundary.
   , ssNotes :: [(Stipulation, Prov)]
     -- ^ Stipulations used anywhere in the derivation, with where.
   }
@@ -470,8 +478,8 @@ data SemParse = SemParse
     -- ^ Sentence-wide safety decisions, including a quote rejected entirely.
   }
 
-key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool)
-key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s)
+key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool, Maybe CoordList)
+key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s, ssList s)
 
 -- | Pack by 'key' (keep the best score; earlier wins ties) and keep the beam.
 packCell :: Int -> [SSign] -> [SSign]
@@ -561,10 +569,10 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
            LexTerm tm _ st ->
              -- The role belongs to the closed lexical entry, not a search for
              -- an if token anywhere in a completed constituent.
-             SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False
+             SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False Nothing
                [ (x, pv) | Just x <- [st] ]
            LexStructural _ ->
-             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False []
+             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False Nothing []
 
     table :: ML.Map (Int, Int) [SSign]
     table = ML.fromList
@@ -624,6 +632,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
           [ SSign to (finish (f (ssSem x))) pv (ssScore x - smUnaryPenalty m) Nothing Nothing
                   (pendingConditional to [x])
                   (pendingConditional to [x] && (ssConditionalRaised x || isTypeRaise to))
+                  Nothing
                   (ssNotes x ++ [ (st, pv) | Just st <- [mst] ]
                     ++ [(raisingNote, pv) | isTypeRaise to])
           | (fr, to) <- meaningful
@@ -758,7 +767,7 @@ semCombine comb0 out0 l r
     notes = ssNotes l ++ ssNotes r
     mk comb out tm coord = SSign out (finish tm) (pv comb) (ssScore l + ssScore r) coord Nothing
       (pendingConditional out [l, r])
-      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) notes
+      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) Nothing notes
 
     sem comb out = case comb of
       -- 'applyIntensional' is 'App' unless the functor declares an
@@ -771,12 +780,14 @@ semCombine comb0 out0 l r
       BwdXComp | plain l, plain r -> compose comb out (ssSem r) (ssSem l) (argOfR l)
       CoordMark
         | Just w <- ssStructural l, isCoordinator (ssCat l), plain r ->
-            Just (mk comb out (ssSem r) (Just w))
+            Just ((mk comb out (ssSem r) (Just w)) { ssList = ssList r })
       CoordApply
-        | plain l, Just w <- ssCoord r, Just op <- coordinatorOp w
+        | plain l, Just w <- ssCoord r
         , not (w == "," && any pendingModifier [l, r])
-        , Just ty <- semTy out, Just tm <- coordTerm op ty (ssSem l) (ssSem r) ->
-            Just (mk comb out tm Nothing)
+        , Just marker <- pendingCoordinator (ssProv r)
+        , Just (tm, certificate, repair) <- coordinateList out (map toLower w) marker l r ->
+            Just ((mk comb out tm Nothing)
+              { ssList = Just certificate, ssNotes = notes ++ repair })
       PunctRight
         | isPunct (ssCat r), Just _ <- ssStructural r, ssStructural l == Nothing ->
             Just (keep l)
@@ -802,6 +813,61 @@ semCombine comb0 out0 l r
 isConditionalIntroducer :: String -> CCat -> Bool
 isConditionalIntroducer word c = map toLower word == "if"
   && Right c == parseCCGCat "(S/S)/S[dcl]"
+
+-- | The pending marker is introduced by CoordMark and may absorb right-hand
+-- punctuation. Do not mistake a coordinator inside its operand for this edge.
+pendingCoordinator :: Prov -> Maybe Prov
+pendingCoordinator (ProvRule (RuleName "CoordMark") [marker, _]) = Just marker
+pendingCoordinator (ProvRule (RuleName "PunctRight") [marked, _]) = pendingCoordinator marked
+pendingCoordinator _ = Nothing
+
+-- | Resolve only comma-created edges, never explicit mixed conjunctions. Two
+-- incompatible explicit child chains stay atomic; their separating comma keeps
+-- the established asyndetic AND reading until an outer overt list licenses it.
+coordinateList :: CCat -> String -> Prov -> SSign -> SSign
+               -> Maybe (Term, CoordList, [(Stipulation, Prov)])
+coordinateList category word marker left right = do
+  original <- coordinatorOp word
+  ty <- semTy category
+  let child sign = case ssList sign of
+        Just list@(CoordList c _ _ _)
+          | unifiable c category, semTy c == Just ty -> Just list
+        _ -> Nothing
+      operator sign = case child sign of
+        Just (CoordList _ op _ _) -> op
+        Nothing -> Nothing
+      -- The overt coordinator must close this list on the right. An earlier
+      -- OR alone does not turn a later asyndetic comma into another OR.
+      overt = if word /= "," then Just word else case (operator left, operator right) of
+        (Just a, Just b) | a /= b -> Nothing
+        (_, Just op) -> Just op
+        _ -> Nothing
+      members onRight sign = case child sign of
+        Just (CoordList _ op childMembers childEdges)
+          | op == Nothing || op == overt
+          -- An overt edge closes preceding commas; it cannot reach into a
+          -- following comma-only subtree and retroactively make those ORs.
+          , not (onRight && word /= "," && op == Nothing) -> (childMembers, childEdges)
+        _ -> ([(ssSem sign, ssProv sign)], [])
+      (ls, le) = members False left
+      (rs, re) = members True right
+      xs = ls ++ rs
+      edges = le ++ [(word, marker)] ++ re
+      resolve = any ((== ",") . fst) edges && overt /= Nothing
+      certificate = CoordList category overt xs edges
+      build _ [(tm, _)] = Just tm
+      build op ((tm, _) : rest) = build op rest >>= coordTerm op ty tm
+      build _ [] = Nothing
+  tm <- if resolve
+    then case overt >>= coordinatorOp of
+      Just op -> build op xs
+      Nothing -> Nothing
+    else coordTerm original ty (ssSem left) (ssSem right)
+  let repair = [(Stipulation "comma-list" "comma list inherits or"
+                  ["comma defaults to and"]
+                  "same-category coordination provenance supplies an overt OR; explicit mixed edges remain atomic",
+                 marker) | resolve, overt == Just "or"]
+  pure (tm, certificate, repair)
 
 -- | A complete sentence discharges all conditional obligations contained in it.
 -- In particular, embedding/raising that sentence must not poison surrounding
