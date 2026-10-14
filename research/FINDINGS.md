@@ -3,6 +3,9 @@
 Status: linguistic-design-first owner redirect active. New model and answer-benchmark launches are paused until the ProverQA construction-fidelity gate is met. Earlier B/C/F measurements and G audits remain historical evidence; D/E comparisons and final synthesis are incomplete.
 Results are from branch `astra/research`; commands/predictions are in `LOG.md`.
 
+See the [interim linguistic decision document](linguistics/FINDINGS_LINGUISTICS.md)
+for inventory scope, rejected alternatives and the remaining original phases.
+
 ## Current linguistic evidence
 
 The construction inventories and learner-facing [design](linguistics/DESIGN.md)
