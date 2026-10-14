@@ -17,3 +17,5 @@
 - Active serial integration: gold-nested-prontoqa (5f23bb2), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-nested-prontoqa; committing/pushing now.
 
 - Active serial integration: gold-reflexives (500e157), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-reflexives; committing/pushing now.
+
+- Active serial integration: fidelity-coverage-next (5e69ab2), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/fidelity-coverage-next; committing/pushing now.

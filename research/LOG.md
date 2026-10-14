@@ -2209,3 +2209,9 @@ Reviewer-approved branch only; overlapping untracked artifacts preserved under i
 FOLIO extension result:7 independently approved rows score0exact/2wrong/5no-parse on unchanged accepted conditional source. No semantic/type/instrumentation cases excluded. Observations sealed research/runs/folio-extended-baseline; replay verifies same binary and each source hash before incorporating these cases once their gold branch is merged.
 
 Result gold-reflexives: all merged-result gates passed,29 scorer contracts, sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration fidelity-coverage-next (5e69ab2)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/fidelity-coverage-next; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;29 fidelity contracts; sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/fidelity-coverage-next.
+
+Result fidelity-coverage-next: all merged-result gates passed,29 scorer contracts, sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
