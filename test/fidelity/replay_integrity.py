@@ -86,7 +86,7 @@ def audit_legacy_seal(root, report_path, audit_note):
 
 
 def verify_replay(root, report_path, datasets, *, required_sources=None,
-                  retrospective_seal=None, helper_paths=()):
+                  retrospective_seal=None, helper_paths=(), expected_execution=None):
     """Return verified snapshot rows and a replay provenance manifest.
 
     datasets explicitly declares current membership (subset/revised gold allowed).
@@ -94,6 +94,8 @@ def verify_replay(root, report_path, datasets, *, required_sources=None,
     required_sources defaults to every current Haskell source plus Export.hs;
     overrides are an explicit caller trust decision, recorded in the manifest.
     helper_paths must identify any wrapper/driver responsible for this replay.
+    expected_execution, when supplied, must match a producer-declared protocol;
+    legacy unrecorded modes never satisfy an explicit requested configuration.
     """
     root = Path(root).resolve()
     report_path = resolve(root, report_path)
@@ -146,6 +148,22 @@ def verify_replay(root, report_path, datasets, *, required_sources=None,
         require(observation['request'] == {'id': ident, 'text': case['text']}, 'frozen request mismatch: ' + ident)
         require(isinstance(observation.get('response'), dict) and observation['response'].get('id') == ident,
                 'response ID mismatch: ' + ident)
+    # Configuration declaration is distinct from file-integrity and scoring.
+    if 'execution' in report:
+        execution = fidelity.validate_execution(report['execution'])
+        require(report.get('parser') == execution['parser'], 'report front end mismatch')
+        for observation in observations.values():
+            require(fidelity.validate_execution(observation['response'].get('execution')) == execution,
+                    'frozen response execution mismatch')
+        execution_binding = 'producer-declared-consistent'
+    else:
+        require(all('execution' not in o['response'] for o in observations.values()),
+                'partial legacy execution declaration')
+        execution = None
+        execution_binding = 'legacy-unrecorded'
+    if expected_execution is not None:
+        require(fidelity.validate_execution(expected_execution) == execution,
+                'requested execution is not bound to frozen evidence')
     current = {}
     dataset_manifest = {}
     seen_ids = set()
@@ -170,7 +188,7 @@ def verify_replay(root, report_path, datasets, *, required_sources=None,
     tools = [Path(__file__).resolve(), Path(fidelity.__file__).resolve()]
     tools += [resolve(root, p).resolve() for p in helper_paths]
     tool_hashes = {str(p): digest(p.read_bytes()) for p in tools}
-    manifest = {'schema': 1, 'seal': seal_info, 'producer_report_sha256': report_hash,
+    manifest = {'schema': 1, 'execution': execution, 'execution_binding': execution_binding, 'seal': seal_info, 'producer_report_sha256': report_hash,
                 'producer_report_path': str(report_path), 'frozen_cases_sha256': digest(frozen_data),
                 'observations_sha256': digest(observation_data), 'binary_sha256': binary_hash,
                 'producer_source_sha256': producer_sources, 'verified_parser_source_sha256': current_sources,

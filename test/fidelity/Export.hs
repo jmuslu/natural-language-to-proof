@@ -31,19 +31,25 @@ import NL2Proof.Verify.Reported
 main :: IO ()
 main = do
   args <- getArgs
-  if any (`notElem` ["--hand", "--pos-backoff"]) args
-    then die "usage: nl2proof-fidelity-json [--hand | --pos-backoff]"
+  let nominalFlags = filter (`elem` ["--nominal-nouns=known-only", "--nominal-nouns=context-unknown"]) args
+  if length args /= length (nub args) || length nominalFlags > 1
+    then die "duplicate or conflicting options" else pure ()
+  if any (`notElem` ["--hand", "--pos-backoff", "--nominal-nouns=known-only", "--nominal-nouns=context-unknown"]) args
+    then die "usage: nl2proof-fidelity-json [--hand | --pos-backoff] [--nominal-nouns=known-only|context-unknown]"
     else pure ()
   if "--hand" `elem` args && "--pos-backoff" `elem` args
     then die "hand and POS modes are separate front ends"
     else pure ()
+  if "--hand" `elem` args && not (null nominalFlags)
+    then die "hand parser does not accept nominal policy" else pure ()
+  let policy = if "--nominal-nouns=context-unknown" `elem` args then ContextUnknownNouns else KnownNounsOnly
   choice <- if "--hand" `elem` args then pure (HandLexicon attitudeLexicon) else do
     dir <- ccgbankDataDir
     hPutStrLn stderr "loading CCGbank parser model for meaning fidelity"
     (model,trainingCount) <- loadSemModel dir
     _ <- evaluate (M.size (tmWord (smTags model)))
     if trainingCount == 0 then die "no CCGbank training trees found" else pure ()
-    pure (CCGBankParser model {smPOSBackoff="--pos-backoff" `elem` args})
+    pure (CCGBankParser model {smPOSBackoff="--pos-backoff" `elem` args, smNominalPolicy=policy})
   loop choice
   where die message = hPutStrLn stderr message >> exitFailure
 
@@ -54,7 +60,7 @@ loop choice = do
     line <- getLine
     let parsed = parseJSON line
         ident = either (const JNull) (maybe JNull id . field "id") parsed
-        errorJSON message = JObj [("id",ident),("error",JStr message)]
+        errorJSON message = JObj [("id",ident),("error",JStr message),("execution",executionJSON choice)]
         rendered = renderJSON (either errorJSON id (parsed >>= observe choice))
     forced <- try (evaluate (length rendered)) :: IO (Either SomeException Int)
     case forced of
@@ -78,7 +84,7 @@ observe choice request = do
       nTyped = length (filter (isJust . srForm) sentences)
       nDRS = length (filter (isJust . srDRS) sentences)
   pure $ JObj
-    [ ("schema",JNum 1), ("id",JStr ident)
+    [ ("schema",JNum 1), ("id",JStr ident), ("execution",executionJSON choice)
     , ("sentence_count",count (length sentences))
     , ("parsed_sentences",count nParsed), ("typed_sentences",count nTyped)
     , ("drs_sentences",count nDRS)
@@ -89,6 +95,14 @@ observe choice request = do
     , ("scope",JStr "selected is discourse-resolved; returned alternatives are sentence-local")
     ]
   where required key = maybe (Left (key ++ " must be a string")) Right (field key request >>= str)
+
+executionJSON :: ParserChoice -> JValue
+executionJSON choice = JObj [("schema",JStr "nominal-policy-v1"),("parser",JStr parser),("nominal_nouns",JStr policy)]
+  where
+    (parser,policy) = case choice of
+      HandLexicon _ -> ("hand","not-applicable")
+      CCGBankParser model -> (if smPOSBackoff model then "pos" else "default",
+        case smNominalPolicy model of KnownNounsOnly -> "known-only"; ContextUnknownNouns -> "context-unknown")
 
 count :: Int -> JValue
 count = JNum . fromIntegral
