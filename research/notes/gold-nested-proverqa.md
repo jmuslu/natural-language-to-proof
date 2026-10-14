@@ -110,3 +110,31 @@ First divergences supported by sealed parse evidence:
 
 Gold unchanged after observations. No success claim for construction gate, and
 no new implementation is authorized by this baseline without review.
+
+## Conditional chart regression prediction
+
+Before standalone run: predict hand-tagged `If Bob is red, then Bob is big`
+retains both p→q and (p→q)∧q readings through punctuation-coordination of S/S
+functors, while comma-without-then, then-without-comma, ground comma coordination
+and explicit and preserve their intended meanings. Command:
+`runghc -isrc -itest test/ConditionalDuplicationSpec.hs`.
+No corpus load; tests demand all retained readings correct, not merely one exact.
+
+Mini-chart first result: four pass, comma+then fails exactly as predicted.
+Hand-chart provenance confirms CoordMark(comma, then), followed by
+CoordApply(if+antecedent, marked-then), followed by FwdApp to consequent.
+A temporary source-only renderer printed rrSign provenance; no corpus loaded.
+Expanded prediction before repeat: nested comma-separated conditional modifiers
+and a coordinated consequent also retain contaminated readings. Added two controls
+to force general scope rather than a single comma+then patch.
+Expanded seven-check run: four pass, three fail (comma+then, nested conditionals,
+and explicit-coordination contamination). The latter sentence has a genuine wide
+conjunction attachment as well as narrow consequent conjunction. Corrected that
+new test's authored acceptance list to retain both legal attachments rather than
+conflating ambiguity with contamination; nested benchmark gold remains unchanged.
+Repeat prediction: same three failures, with duplicated consequent excluded from
+both legitimate scope alternatives. No production source was edited.
+Final authored control run confirms 4/7 pass, three intended red failures. Test is
+standalone and not cabal-registered; coordinator owns cabal and production fixes.
+Reviewer should approve the conditional-role guard and acceptance controls before
+implementation. This result does not represent a regression in an existing suite.
