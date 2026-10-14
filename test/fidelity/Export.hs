@@ -45,9 +45,8 @@ main = do
     then die "hand parser does not accept nominal policy" else pure ()
   if "--hand" `elem` args && not (null eitherFlags)
     then die "hand parser does not accept either policy" else pure ()
-  if "--either-policy=surface-inclusive-v1" `elem` args
-    then die "surface-inclusive-v1 unavailable: runtime either interface is not integrated" else pure ()
   let execution = if null eitherFlags then ImplicitLegacy else ExplicitLegacy
+      eitherPolicy = if "--either-policy=surface-inclusive-v1" `elem` args then EitherSurfaceInclusiveV1 else EitherLegacyDisabled
       policy = if "--nominal-nouns=context-unknown" `elem` args then ContextUnknownNouns else KnownNounsOnly
   choice <- if "--hand" `elem` args then pure (HandLexicon attitudeLexicon) else do
     dir <- ccgbankDataDir
@@ -55,7 +54,7 @@ main = do
     (model,trainingCount) <- loadSemModel dir
     _ <- evaluate (M.size (tmWord (smTags model)))
     if trainingCount == 0 then die "no CCGbank training trees found" else pure ()
-    pure (CCGBankParser model {smPOSBackoff="--pos-backoff" `elem` args, smNominalPolicy=policy})
+    pure (CCGBankParser model {smPOSBackoff="--pos-backoff" `elem` args, smNominalPolicy=policy, smEitherPolicy=eitherPolicy})
   loop execution choice
   where die message = hPutStrLn stderr message >> exitFailure
 
@@ -109,7 +108,12 @@ executionJSON execution choice = JObj ([("schema",JStr schema),("parser",JStr pa
   where
     (schema,extra) = case execution of
       ImplicitLegacy -> ("nominal-policy-v1",[])
-      ExplicitLegacy -> ("parser-policy-v2",[("either_policy",JStr "legacy-disabled")])
+      ExplicitLegacy -> ("parser-policy-v2",[("either_policy",JStr eitherPolicy)])
+    eitherPolicy = case choice of
+      HandLexicon _ -> "legacy-disabled"
+      CCGBankParser model -> case smEitherPolicy model of
+        EitherLegacyDisabled -> "legacy-disabled"
+        EitherSurfaceInclusiveV1 -> "surface-inclusive-v1"
     (parser,policy) = case choice of
       HandLexicon _ -> ("hand","not-applicable")
       CCGBankParser model -> (if smPOSBackoff model then "pos" else "default",
@@ -119,7 +123,7 @@ count :: Int -> JValue
 count = JNum . fromIntegral
 
 readingJSON :: Int -> Int -> ReadingResult -> JValue
-readingJSON sentence index reading = JObj
+readingJSON sentence index reading = JObj $
   [ ("sentence_id",count sentence), ("index",count index)
   , ("typed",JBool (isJust (rrForm reading)))
   , ("category",JStr (show (sCat (rrSign reading))))
@@ -127,7 +131,10 @@ readingJSON sentence index reading = JObj
   , ("score",maybe JNull JNum (rrScore reading))
   , ("meaning",maybe JNull meaningJSON (rrDRS reading))
   , ("trace",traceJSON (rrTrace reading))
-  ]
+  ] ++ case rrOriginFailure reading of
+    Nothing -> []
+    Just failure -> [("origin_failure",JObj
+      [("kind",JStr "origin-lowering-failure"),("detail",JStr (show failure))])]
 
 meaningJSON :: DRS -> JValue
 meaningJSON drs = JObj

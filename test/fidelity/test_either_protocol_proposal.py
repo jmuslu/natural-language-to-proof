@@ -1,5 +1,5 @@
-"""Independent future either-protocol contract; expected red before implementation.
-Only mocked subprocess responses and synthetic seals; no parser binary executes.
+"""Independent either wire/replay controls and opt-in actual exporter probes.
+Actual probes use miniature lexical models only; no corpus is loaded.
 """
 import copy
 import contextlib
@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -169,13 +170,6 @@ class ActualExporterEitherProtocol(unittest.TestCase):
             dict(V1,parser='hand',nominal_nouns='not-applicable'))
         self.assertNotIn('error',outputs[0]);self.assertIn('error',outputs[1])
 
-    def test_enabled_runtime_honestly_fails_before_load(self):
-        result=self.invoke(['--either-policy=surface-inclusive-v1'])
-        self.assertNotEqual(result.returncode,0)
-        self.assertIn('unavailable',result.stderr)
-        self.assertNotIn('loading CCGbank',result.stderr)
-        self.assertEqual(result.stdout,'')
-
     def test_invalid_options_fail_before_load(self):
         for args in [['--hand','--either-policy=legacy-disabled'],
                      ['--hand','--either-policy=surface-inclusive-v1'],
@@ -190,11 +184,11 @@ class ActualExporterEitherProtocol(unittest.TestCase):
     def test_actual_v2_renderer_and_error_echo_without_model_load(self):
         # Partial records expose only configuration fields. No sentence parse is
         # attempted; malformed request rejection must precede model access.
-        default='(CCGBankParser (SemModel {smPOSBackoff=False,smNominalPolicy=KnownNounsOnly}))'
-        pos='(CCGBankParser (SemModel {smPOSBackoff=True,smNominalPolicy=ContextUnknownNouns}))'
+        default='(CCGBankParser (SemModel {smPOSBackoff=False,smNominalPolicy=KnownNounsOnly,smEitherPolicy=EitherLegacyDisabled}))'
+        pos='(CCGBankParser (SemModel {smPOSBackoff=True,smNominalPolicy=ContextUnknownNouns,smEitherPolicy=EitherLegacyDisabled}))'
         expression='do { mapM_ (putStrLn . renderJSON) [executionJSON ExplicitLegacy '+default+', executionJSON ExplicitLegacy '+pos+']; loop ExplicitLegacy '+default+' }'
         root=Path(__file__).resolve().parents[2]
-        result=subprocess.run(['cabal','exec','--offline','--','ghc','-isrc',
+        result=subprocess.run(['ghc','-package-env','-','-isrc',
             'test/fidelity/Export.hs','-e',expression],cwd=root,
             input=json.dumps({'id':'bad','text':'Alice sleeps.','gold':True})+'\n',
             text=True,capture_output=True,timeout=120)
@@ -206,5 +200,54 @@ class ActualExporterEitherProtocol(unittest.TestCase):
                          dict(DISABLED,parser='pos',nominal_nouns='context-unknown'))
         self.assertIn('error',outputs[2])
         self.assertEqual(fidelity.validate_execution(outputs[2]['execution']),DISABLED)
+
+    def test_actual_enabled_success_error_and_origin_failure(self):
+        # A renamed test module exposes its real miniature chart fixture only.
+        # The failed ReadingResult is created by Pipeline's private backend,
+        # never manufactured by setting rrOriginFailure in a record.
+        root=Path(__file__).resolve().parents[2]
+        fixture=(root/'test/EitherCarrierSpec.hs').read_text().replace(
+            'module Main(main) where','module EitherFixture where',1)
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'EitherFixture.hs';path.write_text(fixture)
+            script='\n'.join([
+                ':set prompt ""', ':set prompt-cont ""',
+                ':load test/fidelity/Export.hs '+str(path),
+                ':module *Main *NL2Proof.Pipeline *EitherFixture',
+                'let emit value = putStrLn ("PROBE:" ++ renderJSON value)',
+                'let choice = CCGBankParser fixtureModel',
+                'emit (either (error . show) id (observe ExplicitLegacy choice (JObj [("id",JStr "ok"),("text",JStr fixtureText)])))',
+                'let rootSign = head fixtureRoots',
+                'let sentence = Sentence (Span 0 (length fixtureText)) fixtureText',
+                'let backend = BackEnd "test-order" (const M.empty) (\\_ d -> (d,mempty)) (const mempty) (const (Just (-999)))',
+                'let mk r = ccgCandidateFor fixtureModel r (Sign S (ssSem r) (ssProv r))',
+                'let stale = rootSign {ssSem=TAnd (ssSem rootSign) (App (pred1 "calm") (entity "Bob")),ssScore=7}',
+                'let (_,_,_,readings,_) = backEnd backend fixtureSource sentence True [mk stale,mk rootSign]',
+                'mapM_ (emit . uncurry (readingJSON 0)) (zip [0..] readings)',
+                'loop ExplicitLegacy choice',
+                '{"id":"bad","text":"Bob is red.","gold":true}',
+            ])+'\n'
+            result=subprocess.run(['ghci','-package-env','-','-v0','-isrc','-itest'],
+                cwd=root,input=script,text=True,capture_output=True,timeout=120)
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertNotIn('error:',result.stderr)
+        outputs=[json.loads(line[6:]) for line in result.stdout.splitlines() if line.startswith('PROBE:')]
+        self.assertEqual(len(outputs),3,result.stdout+result.stderr)
+        success,failed,later=outputs
+        self.assertEqual(fidelity.validate_execution(success['execution']),ENABLED)
+        self.assertIsNotNone(success['selected'])
+        self.assertEqual(success['selected']['disjunctions'][0]['either'],True)
+        self.assertTrue(failed['typed']);self.assertIsNotNone(failed['form'])
+        self.assertIsNone(failed['meaning']);self.assertEqual(failed['index'],0)
+        self.assertEqual(failed['origin_failure']['kind'],'origin-lowering-failure')
+        self.assertIn('OrSnapshotMismatch',failed['origin_failure']['detail'])
+        self.assertIn('OriginLoweringFailure',json.dumps(failed['trace']))
+        self.assertNotIn('TypeCheckFailure',json.dumps(failed['trace']))
+        self.assertEqual(later['index'],1);self.assertIsNotNone(later['meaning'])
+        self.assertNotIn('origin_failure',later)
+        errors=[json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')]
+        self.assertEqual(len(errors),1,result.stdout)
+        self.assertIn('error',errors[0])
+        self.assertEqual(fidelity.validate_execution(errors[0]['execution']),ENABLED)
 
 if __name__=='__main__':unittest.main()
