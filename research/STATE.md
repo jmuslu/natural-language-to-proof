@@ -2,7 +2,7 @@
 
 - Original ASTRA_GOAL remains active; linguistic-design-first redirect overrides phase order. Phases B–H unfinished. **No new model/LLM/answer-benchmark launches**: representative ProverQA >=90% exact/near-zero wrong gate CLOSED. Local independent fidelity/Explain diagnostics only. Default noun policy remains known-only.
 - Owner saved usage resets, full-access/no-approval continuation and useful parallelism remain authorized (also persisted ASTRA_GOAL). Shell works; never pass sandbox_permissions. Runtime actually observed root+8 running this continuation; not all32 slots tested. Specialists use isolated ~/astra-wt/<name>, own astra/<name> branches/files. Coordinator alone root source integration, STATE/LOG/cabal, staging/commits/push. Never main/tags/rawdata/secrets.
-- last pushed: 9684421 learner names (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
+- last pushed: 2d0ecfb learner names (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
 
 ## Next three actions and active drivers
 
@@ -43,3 +43,5 @@
 - Active serial integration: design-residuals-complete (0c86989), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-residuals-complete; committing/pushing now.
 
 - Active serial integration: wrong-first-divergence (9fd6c74), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/wrong-first-divergence; committing/pushing now.
+
+- Active serial integration: everyone-n-origin (f266d49), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/everyone-n-origin; committing/pushing now.
