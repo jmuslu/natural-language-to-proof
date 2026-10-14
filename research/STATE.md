@@ -1,6 +1,6 @@
 # Research state
 
-Last pushed: 0bc2323; reviewed either source and results committed on astra/research.
+last pushed: 3d763e3; reviewed either source and results committed on astra/research.
 
 Original ASTRA_GOAL remains active; linguistic design first overrides phase order.
 No new model/LLM/answer benchmarks until representative ProverQA >=90% exact and
@@ -60,3 +60,18 @@ worktree evidence archives retained. Original B–H unfinished. Inventories and
 CONSTRUCTIONS/DESIGN delivered; further construction fidelity work remains.
 
 - Active serial integration: prover-panel-contract (37b9776), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/prover-panel-contract; committing/pushing now.
+
+- Active serial integration: something-origin-plan (af00f69), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/something-origin-plan; committing/pushing now.
+
+
+## Active next specialists
+
+All full-access, isolated from released0bc2323; no new source/policy activations.
+Seven workers: panel-sampler (pure suppliedseed algorithm, no actualdraw),
+panel-sampler-controls (independent synthetic vectors), nominal-intersection-admission,
+plural-lemma-design, particle-offer-audit (tool only, no load), either-next-boundary,
+explain-witness-update. Reviewer independent. New branches/worktrees same names.
+Old source audit notes preserved; assembled either-result-audits7ba0976 pending
+aggregate reviewer approval. Retain old worktrees until auditnotes integrated.
+Serial reviewed-followups session91268 active, logfile reviewed-followups-resumed.log;
+prover-panel-contract pushed3d763e3, currently something-origin-plan gates.

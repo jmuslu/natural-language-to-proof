@@ -2923,3 +2923,20 @@ either-release`. All case contracts remain separate; representative gate CLOSED.
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/prover-panel-contract; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/prover-panel-contract.
 
 Result prover-panel-contract: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration something-origin-plan (af00f69)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/something-origin-plan; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/something-origin-plan.
+
+
+Source release0bc2323 pushed after final prose review87d1658 and verifiedreplay.
+Removed either-integration, either-chart-impl, either-lexical-certificate,
+either-carrier-plan worktrees after exact owned-file/ancestry checks and archival;
+manifest research/runs/either-cleanup-verification.json. Retained all other evidence.
+Seven next isolated tasks use released0bc2323 with explicit current protocol copied
+for sampler authors. No actual sample draw or entropy generated, no corpus load or
+source activation authorized: sampler implementation+independent synthetictests,
+intersection admission/plural/nextoperator/witness designs, originalparticleoffer
+audittool. Reviewer checks before integration. Original linguistic gate unchanged.
+
+Result something-origin-plan: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
