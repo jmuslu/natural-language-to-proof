@@ -36,3 +36,11 @@ claimed applicable to hawks/mammals/excels without missing dictionary evidence.
 Focused runghc controls: 16 pass, 2 deliberate red rejection assertions. Preserved
 round/kind/unknown/JJ backoff and alternate categories. No production edits,
 source trial, parser load, gold mutation or benchmark occurred. Review required.
+
+Prepared targeted AdjectiveAdmissionEvidence.hs after cache inspection. It
+projects production file enumeration/AUTO parsing/category and modified-POS
+counting exactly while retaining only 14 requested forms. Synthetic self-test
+10/10; no corpus load. Existing inspected lexical-evidence cache has none of the
+14 forms and Explain lacks complete own-category/POS sets. Proposed guarded
+one-pass command, provenance requirements and pre-evidence prediction recorded
+in adjective-admission-plan.md; source remains frozen pending review/evidence.

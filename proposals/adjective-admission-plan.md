@@ -85,3 +85,69 @@ zero applicability and pursue actual construction licensing; do not broaden
 this gate to force gains. Reviewer approval and root gates precede source trial.
 Wrong-to-no-parse reduces wrong readings but does not improve exact fidelity;
 no gate score, gold, contract, denominator or model authority changes.
+
+## Prepared targeted evidence extractor (not run on CCGbank)
+
+`research/tools/AdjectiveAdmissionEvidence.hs` retains only the exact lowercase
+forms hawks/hawk, mammals/mammal, excels/excel, pets/pet, animals/animal,
+humans/human and frogs/frog. These are occurrence spellings and candidate bases,
+not a rule vocabulary. It imports production `ccgbankTrainFiles`, `parseAuto`,
+`leafPairs` and `leafHeaders`, and mirrors loadSemModel's per-file strict fold:
+sections 02–21, 00–99 filenames per section; skip read failures, empty/ID lines
+and failed AUTO parses; count categories from parsed leafPairs and POS from
+leafHeaders only after successful AUTO parse. This preserves the subtle case
+where a valid AUTO leaf with an invalid CCG category contributes POS but not a
+category. POS uses the production modified-POS field, not the next header field.
+No lowercasing, truecasing or singularization is performed during collection.
+The present target occurrences are lowercase; future differently cased queries
+would need an explicit target change and lookup-policy audit.
+
+The extractor does not build the full semantic model, rules, global prior or
+chart. It projects the exact lexical counting contract, streaming files and
+retaining no non-target identities. Its JSON explicitly includes absent forms,
+own-category counts and all POS counts. It does not reconstruct offered scores
+or classify an absent adjective as OOV versus smoothing without checking the
+own-category evidence; existing Explain retains offered scores. Unreadable-file
+and accepted-tree counts must be checked against the sealed loader snapshot;
+different input contents remain a provenance risk despite identical code.
+
+Cache check: the sealed all-readings Explain output contains categories and
+meanings, not complete per-word category/POS inventories. The existing
+`worktree-evidence/pronto-nominal-coverage-plan/pronto-pos-join/lexical-evidence.json`
+contains none of these 14 exact forms. No sufficient evidence cache was found
+in those inspected artifacts; this is not a claim that every ignored file was
+searched exhaustively.
+
+Synthetic invocation (completed):
+
+```sh
+runghc -isrc research/tools/AdjectiveAdmissionEvidence.hs --self-test
+```
+
+Ten checks pass: duplicate counts, POS-field choice and mixed support, separate
+base identity, case sensitivity, omission of unrelated words, malformed-tree
+skip, invalid-category/POS distinction, accepted-tree count, production file
+boundaries and explicit empty target entries. Synthetic strings are authored
+fixtures, not corpus excerpts. No production loader or licensed corpus ran.
+
+Proposed one-pass command, **not executed; separate coordinator approval needed**:
+
+```sh
+mkdir -p research/runs/adjective-admission-evidence
+python3 /home/gram/nl2proof-astra/scripts/with-ccgbank-slot.py \
+  runghc -isrc research/tools/AdjectiveAdmissionEvidence.hs \
+  --extract /home/gram/ccgbank/ccgbank_1_1/data \
+  > research/runs/adjective-admission-evidence/target-counts.json \
+  2> research/runs/adjective-admission-evidence/stderr.log
+```
+
+Before that command, the coordinator should freeze the extractor commit and
+SHA-256 of the extractor plus CCGSemParse/CCGDeriv/CCGSupertag/CCGBank sources;
+retain output hashes and source corpus identity alongside ignored JSON. Require
+39604 accepted trees to agree with the sealed load, while recognizing matching
+counts alone do not prove matching source bytes. No bulk lexical dump is emitted.
+Prediction before evidence: some targets may be OOV or have mixed POS support,
+so the proposed exclusion may apply to none; no number of exact gains is
+predicted. Distinguish absent own adjective category, absent word, and contrary
+POS evidence explicitly. For pets/animals/humans/frogs, full surface/base support
+can explain the existing noun-rule gate without changing its conservative policy.
