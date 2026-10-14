@@ -1,7 +1,7 @@
 # Research state
 
 - Phase: owner linguistic-design-first redirect; original ASTRA_GOAL remains active. Saved account usage resets and full-access continuation are authorized without further prompts.
-- Branch: astra/research. Last pushed7c6e90f; four inventories, Prover/FOLIO/ProofWriter starter gold, and names/operators/relatives/particles proposals integrated serially with all gates and fidelity replay after each merge.
+- Branch: astra/research. Last pushedba9d13d; four inventories, Prover/FOLIO/ProofWriter starter gold, and names/operators/relatives/particles proposals integrated serially with all gates and fidelity replay after each merge.
 - Next three actions: (1) integrate reviewed bounded some/no/each repair, register24 tests, run fresh fidelity and all release gates; (2) finish and commit learner CONSTRUCTIONS/DESIGN and reviewed nested/reflexive gold with sealed diagnostics; (3) review typed nominal copula implementation, preserving DRT accessibility and rejecting residual builtin meanings before claim admission.
 - Fidelity gate remains CLOSED: no new model, LLM or answer benchmark launches. ProverQA requires >=90% exact and near-zero wrong-but-typed on independently reviewed construction gold; starter baseline7/24 exact cannot certify it. Initial85 baseline21 exact/24 wrong/40 no-parse. Gold representation corrections are distinct from parser improvement.
 - Active specialists: eight resumed tasks accepted and working full-access shells verified; no claim32 actual slots. Isolated worktrees: design-quantifiers, design-nominals, gold-nested-proverqa, gold-nested-prontoqa, gold-reflexives, inventory-proverqa-frames, fidelity-audit, review. Root alone STATE/LOG/cabal/shared integration and pushes. Workers commit owned files only.
@@ -14,4 +14,8 @@
 
 - Active integration: fidelity-audit independent red contracts, followed by bounded scorer repair; no production parser changes.
 
-- Running expanded114-case independent construction diagnostic, sealed quantifier binary, shared loader slot; outputs research/runs/expanded-quantifier-fidelity. Used for subsequent serial gold merges, not answer benchmark. Scorer29 contracts and all release gates pass; committing bounded repair; logs research/runs/fidelity-edges.
+- Completed expanded114-case independent construction diagnostic, sealed quantifier binary, shared loader slot; outputs research/runs/expanded-quantifier-fidelity. Quantifier-only result22/35/57;112 unique texts. Baseline for subsequent source/gold integration, not answer benchmark. Scorer29 contracts and all release gates pass; committing bounded repair; logs research/runs/fidelity-edges.
+
+- Next active integration: reviewed inventory-proverqa-frames ec72a6d with12 independent has-lemma controls; bounded irregular entry repair pending.
+
+- Have integration gates PASS:15 suites/1235 checks,29 contracts,oracle/Explain/hand4. Fresh114=24 exact/33 wrong/57 no-parse; two Proverhave cases wrong→exact, no status regressions. Starter Prover9/24 exact; gate remains closed. Commit/push then nominal copula wiring.

@@ -27,6 +27,13 @@ remain unresolved. FOLIO has238 residual occurrences/137 unique strings, with a
 hand-audited sample of non-template constructions rather than exhaustive analysis.
 These gaps stay visible and cannot be certified by a convenient atom-only gold set.
 
+A subsequent [ProverQA residual-frame refinement](sections/proverqa-frames.md)
+assigns249 occurrences/247 distinct surfaces from the3,791/3,773 residual
+bucket to18 narrowly anchored syntactic tail families. The remaining3,542
+occurrences/3,526 surfaces stay unresolved. These are surface classifications,
+not semantic templates or a claim that all249 sentences were hand annotated.
+
+
 Read [DESIGN](DESIGN.md) for categories, terms, DRS/claim status and first
 divergences, and the [independent gold coverage audit](../notes/gold-coverage.md)
 for cases still needed. Inventory priorities are conditional internals/names,

@@ -497,6 +497,7 @@ verbLemma w
         , ("watch", ["watched", "watching"]), ("walk", ["walked", "walking"])
         , ("smile", ["smiled", "smiling"]), ("see", ["saw", "seen", "seeing"])
         , ("go", ["goes", "went", "gone"]), ("do", ["does", "did", "done"])
+        , ("have", ["has"])
         ] , form <- forms]
 
 --------------------------------------------------------------------------------

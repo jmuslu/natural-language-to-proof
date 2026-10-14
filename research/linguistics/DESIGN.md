@@ -668,3 +668,11 @@ changes status. ProverQA remains7/24 exact. Corpus category selection and
 other construction errors still prevent the lexical repair from solving
 most sentences. This is a bounded implementation result, not a license to
 resume answer benchmarks.
+
+The subsequent bounded `has→have` irregular entry preserves noun/adjective/name
+meanings and does not license a perfect auxiliary. Twelve direct checks pass.
+On114 independent regression rows (112 distinct texts), it changes precisely
+the two ProverQA possessive cases from wrong-but-typed to exact:24 exact,
+33 wrong-but-typed,57 no-parse. Starter ProverQA is9/24 exact; expanded
+construction coverage remains incomplete. This is lexical identity recovery,
+not a general morphology or noun-number repair.
