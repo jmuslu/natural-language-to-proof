@@ -59,7 +59,7 @@ module NL2Proof.Semantics.CCGSem
   , unarySem
   ) where
 
-import Data.Char (toLower)
+import Data.Char (isPunctuation, toLower)
 import Data.List (isSuffixOf)
 
 import NL2Proof.Semantics.Intensional
@@ -432,13 +432,16 @@ isClosedClass :: String -> Bool
 isClosedClass w = map toLower w `elem` closedClassWords
 
 -- | Meanings for a closed-class word (or punctuation) under a category the
--- tagger offered. Punctuation of any punctuation category is structural.
+-- tagger offered. A punctuation category is structural only for a nonempty
+-- punctuation-only surface. Tagger alternatives must never erase words,
+-- numbers, whitespace or symbols by labeling them punctuation.
 -- Matching is by exact category: an entry stated for @NP[nb]/N@ is not used for
 -- @NP/N@, because the tag dictionary is what decides which categories a word
 -- may take and this table should not quietly widen it.
 closedEntries :: Int -> String -> CCat -> [LexItem]
 closedEntries i w c
-  | isPunct c = [LexStructural ("punctuation " ++ show w)]
+  | isPunct c, not (null w), all isPunctuation w =
+      [LexStructural ("punctuation " ++ show w)]
   | otherwise = [ e | (w', c', e) <- closedTable i ++ intensionalTable, w' == map toLower w, c' == c ]
 
 --------------------------------------------------------------------------------
