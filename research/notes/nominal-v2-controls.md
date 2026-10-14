@@ -31,3 +31,18 @@ plain packing is covered; known-vs-inferred origin class is absent from v1 API
 and therefore explicitly deferred as a required future direct test, not falsely
 claimed tested. Existing v1 unknown rejection must remain an explicit v1-policy
 control when a separately reviewed v2 policy exists. No current test weakened.
+
+Reviewer requested explicit alphabetic/lowercase and prior-only controls.
+Prediction before extension run: dax2, dax-blicket, dAx,123 receive no new route;
+prior-only dax/blicket have no tmWord entry or POS but actual offered N (fixture
+precondition passes). Three independently required semantic checks for their
+context-licensed reading remain red on frozen v1. Expected42 checks:27 PASS,
+15 FAIL. Added no source change or test-expected relaxation.
+
+Extended result27/42 PASS,15 expected FAIL as predicted. Explicit prior-only
+precondition passes; all4 spelling guards pass against frozen v1. Proposal now
+specifies a single default-v1 model policy enum and a shared typed noun-origin
+payload inside existing NominalRole, carrying known/inferred subject/complement
+contexts through completion and existing packing. No added all-sign boolean,
+source implementation, fake POS, Q unwrapping or altered old negative assertion.
+Future origin-sum tests are explicitly pending API introduction, not claimed run.

@@ -33,11 +33,12 @@ withPOS word ps = base {smPOS=POSModel (M.insert word (M.fromList [(p,1)|p<-ps])
 roots model text=spRoots (semParse model (SourceId "open-nominal-v2") (casedTokens 0 text))
 newRoute model text=any completed (roots model text)
  where completed s=case ssNominal s of NominalComplete{} -> True;_ -> False
-classification text sub obj =
+classification = classificationWith base
+classificationWith model text sub obj =
  let atom n=CanPred n [CRefT (CRef 0)]
      implication=CanImp (Canonical [CRef 0] [atom sub]) (Canonical [] [atom obj])
      expected=Canonical [] [implication]
-     sentence=case prSentences (runPipelineWith (CCGBankParser base) (SourceId "v2-independent") text) of
+     sentence=case prSentences (runPipelineWith (CCGBankParser model) (SourceId "v2-independent") text) of
        [s]->s;_->error "one sentence expected"
      statuses=case srDRS sentence of
        Just d -> let (as,rs,ps,es)=splitClaims d in
@@ -76,6 +77,12 @@ safety =
  ,expectEq "packing preserves lexical capability versus same plain property" 2
     (length(packCell 20 [noun,noun {ssNominal=NominalPlain}]))]
 
+priorOnly :: SemModel
+priorOnly=base {smTags=tags {tmWord=foldr M.delete (tmWord tags) ["dax","blicket"]}}
+ where tags=smTags base
+withOfferedUnknown word=base {smTags=tags {tmWord=M.insert word [(cc "N",1)] (tmWord tags)}}
+ where tags=smTags base
+
 main :: IO ()
 main=runChecks "open-nominal-v2 independent red proposal"
  (concat [classification t s p | (t,s,p)<-
@@ -102,4 +109,12 @@ main=runChecks "open-nominal-v2 independent red proposal"
        (let tags=smTags base
             model=base {smTags=tags {tmWord=M.insert "animal" [(cc "NP",1)] (tmWord tags)}}
         in not(newRoute model "Every cat is an animal."))]
+ ++[expect ("nonalphabetic or mixed-case noun excluded: "++word)
+       (not(newRoute (withOfferedUnknown word) ("Every cat is a "++word++".")))
+       |word<-["dax2","dax-blicket","dAx","123"]]
+ ++[expect "prior-only noun fixture is OOV yet N offered without POS evidence"
+       (all (\w -> M.notMember w (tmWord (smTags priorOnly))
+             && null(posCounts (smPOS priorOnly) w)
+             && any ((==cc "N") . fst) (offeredTags priorOnly False w)) ["dax","blicket"])]
+ ++classificationWith priorOnly "Every dax is a blicket." "dax" "blicket"
  ++safety)

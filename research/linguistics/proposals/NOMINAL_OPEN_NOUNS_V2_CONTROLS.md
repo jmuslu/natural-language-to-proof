@@ -84,3 +84,91 @@ Pronto's185426 every/each outer occurrences and503067 predicate-article+noun cue
 motivate the family but do not measure this exact direct singular root frame or
 its unknown-POS subset. No coverage improvement or90% gate claim follows from
 these red controls. New source requires separate review and fresh gate evidence.
+
+## Concrete minimal evidence/policy delta for further review
+
+Retain one **model-level** policy enumeration, `KnownNounsOnly | ContextUnknownNouns`,
+defaulting to KnownNounsOnly. Do not add independent flags to every SSign. The
+existing `ssNominal :: NominalRole` already participates in packing and contains
+the bounded construction state. Extend that typed state rather than creating a
+second parallel chart protocol.
+
+Replace repeated noun `(Prov,CCat)` payloads in NominalRole with a single
+`NominalNounOrigin` value containing lexical occurrence provenance, exact source
+N category and typed `NounAdmission`. Its alternatives are:
+
+- `DictionaryCommonNoun`: current nonempty NN/NNS, no contradictory JJ/name POS
+  predicate, unchanged under either policy.
+- `ContextLicensedUnknown UnknownNominalContext`: no POS evidence, actual offered
+  lexical N, non-name, nonempty alphabetic entirely lowercase token, and no
+  reserved closed-class status. The context alternative is either
+  `DirectUniversalSubject determinerOccurrence determinerCategory` or
+  `PairedNominalComplement NominalCertificate`. These are mutually exclusive
+  source origins, not flags inferred from the completed lambda term.
+
+The policy is consulted when generating the optional lexical capability, not by
+weakening all NominalNoun validity tests. Under v1 default no unknown evidence is
+minted. Under v2, a candidate unknown leaf receives this capability only when
+its *actual source occurrence* has the stated adjacent direct determiner or
+matching paired copula/article certificate. The selected source determiner must
+be Every/each NP[nb]/N, not merely a string nearby; the complement source pair
+remains exact is+(a/an) with original offered categories and seen-pair proof.
+This is still an optional interpretation of an unknown word, not an asserted
+lexical fact or a new category. Raw offered N without this context remains plain.
+
+Carry the origin value through the existing stages:
+
+- NominalNoun(origin) → direct universal application →
+  NominalUniversalSubject(determinerOrigin, nounOrigin).
+- Matching paired article + NominalNoun(origin) →
+  NominalPredicate(certificate, nounOrigin) →
+  NominalPending(certificate, nounOrigin).
+- Root completion → NominalComplete(certificate, subjectEvidence,
+  predicateNounOrigin). Preserve both noun evidence classes to completion.
+
+Every consuming transition validates the origin context against its actual
+operands and lexical spans/source IDs. An unknown subject license cannot be
+reused as a predicate license, or vice versa; a complement license cannot move
+to another copula/article pair. Known-vs-inferred and distinct-context payloads
+remain in Eq/Ord packing identity automatically through NominalRole. No role is
+erased to Plain to escape validation. Existing all-sign fields and unrelated
+combinators need no new boolean; existing full-root and active-role guards remain.
+
+Add one logged decision for the inferred lexical reading with its source N,
+unknown-POS observation, bounded context and selected policy. No substring or
+normalized-term matching recovers evidence. No Q unwrapping or synthetic NN
+count is introduced. Noun morphology, adjective sense coercion and generic
+subjects are outside this evidence extension.
+
+Future direct typed-origin tests, after API introduction, must prove:
+
+1. Equal category/meaning with DictionaryCommonNoun versus ContextLicensedUnknown
+   stays as two packed signs; known/inferred differences survive Subject,
+   Predicate/Pending and Complete, not just leaf packing.
+2. A context-unknown complement origin cannot complete a direct subject, and
+   a subject origin cannot be captured by the paired article.
+3. Same-spelling noun from another index/source and a complement bound to another
+   certificate fail; unrelated lexical P/Q equality cannot confer a capability.
+4. KnownNounsOnly preserves the existing unknown-POS negative control. Only
+   ContextUnknownNouns activates the independently specified positive unknown
+   meanings, while all existing JJ/NNP/name/unary/embedding negatives remain.
+
+These tests are not presently fabricated using a constructor absent from v1.
+They are explicit implementation obligations before any v2 source is accepted.
+
+## Extended red fixtures and lexical assumption
+
+The executable controls now additionally reject `dax2`, `dax-blicket`, `dAx`
+and `123` as inferred common nouns, despite an offered direct N in the miniature
+tag fixture. A separate positive fixture removes dax and blicket entirely from
+the per-word tag dictionary while retaining an N-containing global prior. It
+checks absence of POS/per-word records and actual N offering, then requires the
+same independently authored universal classification under proposed v2.
+
+That last case deliberately tests the controversial assumption: determiner
+context can license a novel nominal interpretation even when N arose only from
+prior fallback. It is not disguised as corpus lexical attestation. Any practical
+implementation must report these inferred-origin cases separately and pass
+selected/all-retained reading fidelity, not count the existence of a typed
+candidate as success. This remains a proposal pending v1 gates and reviewer
+approval of the concrete v2 changes.
