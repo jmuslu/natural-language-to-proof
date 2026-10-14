@@ -181,6 +181,20 @@ The table distinguishes bounded repairs from remaining coverage and meaning erro
 | 5 | `see that` has a logged unresolved sense choice and defaults to non-factive attribution. | Perceptual `see that` is factive; supervisory `see that` need not be. The system does not yet disambiguate these senses. The corpus example now parses with Reported content only; the baseline failed to parse. |
 | — | `Bob likes the cat and the dog` may retain the spurious `cat dog` reading. | No general NP-coordination repair was made in this phase. Check all returned readings, not just the ranked selection. |
 
+Construction fidelity checkpoint: `some`, `no`, and `each` now have closed
+`NP[nb]/N` meanings (restricted existential, negated restricted existential,
+and universal implication). Twenty-four direct scope/category checks pass;
+the85-case starter diagnostic improves only `pronto-each-1`, to22 exact,
+23 wrong-but-typed and40 no-parse. ProverQA remains7/24 exact, so the owner’s
+fidelity gate is closed. Modifier order still differs from independent gold;
+reordering predicates naively also renames definite identifiers. Newly audited
+nested conditionals can select `(A→B)∧B`, reflexives introduce a separate
+universal object, and unseen initial bare plurals can be selected as names.
+These are meaning failures, even when they type-check. See the
+[construction inventory](research/linguistics/CONSTRUCTIONS.md) and
+[Units2/3/4 construction design](research/linguistics/DESIGN.md) for scope,
+first divergences, and proposed repairs.
+
 The broader ambiguity policy is still a separate inference obligation. Passing the highest-ranked reading does not establish a skeptical conclusion across the parser's bounded candidate set.
 
 ---
