@@ -21,7 +21,7 @@ mini=(defaultSemModel(buildTagModel[(w,cc c)|(w,c,p)<-entries])
  (buildPOSModel[(w,p)|(w,c,p)<-entries])(Rules [] []) Set.empty)
  {smAlpha=0,smSeenRules=False,smEitherPolicy=EitherSurfaceInclusiveV1}
  where
-  entries=[("Bob","NP","NNP"),("Mira","NP","NNP")
+  entries=[("if","(S/S)/S[dcl]","IN"),("Bob","NP","NNP"),("Mira","NP","NNP")
           ,("is","(S[dcl]\\NP)/(S[adj]\\NP)","VBZ")
           ,("either","(S[adj]\\NP)/(S[adj]\\NP)","RB")
           ,("red","S[adj]\\NP","JJ"),("big","S[adj]\\NP","JJ")
@@ -64,7 +64,7 @@ main=do
           ,expect "missing actual either application source pair rejects"(null(parseWith(seen{smSeen=Set.delete(eraseFeatures(cc "(S[adj]\\NP)/(S[adj]\\NP)"),eraseFeatures vp)allSeen}) "seen" text))
           ,expect "missing explicit OR source pair rejects"(null(parseWith(seen{smSeen=Set.delete(eraseFeatures(cc "conj"),eraseFeatures vp)allSeen}) "seen" text))
        ] ++ concat [[expect ("offered punctuation witness "++p)(all (not.null.lexicalSigns mini 4.tokText)(casedTokens 0 p)),no("Bob is either red "++p++" or big.")] |p<-["(",")","..."]]
-       ++ map no ["Bob, is either red or big.","Bob ( is either red or big.","Bob is either red -- or big.","Bob is either red [ or big.","Bob is either red ] or big.","Bob is either red.","Bob is either red and big.","Bob is either either red or big."
+       ++ map no ["Bob is either red or big..","if Bob is either red or big. Bob is red.","Bob, is either red or big.","Bob ( is either red or big.","Bob is either red -- or big.","Bob is either red [ or big.","Bob is either red ] or big.","Bob is either red.","Bob is either red and big.","Bob is either either red or big."
              ,"Bob is either, red or big.","Bob is either red, or big.","Bob is either red or, big."
              ,"Bob is either red or big and red.","Either Bob is red or big."
              ,"Bob is either red or big, red.","Bob is either red or big but not both."]
@@ -90,7 +90,7 @@ privateControls = do
  pure [expect label (code==ExitSuccess && wanted `elem` lines out && null err) | (label,wanted)<-privateExpected]
 
 privateExpected :: [(String,String)]
-privateExpected = [("actual private producer completes only direct pair", "PRIVATE-0:True"), ("every alternate pending combinator fails", "PRIVATE-1:True"), ("every alternate left-pair combinator fails", "PRIVATE-2:True"), ("missing payload cannot enter pending application", "PRIVATE-3:True"), ("foreign lexical provenance cannot enter pending application", "PRIVATE-4:True"), ("wrong offered feature cannot enter pending application", "PRIVATE-5:True"), ("missing selected OR origin cannot close pair", "PRIVATE-6:True"), ("same term and category without pending origin cannot gain marker", "PRIVATE-7:True"), ("altered pending token index fails actual marker", "PRIVATE-8:True"), ("pending and ordinary identical term signs pack separately", "PRIVATE-9:True"), ("actual type-raising semantics cannot downgrade pending origin", "PRIVATE-10:True")]
+privateExpected = [("actual private producer completes only direct pair", "PRIVATE-0:True"), ("every alternate pending combinator fails", "PRIVATE-1:True"), ("every alternate left-pair combinator fails", "PRIVATE-2:True"), ("missing payload cannot enter pending application", "PRIVATE-3:True"), ("foreign lexical provenance cannot enter pending application", "PRIVATE-4:True"), ("wrong offered feature cannot enter pending application", "PRIVATE-5:True"), ("missing selected OR origin cannot close pair", "PRIVATE-6:True"), ("same term and category without pending origin cannot gain marker", "PRIVATE-7:True"), ("altered pending token index fails actual marker", "PRIVATE-8:True"), ("pending and ordinary identical term signs pack separately", "PRIVATE-9:True"), ("actual type-raising semantics cannot downgrade pending origin", "PRIVATE-10:True"), ("actual conditional consumes period-free paired clause", "PRIVATE-11:True"), ("terminal paired clause cannot enter later conditional", "PRIVATE-12:True")]
 
 privateScript :: [String]
 privateScript =
@@ -114,4 +114,13 @@ privateScript =
   "putStrLn (\"PRIVATE-8:\" ++ show (let e2=e{ssOrState=fmap (\\st->st{osCover=(1,2)}) (ssOrState e)} in case semCombineEither Main.mini FwdApp v e2 a of {Nothing->True;_->False}))",
   "putStrLn (\"PRIVATE-9:\" ++ show (let e2=e{ssOrState=ordinaryOrState Main.mini (0,1) (ssProv e) (ssSem e)} in length(packCell 20 [e,e2])==2))",
   "putStrLn (\"PRIVATE-10:\" ++ show (let target=CSlash Fwd (CAtom \"S\" []) (CSlash Bwd (CAtom \"S\" []) (ssCat e) []) [] in case unarySem (ssCat e) target of {Just(f,_)->case ordinaryUnaryState e (f(ssSem e)) of {Nothing->True;_->False};Nothing->False}))",
+  "let Just lp=semCombineEither Main.mini FwdApp v (el 3 \"either\" (Main.cc \"(S[adj]\\\\NP)/(S[adj]\\\\NP)\")) (el 4 \"red\" v)",
+  "let Just rp=semCombineEither Main.mini CoordMark (addConjFeat v) (el 5 \"or\" (Main.cc \"conj\")) (el 6 \"big\" v)",
+  "let Just pair=semCombineEither Main.mini CoordApply v lp rp",
+  "let Just vp=semCombineEither Main.mini FwdApp (Main.cc \"S[dcl]\\\\NP\") (el 2 \"is\" (Main.cc \"(S[dcl]\\\\NP)/(S[adj]\\\\NP)\")) pair",
+  "let Just clause=semCombineEither Main.mini BwdApp (Main.cc \"S[dcl]\") (el 1 \"Bob\" (Main.cc \"NP\")) vp",
+  "let Just terminal=semCombineEither Main.mini PunctRight (Main.cc \"S[dcl]\") clause (el 7 \".\" (Main.cc \".\"))",
+  "let intro=el 0 \"if\" (Main.cc \"(S/S)/S[dcl]\")",
+  "putStrLn (\"PRIVATE-11:\" ++ show (maybe False eitherMandatory (semCombineEither Main.mini FwdApp (Main.cc \"S/S\") intro clause)))",
+  "putStrLn (\"PRIVATE-12:\" ++ show (case semCombineEither Main.mini FwdApp (Main.cc \"S/S\") intro terminal of {Nothing->True;_->False}))",
   ":quit"]

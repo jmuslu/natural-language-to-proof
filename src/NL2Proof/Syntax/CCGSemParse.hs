@@ -873,12 +873,13 @@ semCombineEither m comb out left right = do
    (_,_,PunctRight)
      | activeRole l,plainRole r,out==CAtom "S" [Feat "dcl"]
      , ssStructural right==Just ".",ssCat right==CAtom "." []
-     , ssCat left==out,ssSem result==ssSem left ->
+     , ssCat left==out,ssSem result==ssSem left,noPunctuation l
+     , osCover r==(fst(osCover r),fst(osCover r)+1) ->
          Just result {ssOrState=Just base {osRole=osRole l,osEvidence=osEvidence l}}
    (_,_,_) | any (\st->roleMode(osRole st)==OR.PairedPending) [l,r] -> Nothing
    (_,_,_) | activeRole l || activeRole r ->
      if comb `elem` [FwdApp,BwdApp] && osRight l==Nothing && osRight r==Nothing
-        && all noPunctuation [st | st<-[l,r],plainRole st]
+        && all noPunctuation [l,r]
         && not(any (isIntensionalTerm.ssSem)[left,right])
      then app(OrPaired(Set.union(rolePairs(osRole l))(rolePairs(osRole r)))) else Nothing
    (_,_,_) | comb `elem` [FwdApp,BwdApp] ->

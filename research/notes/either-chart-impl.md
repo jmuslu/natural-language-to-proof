@@ -75,3 +75,27 @@ Hardening checkpoint: `runghc -isrc -itest test/EitherChartSpec.hs` passes54/54
 (including11 actual-private-producer controls); `git diff --check` clean.
 Offline suites are still running at this commit; source is frozen for peer
 vertical integration and review, not approved for root landing by this note.
+
+## Terminal-period review correction
+
+The reviewer identified that a period-bearing active S could subsequently be
+embedded by application or acquire a second period. Final-period attachment now
+requires a punctuation-free active child and one-token punctuation operand;
+subsequent semantic application requires both children punctuation-free.
+Private tests build the actual lexical pair/copula/subject and closed if entry:
+the period-free paired S can enter conditional application, whereas the same
+S after its terminal period cannot. This does not claim that the resulting
+whole S-featureless conditional is licensed as an active root (the root gate
+still requires S[dcl]). Public repeated/internal-period cases must abstain.
+
+All31 pre-existing cabal-declared test mains passed via sequential
+`runghc -isrc -itest test/<main-is>`. This compatibility run started at the first
+checkpoint and spanned optional-source hardening; it is not represented as a
+fresh final combined-source gate. The coordinator must run required final gates
+on the assembled Pipeline/exporter/parser snapshot. All default tests passed;
+focused optional controls are rerun after each source revision. No CCGbank load,
+model launch or corpus benchmark was performed.
+
+Terminal-period checkpoint: focused actual chart suite passes58/58, including
+13 private producer controls; `git diff --check` is clean. Source frozen again
+for final independent review and combined integration.
