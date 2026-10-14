@@ -2633,3 +2633,9 @@ Result gold-gap-audit: all merged-result gates passed,scorer contracts (counts a
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/wrong-typed-audit; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/wrong-typed-audit.
 
 Result wrong-typed-audit: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration explain-replay-plan (943060c)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/explain-replay-plan; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/explain-replay-plan.
+
+Result explain-replay-plan: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
