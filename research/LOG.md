@@ -2191,3 +2191,13 @@ Reviewed01a4933 tracks pending conditional and actual licensed raising through c
 Conditional first merged result: all16suites/1249checks,oracle,Explain,29contracts,hand4 pass. Fresh114 improves24/33/57→27/30/57; exactly starterconditional_initial-1 and both nestedbinding cases wrong→exact, no status regressions. Before release replace human-readable gloss role seed with exact closed lexical key(if,(S/S)/S[dcl]) per specialist assessment; prediction: same114 outcomes, wording no longer controls syntax. Repeat affected build/tests and required gates/freshsource fidelity after this final source change.
 
 Final conditional result: exact lexical-key seed preserves all114 case results byte-for-byte at scored-case level27exact/30wrong/57noparse. Build,16suites/1249checks,oracle,Explain,29contracts and hand4 pass on final source. Starter ProverQA10/24exact; nestedbinding2/2 nowexact. Known synthetic raised-direction failure retained explicitly. This fixes spurious consequence assertion in the measured cases, not general conditional completeness.
+
+### 2026-10-14 — approved FOLIO extension baseline
+
+Prediction:7 independent gold rows from b89930c (3universal,2conditional object anaphora,2predicative relatives) retain substantial current limitations. Reviewer approved English/DRS before parsing. Token-wrapped test/fidelity/run.py cases from gold-folio-extended branch, sealed conditional binary, default parser, outputs research/runs/folio-extended-baseline. Local fidelity only; no answerbenchmark/model. Source stays fixed during reviewed documentation/gold integration queue.
+
+### 2026-10-14 — serial integration gold-nested-prontoqa (5f23bb2)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-nested-prontoqa; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;29 fidelity contracts; sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-nested-prontoqa.
+
+Result gold-nested-prontoqa: all merged-result gates passed,29 scorer contracts, sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
