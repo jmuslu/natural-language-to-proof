@@ -744,3 +744,86 @@ B release result: all nine suites (1,063 checks), original oracle-boundary gate,
 and all eight Explain smoke cases passed. Build produced no new warnings. Phase B
 checkpoint now ready; six additional negative fixtures were separately confirmed
 to reject for their intended reasons and will join the gate in its own next commit.
+
+Phase B checkpoint: `24c3cc2`, pushed to origin astra/research.
+
+## 2026-10-13 — Separate oracle-gate strengthening prediction
+
+Reason for changing the gate: the original twelve negative cases did not cover
+bare CanonCond confirmation, extracted embedded literals, Data.Coerce index
+forging, removed arbitrary promotion helpers, or Fact-content record updates.
+These six cases were red before the B repair and green individually afterward.
+The gate now includes all six and verifies their intended diagnostic category;
+no prior case or positive consumer is removed. Prediction: all release gates
+pass, with eighteen negative boundary checks and two positive consumers.
+Exact command: `bash research/run-gates.sh oracle-gate-strengthening > research/runs/oracle-gate-strengthening-driver.log 2>&1`.
+The gate change will be committed separately, as required by ASTRA_GOAL §0.6.
+
+## 2026-10-14 UTC / 2026-10-13 New York — D export audit (read only, concurrent with E baselines)
+
+Strict export whitelist admits only id/context/statement. Query boxes stay separate
+from premises, cross-context existential references become residuals, and the
+combined theory/query Cartesian budget is explicit. Two draft issues were sent
+to the export owner before integration: every COr currently receives sentence-wide
+fallback provenance, so detecting `either` from that provenance can falsely make
+multiple separate ors exclusive; and simpleChar rejects legitimate multiword rigid
+constants (e.g. bald eagle) as opaque. Recommend scoped XOR evidence or explicit
+ambiguous-scope residual, and accepting plain spaced names while retaining opaque
+term rejection. No test or model trial was run for this static audit.
+
+### C5 prediction — label growth and runtime, 2026-10-14
+
+Prediction: the conjunction of n independent binary evidence alternatives has
+exactly 2^n minimal environments, each with n tokens. This measures the known
+exponential limit, not an accuracy benefit; no approximation or silent cap is
+introduced. Measure n=1,2,4,6,8,10 and wall time/maximum RSS of the compiled public
+53-check property suite. Commands (candidate overlay; production still frozen):
+
+```
+ghc -O1 -iresearch/runs/strength-design/candidate -isrc -outputdir research/runs/strength-design/growth-build research/runs/strength-design/LabelGrowth.hs -o research/runs/strength-design/label-growth > research/runs/strength-design/growth-build.log 2>&1
+research/runs/strength-design/label-growth > research/runs/strength-design/label-growth.log 2>&1
+/usr/bin/time -f 'elapsed_seconds=%e maximum_rss_kb=%M' -o research/runs/strength-design/strength-resources.log research/runs/strength-design/strength-spec > research/runs/strength-design/candidate-timed.log 2>&1
+```
+
+### C4 result — compatibility preserved, 2026-10-14
+
+Expanded Strength checks pass **53/53**; rebuilt candidate code reports no new
+warnings under the repository warning flags. The candidate typed Claims bridge
+and adjusted token-backed Substrate fixtures compile and pass the existing suite.
+No production source was edited during the B checkpoint. New class/source and
+stale-edge assertions passed without implementation changes; they exercise the
+candidate's planned invariants rather than hiding a discovered regression.
+
+Phase D initial red result: fails exactly at missing `ReadingResult`, as predicted. Read-only audit identified sentence-wide `either` provenance: multiple COr nodes sharing that provenance cannot each become XOR. Added explicit XOR-scope residual metadata (inclusive semantics remains intact), regression cases for ambiguous same-sentence and distinct-sentence markers, and support for plain multiword rigid names such as bald eagle while rejecting function-form stringified arguments. No experiment rerun before the shared backend API exists.
+
+## 2026-10-13 — D/E runner hygiene prediction
+
+Prediction: seven new runner tests fail to import the absent runner. They ensure
+only id/context/statement reach inference, abstentions remain in the end-to-end
+accuracy denominator, exact McNemar uses paired identical IDs, and reading mass
+is normalized stably. Exact command:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_runner.py -v > research/runs/d-runner-red.log 2>&1`.
+
+### C5 result — exactness has exponential space cost, 2026-10-14
+
+The optimized public Strength suite again passes 53/53; `/usr/bin/time` measured
+6.62 s wall time and maximum RSS 21,760 KiB on this shared host. Label growth is
+exactly 2^n with n tokens per environment: n=1,2,4,6,8,10 produced
+2,4,16,64,256,1024 environments. CPU times were respectively
+0.000201,0.000037,0.000130,0.000789,0.006453,0.076034 s. First-use and runtime noise
+make tiny times non-monotonic; no inference of calibrated scaling is warranted.
+The environment count confirms the documented exponential limit. Results and the
+concrete weak-versus-grounded example are in STRENGTH.md. Logs: label-growth.log,
+strength-resources.log, candidate-timed.log under research/runs/strength-design/.
+
+D/E runner red result: missing module import failed as predicted. Implemented the
+whitelisted persistent parser runner, immutable cache fingerprints, solver policy
+runner, coverage/precision/accuracy, Wilson and exact paired McNemar. Prediction:
+all 38 Python methods pass, including the existing solver contract. Exact command:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_*.py' -v > research/runs/d-python-green.log 2>&1`.
+
+Oracle-gate strengthening result: all eighteen negative fixtures rejected for
+the expected reasons; two positive consumers compiled. Build, all nine suites
+and Explain gate passed. The corrected optional real-corpus suite also passed
+8/8; kind remains unsupported as explicitly tested. Python D/E contract tests
+passed38/38. Gate-only checkpoint ready.

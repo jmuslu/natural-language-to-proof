@@ -15,7 +15,7 @@ for pass in OracleAccessors ReportedAccessors; do
     "$ROOT/test/compile-pass/$pass.hs" > "$BUILD/positive-$pass.log" 2>&1
 done
 
-for name in ConfirmedClaimUpdate ConfirmedOracleUpdate ConfirmedConstructor FusedConstructor FusedClaimUpdate FusedOracleUpdate ReportedConstructor ReportedChainUpdate ReportedConfirm PresupposedConfirm EmbeddedConfirm ClaimKindConstructor; do
+for name in ConfirmedClaimUpdate ConfirmedOracleUpdate ConfirmedConstructor FusedConstructor FusedClaimUpdate FusedOracleUpdate ReportedConstructor ReportedChainUpdate ReportedConfirm PresupposedConfirm EmbeddedConfirm ClaimKindConstructor RawCanonConfirm ExtractedEmbeddedConfirm ClaimKindCoerce RawAssertedClaim CandidateConfirm FactClaimUpdate; do
   log="$BUILD/$name.log"
   if ghc -fno-code -i"$ROOT/src" -outputdir "$BUILD/$name" \
     "$ROOT/test/compile-fail/$name.hs" > "$log" 2>&1; then
@@ -24,6 +24,10 @@ for name in ConfirmedClaimUpdate ConfirmedOracleUpdate ConfirmedConstructor Fuse
   fi
   case "$name" in
     *Constructor) expected="Data constructor not in scope|Illegal term-level use of the type constructor" ;;
+    RawCanonConfirm|ExtractedEmbeddedConfirm) expected="No instance for.*Confirmable.*CanonCond" ;;
+    ClaimKindCoerce) expected="Couldn't match type.*Embedded.*Asserted" ;;
+    RawAssertedClaim) expected="Variable not in scope:.*assertedClaim" ;;
+    CandidateConfirm) expected="Variable not in scope:.*asCandidate" ;;
     ReportedConfirm) expected="A reported claim cannot be confirmed" ;;
     PresupposedConfirm) expected="A presupposed claim cannot be confirmed" ;;
     EmbeddedConfirm) expected="An embedded claim cannot be confirmed" ;;
