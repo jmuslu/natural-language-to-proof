@@ -56,3 +56,7 @@ Helpers research/runs/integrate-reviewed.py and source-trial.py enforce pin/path
 - Active serial integration: nominal-negation-evidence (98373b6), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/nominal-negation-evidence; committing/pushing now.
 
 - Active serial integration: nominal-property-plan (a6c128e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/nominal-property-plan; committing/pushing now.
+
+- after202-followups driver ended on transient origin500 after local490d3e2; retry push succeeded, nominal-property-plan cleaned. Resuming remaining reviewed-followups-queue.py with ancestryskip and between-branch hold marker support. No tests/source failure.
+
+- Active serial integration: explain-replay-interface (95a89d5), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/explain-replay-interface; committing/pushing now.
