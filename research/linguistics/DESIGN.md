@@ -921,3 +921,33 @@ the full independent gold because the consequent predicates retain `hawks` or
 52 exact,26 wrong-but-typed,88 no-parse,1 incomplete. This is partial lexical
 progress, **not** three additional exact sentences; the remaining category and
 lexical-evidence causes require their own Explain diagnosis.
+
+
+### Person-restricted Everyone with offered NP evidence
+
+For Study Plan Unit 2, an actually offered `NP` for *everyone* now receives a
+closed-class generalized quantifier. Its Unit 3 meaning is
+`λQ.∀x(person(x) → Q(x))`, rather than an open-class predicate named `everyone`.
+The existing guarded subject-relative route admits this same NP source:
+*everyone who P* contributes `λQ.∀x((person(x) ∧ P(x)) → Q(x))`.
+Original source-category and relative-category evidence remain mandatory. An
+N-only source is outside this repair and needs a separate licensing design.
+
+In Unit 4, the outer universal implication is Asserted; its person restriction,
+relative predicate and consequent stay Embedded. Negated VP controls use the
+explicit surface-scope reading `∀x(person(x) → ¬P(x))`. This does not resolve
+English scope ambiguity in general. The closed lexical treatment follows the
+Montague quantifier analysis used in the existing Boxer/ccg2lambda comparison;
+it does not infer semantic class merely from an available type.
+
+Six independently authored controls were frozen and scored with the previous
+binary before this implementation. On the unchanged 173-case diagnostic, these
+six and one existing strict-English relative case change wrong-but-typed→exact.
+Two legacy unrestricted-domain cases change from an `everyone` restriction to a
+`person` restriction but remain wrong against their original contracts. Their
+gold is unchanged. The other 164 selected readings and statuses are unchanged.
+Totals are 59 exact, 25 wrong-but-typed, 88 no-parse and one incomplete; the mixed
+contracts and authored controls do not certify representative ProverQA fidelity.
+Eighteen focused controls cover all retained readings, source-category guards,
+relative restriction and claim status. All release gates pass, and independent
+review verified the source, fixture, binary, observation hashes and every change.
