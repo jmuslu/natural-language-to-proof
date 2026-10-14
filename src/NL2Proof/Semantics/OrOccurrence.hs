@@ -3,21 +3,24 @@
 -- Ordinary mode always returns the existing normalization and packing key.
 module NL2Proof.Semantics.OrOccurrence
   ( Path, Mode(..), Failure(..), Evidence, PackingKey(..), Result(..)
-  , passiveEvidence, evidenceSnapshot, evidenceFailure, dispatch
+  , passiveEvidence, evidenceSnapshot, evidenceFailure, evidenceInputs, assembleEvidence, dispatch
   ) where
 
 import qualified Data.Map.Strict as M
+import Data.List (isPrefixOf)
 import NL2Proof.Semantics.Lambda
 
 type Path = [Int]
 data Mode = Ordinary | PairedPending | PairedActive deriving (Eq,Ord,Show)
 data Failure = InvalidOrigins | IllTyped | StaleEvidence | UnsupportedBetaUse
              | UnsupportedConjunctionRewrite | UnavailableOrigin
-             | TransportMismatch | InvalidModeTransition deriving (Eq,Ord,Show)
+             | TransportMismatch | InvalidModeTransition | InvalidEmbedding | OriginCollision deriving (Eq,Ord,Show)
 -- Snapshot is always the term to which its map actually belongs. On failure it
 -- is retained unchanged, rather than being relabelled as the rewritten term.
 data Evidence a = Available Mode Term (M.Map Path a)
-                | Untransported Mode Term (M.Map Path a) Failure deriving (Eq,Show)
+                | Untransported Mode Term (M.Map Path a) Failure
+                | AssemblyUnavailable Mode Term (M.Map Path a)
+                    [(Path,Term,Evidence a)] Failure deriving (Eq,Show)
 data PackingKey a = OrdinaryKey Term | PairedKey Mode Term (M.Map Path a)
   deriving (Eq,Ord,Show)
 data Result a = Result
@@ -27,9 +30,15 @@ data Result a = Result
 evidenceSnapshot :: Evidence a -> (Term,M.Map Path a)
 evidenceSnapshot (Available _ t m)=(t,m)
 evidenceSnapshot (Untransported _ t m _)=(t,m)
+evidenceSnapshot (AssemblyUnavailable _ t m _ _)=(t,m)
 evidenceFailure :: Evidence a -> Maybe Failure
 evidenceFailure Available{}=Nothing
 evidenceFailure (Untransported _ _ _ f)=Just f
+evidenceFailure (AssemblyUnavailable _ _ _ _ f)=Just f
+-- Original child snapshots retained when an ordinary assembly is unavailable.
+evidenceInputs :: Evidence a -> [(Path,Term,Evidence a)]
+evidenceInputs (AssemblyUnavailable _ _ _ inputs _)=inputs
+evidenceInputs _=[]
 
 children :: Term -> [Term]
 children t=case t of
@@ -86,6 +95,7 @@ transport t m=case t of
 
 checked :: Ctx -> Term -> Evidence a -> Either Failure (Term,M.Map Path a)
 checked _ _ Untransported{}=Left UnavailableOrigin
+checked _ _ AssemblyUnavailable{}=Left UnavailableOrigin
 checked ctx t (Available _ snapshot m)
  | t/=snapshot=Left StaleEvidence
  | otherwise=do
@@ -106,8 +116,9 @@ dispatch ctx Ordinary t ev=
  let out=simplifyConj(normalize t)
      evidence=case checked ctx t ev of
        Right (same,m) | same==out->Available Ordinary out m
-       Left f->let(old,m)=evidenceSnapshot ev in Untransported Ordinary old m
-                  (maybe f id(evidenceFailure ev))
+       Left f->case evidenceFailure ev of
+         Just _->ev
+         Nothing->let(old,m)=evidenceSnapshot ev in Untransported Ordinary old m f
        _->let(old,m)=evidenceSnapshot ev in Untransported Ordinary old m TransportMismatch
  in Right(Result out evidence(OrdinaryKey(canonicalAC out)))
 dispatch ctx mode t ev=do
@@ -119,3 +130,46 @@ dispatch ctx mode t ev=do
 evidenceMode :: Evidence a -> Mode
 evidenceMode (Available mode _ _)=mode
 evidenceMode (Untransported mode _ _ _)=mode
+
+evidenceMode (AssemblyUnavailable mode _ _ _ _)=mode
+
+-- | Assemble evidence only at a trusted semantic constructor. Origin payloads
+-- themselves remain producer-certified; this function authenticates neither
+-- lexical categories nor token spans. Inputs identify ORIGINAL child subterms,
+-- e.g. located coordination's clLeftPath/clRightPath, before normalization.
+-- Ordinary failure keeps legacy semantics possible and retains all child audit
+-- snapshots; an active/pending import fails closed. No Eq constraint on origins
+-- is needed: collisions are rejected by path, never merged by payload equality.
+assembleEvidence :: Ctx -> Mode -> Term -> [(Path,Term,Evidence a)]
+                 -> M.Map Path a -> Either Failure (Evidence a)
+assembleEvidence ctx mode out inputs introduced
+ | any (\(_,_,ev)->evidenceMode ev>mode) inputs=Left InvalidModeTransition
+ | otherwise=case assemble of
+    Right m->Right(Available mode out m)
+    Left failure | mode==Ordinary->Right(AssemblyUnavailable mode out introduced inputs failure)
+                 | otherwise->Left failure
+ where
+  paths=[p|(p,_,_)<-inputs]
+  overlap=or [p `isPrefixOf` q || q `isPrefixOf` p
+             |(i,p)<-zip[0::Int ..]paths,(j,q)<-zip[0::Int ..]paths,i<j]
+  assemble=do
+   if overlap then Left InvalidEmbedding else Right ()
+   ms<-mapM importChild inputs
+   let allMaps=introduced:ms
+       count=sum(map M.size allMaps)
+       merged=M.unions allMaps
+   if M.size merged/=count then Left OriginCollision else Right ()
+   valid ctx out merged
+   Right merged
+  importChild (path,inserted,ev)=do
+   if subterm path out/=Just inserted then Left InvalidEmbedding else Right ()
+   case ev of
+    Available _ snapshot m->do
+     if snapshot/=inserted then Left StaleEvidence else Right ()
+     valid ctx snapshot m
+     Right(M.mapKeys(path++)m)
+    _->Left UnavailableOrigin
+  subterm [] t=Just t
+  subterm (i:is) t
+   | i>=0 && i<length(children t)=subterm is(children t!!i)
+   | otherwise=Nothing
