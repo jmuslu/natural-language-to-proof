@@ -92,3 +92,21 @@ binder-placement/asserted-implication checks:6/6 pass. All6 input locator checks
 pass. No disjunction occurs, so every reading explicitly includes disjunctions:[];
 no modal/definite-description claims are hidden by these adaptations. git diff
 --check passes. Reviewer must independently approve before coordinator integration.
+
+## Contract separation and review
+
+Every row now declares `semantics_contract: "strict-English"`, qualified by the
+explicit presented generic-rule interpretation. Someone retains person; no change
+is made to historical Prover everyone rows that intentionally used unrestricted
+controlled-domain meaning. The historical development panel and this strict panel
+must not be pooled silently; coordinator holds these additions outside aggregate
+reporting until the reporter distinguishes contracts. This tag declares the
+intended contract, not completion of semantics for all unrestricted English.
+
+Reviewer approved all6 scoped meanings under the stated rule reading. For the
+last relational case, generic they refers to the antecedent binder by the declared
+controlled rule convention. Ordinary discourse can admit contextual they→Mira;
+notes now explicitly acknowledge this ambiguity rather than claiming English
+forbids it. No extra gold alternative is added because this panel intentionally
+tests the presented generic-rule reading. Gold authoring and schema checks remain
+independent of parser results; metadata alone does not fix reporter separation.
