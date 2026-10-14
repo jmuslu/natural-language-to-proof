@@ -174,7 +174,10 @@ meaning score, and the paper is not evidence that our object-relative or
 coordination proposals have passed. Event/role output cannot be compared byte
 for byte to our gold without an independently specified projection.
 
-The locally cached [ccg2lambda EMNLP2015 templates](https://github.com/mynlp/ccg2lambda/blob/master/en/semantic_templates_en_emnlp2015.yaml)
+[Mineshima et al. 2015, §2 and Figure 3](https://aclanthology.org/D15-1244.pdf)
+provide the two-predicate NP restriction/continuation architecture used in this
+comparison; it must be adapted coherently, not one lexical entry at a time.
+The locally cached [ccg2lambda EMNLP2015 templates](https://github.com/mynlp/ccg2lambda/blob/a68cb264413791150011c347c64a7b35e2f7270d/en/semantic_templates_en_emnlp2015.yaml)
 are concrete comparison evidence: conjunction rules at lines 70–134 include
 shared-subject VP lowering, NP continuation conjunction and N intersection;
 relative entries around lines 567–578 handle NP modifiers and object gaps.
