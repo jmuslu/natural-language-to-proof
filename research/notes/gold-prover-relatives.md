@@ -109,3 +109,24 @@ inclusive DRS plus lexical either=true, with unresolved downstream override.
 Validation result: all4 rows pass fidelity.validate_case; both groups have2
 examples; all4 locator matches reproduce exact context sentences. No parsing,
 semantic output inspection, solver execution or external model invocation.
+
+## Versioned acceptance contracts (owner-requested metadata)
+
+Every row now has explicit semantics_contract metadata. Who-relative rows use
+`proverqa-strict-english-v1`: everyone is person-restricted, so these belong to a
+new versioned strict-English panel. Named-subject or-both rows use
+`proverqa-controlled-v1`: no quantified-person policy is exercised and inclusive
+or-both is compatible with the controlled panel's DRS semantics, while its
+surface-either/XOR-policy limitation remains recorded.
+
+Never pool incompatible everyone policies into one acceptance aggregate or one
+ProverQA gate estimate. Preserve the historical121 panel and its measured results
+unchanged; these new cases are not retroactive evidence for that snapshot. A
+strict-English panel must first make and review a consistent whole-panel domain
+policy, version its membership, then measure it independently. This metadata
+records the contracts; the existing generic scorer does not enforce panel
+partitioning automatically. Root must select and report the panels explicitly.
+No new parse or production change accompanies this metadata amendment.
+
+Prediction before revalidation: the four unchanged meanings remain schema-valid;
+contract IDs partition2 strict-English and2 controlled-compatible rows.
