@@ -85,3 +85,19 @@ exporter-aware audit: typed=True can legitimately coexist with no DRS when DRS
 construction fails, and selected meanings are discourse-resolved whereas
 alternatives are sentence-local. Do not add an equality constraint between the
 selected meaning and one alternative without proving it against that contract.
+
+## Bounded patch review follow-up
+
+Independent reviewer accepted `c01b770`; coordinator requested four additional
+contracts before integrating the bounded patch. The scorer is unchanged here.
+New methods require nested extra-key differences and boolean/number differences
+to produce a meaningful `first_difference`, while accepting additional exporter
+metadata only at the meaning's top level. A free-reference scope defect inside
+otherwise object-shaped meaning must remain wrong_but_typed, not error.
+
+Against the unpatched scorer, all 11 methods ran: four pass and seven fail
+(six assertion failures including subtests, two errors). The two added diagnostic
+methods reproduce missing first-difference output; the two preservation controls
+pass. The approved bounded proposal should fix all failures without gold-scope
+validation of observed outputs. Coordinator owns that implementation and its
+post-patch validation; this branch continues to provide red regression evidence.

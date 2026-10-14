@@ -3,7 +3,7 @@ import copy
 import json
 import unittest
 
-from fidelity import evaluate_case, integral_number, summarize
+from fidelity import evaluate_case, first_difference, integral_number, summarize
 
 
 def fixture():
@@ -62,6 +62,40 @@ class FidelityWireEdges(unittest.TestCase):
         row, observed = fixture()
         observed['selected'] = {'drs': None, 'claims': None}
         self.assertEqual(evaluate_case(row, observed)['status'], 'error')
+
+    def test_nested_extra_key_has_a_meaningful_difference(self):
+        row, observed = fixture()
+        observed['selected']['drs']['conditions'][0]['left']['conditions'][0]['unexpected'] = 'kept'
+        result = evaluate_case(row, observed)
+        self.assertEqual(result['status'], 'wrong_but_typed')
+        difference = result['first_gold_difference']
+        self.assertIsNotNone(difference)
+        self.assertEqual(difference['path'][:5],
+                         ['drs', 'conditions', 0, 'left', 'conditions'])
+
+    def test_boolean_number_difference_is_reported_directly(self):
+        row, observed = fixture()
+        observed['selected']['disjunctions'][0]['either'] = 1
+        difference = first_difference(row['gold'][0], observed['selected'])
+        self.assertIsNotNone(difference)
+        self.assertEqual(difference['path'], ['disjunctions', 0, 'either'])
+
+    def test_extra_top_level_exporter_metadata_is_accepted(self):
+        row, observed = fixture()
+        observed['selected']['trace_metadata'] = {'source': 'exporter'}
+        observed['instrumentation_metadata'] = {'version': 1}
+        self.assertEqual(evaluate_case(row, observed)['status'], 'exact')
+        self.assertIsNone(first_difference(row['gold'][0], observed['selected']))
+
+    def test_ill_scoped_object_meaning_stays_wrong_but_typed(self):
+        row, observed = fixture()
+        # A real semantic scope defect must not be laundered into a protocol error.
+        observed['selected']['drs']['conditions'][0]['left']['conditions'][0]['args'] = [
+            {'ref': 'r99'}]
+        result = evaluate_case(row, observed)
+        self.assertEqual(result['status'], 'wrong_but_typed')
+        self.assertIsNone(result['error'])
+        self.assertIsNotNone(result['first_gold_difference'])
 
     def test_all_six_outcomes_keep_instrumentation_errors_in_denominator(self):
         results = []
