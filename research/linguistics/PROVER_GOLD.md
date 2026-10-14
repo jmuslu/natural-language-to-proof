@@ -28,6 +28,9 @@ restriction; this is not a general-English rule or an independently established
 property of every ProverQA verbalization. The singular indefinite controls use the episodic existential
 reading. The topical universal examples treat *born* as a property, not an event.
 The attributive *thriving* example assumes intersective property predication.
+Its noun-head condition precedes its modifier, following the shared gold
+convention regardless of surface adjective order. This makes pre- and postnominal
+intersective descriptions comparable without selecting a parser-preferred output.
 Broader tense, event, kind, and generic readings require a representation decision
 and further gold; adding a convenient alternate parser output is not such a
 decision.

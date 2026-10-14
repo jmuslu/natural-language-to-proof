@@ -31,3 +31,16 @@ Limitations remain material: no modal gold, only lexical intransitives in the
 unclassified bucket, no relative-clause quantified-pronoun controls, and lexical
 simplification in ten rows. Schema success is not parser fidelity, population
 accuracy, complete construction coverage, or permission to resume benchmarks.
+
+Follow-up prediction (before validation): align the thriving-frogs case with the
+independently chosen shared head-first nominal convention. Both DRS and manually
+listed asserted/embedded conditions should now contain frog before thriving,
+without changing truth conditions, source text, or claim status. The convention
+uses nominal head identity as a stable anchor across pre/postnominal modifiers;
+it was selected before parser results, not fitted to an observed derivation.
+Schema validation should still pass for all 24 cases; all 24 source-reference
+keys should still be present in the existing input-only cache.
+
+Follow-up result: 24 schema passes, 24 source-reference matches; explicit checks
+confirmed frog/thriving restrictor order and frog/thriving/resilient embedded
+order. Prediction held. No parser invocation or new corpus/model load.
