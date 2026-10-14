@@ -3,6 +3,10 @@
 Here “fused” refers to the quantifying indefinite-pronoun head. These are overt
 headed restrictive relatives, not the free-relative construction of *what*.
 
+**Initial implementation target: Everything and strict-person Someone only.**
+Something remains a documented, tested-but-deferred policy question. No existing
+Something gold or production meaning is changed by this proposal.
+
 **Proposal, not implemented.** The current noun-level relative repair correctly
 handles `Every cat that is red is big`, but it cannot attach a restriction to
 an already quantified pronoun without moving the relative into the wrong scope.
@@ -97,14 +101,112 @@ retain existing behavior or documented failure. Repeated relative attachments
 need a separately reviewed restriction-accumulation rule; do not accidentally
 admit them by conflating completed NP with a pending quantifying head.
 
+## Minimal local certificate contract (before implementation)
+
+The first implementation need not propagate new obligations through arbitrary
+CCG composition. It can deliberately allow only the two necessary applications
+while letting the ordinary relative VP and matrix VP build with all existing
+rules. This keeps the new path small without disabling an existing ordinary path.
+The bounded domain is an adjacent closed head followed by one overt restrictive
+subject relativizer. `Everything else that ...` and stacked relatives remain
+outside it. Standalone heads retain ordinary NP meanings: unrestricted universal
+*everything* and person-restricted existential *someone*.
+
+Use four states on a semantic chart sign, separate from `ssCoord` and category:
+
+| State | Required information / interpretation |
+|---|---|
+| `Plain` | No outstanding fused-relative obligation. |
+| `Head k` | Internal NP/N from a single offered ordinary-NP Everything/Someone head; its restriction slot is unfilled. |
+| `RelOp k` | Internal N/VP from an offered subject relativizer, waiting for its ordinary subject-gap VP. |
+| `Property k` | Internal N property built by applying that exact RelOp to a complete ordinary VP. |
+
+A certificate `k` contains the token occurrence IDs of the adjacent head and
+relativizer, head variant (unrestricted universal versus person existential),
+original offered head/relative categories, and the fixed lexical-reanalysis rule
+ID. It is an opaque structured value with exact equality, not a hash or a test
+for a substring in a rendered term. Both leaves are minted from the same eligible
+pair. A same-spelling occurrence elsewhere cannot substitute for either token.
+Only offered ordinary NP heads and `(NP\NP)/(S[dcl]\NP)` relativizers license
+this first version; internal categories offered directly by an adversarial tagger
+are not independent evidence. Existing ordinary head/relative candidates remain
+available alongside these additional candidates. Something mints no certificate
+until its domain policy is separately approved.
+
+**Exhaustive transition table for any operation touching these states:**
+
+| Operation and input states | Result | Required check |
+|---|---|---|
+| Existing operation, Plain inputs only | Existing Plain result | Preserve all existing semantic/conditional/coordinator checks. |
+| Forward application `RelOp k : N/VP` + `Plain : VP` | `Property k : N` | Left sign is the original relative leaf; right is a complete adjacent subject-gap VP with no open coordination/structural marker; output term is `rel(V)`. |
+| Forward application `Head k : NP/N` + `Property k : N` | `Plain : NP` | Same certificate; head is its original lexical span; property starts at the certified relative occurrence; contiguous spans; output is quantified head applied once to relative property. Record discharge in provenance/trace. |
+| Head + Property with different certificates | Reject this derivation | Never merge/broadcast certificates. |
+| Head + ordinary N; ordinary determiner + Property | Reject this derivation | A category match does not certify origin. |
+| Any other forward/backward application involving a pending state | Reject this derivation | Do not erase obligations merely because output happens to be NP/S. |
+| Any harmonic or crossed composition involving a pending state | Reject this derivation | Even `Head >B RelOp` is excluded initially; the equivalent complete-property application path remains. |
+| Any unary change/raising involving a pending state | Reject this derivation | In particular, Property N→NP cannot create an orphan subject; raising cannot hide Head/RelOp/Property inside a functor. |
+| CoordMark / CoordApply touching a pending state | Reject this derivation | Relative VP coordination must finish while Plain, before RelOp applies. Completed quantified NPs may coordinate using existing Plain rules. |
+| Punctuation absorption touching a pending state | Reject this derivation | No comma or terminal mark clears or moves an obligation. Punctuation inside an ordinary relative VP follows existing rules; supplementaries are not licensed by this route. |
+| Root admission with non-Plain state | Reject this derivation | A typed S alone cannot discharge a restriction certificate. |
+
+“Reject” here applies to the new pending derivation only. Do not reject an input
+sentence because it contains these words or because another ordinary derivation
+exists. For example, `Everything and someone who is red is big` can have ordinary
+coordination of a complete standalone universal NP with a completed restricted
+existential NP. It must not become a blanket negative sentence test merely to
+forbid coordination of two *pending* heads. The transition-level CoordApply check,
+not a surface phrase filter, is the required safeguard.
+
+Internal relative VP composition and coordination occur on Plain signs and remain
+unrestricted by this new mechanism. Thus `that [is red or blue]` is supported
+without permitting `that >B is` on the pending operator itself. The matrix VP
+similarly combines after discharge. Corpus-free aggressive-raising positives must
+show that the normal application route remains available; negative tests alone
+could otherwise pass because all new candidates were disabled.
+
+### Packing, pruning, and evidence requirements
+
+Extend the semantic packing key from its existing category/normalized-term/
+coordinator/conditional fields with **the complete certificate state**. Plain,
+Head, RelOp and Property are never equivalent, and k1 is never k2 merely because
+their term and category match. A higher-scored unlicensed or wrong-origin item
+cannot replace the correctly paired item. Existing bounded-beam pruning can still
+drop candidates; report that loss as search incompleteness, never promote an
+unlicensed replacement. Only fully discharged Plain roots enter existing meaning
+deduplication. Keep completed discharge evidence in provenance even when the role
+returns to Plain. Packing only the semantic term is insufficient.
+
+The category prepass must include both new lexical categories and the two allowed
+applications as an overapproximation of the semantic chart. It may erase the
+certificate for reachability if it remains a sound overapproximation; all actual
+semantic operations still consult the transition table. Do not let prepass marking
+or a synthetic internal category manufacture certificate evidence. With seen-pair
+constraints enabled, reanalysis must validate the corresponding source-category
+combination: original relative `(NP\NP)/VP + VP -> NP\NP`, and original
+`NP + NP\NP -> NP`. These are the source construction pairs represented by the
+two internal forward applications. A narrowly licensed source-pair mapping may
+admit those transitions; a global `smSeenRules=False` or arbitrary unseen-pair
+exception is not the production fix. This mapping also needs to be reflected in
+the overapproximate prepass/backward marking, otherwise a correct semantic route
+can be silently pruned before certificate checks. The miniature tests intentionally
+disable corpus seen-pair evidence; they do not certify this production step.
+
+Before source integration, direct tests against the actual transition/packing
+functions must cover: equal k discharge; unequal k rejection; each pending role
+under every combinator/unary family; Plain/Property and k1/k2 packing collisions
+with identical category/term but adversarial scores; and no role erasure by root
+admission. These are specified requirements rather than a standalone duplicate
+“reference implementation” that would only test itself. Public chart controls
+below exercise malformed, raised, mixed-origin, coordination and composition
+paths, but cannot fully prove internal packing behavior before the fields exist.
+
 ## Unit3: closed meanings and scope
 
 The property-relative term is:
 
 `rel = lambda V. lambda x. V(lambda R. R(x)) : V -> P`.
 
-It does not introduce a quantifier or a separate witness. The three restricted
-head variants are:
+It does not introduce a quantifier or a separate witness. The two initially eligible variants and the separately deferred variant are:
 
 - `everythingRel = lambda P Q. forall x.(P(x) -> Q(x))`.
 - `somethingRel = lambda P Q. exists x.(P(x) & Q(x))` in the declared
@@ -191,7 +293,7 @@ supertagger coverage for this construction. The pinned source map is
 
 ## Test-first result and integration obligations
 
-`test/FusedRelativeProposalSpec.hs` has3independent adjective examples per head,
+`test/FusedRelativeProposalSpec.hs` retains3independent adjective examples per head,
 covering universal/relative OR/negative restriction, existential/OR/negative
 consequence, and person existential/conjunction/negative consequence. Inputs are
 authored construction controls, not copied source benchmark rows. Source-based
@@ -208,6 +310,12 @@ reservation also failed. Ordinary determiner+noun relative and two domain
 rejection checks passed. All-returned-reading checks were then added before
 rerunning, with the additional prediction recorded in the notes. These controls
 are not registered as a green release suite and no failing test was removed.
+
+The current default run includes Everything/Someone only plus the expanded local
+licensing controls. The three unchanged Something controls remain runnable with
+`--deferred-something`, explicitly outside the first implementation gate. This
+separates an unresolved semantic policy from a clear construction repair; it does
+not treat those cases as solved or change their intended meanings.
 
 Before implementation, reviewer must approve the closed-head domain policy,
 paired origin obligations, and actual-category reanalysis. Then require the

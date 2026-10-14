@@ -5,6 +5,8 @@
 module Main (main) where
 
 import qualified Data.Set as Set
+import Data.List (isPrefixOf)
+import System.Environment (getArgs)
 import Harness
 import NL2Proof.DRT.Canonical
 import NL2Proof.Pipeline
@@ -14,19 +16,23 @@ import NL2Proof.Syntax.CCGBank (CCat, parseCCGCat)
 import NL2Proof.Syntax.CCGParse (Rules(..))
 import NL2Proof.Syntax.CCGSemParse
 import NL2Proof.Syntax.CCGSupertag (buildPOSModel, buildTagModel)
+import NL2Proof.Syntax.Tokenize (casedTokens)
 import NL2Proof.Verify.ClaimKind (claimCond)
 import NL2Proof.Verify.Reported (splitClaims)
 
 cc :: String -> CCat
 cc = either error id . parseCCGCat
 mini :: SemModel
-mini = (defaultSemModel tags poses rules Set.empty)
+mini = miniWith "NP" "(NP\\NP)/(S[dcl]\\NP)"
+
+miniWith :: String -> String -> SemModel
+miniWith headTag relativeTag = (defaultSemModel tags poses rules Set.empty)
   { smAlpha = 0, smSeenRules = False }
   where
-    entries = [("everything","NP","NN"),("something","NP","NN")
-      ,("someone","NP","NN"),("Every","NP[nb]/N","DT"),("cat","N","NN")
-      ,("that","(NP\\NP)/(S[dcl]\\NP)","WDT")
-      ,("who","(NP\\NP)/(S[dcl]\\NP)","WP")
+    entries = [("everything",headTag,"NN"),("something","NP","NN")
+      ,("someone",headTag,"NN"),("Every","NP[nb]/N","DT"),("cat","N","NN")
+      ,("that",relativeTag,"WDT")
+      ,("who",relativeTag,"WP")
       ,("is","(S[dcl]\\NP)/(S[adj]\\NP)","VBZ")
       ,("red","S[adj]\\NP","JJ"),("blue","S[adj]\\NP","JJ")
       ,("big","S[adj]\\NP","JJ"),("cold","S[adj]\\NP","JJ")
@@ -98,8 +104,17 @@ checkCase (Case text intended asserted embedded) =
         && all ((==Just intended) . fmap canonicalize . rrDRS) (srReadings s))]
 
 main :: IO ()
-main = runChecks "KNOWN fused-relative restriction gap" $
-  concatMap checkCase cases ++
+main = do
+  args <- getArgs
+  if args == ["--deferred-something"]
+    then runChecks "DEFERRED Something domain policy (not implementation gate)"
+      (concatMap checkCase [c | c@(Case text _ _ _) <- cases, "Something " `isPrefixOf` text])
+    else runChecks "KNOWN Everything/Someone restriction gap"
+      (concatMap checkCase [c | c@(Case text _ _ _) <- cases, not ("Something " `isPrefixOf` text)]
+       ++ boundaryChecks)
+
+boundaryChecks :: [Check]
+boundaryChecks =
   [expect "everything must be reserved, not an open-class predicate"
       (isClosedClass "everything")
   ,expectEq "existing determiner+noun relative retains restriction scope"
@@ -109,3 +124,68 @@ main = runChecks "KNOWN fused-relative restriction gap" $
       (null (srReadings (sentence "Everything cat is red.")))
   ,expect "relative property cannot stand as an unlicensed bare subject"
       (null (srReadings (sentence "That is red is big.")))]
+  ++ [expect ("pending obligations reject: " ++ label) (rejects model text)
+     | (label,model,text) <- negativeCases]
+  ++ [expect ("completed relative retains scope with aggressive unary search: " ++ text)
+       (case prSentences (runPipelineWith (CCGBankParser raised)
+                           (SourceId "fused-raised-positive") text) of
+          [s] -> not (null (srReadings s))
+                 && all ((==Just intended) . fmap canonicalize . rrDRS) (srReadings s)
+          _ -> False)
+     | Case text intended _ _ <- take 1 cases]
+  ++ [expect "retained fused roots do not compose pending lexical head/relativizer"
+       (let roots = spRoots (semParse raised (SourceId "fused-composition-positive")
+                              (casedTokens 0 "Everything that is red is big."))
+        in not (null roots) && all (noEarlyComposition . ssProv) roots)]
+
+-- A limited public provenance check, not a substitute for certificate-state
+-- transition tests. It examines only the unambiguous fused positive above;
+-- ordinary noun relatives elsewhere may compose before application.
+noEarlyComposition :: Prov -> Bool
+noEarlyComposition (ProvRule (RuleName comb) children)
+  | comb `elem` ["FwdComp","FwdXComp","BwdComp","BwdXComp"]
+  , any pendingLexical children = False
+  | otherwise = all noEarlyComposition children
+noEarlyComposition _ = True
+
+pendingLexical :: Prov -> Bool
+pendingLexical (ProvLex _ _ word) = word `elem` ["Everything","everything","that"]
+pendingLexical _ = False
+
+-- These external chart controls are deliberately adversarial: invented offered
+-- categories are INPUT TO THE TEST dictionary, never additions to production.
+-- They cannot replace direct transition/packing-key unit tests once source roles
+-- exist. Rejections alone do not show that valid roots remain complete.
+raised :: SemModel
+raised = mini { smTypeRaise = True, smUnaryPenalty = -1
+  , smRules = Rules
+      [(cc "N",cc "NP")
+      ,(cc "N",cc "S/(S\\N)")
+      ,(cc "NP/N",cc "S/(S\\(NP/N))")
+      ,(cc "N/(S[dcl]\\NP)",cc "S/(S\\(N/(S[dcl]\\NP)))")
+      ,(cc "NP",cc "S/(S\\NP)")] [] }
+
+rejects :: SemModel -> String -> Bool
+rejects model text = null (spRoots (semParse model
+                           (SourceId "fused-pending-boundary") (casedTokens 0 text)))
+
+negativeCases :: [(String,SemModel,String)]
+negativeCases =
+ [("ordinary noun cannot discharge head",mini,"Everything cat is red.")
+ ,("unary/raising cannot discharge ordinary noun as certified property",raised,
+     "Everything cat is red.")
+ ,("unary cannot promote orphan relative property",raised,"That is red is big.")
+ ,("coordinator cannot merge pending relative operators",mini,
+     "Everything that and who is red is big.")
+ ,("mixed noun/property coordination is not a relative certificate",mini,
+     "Everything cat and that is red is big.")
+ ,("completed property cannot conjoin ordinary noun to extend certificate",mini,
+     "Everything that is red and cat is big.")
+ ,("forged internal head tag is not an offered ordinary NP origin",
+     miniWith "NP/N" "(NP\\NP)/(S[dcl]\\NP)",
+     "Everything that is red is big.")
+ ,("forged property-relative tag is not source-relative evidence",
+     miniWith "NP" "N/(S[dcl]\\NP)",
+     "Everything that is red is big.")
+ ,("composition cannot hide an orphan relative property",raised,
+     "That is red and blue is big.")]

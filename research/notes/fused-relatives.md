@@ -41,3 +41,35 @@ under an explicit coherent domain policy covering standalone and restricted
 forms. Before implementation, spell out propagation through coordination,
 composition and chart packing, and add raised/unary/mixed-origin negative
 controls. Feature-only licensing is insufficient. No existing gold was changed.
+
+2026-10-14 follow-up before checks: isolate Everything and strict-person Someone
+as initial implementation scope. Retain Something authored controls byte-semantics
+unchanged behind `--deferred-something`; this records the unresolved policy,
+not a changed gold or a claim of completion. Add public chart negatives for
+unary/raising, pending coordination, mixed noun/relative property, forged source
+origins and composition; add an aggressive-unary valid positive. Prediction:
+existing missing construction still fails all6 scoped controls and reservation;
+negative cases mostly reject. Direct future role/packing tests remain required
+because public chart behavior cannot inspect a certificate not yet implemented.
+
+First expanded run13/33pass20fail. Before rerun removed a proposed *whole-sentence*
+negative `Everything and someone who is red is big`: it can coordinate two
+completed ordinary NPs, so using sentence rejection would be an unsound global
+restriction. Its intended protection is instead in the explicit transition-level
+pending-CoordApply contract. This is correction of an invalid new test before
+implementation, not deletion of a production failure. Predict12/32pass20fail;
+Something deferred run0/9pass, retained original intended structures.
+Added one positive public provenance check after the scope checks: on the
+unambiguous Everything relative, retained roots must not directly compose its
+pending lexical head/relativizer before discharge. This is a partial external
+check, not a replacement for actual certificate-state unit tests. Final default
+prediction12/33pass21fail; all positive obligations remain red pending repair.
+
+Final corpus-free checks matched predictions: default Everything/Someone+
+certificate-boundary controls12/33pass21fail; deferred Something0/9pass9fail.
+All new selected-DRS and independent claim requirements remain unmet; boundary
+rejections alone are not counted as linguistic success. Runs exited1 as expected.
+No shared source, cabal or committed fidelity gold changed. Static diff check
+passed after removing one extra trailing blank line. Reviewer requested before
+source implementation; the contract now specifies packing identity and source
+seen-pair/prepass obligations rather than relying on category labels alone.
