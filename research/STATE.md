@@ -1,5 +1,7 @@
 # Research state
 
+- last pushed: 5453a9a
+
 Original ASTRA_GOAL remains active; linguistic-design-first overrides phase order. B–H unfinished. **No new model/LLM/answer-benchmark launches** until representative ProverQA >=90% exact/near-zero wrong; gate CLOSED. Local independent fidelity/Explain diagnostics allowed. Owner full-access/no-approval continuation, saved usage resets and useful parallelism authorization persist here and ASTRA_GOAL. Shell works; never supply sandbox_permissions. After this refresh list_agents actually showed root+8 running; not all32 slots tested. Work only astra/research/root and isolated astra/<name> specialist worktrees. No main/tags/rawdata/secrets. Explicit staging, all gates per push, trailer Co-Authored-By: Codex Astra.
 
 ## Next three actions
@@ -46,3 +48,7 @@ Helpers research/runs/integrate-reviewed.py and source-trial.py enforce pin/path
 - Scheduled after202-followups.py waits successful gold202queue, then reviewed208gold2branches (e13692e,56fb675) and nine reviewed followups, each fullgates/replay/push/cleanup. DO NOT start competing merge.208baseline reviewedcomplete70/36/101/1, all202entireobjectsunchanged. Source208cache selected only after202queuecomplete.
 
 - Active serial integration: either-inclusive-gold (e13692e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/either-inclusive-gold; committing/pushing now.
+
+- Active serial integration: folio-passive-gold (56fb675), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/folio-passive-gold; committing/pushing now.
+
+- Gold202queue completed/pushed78760a5. Active after202-followups.py session23033/log now208gold admissions then nine docs;5453a9a inclusivegold pushed. Read current log for exact activebranch, no competing root merge. FUTURE plural-modifier-audita9a5948 and fidelity-order-audit25867c5 independently reviewed docs not yet scheduled.
