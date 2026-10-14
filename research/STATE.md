@@ -1,6 +1,6 @@
 # Research state
 
-last pushed: 249c3e0; reviewed either source and results committed on astra/research.
+last pushed: be555b3; reviewed either source and results committed on astra/research.
 
 Original ASTRA_GOAL remains active; linguistic design first overrides phase order.
 No new model/LLM/answer benchmarks until representative ProverQA >=90% exact and
@@ -79,3 +79,5 @@ prover-panel-contract pushed3d763e3, currently something-origin-plan gates.
 - Active serial integration: gold-construction-matrix (fbf436e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-construction-matrix; committing/pushing now.
 
 - Active serial integration: unknown-name-policy (38d164f), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/unknown-name-policy; committing/pushing now.
+
+- Active serial integration: either-occurrence-design (f440c1b), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/either-occurrence-design; committing/pushing now.
