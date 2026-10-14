@@ -62,6 +62,15 @@ and templates. Do not modify gold to accept current wrong syntax. Numerals,
 compounds, *former*, *alleged*, and *fake* do not become intersective adjectives
 merely because a tag is `N/N`; lexical licensing is a separate pending obligation.
 
+Quantificational pronouns require a separate restriction decision. *Someone* and
+*every person* restrict to `person(x)`; *some cat* restricts to `cat(x)`. A literal
+*some thing* may restrict to `thing(x)`, while unrestricted logical *something*
+and *everything* quantify over the domain without an extra lexical sortal.
+The existing snapshot uses `thing` for *something*; do not silently copy that
+choice into independent gold. Explicitly attribute a benchmark's sortal/domain
+convention and contrast `∃x.R(x)` with `∃x(thing(x)∧R(x))`. They are equivalent
+only under an explicit domain axiom. Determiner repair does not settle this seam.
+
 Bare plurals need a declared generic/episodic policy. Existing `N→NP` is a logged
 generic universal, not the semantic definition of every English bare NP. Keep
 this decision separate from adding *some/no/each*. Likewise *any*, *most*, *few*,
