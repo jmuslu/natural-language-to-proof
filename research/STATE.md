@@ -28,3 +28,5 @@
 - Active serial integration: design-names (34277a5), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-names; committing/pushing now.
 
 - Active serial integration: design-operators (e4dceb6), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-operators; committing/pushing now.
+
+- Active serial integration: design-relatives (4d3e569), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-relatives; committing/pushing now.
