@@ -1,6 +1,6 @@
 -- | Corpus-free, test-first contract for local direct-object reflexives.
 -- Expected meanings are independently reduced; no production rule is copied here.
--- Not in cabal until coordinator review; current production should fail it.
+-- Kept standalone until the coordinator registers the reviewed implementation.
 module Main (main) where
 import qualified Data.Set as Set
 import Harness
@@ -8,7 +8,7 @@ import NL2Proof.Pipeline
 import NL2Proof.Provenance
 import NL2Proof.Semantics.CCGSem
 import NL2Proof.Semantics.Lambda
-import NL2Proof.Syntax.CCGBank (CCat, parseCCGCat)
+import NL2Proof.Syntax.CCGBank (CCat, eraseFeatures, parseCCGCat)
 import NL2Proof.Syntax.CCGParse (Rules(..))
 import NL2Proof.Syntax.CCGSemParse
 import NL2Proof.Syntax.Tokenize (casedTokens)
@@ -60,6 +60,11 @@ checks =
       (not (null entries) && all coherent entries)
   , expect "named subject binds reflexive from offered NP"
       (forms (mini "NP") "Amara defends herself." `matches` [named])
+  , expect "construction licensed even when new category pair is unseen"
+      (let m = (mini "NP") { smSeenRules = True
+                          , smSeen = Set.singleton
+                              (eraseFeatures (cc "NP"), eraseFeatures (cc "S[dcl]\\NP")) }
+       in forms m "Amara defends herself" `matches` [named])
   , expect "reflexive offered N does not undergo generic universal"
       (forms (mini "N") "Amara defends herself." `matches` [named])
   , expect "quantified subject scopes once over diagonal relation"
