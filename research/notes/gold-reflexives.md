@@ -98,3 +98,22 @@ Unmodified gold SHA256:
 Source hashes recorded by the runner describe the worktree at observation time,
 not necessarily the frozen executable's build; executable identity is the hash
 above. No gold or production behavior changed after observing these failures.
+
+## Test-first local-binding implementation proposal
+
+Assigned proposal/test paths only; no production edits or gold changes. Before
+running the standalone miniature parser contract, prediction: it compiles against
+current APIs and reports failing production reflexive checks, since the reviewed
+rule is absent. Tests use only authored miniature tags, never licensed CCGbank.
+Command: `runghc -isrc -itest test/ReflexiveProposalSpec.hs`.
+
+Result: standalone test compiled and ran without corpus loading; 3/13 checks
+passed and 10 failed, as expected for absent local-binding support. Existing
+NP[expl], NP[thr] and PP fallback checks already fail closed; N/N and verbal
+category reflexive readings do not. Positive named/quantified/negated/distraction
+checks and closed-entry/reservation checks fail. This is a deliberately red
+proposal test, not a registered release suite or completed repair. Reviewed gold
+unchanged. A first proposal write encountered an absent directory; created the
+owned proposals directory and wrote the complete proposal successfully. No
+shared production path or cabal file changed. Reviewer must resolve the lexical
+transitive locality gate before root implements.
