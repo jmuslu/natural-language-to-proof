@@ -153,6 +153,16 @@ def validate_meaning(value):
             raise ValueError('disjunction annotations must cover every or in traversal order')
 
 
+def semantics_contract_id(row):
+    """Evaluation metadata only; absent legacy policies are not inferred from text."""
+    if 'semantics_contract' not in row:return None
+    metadata=row['semantics_contract']
+    identifier=metadata.get('id') if isinstance(metadata,dict) else metadata
+    if not isinstance(identifier,str) or not identifier.strip():
+        raise ValueError('semantics_contract requires a nonempty string or object id')
+    return identifier
+
+
 def validate_case(row):
     if not isinstance(row,dict) or not {'id','construction','text','origin','gold'}<=set(row):
         raise ValueError('case requires id, construction, text, origin, gold')
@@ -161,6 +171,7 @@ def validate_case(row):
         raise ValueError('origin must declare authored-control or benchmark-adapted')
     if not isinstance(row['gold'],list) or not row['gold']:raise ValueError('gold must list manual allowed readings')
     for value in row['gold']:validate_meaning(value)
+    semantics_contract_id(row)
     return row
 
 
@@ -255,6 +266,7 @@ def evaluate_case(row,response):
     matching=[r['index'] for r in response.get('readings',[]) if r.get('typed') and
               any(matches(g,r.get('meaning')) for g in row['gold'])] if n==1 and error is None else []
     return dict(id=row['id'],construction=row['construction'],status=status,
+                semantics_contract_id=semantics_contract_id(row),
                 any_reading_exact=bool(matching) if n==1 and error is None else None,
                 matching_reading_indices=matching,
                 selected_exact_gold_indices=[i for i,g in enumerate(row['gold']) if matches(g,selected)],
@@ -263,6 +275,27 @@ def evaluate_case(row,response):
 
 
 def summarize(rows):
+    result=summary_counts(rows)
+    identifiers=sorted({r.get('semantics_contract_id') for r in rows},
+                       key=lambda value:(value is not None,value or ''))
+    result['by_semantics_contract']=[dict(semantics_contract_id=identifier,
+        **summary_counts([r for r in rows if r.get('semantics_contract_id')==identifier]))
+        for identifier in identifiers]
+    result['aggregation_scope']=('empty' if not identifiers else
+        'mixed_contracts' if len(identifiers)>1 else
+        'legacy_unversioned' if identifiers[0] is None else 'single_declared_contract')
+    # IDs partition evidence; they do not prove consistent meanings, membership,
+    # independence, representativeness or satisfaction of the owner's launch gate.
+    result['certifies_acceptance_panel']=False
+    result['contract_interpretation']=(
+        'Aggregate counts are diagnostic only, not coherent acceptance-panel certification. '
+        'Null contract IDs are legacy unversioned meanings, potentially with mixed policies. '
+        'Do not pool incompatible contracts for acceptance; declared IDs alone do not '
+        'validate their semantic policy or establish a representative fidelity gate.')
+    return result
+
+
+def summary_counts(rows):
     counts=Counter(row['status'] for row in rows)
     evaluable=[row['any_reading_exact'] for row in rows if row['any_reading_exact'] is not None]
     result=dict(n=len(rows),counts={status:counts[status] for status in STATUSES},

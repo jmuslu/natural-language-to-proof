@@ -169,3 +169,46 @@ The report contains case and executable hashes, relevant source hashes, per-case
 first differences and selected meanings. Full gold-free observations and parser
 stderr are saved beside it. Reports belong under ignored `research/runs/`, not in
 the fixture directory. No model API or solver is called by this harness.
+
+## Semantic contract partitions
+
+A case may declare evaluation-only metadata in either form:
+
+```json
+"semantics_contract": "person-generic-rule-v1"
+```
+
+```json
+"semantics_contract": {"id": "person-generic-rule-v1", "policy": "retain person restrictions"}
+```
+
+The string or object `id` must be a nonempty, non-whitespace string. Other object
+fields document policy; the scorer does not interpret or enforce their content.
+IDs are preserved exactly, not inferred from text or benchmark names. Metadata
+is optional; absence becomes `semantics_contract_id: null` in the evaluated row.
+Explicit null or malformed metadata is rejected before invoking the executable.
+Only `id` and `text` are projected to the parser; neither policy nor gold is sent.
+
+Reports retain their existing aggregate and per-construction counts, adding
+`by_semantics_contract`: a list of partitions ordered with null first, then IDs
+lexically. Each partition contains `semantics_contract_id`, all six outcome
+counts, fixed `n`, exact rate, any-reading diagnostic and its own per-construction
+counts. A list keeps legacy null separate from any user-declared string ID.
+Missing contract metadata in older evaluated results is treated as legacy null.
+
+`aggregation_scope` is `empty`, `legacy_unversioned`, `single_declared_contract`
+or `mixed_contracts`. Every summary explicitly sets
+`certifies_acceptance_panel: false`: these counts are diagnostics. Historical
+unversioned gold can itself contain incompatible disclosed policies, and a
+shared declared ID does not prove consistency, source independence or adequate
+construction coverage. Do not pool incompatible expectations for acceptance.
+The `--require-exact` exit check is unchanged: it requires every input row exact
+as a regression check, **not** certification of a coherent panel or permission to
+restart benchmarks/models.
+
+This is minimal public reporting support for
+[SEMANTIC_CONTRACTS](../../research/linguistics/SEMANTIC_CONTRACTS.md), not the full
+sidecar-manifest proposal. It does not enforce panel membership/hashes, migrate
+historical gold, add alternative readings, resolve same-English policy conflicts
+or produce population estimates. Independent review and versioned membership
+remain necessary. Scoring structures and all failure denominators are unchanged.
