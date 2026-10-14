@@ -38,3 +38,12 @@ are unique across current JSONL fixtures; the exact source coordinate/text
 matches the input-only cache; exactly two origins are AUTHORED controls.
 `git diff --check` passed. Independent review is required before parser observation. No parser, corpus load, model or
 answer benchmark is launched by this task.
+
+## Review clarification
+
+Reviewer approved all three meanings and source/authored distinctions. Before
+any parser observation, added the explicit contract object with ID
+`intransitive-give-up-fixed-effort-v1` to every row so reporting does not place
+this sense convention in a legacy-null panel. Also made `disjunctions: []`
+explicit. Revalidation passed for all three; DRS, claims, texts and origins are
+unchanged. Final metadata revision submitted for review before measurement.
