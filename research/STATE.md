@@ -16,3 +16,5 @@
 - Active serial integration: inventory-proverqa (b6278c2), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/inventory-proverqa; committing/pushing now.
 
 - Active serial integration: inventory-prontoqa (d0c8436), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/inventory-prontoqa; committing/pushing now.
+
+- Active serial integration: inventory-folio (634bc10), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/inventory-folio; committing/pushing now.
