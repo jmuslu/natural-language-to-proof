@@ -44,3 +44,5 @@ Helpers research/runs/integrate-reviewed.py and source-trial.py enforce pin/path
 - Active serial integration: folio-source-gold (afdc71b), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/folio-source-gold; committing/pushing now.
 
 - Scheduled after202-followups.py waits successful gold202queue, then reviewed208gold2branches (e13692e,56fb675) and nine reviewed followups, each fullgates/replay/push/cleanup. DO NOT start competing merge.208baseline reviewedcomplete70/36/101/1, all202entireobjectsunchanged. Source208cache selected only after202queuecomplete.
+
+- Active serial integration: either-inclusive-gold (e13692e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/either-inclusive-gold; committing/pushing now.

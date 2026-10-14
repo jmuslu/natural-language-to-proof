@@ -2839,3 +2839,9 @@ Reviewer-approved branch only; overlapping untracked artifacts preserved under i
 Expanded208 result independently approved:70exact36strictwrong101no-parse1incomplete, all202 entire responses unchanged (also direct190 comparison). New6pairedOR2no-parse/unmarkedOR1exact/passive3no-parse. Observationsd3e34d6a, known-only v1; no optional execution or pooled acceptance. Scheduled `python3 research/runs/after202-followups.py` waits verified gold202queue success, advances sealed replay208, serially admits e13692e and56fb675 with all gates, then nine reviewed documentation/evidence branches. Root FINDINGS/NOMINAL_NEGATION_RESULT changes explicitly staged only with nominal-negation-evidence; no root source mutation.
 
 Result folio-source-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration either-inclusive-gold (e13692e)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/either-inclusive-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/either-inclusive-gold.
+
+Result either-inclusive-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
