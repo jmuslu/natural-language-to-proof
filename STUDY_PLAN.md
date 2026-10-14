@@ -192,12 +192,12 @@ These come at the start because they are the payoff. Each unit below exists to m
 |---|---|---|---|
 | 1 | The category determines the base semantic type; declared intensional parameter lifting is checked separately. Slash direction controls combination, not semantic function type. | CCG + typed λ | `S[em] ↦ s→t`. A wrong category gives a well-typed wrong meaning, which is the "silent" error class. |
 | 2 | A small combinator inventory does not make every failure lexical: semantics, features, learned rules, bounded search and safety guards also matter. | CCG / CCGbank | round/kind: desired word/category pairs are missing; only round has adjective POS evidence in the loaded dictionary. |
-| 3 | Only the top-level conditions of the main DRS are asserted. A sub-box belongs to exactly one complex claim. | DRT truth definition | Negation leak: 25,227 → 6,781 facts, including 775 polarity flips. |
+| 3 | Only the top-level conditions of the main DRS are asserted. Their truth can depend on the main box's witness assignment; a bare condition must bind all its references before independent oracle confirmation. | DRT truth definition | Negation leak: 25,227 → 6,781 facts, including 775 polarity flips. Separately canonicalized existential witnesses also collided at r0 until the closure gate. |
 | 4 | An attitude complement is evaluated at another world. Only factives bring it back to the actual world, and then as a presupposition. | Intensional semantics | The reported default, quote categories, "boasted", "sees that". |
 | 5 | Classical proof is monotone. A partially parsed theory can prove things, but it can never conclude "Unknown". | Logic / OWA | Error-handling decision (b): abstain and fall back. |
 | 6 | Required inference policy: accept a skeptical conclusion only across all admitted readings, and disclose search truncation. The display pipeline still selects one ranked reading. | Nonmonotonic reasoning | The "Bob added" lower-ranked reading that asserts. |
 | 7 | Strength is algebra: ⊗ along a chain, ⊕ across alternatives, and no self-support through cycles. | Provenance semirings / TMS | Fusion graph: "fuse strongly" vs "linger". |
-| 8 | Only the oracle creates `Confirmed`, and the types enforce it, not discipline. | Type-level programming | The raw-condition and coercion/promotion routes are closed; caller-authored DRSs remain a trust boundary. |
+| 8 | Only the oracle creates `Confirmed`: an asserted witness is required by the types, and standalone reference closure is checked at runtime. | Type-level programming + binding scope | Raw-condition and coercion/promotion routes are closed. Open contextual claims abstain; caller-authored DRSs and custom oracles remain trust boundaries. |
 
 ---
 
@@ -353,6 +353,7 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
 - **A DRS** is a box of discourse referents plus conditions. Complex conditions contain sub-boxes: `¬K`, `K ⇒ K'`, `K ∨ K'`, attitude(K).
 - **Truth via embedding.** The main DRS is true iff some assignment of its referents verifies all of its *top-level* conditions. A sub-box is only ever evaluated as part of its parent condition.
   - **This is invariant 3.** The negation leak happened because DRS conditions were flattened as if all boxes were the main box.
+  - The assignment matters even for a top-level atom: `[x | P(x)]` asserts an existential, not a standalone P(r0) about a globally named object. The scope audit found that two true documents, `exists x.P(x)` and `exists y.(P(y) implies q)`, could previously yield false q when separate local witnesses both canonicalized to r0. `Oracle.check` now returns Unknown for conditions with free canonical references; contextual claims remain inspectable, and whole-DRS solving retains the box. The reproducible finite-model control is `research/probe-claim-scope.hs`.
 - **Accessibility.**
   - A referent introduced in the antecedent of `⇒` is visible in the consequent: "If a farmer owns a donkey, he beats it."
   - Nothing inside `¬` is visible outside.
@@ -489,12 +490,14 @@ Your informal vocabulary maps onto established formalisms. Pick one formalism fo
 - "Parse, don't validate."
 - The "Ghosts of Departed Proofs" pattern, a type-level token that proves a check happened. That is exactly `Confirmed`.
 - The token-producing oracle accepts only a `Claim 'Asserted` witness obtained structurally from a top-level DRS condition. `Claim` has a nominal role, so `Data.Coerce` cannot relabel Reported or Embedded content. Raw conditions can be checked diagnostically without producing `Confirmed`; public arbitrary promotion is removed.
+- The witness certifies top-levelness, not closure. `freeCanonRefs` checks whether the condition contains every binder it needs. `Oracle.covers` and `check` reject open conditions before calling the custom oracle, even when that oracle would accept everything. An implication's antecedent binders scope over its consequent; negation/disjunction binders do not escape. A closed quantified condition may be confirmed, while an atom whose existential binder lives only in the enclosing DRS must abstain at this interface.
 - This protects the module boundary, not the truth or provenance of a caller-authored DRS. Source authenticity and semantic correctness remain separate obligations.
 
 **Exercise:**
 1. Explain why compile-fail tests, rather than unit tests, are the right tests for the lock.
 2. Trace a top-level condition through `assertedClaims`, `splitClaims` and `confirm`; explain why an extracted negated-box literal cannot obtain the same witness. Read the compile-fail cases for raw conditions, nonasserted kinds, constructor forging and coercion.
 3. `--stage=claims` shows which kind (Asserted, Reported, Presupposed, Embedded) each condition gets, i.e. what the oracle boundary is checking.
+4. Compare the closure of an atom in `[x | P(x)]` with the whole condition `[x | P(x)] implies [ | Q(x)]`. Predict why only the latter can receive a bare-condition token. Run `scope-oracle` and the finite-model probe; explain why runtime scope tests complement the compile-fail lock tests.
 
 **Read:**
 - King (2019), "Parse, don't validate" (blog post).

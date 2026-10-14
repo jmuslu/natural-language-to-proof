@@ -644,13 +644,19 @@ endToEndChecks =
                f = fuse (confirmAll blindOracle (map factAssertion (ctFacts ct)))
            in rwScore (score f g) == 0.0
          Nothing -> False)
-  , expect "e2e: and the whitelist oracle scores above zero on the same text"
+  , expect "e2e: outer existential references abstain at the bare-condition oracle boundary"
       (case tableOf "anaphora" of
          Just ct ->
            let g = genealogyOf unaryOracle ct
                f = fuse (confirmAll unaryOracle (map factAssertion (ctFacts ct)))
-           in rwScore (score f g) > 0.0
+           in null (fusedClaims f) && rwScore (score f g) == 0.0
          Nothing -> False)
+  , expect "e2e: the whitelist oracle still rewards a rigid named claim"
+      (let ct = claimsOfDRS "rigid positive control"
+             (DRS [] [CPred "smile" [DConst "John"] pv])
+           g = genealogyOf unaryOracle ct
+           f = fuse (confirmAll unaryOracle (map factAssertion (ctFacts ct)))
+       in length (fusedClaims f) == 1 && rwScore (score f g) > 0.0)
   , expect "e2e: fusion never sees more claims than verification retained"
       (case tableOf "anaphora" of
          Just ct ->

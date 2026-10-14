@@ -299,6 +299,30 @@ material-implication reasoner cannot flatten an existential consequent into free
 literals; both antecedent and consequent universes must be empty. Quantified rules
 remain a scoped solver's responsibility.
 
+The Phase G audit found a further binding boundary: a `CanonCond` token does not
+carry the enclosing DRS universe or witness assignment. In the finite model
+P(a), not P(b), and false q, the documents `exists x.P(x)` and
+`exists y.(P(y) implies q)` are both true. Before the repair, honest local oracles
+could confirm their respective witness-dependent conditions; separate
+canonicalization identified both witnesses as r0, allowing Fusion to detach false
+q. Exact support labels faithfully explained that invalid cross-scope combination;
+the support algebra alone could not make it valid.
+
+Oracle admission now requires a closed canonical condition. `freeCanonRefs`
+preserves antecedent-to-consequent binding and keeps other nested bindings local;
+`covers`, `check`, confirmation and coverage reporting consistently abstain on an
+open condition, before consulting the supplied oracle. Contextual asserted claims
+remain weak and inspectable, but cannot seed strong evidence through this API.
+This intentionally changes the existential anaphora substrate fixture from reward
+to abstention; a retained rigid-name control still receives reward, and the updated
+Substrate suite passes 115 checks. Closed nested universals and existentials retain
+their bindings and remain eligible for oracle confirmation. Whole-DRS solver
+reasoning is unchanged. `test/ScopeOracleSpec.hs` supplies 30 boundary checks, and
+`research/probe-claim-scope.hs` preserves the honest finite-model counterexample
+with ten post-repair controls. Richer contextual confirmation would require carrying
+its scope through the entire token/fusion interface; independent local indices
+must never be treated as global names.
+
 ## Limits and integration tests
 
 Finite termination does not mean polynomial cost. A label can contain an exponential

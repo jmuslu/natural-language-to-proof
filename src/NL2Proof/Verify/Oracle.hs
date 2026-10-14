@@ -29,6 +29,12 @@
 -- this design refuses to manufacture, so 'Verdict' has three cases and
 -- 'Unknown' is a first-class outcome.
 --
+-- A condition whose references are bound only by an enclosing DRS is also
+-- outside this bare-condition interface's domain. Otherwise independently
+-- canonicalized documents could identify distinct local witnesses as @r0@
+-- when confirmation tokens are fused. Whole scoped boxes belong in the DRS
+-- solver interface; this gate admits closed conditions only.
+--
 -- Where no oracle exists for a domain, __this system cannot supply
 -- truth-grounding for that domain__. That is inherent, not a gap that closes with
 -- more engineering. An uncovered claim can still be extracted, typed, traced and
@@ -122,11 +128,11 @@ data Oracle = Oracle
   }
 
 covers :: Oracle -> CanonCond -> Bool
-covers = oracleCovers
+covers o c = isClosedCanonCond c && oracleCovers o c
 
 check :: Oracle -> CanonCond -> Verdict
 check o c
-  | not (oracleCovers o c) = Unknown
+  | not (covers o c)       = Unknown
   | oracleHolds o c        = Confirmed
   | otherwise              = Refuted
 
@@ -178,7 +184,7 @@ instance TypeError ('Text "An embedded claim cannot be confirmed: the text does 
       => Confirmable (Claim 'Embedded) where
   assertedCond = claimCond
 
--- | 'Just' exactly when the oracle confirms the claim. 'Refuted' and 'Unknown'
+-- | 'Just' exactly when the oracle confirms a closed claim. 'Refuted' and 'Unknown'
 -- both give 'Nothing' — they are different facts about the claim but the same
 -- fact about whether it may proceed. Accepts asserted claims only
 -- ('Confirmable').
@@ -216,7 +222,7 @@ coverage o cs =
     , covUncovered = outDomain
     }
   where
-    (inDomain, outDomain) = partition (oracleCovers o) (nub cs)
+    (inDomain, outDomain) = partition (covers o) (nub cs)
 
 renderCoverage :: Coverage -> String
 renderCoverage cov =

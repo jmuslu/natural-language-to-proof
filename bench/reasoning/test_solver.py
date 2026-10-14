@@ -1,5 +1,6 @@
 """Semantic tests for the two deliberately different inference policies."""
 import unittest
+import time
 from solver import answer, aggregate
 
 
@@ -28,6 +29,22 @@ class SolverTests(unittest.TestCase):
         for backend in ('horn', 'z3'):
             with self.subTest(backend=backend):
                 self.assertEqual(answer(theory, query, backend=backend, **kwargs)['answer'], expected)
+
+    def test_malformed_conditions_abstain_instead_of_crashing(self):
+        for backend in ('horn', 'z3'):
+            for malformed in (7, None, [], 'red'):
+                with self.subTest(backend=backend, malformed=malformed):
+                    self.assertIsNone(answer(box(malformed), box(pred('red', 'cat')), backend=backend)['answer'])
+                    self.assertIsNone(answer(box(), box(malformed), backend=backend)['answer'])
+
+    def test_horn_checks_budget_inside_large_join(self):
+        theory = box(*[pred('p', 'a' + str(i)) for i in range(25)],
+                     rule([pred('p', '?x'), pred('p', '?y'), pred('p', '?z')],
+                          [pred('q', '?x', '?y', '?z')], refs=('x', 'y', 'z')))
+        started = time.monotonic()
+        r = answer(theory, box(pred('q', 'absent', 'absent', 'absent')), backend='horn', timeout_ms=10)
+        self.assertEqual(r['reason'], 'resource-limit')
+        self.assertLess(time.monotonic() - started, 0.25)  # generous scheduler allowance
 
     def test_fact(self):
         self.check_both(box(pred('red', 'cat')), box(pred('red', 'cat')), 'True')

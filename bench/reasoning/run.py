@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'bench' / 'common'))
 from analyze import wilson
 from solver import answer, aggregate
+from domain import normalize_theory
 
 
 def read_jsonl(path):
@@ -85,21 +86,28 @@ def top_mass(document):
 
 
 def normalized_label(value, bench):
+    if value == 'Unknown' and bench == 'prontoqa':
+        return None
     return 'Uncertain' if value == 'Unknown' and bench != 'proofwriter' else value
 
 
 def evaluate_record(record, config):
     """No label is accepted here. Every result is conditional on parser meanings."""
     results = []
+    domain_policy = config.get('domain_policy', 'strict')
+    if domain_policy != 'strict' and config.get('bench') != 'proofwriter':
+        raise ValueError('ProofWriter domain policy requires the ProofWriter benchmark')
     mass = top_mass(record.get('context', {})) * top_mass(record.get('statement', {}))
     for theory in record.get('theories', []):
+        drs, decisions = normalize_theory(theory['drs'], domain_policy)
         for query in theory.get('queries', []):
             if not query.get('complete', False) or query.get('drs') is None:
                 r = dict(answer=None, reason='incomplete-query', residuals=query.get('residuals', []))
             else:
-                r = answer(theory['drs'], query['drs'], backend=config['backend'],
+                r = answer(drs, query['drs'], backend=config['backend'],
                            complete=theory['complete'], timeout_ms=config['timeout_ms'],
                            or_semantics=config['or_semantics'])
+            r['domain_decisions'] = decisions
             results.append(r)
             if config['readings'] == 'top':
                 break
@@ -169,8 +177,10 @@ def evaluate_samples(args):
     if not samples.keys() <= parsed.keys():
         raise ValueError('parser cache missing sample IDs')
     config = dict(backend=args.backend, readings=args.readings, timeout_ms=args.timeout_ms,
+                  bench=args.bench, domain_policy=args.domain_policy,
                   or_semantics=args.or_semantics, min_top_mass=args.min_top_mass,
                   solver_sha256=file_hash(Path(__file__).with_name('solver.py')), runner_sha256=file_hash(__file__),
+                  domain_sha256=file_hash(Path(__file__).with_name('domain.py')),
                   parses_sha256=file_hash(args.parses))
     config_hash = digest(config)
     output = Path(args.output)
@@ -185,6 +195,7 @@ def evaluate_samples(args):
             inference = evaluate_record(p, config)
             pred = normalized_label(inference['answer'], args.bench)
             row = dict(id=ident, label=sample['label'], pred=pred, lenient_pred=pred, inference=inference,
+                       request_hash=p['request_hash'],
                        correct=pred == sample['label'], config=config, config_hash=config_hash,
                        latency=time.monotonic() - t0, parser_latency=p.get('latency'), usage=None)
             rows.append(row)
@@ -207,6 +218,7 @@ def main():
     e.add_argument('--or-semantics', choices=['inclusive', 'proverqa'], default='inclusive')
     e.add_argument('--timeout-ms', type=int, default=2000)
     e.add_argument('--min-top-mass', type=float, default=0)
+    e.add_argument('--domain-policy', choices=['strict', 'proofwriter'], default='strict')
     for sub in (p, e):
         sub.add_argument('--bench', choices=['proofwriter', 'prontoqa', 'folio', 'proverqa', 'all'] if sub is p else ['proofwriter', 'prontoqa', 'folio', 'proverqa'], required=True)
         sub.add_argument('--limit', type=int, default=120)

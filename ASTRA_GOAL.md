@@ -73,7 +73,7 @@ The owner's aversions are part of the spec: no stochastic core (probabilistic pa
 - **Datasets** (outside the repo; never commit): `~/data/proofwriter/proofwriter-dataset-V2020.12.3`, `~/data/prontoqa`, `~/data/folio`, `~/data/proverqa`.
 - **LLM access:**
   - The Codex CLI is logged in through the owner's ChatGPT subscription. Only `gpt-5.5` is available; vary `model_reasoning_effort` (low/medium/high) to get "weaker" vs "stronger" conditions. See `bench/common/run_codex.py` for the isolated invocation (empty dir, `--skip-git-repo-check --ephemeral --sandbox read-only --json -o`). Each call carries about 16.7k tokens of agent prompt overhead.
-  - Gemini free tier, via `bench/common/run_gemini.py`. Quotas are tiny (about 20 requests per day per Flash model) and Pro isn't available, so use it only for small confirmations.
+  - Owner correction (2026-10-14): Gemini free tier via `bench/common/run_gemini.py` has usable quota on small models; the ~20 requests/day restriction concerns thinking gemini-3.5+/flash models. Primary Phase E weak C/D models are `gemini-3.1-flash-lite` (budget0) and `gemma-4-26b-a4b-it` (minimal). Their complete n=120 raw baselines already exist under `bench/*/results`; compare paired against each own raw baseline and `gpt-5.5` high. GPT-5.5 low versus high is an effort control, not weak versus strong. Throttle calls, back off on429s, log quota failures, and source the Gemini key only inside the requesting process.
   - OpenRouter/MiniMax is dead; don't try it.
 - **Solvers:** none are installed. `z3` is not on PATH and the Python module is missing. You may install `z3-solver` with pip (user or venv) and/or build Prover9. Record what you installed in `research/LOG.md`.
 

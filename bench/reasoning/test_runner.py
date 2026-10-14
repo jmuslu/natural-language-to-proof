@@ -1,6 +1,7 @@
 """Protect evaluation isolation and paired statistics, not incidental formatting."""
 import unittest
-from run import inference_request, summarize, paired, top_mass
+from run import inference_request, summarize, paired, top_mass, normalized_label, evaluate_record
+from test_domain import box, pred, const, rule
 
 
 class RunnerTests(unittest.TestCase):
@@ -34,6 +35,23 @@ class RunnerTests(unittest.TestCase):
     def test_rank_mass_is_not_truth_confidence(self):
         doc = {'sentences': [{'readings': [{'score': -10000}, {'score': -10000}]}]}
         self.assertAlmostEqual(top_mass(doc), 0.5)
+
+    def test_unknown_abstains_on_binary_benchmark(self):
+        self.assertIsNone(normalized_label('Unknown', 'prontoqa'))
+        self.assertEqual(normalized_label('Unknown', 'proofwriter'), 'Unknown')
+        self.assertEqual(normalized_label('Unknown', 'folio'), 'Uncertain')
+
+    def test_domain_policy_requires_named_benchmark_and_records_decisions(self):
+        theory = box(pred('red', const()), rule())
+        record = {'theories': [{'drs': theory, 'complete': True, 'queries': [
+            {'drs': box(pred('big', const())), 'complete': True}]}]}
+        cfg = dict(backend='horn', readings='top', timeout_ms=2000, or_semantics='inclusive')
+        self.assertEqual(evaluate_record(record, cfg)['answer'], 'Unknown')
+        with self.assertRaises(ValueError):
+            evaluate_record(record, dict(cfg, domain_policy='proofwriter', bench='folio'))
+        adapted = evaluate_record(record, dict(cfg, domain_policy='proofwriter', bench='proofwriter'))
+        self.assertEqual(adapted['answer'], 'True')
+        self.assertEqual(len(adapted['domain_decisions']), 1)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 # Research findings — working decision document
 
-Status: Phases B/C measured; D/E/F/G in progress. This is not the final synthesis.
+Status: B/C/F measured; D/E comparisons active, G audits complete except ranking. This is not the final synthesis.
 Results are from branch `astra/research`; commands/predictions are in `LOG.md`.
 
 ## Meaning and oracle admission
@@ -18,6 +18,16 @@ Only top-level DRS assertion witnesses may request token-producing confirmation.
 Raw conditions, removed promotion functions, altered Fact content and phantom-index
 coercion are rejected. This establishes a structural API boundary. It does not
 establish source authenticity or correctness of a caller-authored DRS.
+
+A later scope audit found a real counterexample: separately canonicalized true
+documents ∃x.P(x) and ∃y.(P(y)→q) can have different witnesses, yet their extracted
+conditions both used r0 and mechanical fusion derived false q. The fixed oracle
+boundary refuses any condition with free canonical references. Thirty scope
+checks and a ten-control finite-model probe pass, including closed quantified
+claims and rejection before an oracle predicate is consulted. Contextual claims
+remain visible but cannot get confirmation tokens through this bare-condition
+interface. Full-box existential reasoning belongs in the scoped solver. This
+restriction reduces oracle coverage and is necessary for the current API.
 
 The comma-quotation guard rejects extensional readings of recognized VERB+NP or
 NP+VERB suffixes. `The cat is red, boasted Bob` now abstains on the real model;
@@ -114,17 +124,61 @@ would not repair those meanings. Details and reproducible drivers: `RESTORED.md`
 Keep the small diagnostic modules while these concrete defects remain visible;
 probabilistic ranking and solver reading-policy measurements are still pending.
 
-## Remaining decisions and evidence
+## Solver measurements and remaining decisions
 
-- Solver/error handling: pinned Z34.15.3.0;38 Python contract tests and22 scoped
-  exporter tests pass. The full Haskell gates pass1,138 checks across11 suites.
-  Benchmark parser caches are running; solver coverage/precision remain pending.
-- Graph-context thesis: fresh low ProverQA is90/120 (75.0%, Wilson95%66.6–81.9),
-  identical aggregate accuracy to historical high. Paired discordances3/3,
-  exact McNemar p=1.0. A contemporaneous high control is running because saved
-  runs had different CLI overhead. Low/high are effort settings, not model sizes.
-- Guarantee benchmark:64 deterministic generated cases exactly match independent
-  template expectations for labels and source support. This tests structured
-  admission, not unrestricted English parsing. Raw-model comparison is pending.
-- Fallback comparisons, final seam synthesis, merge guide and next three priorities:
-  pending remaining D–H work.
+The optional research backends use signed Horn closure and Z34.15.3.0 scoped FOL.
+Both distinguish failed inference from logical Unknown, preserve residual scopes,
+and label every proof as conditional on asserted-unconfirmed premises. An explicit
+ProofWriter-only adapter removes narrowly localized person/thing antecedent guards;
+it strengthens the rule under the benchmark's unsorted-domain convention and is
+not a general meaning-preserving rewrite. Unknown abstains on binary ProntoQA.
+
+The first12 ProverQA operational pilot has0/12 answers under both backends and all
+three reading policies; this is not the final120-item estimate. Horn top has six
+unsupported queries and six incomplete queries; Z3 has six partial theories and
+six incomplete queries. Non-top aggregation has nine combination-cap abstentions
+and three disagreements. A proof checker cannot repair these upstream failures.
+
+Two independent audit failures are fixed: malformed non-object DRS conditions no
+longer crash either backend, and Horn checks its cooperative resource budget inside
+joins and support minimization. The regression that previously took0.983s with a
+10ms budget now passes a generous250ms scheduler allowance. Budget exhaustion
+abstains without emitting partial support as if it were complete.
+
+## Raw-model controls and generated guarantees
+
+The owner corrected the initial provider/quota assumption. Primary weak-model C/D
+conditions now use gemini-3.1-flash-lite budget0 and gemma-4-26b-a4b-it minimal,
+paired against their own saved raw baselines and GPT-5.5 high. Those graph runs
+are pending. GPT-5.5 low/high is only an effort comparison and cannot test the
+weak-versus-strong model claim.
+
+Low/high below refer to reasoning effort on the same gpt-5.5 model, not different
+model sizes. Fresh ProverQA low scores90/120 (75.0%, Wilson95%66.6–81.9); contemporaneous
+high scores89/120. Their paired discordances are low-only4/high-only3, exact
+McNemar p=1.0. The historical high run scored90/120 with a different CLI prompt
+overhead, so the contemporaneous comparison is the primary effort control.
+
+Fresh FOLIO low scores92/120 versus historical high99/120 (low-only1/high-only8,
+p=.0391); fresh ProntoQA low116/120 versus historical high120/120 (0/4,p=.125).
+These historical comparisons are descriptive, with possible invocation drift and
+FOLIO label noise. Condition C/D comparisons and complete cost tables are pending.
+
+The source-withdrawal benchmark has64 deterministic authored cases in eight
+families. Production Genealogy gets64/64 labels and64/64 exact, class-correlated
+source support records. Raw low-effort answering gets63/64 labels, strict=lenient,
+with one factive Conflict→WeakOnly error. Thus this small designed suite does not
+show a broad raw-model accuracy deficit. It does show an executable support and
+withdrawal specification: cycles, alternatives, conjunctions, source-dependent
+rules, reports, presuppositions and translations have checked behavior.
+
+This graph comparison uses authored structured admissions; it does not measure
+English parsing. The cases are not independent population draws. Raw input tokens
+total925514 (876544 cached), output3360 (2901 reasoning), all64 calls first-attempt,
+no errors or tools. The original graph subprocess evaluation took0.071s. The five
+benchmark tests pass against the registered production executable.
+
+Fallback comparisons, final risk–coverage figures, merge guide and next three
+priorities remain pending D/E completion. Source and typing guarantees must not
+be read as an English meaning guarantee: ProverQA's first graph prompt already
+contains noun-coerced names and wrongly composed phrasal/reflexive expressions.

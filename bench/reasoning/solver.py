@@ -14,6 +14,15 @@ class Unsupported(ValueError):
     pass
 
 
+class ResourceLimit(Exception):
+    pass
+
+
+def budget(deadline, size=0):
+    if size > 100000 or (deadline is not None and time.monotonic() > deadline):
+        raise ResourceLimit('Horn time or intermediate-size limit')
+
+
 def symbol(s):
     if not isinstance(s, str) or not re.fullmatch(r"[\w][\w '-]*", s) or 'UNSUPPORTED' in s:
         raise Unsupported('unsupported or unresolved symbol')
@@ -26,6 +35,8 @@ def parts(d):
     us = d['universe']
     if len(us) != len(set(us)) or not all(isinstance(x, str) for x in us):
         raise Unsupported('invalid universe')
+    if not all(isinstance(c, dict) for c in d['conditions']):
+        raise Unsupported('conditions must be objects')
     return us, d['conditions']
 
 
@@ -33,17 +44,27 @@ def result(value=None, reason='unsupported', **kwargs):
     return {'answer': value, 'reason': reason, 'strength': 'asserted-unconfirmed', **kwargs}
 
 
-def minimal(envs):
-    ordered = sorted(set(envs), key=lambda x: (len(x), sorted(x)))
+def minimal(envs, deadline=None):
+    unique = set()
+    for env in envs:
+        unique.add(env)
+        budget(deadline, len(unique))
+    ordered = sorted(unique, key=lambda x: (len(x), sorted(x)))
     out = []
     for env in ordered:
-        if not any(x <= env for x in out):
+        redundant = False
+        for x in out:
+            budget(deadline)
+            if x <= env:
+                redundant = True
+                break
+        if not redundant:
             out.append(env)
     return frozenset(out)
 
 
-def multiply(a, b):
-    return minimal(x | y for x in a for y in b)
+def multiply(a, b, deadline=None):
+    return minimal((x | y for x in a for y in b), deadline)
 
 
 def labels_json(label):
@@ -75,12 +96,13 @@ def ground(lit, env):
     return s, p, tuple(env[v] if k == 'ref' else v for k, v in args)
 
 
-def parse_horn(drs):
+def parse_horn(drs, deadline=None):
     us, cs = parts(drs)
     if us:
         return {}, [], ['existential theory outside Horn fragment']
     facts, rules, residual = {}, [], []
     for i, c in enumerate(cs):
+        budget(deadline, len(facts) + len(rules))
         token = f'p{i}'
         label = frozenset([frozenset([token])])
         try:
@@ -97,7 +119,7 @@ def parse_horn(drs):
                 rules.extend((body, head, label) for head in heads)
             else:
                 fact = ground(literal(c, set()), {})
-                facts[fact] = minimal(facts.get(fact, frozenset()) | label)
+                facts[fact] = minimal(facts.get(fact, frozenset()) | label, deadline)
         except (Unsupported, KeyError, TypeError) as e:
             residual.append({'condition': token, 'reason': str(e)})
     return facts, rules, residual
@@ -109,18 +131,18 @@ def horn(drs, query, complete, timeout_ms):
     if qu or len(qc) != 1:
         raise Unsupported('Horn query must be one ground literal')
     q = ground(literal(qc[0], set()), {})
-    facts, rules, residual = parse_horn(drs)
+    facts, rules, residual = parse_horn(drs, deadline)
     changed = True
     while changed:
         changed = False
         for body, head, rule_label in rules:
-            if time.monotonic() > deadline:
-                return result(reason='resource-limit', residuals=residual)
+            budget(deadline)
             matches = [({}, rule_label)]
             for sign, pred, args in body:
                 nxt = []
                 for env, label in matches:
-                    for (fs, fp, fa), support in list(facts.items()):
+                    for (fs, fp, fa), support in facts.items():
+                        budget(deadline)
                         if (fs, fp, len(fa)) != (sign, pred, len(args)):
                             continue
                         binding = dict(env)
@@ -132,17 +154,19 @@ def horn(drs, query, complete, timeout_ms):
                                     break
                                 binding[value] = actual
                         else:
-                            nxt.append((binding, multiply(label, support)))
+                            nxt.append((binding, multiply(label, support, deadline)))
+                            budget(deadline, len(nxt))
                 matches = nxt
             for env, support in matches:
+                budget(deadline, len(facts))
                 fact = ground(head, env)
                 old = facts.get(fact, frozenset())
-                new = minimal(old | support)
+                new = minimal(old | support, deadline)
                 if new != old:
                     facts[fact] = new
                     changed = True
-            if len(facts) > 100000 or sum(len(v) for v in facts.values()) > 100000:
-                return result(reason='resource-limit', residuals=residual)
+            budget(deadline, sum(len(v) for v in facts.values()))
+    budget(deadline)
     clashes = [f for f in facts if f[0] and (False, f[1], f[2]) in facts]
     if clashes:
         return result(reason='contradiction', contradictions=[{'predicate': f[1], 'args': f[2],
@@ -270,6 +294,8 @@ def answer(drs, query, *, backend='horn', complete=True, timeout_ms=2000, or_sem
         if backend == 'horn':
             return horn(drs, query, complete, timeout_ms)
         return fol(drs, query, complete, timeout_ms, or_semantics)
+    except ResourceLimit as e:
+        return result(reason='resource-limit', detail=str(e))
     except (Unsupported, KeyError, TypeError, ValueError) as e:
         return result(reason='unsupported', detail=str(e))
 

@@ -21,12 +21,16 @@ def main():
     ap.add_argument('--benches', nargs='+', default=['proverqa', 'folio', 'proofwriter', 'prontoqa'])
     ap.add_argument('--limit', type=int, default=120)
     ap.add_argument('--timeout-ms', type=int, default=2000)
+    ap.add_argument('--domain-policy', choices=['strict', 'proofwriter'], default='strict')
     args = ap.parse_args()
+    if args.domain_policy == 'proofwriter' and args.benches != ['proofwriter']:
+        ap.error('the ProofWriter domain policy requires --benches proofwriter')
     parsed = {x['id']: x for x in read_jsonl(args.parses)}
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     identity = {'parses_sha256': file_hash(args.parses), 'solver_sha256': file_hash(Path(__file__).with_name('solver.py')),
-                'runner_sha256': file_hash(Path(__file__).with_name('run.py')), 'matrix_sha256': file_hash(__file__)}
+                'runner_sha256': file_hash(Path(__file__).with_name('run.py')), 'matrix_sha256': file_hash(__file__),
+                'domain_sha256': file_hash(Path(__file__).with_name('domain.py'))}
     summaries = {}
     for bench in args.benches:
         samples = read_jsonl(ROOT / 'bench' / bench / 'sample.jsonl')[:args.limit]
@@ -47,6 +51,7 @@ def main():
                         if record.get('request_hash') != digest(inference_request(sample)):
                             raise ValueError('sample/parser request mismatch')
                         config = dict(backend=backend, timeout_ms=args.timeout_ms, or_semantics=or_policy,
+                                      bench=bench, domain_policy=args.domain_policy,
                                       readings='skeptical', min_top_mass=0, **identity)
                         t0 = time.monotonic()
                         solved = evaluate_record(record, config)
@@ -63,6 +68,7 @@ def main():
                             compact = variants[:1] if reading == 'top' else [
                                 {k: v for k, v in r.items() if k != 'facts'} for r in variants]
                             row = dict(id=sample['id'], label=sample['label'], pred=pred, lenient_pred=pred,
+                                       request_hash=record['request_hash'], parser_latency=record.get('latency'),
                                        correct=pred == sample['label'], config=cfg, config_hash=digest(cfg),
                                        inference=dict(final, variants=compact, top_mass=solved['top_mass'],
                                                       enumerated_variants=len(variants)),

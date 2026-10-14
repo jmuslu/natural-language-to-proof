@@ -1159,3 +1159,394 @@ isolated gate change adds the already-rejected GenealogyVerdict regression so a
 bare Verdict can never substitute for a sealed Confirmed witness. Prediction held;
 this strengthens the gate and changes no production behavior. This gate-only
 checkpoint follows abf7364; solver audit fixes and Phase F remain unstaged.
+
+## 2026-10-14 — solver audit green prediction
+
+The cubic-join regression failed as predicted (0.983s for10ms). Added explicit
+condition-object validation and cooperative Horn budget checks inside joins, head
+emission and support minimization;100000-entry intermediate caps return resource-
+limit. Exact Haskell support algebra is unchanged; Python never truncates a label
+and answers from it. Prediction: all solver, runner and domain checks pass, with
+the10ms regression finishing below the generous250ms scheduler allowance. Command:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_*.py' -v > research/runs/d-audit-green.log 2>&1`.
+
+### 2026-10-14 01:42 UTC — hybrid control identity prediction
+Before final source freeze, check that distinct hybrid policies have distinct config hashes and that cross-sentence existential repair is rejected while shadowed implication scopes stay distinct. Predict current hybrid hash test fails (it copies routed row hash); scope controls should pass. Exact command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-identity-red.log 2>&1`.
+
+### 2026-10-14 01:42 UTC — hybrid identity green prediction
+25tests: only predicted policy/config collision failed; cross-sentence repair rejection and shadowed bindings passed. Hybrid now hashes both source configs, fallback and implementation, with explicit domain_policy=strict in E configs. Prediction: same25tests pass. Exact command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-identity-green.log 2>&1`. Root solver fix green; awaiting independent audit clearance before the authorized fixed12 pilots.
+
+## 2026-10-14 — D runner integration prediction
+
+Solver audits now green:79 Python tests total including current LLM/domain tests.
+Before integrating the explicit ProofWriter domain adapter, two runner regressions
+require wrong-benchmark refusal plus logged normalization, and binary ProntoQA
+Unknown to remain abstention rather than count an off-label Uncertain as answered.
+Prediction: both fail before wiring. Command:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_runner.py -v > research/runs/d-runner-red.log 2>&1`.
+Also recording completed pilot12 result: all backends/policies returned0/12 coverage;
+Horn top6 unsupported query+6 incomplete query, Z3 top6 partial theory+6 incomplete
+query; non-top9 reading-cap+3 disagreement. Ranking thresholds add no coverage.
+This operational prefix supports no whole-benchmark accuracy claim.
+
+Runner integration red:2 failures as predicted. Wired opt-in normalization with
+benchmark guard and per-variant decisions; recorded domain source hash and request
+hash in B/matrix rows for exact B/C joining. Binary logical Unknown now abstains.
+Prediction: all Python tests green; new cabal retraction executable builds and
+passes5 production graph checks. Commands:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_*.py' -v > research/runs/d-runner-green.log 2>&1`
+`cabal build nl2proof-retraction-bench > research/runs/f-cabal-build.log 2>&1`
+`RETRACTION_BENCH_BIN="$(cabal list-bin nl2proof-retraction-bench)" research/.venv/bin/python -m unittest discover -s bench/retraction -p 'test_*.py' -v > research/runs/f-cabal-tests.log 2>&1`.
+
+### 2026-10-14 01:43 UTC — translator context scope prediction
+Independent strength audit found translation_prompt omitted the enclosing universe for retained parser roots. This cannot authorize model refs across scopes (validator closes each translation), but loses meaning in the supplied context. Prediction: new retained-universe prompt test fails. Command: `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-universe-red.log 2>&1`.
+
+### 2026-10-14 01:43 UTC — translator universe green prediction
+New test failed as expected with missing retained_universe. Added explicit root universe to translation payload. Prediction:26tests green, command `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-universe-green.log 2>&1`.
+
+### 2026-10-14 01:44 UTC — scoped CanonCond countermodel prediction
+
+Prediction: separately canonicalized existential documents lose their local witness environment at the bare-condition confirmation/fusion interface. A hand finite model with P(a), not P(b), and false zero-arity q satisfies both `exists x.P(x)` and `exists y.(P(y) implies q)`. Truth-computing document-local oracles with assignments r0=a and r0=b will each confirm their own condition, but fusing those tokens will detach false q after both local refs become r0. Joint canonicalization (r0/r1), rigid constants, and an oracle rejecting open conditions should block the path. This is an interface scope counterexample, not a claim that the current ground external-receipt oracle is affected. Production source unchanged.
+
+Exact command: `runghc -isrc research/probe-claim-scope.hs > research/runs/phase-g/claim-scope.log 2>&1`.
+
+### LLM-audit0 prediction — prompt isolation and unknown retry cost, 2026-10-14
+
+Read-only audit of llm.py/test_llm.py. No additional gold-flow or lexical-scope
+blocker found. The missing B request_hash is already being repaired by root; no
+duplicate repro. Inventory corrected translation-prompt universe omission during
+review. Prediction for mock-only probe: gold sentinel absent from both prompts;
+external context reference in a translated query rejected; one successful mock
+attempt with `usage=None` currently marked total_attempt_usage_known=True, which
+should instead be unknown. No real model call and no production edits. Command:
+
+```
+research/.venv/bin/python research/runs/solver-audit/llm_audit.py > research/runs/solver-audit/llm_audit.log 2>&1
+```
+
+### 2026-10-14 01:44 UTC — usage completeness metadata prediction
+Independent audit found first-attempt success with missing usage is incorrectly marked total_attempt_usage_known. Predict new mocked missing-usage test fails; exact command `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-usage-red.log 2>&1`. No model calls; no other pilot blocker found.
+
+### 2026-10-14 01:44 UTC — usage completeness green prediction
+Missing-usage regression failed as predicted; corrected known-cost flag to require reported numeric input/output usage and firstattempt. Record per-item graph preparation and cached-parser latency separately from model latency; no invented retry totals. Prediction:27tests pass. Command `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-usage-green.log 2>&1`.
+
+### 2026-10-14 01:44 UTC — paired hybrid label-integrity prediction
+Root review requests scored hybrid rows reject mismatching labels even with identical gold-free request hashes. Predict added test fails. Command `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-label-red.log 2>&1`.
+
+### 2026-10-14 01:44 UTC — hybrid scored-label green prediction
+Scored-label test failed as expected; added label integrity check after gold-free request identity, labels never enter model prompt. Prediction28tests pass; `research/.venv/bin/python -m unittest discover -s bench/reasoning -p test_llm.py > research/runs/phase-e-baselines/llm-label-green.log 2>&1`.
+
+### 2026-10-14 01:45 UTC — Phase E fixed12 C/translation pilot predictions
+Independent audit clear;28semantic/isolation/routing tests green. Root approved fixed first12 Prover IDs on sealed cache. Prediction C outputs12 valid labels without tools; graph may underperform raw because first selected parses include wrong meanings (e.g. settles down analyzed as a universal rule and reflexive treated as noun), which remain exposed without hand correction. Translation may yield at least9/12 schema-valid responses but cannot repair retained wrong parses; expect much higher output cost than raw baseline and remaining residuals/abstentions. Pilots are operational/exploratory and excluded from main120 cost/accuracy condition; future full120 uses distinct cache/config. No labels/gold enter request projections.
+Commands:
+`research/.venv/bin/python bench/reasoning/llm.py call --bench proverqa --parses research/runs/phase-d/proverqa-pilot12.jsonl --backend z3 --or-semantics proverqa --limit 12 --mode graph --output research/runs/phase-e-baselines/proverqa-c-pilot12-raw.jsonl > research/runs/phase-e-baselines/proverqa-c-pilot12.log 2>&1`
+`research/.venv/bin/python bench/reasoning/llm.py call --bench proverqa --parses research/runs/phase-d/proverqa-pilot12.jsonl --backend z3 --or-semantics proverqa --limit 12 --mode translate --output research/runs/phase-e-baselines/proverqa-translate-pilot12-raw.jsonl > research/runs/phase-e-baselines/proverqa-translate-pilot12.log 2>&1`
+Each condition sequential, total2 concurrent Codex calls; stop on first operational/tool error (common.call retries internally3; final-attempt usage limitation explicitly recorded). Source hashes: {'bench/reasoning/llm.py': '7038764db1b669e251b7fef4eac0094d369ef9cfe8782a342f0c1663e740deff', 'bench/reasoning/run.py': '3ad4f0a163a046ed0e1e8764084f769937ac6d42dbed1e4d31badf6a6fbeccab', 'bench/reasoning/solver.py': 'eab61f2f3f830be69fa120b4417add5d41140e3a930640e296fdb3c5edb9aebb', 'research/runs/phase-d/proverqa-pilot12.jsonl': 'a3f97e6bd487aef0bdeaa0ba7f801bf978efed65fd404de771925a6b7c93077b'}
+
+### 2026-10-14 01:47 UTC — scoped condition oracle regression RED prediction
+
+The countermodel reproduced exactly: all nine probe checks passed, including false q derived from two true separately scoped documents. The existing external receipt oracle accepts rigid run IDs, so this demonstrates the reusable API hazard rather than an observed receipt failure. Root authorized a minimal closed-condition boundary at Oracle.check/covers, keeping contextual claims extracted for inspection. Prediction: new scope-oracle checks fail on open predicates, misplaced binders, coverage and genealogy; closed quantified/negative/attitude conditions should already inspect successfully. The last partial-oracle regression may terminate the old implementation when it wrongly consults an oracle on an open condition.
+
+Exact command: `runghc -isrc -itest test/ScopeOracleSpec.hs > research/runs/phase-g/scope-oracle-red.log 2>&1`.
+
+## 2026-10-14 — real ProverQA meaning diagnosis prediction
+
+The first graph prompt exposes Abdullahlike proper names as noun restrictions and
+phrasal/reflexive expressions as unrelated predicates. Prediction: Explain first
+diverges at lexical category/meaning selection (bare N→NP universal coercion),
+not in the Python solver. Diagnostic sentences are `Abdullah settles down.`,
+`Abdullah does not express himself freely.`, and a rigid/simple `Bob is red.`
+control. Run one persistent already-built Explain process with --all-readings,
+all stages, through `python3 research/runs/prover-meaning-audit/run.py`; output
+`research/runs/prover-meaning-audit/explain.log`. No benchmark labels supplied.
+
+### 2026-10-14 01:51 UTC — closed-condition oracle GREEN prediction
+
+Red result: all13 open-condition regressions failed, ten closed controls plus two structural/quantified controls passed, genealogy/coverage failed, then the partial oracle was incorrectly forced. Implemented scope-aware freeCanonRefs in Canonical and central closed-condition guard in Oracle.covers/check (coverage uses covers too). Antecedent binders extend into the consequent; disjunction/negation bindings do not escape. Existing contextual claim extraction stays intact. Kept the existential anaphora e2e fixture with expected abstention and added a rigid positive control. Countermodel probe now expects admission blocked while still checking that both full documents and honest local oracle predicates are true. Prediction:28 scope checks,10 countermodel checks and existing substrate/assertion/intensional/strength suites pass; any other assumptions about open oracle inputs will surface explicitly.
+
+Exact commands: `runghc -isrc -itest test/ScopeOracleSpec.hs > research/runs/phase-g/scope-oracle-green.log 2>&1`; `runghc -isrc research/probe-claim-scope.hs > research/runs/phase-g/claim-scope-green.log 2>&1`; `runghc -isrc -itest test/SubstrateSpec.hs > research/runs/phase-g/substrate-scope.log 2>&1`; `runghc -isrc -itest test/AssertionSpec.hs > research/runs/phase-g/assertion-scope.log 2>&1`; `runghc -isrc -itest test/IntensionalSpec.hs > research/runs/phase-g/intensional-scope.log 2>&1`; `runghc -isrc -itest test/StrengthSpec.hs > research/runs/phase-g/strength-scope.log 2>&1`.
+
+### 2026-10-14 01:46 UTC — partial translation pilot structural check prediction
+First completed translation response is available. Before inspecting its content, predict it validates strict schema and freshening but may leave unsupported sentences unresolved; no gold/labels used. Exact command `research/.venv/bin/python research/runs/phase-e-baselines/check_translation_pilot.py > research/runs/phase-e-baselines/translation-pilot-interim.json`. Script validates each currently completed raw response against sealed corresponding parser/request graph and reports only counts/reasons/usage, not benchmark gold.
+
+### 2026-10-14 01:47 UTC — C fixed12 pilot scoring prediction
+C completed12 responses, allfirstattempt/noerrors/tools. Before joining gold, predict12validlabels and no clear gain over raw due sparse/wrong parses. Translation remainsactive (first3completed). Exact command: `research/.venv/bin/python bench/reasoning/llm.py score --bench proverqa --parses research/runs/phase-d/proverqa-pilot12.jsonl --backend z3 --or-semantics proverqa --limit 12 --mode graph --raw research/runs/phase-e-baselines/proverqa-c-pilot12-raw.jsonl --output research/runs/phase-e-baselines/proverqa-c-pilot12-scored.jsonl > research/runs/phase-e-baselines/proverqa-c-pilot12-summary.json`. These are operational/exploratory pilot metrics, not main paired120 conclusions.
+
+### E-report0 prediction — heterogeneous results analysis tests first, 2026-10-14
+
+Add a reproducible manifest-driven analysis tool, reusing existing Wilson and exact
+paired statistics. Predictions/tests cover legacy ProofWriter Boolean labels and
+Unknown spelling; strict/lenient differences; errors/tools; translation JSON versus
+stored inference; gold/request identity; pending versus attempted items; duplicate
+IDs; exact paired discordance; retry unknown cost; cached/reasoning subsets; zero
+LLM cost on B routes; missing usage. Before implementation, expect import failure.
+No model calls or inference inputs are changed. Command:
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-red.log 2>&1
+```
+
+### 2026-10-14 01:55 UTC — scoped oracle result and final targeted controls
+
+The initial green run passed28/28 scope checks,10/10 countermodel controls,115/115 substrate checks,57/57 assertion and97/97 intensional checks. Independent read-only audit found no binder escape: antecedent-to-consequent scope is preserved, other branch/local binders do not escape, and closed token admission plus Fusion's empty-universe detachment condition blocks the counterexample. Added two direct suite controls to retain actual cross-document fusion rejection and positive token creation for every closed non-presupposed fixture. Prediction: all30 scope checks pass; no production behavior changed after the preceding green run. Strength's antichain checks are still running in the separately logged run.
+
+Exact command: `runghc -isrc -itest test/ScopeOracleSpec.hs > research/runs/phase-g/scope-oracle-final.log 2>&1`.
+
+## 2026-10-14 — scoped-admission and D/F integration gates prediction
+
+Scope closure repair passes focused controls; Haskell sources are now stable.
+Prediction: all prior1138 Haskell checks remain (one existential oracle expectation
+becomes explicit abstention), one rigid substrate control plus30 scope checks give
+1169 checks over12 suites. The19-negative/2-positive oracle gate and Explain pass.
+F executable and independent Python tests are additionally validated. Command:
+`bash research/run-gates.sh scoped-reasoning > research/runs/scoped-reasoning-driver.log 2>&1`.
+
+### 2026-10-14 01:58 UTC — closed-condition oracle final targeted result
+
+ScopeOracleSpec passes30/30 after the two extra integration controls. The standalone honest countermodel regression passes10/10. Substrate115/115, Assertion57/57 and Intensional97/97 pass; production sources are stable for the root integration gates. STUDY_PLAN, STRENGTH and SEAMS now distinguish structural assertion witnesses from closed standalone propositions and state the intentional existential-claim abstention. No DRS parser/export behavior was changed. Independent audit confirms the binder scope rules and notes that differing canonical numbering of closed formulas may miss deduplication but does not extrude a free witness.
+
+### E-report0 result and E-report1 prediction, 2026-10-14
+
+Tests failed as expected at missing report import. Implemented manifest-driven
+normalization/cost/reporting with benchmark-specific parsers and reused paired and
+Wilson helpers. Prediction: all12 new tests pass; pending runs withhold paired
+claims, duplicate or mismatched identities reject, and retry costs remain unknown.
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-tests.log 2>&1
+```
+
+### 2026-10-14 02:00 UTC — duplicate interpreted Strength run superseded
+
+Stopped the redundant interpreted `runghc -isrc -itest test/StrengthSpec.hs` process during its exhaustive graph/antichain tail at root request. All printed checks were green; this is cancellation, not a failed test result. Root's mandatory optimized integration gate now runs the same complete suite and supersedes this incomplete duplicate. Final scope-case read-only review found all Condition constructors represented: pred/equality, not, imp antecedent/consequent, independent or branches, attitude holder/body and presupposition. Nested negative sibling leakage and reverse implication binding have explicit negative controls.
+
+## 2026-10-14 — Explain diagnosis result
+
+Prediction held, with a more specific lexical failure: the selected reading of
+`Abdullah settles down.` uses Abdullah:N/N, settles:N and down:S[adj]\NP; bare-
+noun universal coercion yields ∀x.(abdullah(x)∧settles(x)→down(x)). Two other
+returned readings still treat down as an argument noun. The reflexive/adverbial
+query similarly becomes an unintended quantified object. The simple Bob control
+parses correctly. Therefore solver upgrades alone cannot establish English meaning
+fidelity. The cached original parses and experimental policy are retained unchanged,
+not hand-corrected using labels. Diagnostic run completed successfully.
+
+### 2026-10-14 01:49 UTC — ProverQA main C120 prediction
+C pilot12 is operationally valid (12labels,zeroerrors/tools,7correct); root authorizes main120 now while translation pilot finishes. Policy and prompt unchanged. Updated prediction before full labels: C may trail raw A90/120 because known lexical meaning errors and sparse parsing are supplied as graph premises; query-specific proof is explicitly disclosed, not oracle grounding. Main uses sealed complete first120 cache and a fresh condition/config; earlier12 are excluded as operational pilot. Command: `research/.venv/bin/python bench/reasoning/llm.py call --bench proverqa --parses research/runs/phase-d/proverqa-default120.jsonl --backend z3 --or-semantics proverqa --limit 120 --mode graph --output research/runs/phase-e-baselines/proverqa-c120-raw.jsonl > research/runs/phase-e-baselines/proverqa-c120.log 2>&1`. This condition sequential plus translation sequential =2concurrent calls. Final retryusage limitations and all code/prompt/cache hashes recorded in rows.
+
+## 2026-10-14 — full ProverQA B matrix prediction
+
+Sealed the first120 complete default parser records in sample order into
+research/runs/phase-d/proverqa-default120.jsonl; the source stream had137records,
+so no partial line was included. Prediction: both backends have low (<20%)
+coverage, non-top further loses answers to combination caps, exclusive-or helps
+only where lexical scope is accepted. Fixed thresholds should mostly abstain
+because product masses shrink on multi-sentence theories. Command:
+`research/.venv/bin/python bench/reasoning/matrix.py --parses research/runs/phase-d/proverqa-default120.jsonl --out-dir research/runs/phase-d/proverqa-default-matrix --benches proverqa --limit 120 --timeout-ms 2000 > research/runs/phase-d/proverqa-default-matrix.log 2>&1`.
+
+### 2026-10-14 01:50 UTC — main C120 setup retry
+Initial setup returned FileNotFoundError before any model call: sealed-cache readiness message preceded completion of decoding/writing. Root clarified matrix-log creation is completion marker; it now exists beside sealed120cache. Prediction/protocol unchanged; rerun exact command `research/.venv/bin/python bench/reasoning/llm.py call --bench proverqa --parses research/runs/phase-d/proverqa-default120.jsonl --backend z3 --or-semantics proverqa --limit 120 --mode graph --output research/runs/phase-e-baselines/proverqa-c120-raw.jsonl > research/runs/phase-e-baselines/proverqa-c120.log 2>&1`. Setupfailure costzero.
+
+### E-report1 result and E-report2 prediction, 2026-10-14
+
+All12 analysis tests pass. Root requests descriptive observed-top-mass curves:
+these rank already-saved predictions by their uncalibrated mass within returned
+readings, retaining ties and unanswered cases without choosing a threshold. Add
+controls for ties, missing/out-of-range mass, and no answered predictions; expected
+red import failure before implementation. Also require absent usage aggregates to
+remain null instead of zero, and malformed usage to remain unknown. These are
+analysis-only checks; no inference inputs or policy thresholds change.
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-curve-red.log 2>&1
+```
+
+### 2026-10-14 02:05 UTC — first five real ProofWriter domain-policy prediction
+
+The default cache has reached ProofWriter. Fixed selection: the first five complete newline-terminated cache rows with the source-ID segment `-OWA-D5-`, preserving cache order. The sample adapter keeps original theory/question IDs; other benchmarks use their own named prefixes. No sample rows, labels or gold formulas are read by this probe. Prediction: at least one top theory contains a localized positive bound person/thing guard eligible for the explicit policy; some strict Unknown outcomes may become signed proofs, while parse/query incompleteness remains unchanged. The adapter may have no effect when guards lack localized provenance or the retained rules are outside its fragment. Both Horn and Z3 use the same top returned meaning and 2000ms limit. Report transitions and decisions only, never accuracy.
+
+Exact command: `research/.venv/bin/python research/probe-domain-policy.py research/runs/phase-d/parses-default.jsonl --limit 5 > research/runs/phase-g/domain-cache-default-first5.log 2>&1`.
+
+### E-report2 red result and green prediction, 2026-10-14
+
+New tests fail at the missing risk_coverage import as expected. Added curves at all
+unique valid observed masses, preserving ties and the selected-sample denominator;
+none can restore already-abstained answers. Added inverted Wilson intervals for
+selective risk, explicit descriptive/uncalibrated wording, dependency hashes, and
+null/unknown aggregates for absent or malformed token usage. Prediction:16tests pass.
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-curve-tests.log 2>&1
+```
+
+### E-report2 result and E-report3 saved-output analysis prediction, 2026-10-14
+
+All16 analysis tests pass. Analyze four complete baseline pairs and the operational
+ProverQA C pilot12 only. Prediction: strict fresh low scores reproduce90/120 Prover,
+92/120 FOLIO,116/120 ProntoQA; historical PW low119/120, fresh Prover high89/120,
+pilot C7/12. Historical runs remain explicitly marked and pilot results excluded
+from main conclusions. No thresholds are tuned, and no inference/model calls occur.
+Create manifests from these declared paths, then run each through report.py; this
+also verifies actual legacy/schema compatibility and identical selected IDs.
+
+```
+research/.venv/bin/python research/runs/phase-e-reports/run-initial.py > research/runs/phase-e-reports/initial.log 2>&1
+```
+
+### 2026-10-14 01:51 UTC — first five real ProofWriter domain-policy result
+
+The fixed first5 completed default-parser ProofWriter records contain24 direct bound sortals, all24 eligible from exact localized quantifier cues. Every top theory is partial. Both Horn and Z3 abstain on all5 under strict semantics. With the explicit ProofWriter policy, both still abstain4 and prove False for AttNoneg-OWA-D5-283-Q4. This is a gold-free answer transition only, not an accuracy result. The successful prediction was guard applicability; no complete Unknown case was present in this tiny prefix. Driver research/probe-domain-policy.py and raw research/runs/phase-g/domain-cache-default-first5.log preserve the selection and commands. SEAMS records the result.
+
+Timestamp correction: several preceding scope-audit headings used manually entered minute labels ahead of the actual clock (01:47 through02:05). The append order and prediction-before-command order are unchanged. Filesystem completion times were scope red01:45:25, initial scope green01:46:12, final30-check scope01:47:43, and first5 domain probe01:51:19 UTC. Future headings use the system clock automatically.
+
+## 2026-10-14 — primary B/D policy before full-matrix results
+
+Primary B and routed D use top reading, strict domain semantics, ProverQA Z3 with
+localized exclusive either/or, FOLIO Z3 inclusive, and ProofWriter/ProntoQA signed
+Horn inclusive. D takes any non-abstain B output, otherwise the unchanged C row.
+Here operational confidence means the solver accepted its premises/query and
+answer policy, not calibrated English correctness or oracle evidence. All other
+reading/backend/POS/domain choices are reported as secondary conditions; no
+maximum-accuracy selection defines the main result. Full Prover matrix is still
+running; this choice follows the fragments, not scored outcomes.
+
+The first cache seal announcement preceded asynchronous completion and caused one
+C setup FileNotFoundError before any model call. It was retried after the completed
+file/matrix-start marker. New `research/seal-parser-cache.py` writes a temporary
+file and atomically renames only after all expected IDs/input hashes are validated.
+Commands sealing the next caches (no new inference):
+`python3 research/seal-parser-cache.py research/runs/phase-d/parses-pos.jsonl proverqa research/runs/phase-d/proverqa-pos120.jsonl`
+`python3 research/seal-parser-cache.py research/runs/phase-d/parses-default.jsonl folio research/runs/phase-d/folio-default120.jsonl`.
+
+### E-report3 result and primary policy record, 2026-10-14
+
+All five saved-output reports complete and match predicted strict counts; strict
+and lenient agree throughout, with120/120 answered on each full raw baseline.
+Prover low90 versus historical high90 has3discordances each direction (exact
+paired p=1); versus current high89 has4low-only/3high-only (p=1). FOLIO low92
+versus historical high99 has1low-only/8high-only (p=.0390625, unadjusted exploratory,
+with historical run confounding). Pronto low116/high120 has0/4 (p=.125); historical
+PW119/120 has0/1 (p=1). Pilot C7/12 versus low9/12 has2/0 (p=.5), excluded main.
+Outputs and source manifests: research/runs/phase-e-reports/*-report.json and
+*-manifest.json. All these rows report one attempt and token usage; old raw rows
+lack request hashes and therefore have only ID/label identity verification.
+
+Root has prespecified main B/D before the full matrix results: top reading and
+strict domain throughout; Z3/proverqa disjunction for ProverQA, Z3/inclusive for
+FOLIO, Horn/inclusive for ProofWriter and ProntoQA. D uses B's nonabstaining answer,
+otherwise C. Solver acceptance is operational admission, not English meaning
+truth. All other matrix policies and the ProofWriter adapter are secondary; none
+will be selected by best score. Reports may describe observed mass curves, but
+cannot tune or choose a threshold.
+
+### 2026-10-14 01:53 UTC — pinned plotting dependency prediction
+
+Matplotlib is absent from research/.venv (Python3.12.3). Install only pinned Matplotlib3.10.7 in this existing research environment, recording resolved versions for reproducibility. Prediction: installation succeeds without system-package changes; SVG/PDF generation will use its noninteractive Agg backend. No benchmark results are plotted until complete default/POS matrix reports arrive.
+
+Exact command: `research/.venv/bin/python -m pip install matplotlib==3.10.7 > research/runs/phase-g/plotting-install.log 2>&1`.
+
+### E-report4 coverage-interval prediction, 2026-10-14
+
+Inspection found run.summarize supplies Wilson intervals for accuracy/precision but
+not coverage. Add a separate analysis helper retaining those counts and adding a
+coverage interval over the full selected denominator. A four-row, two-answered,
+one-correct fixture must distinguish coverage .5, precision .5 and accuracy .25;
+its coverage interval should be approximately [.15004,.84996]. Expected red before
+the helper exists. Also expose descriptive route/reason/strength counts for D
+reporting, without changing inference.
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-coverage-red.log 2>&1
+```
+
+## 2026-10-14 — integration results and checkpoint prediction
+
+scoped-reasoning full gates passed:12 Haskell suites,19 oracle rejection clients
+and2 positive clients, all Explain checks. Expected1169 assertions: previous1138
+plus30 scope controls and one rigid substrate control. Focused retraction executable
+tests passed5/5. Before committing the stable scope/D/F/G integration, rerun the
+committed Python solver/runner/domain/report suites (LLM experimental files are
+kept unstaged while their calls retain frozen source hashes). Prediction75/75.
+Command:
+`research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_*.py' -v > research/runs/scoped-python-all.log 2>&1`.
+The all-files working-tree run also includes28 experimental LLM tests, so expects
+103 total. No inference source changes accompany this verification.
+
+### E-report4 red result and green prediction, 2026-10-14
+
+The new import fails as expected. Coverage now gets its own Wilson interval, and
+saved route/reason/strength counts are exposed for interpretation. Prediction:
+all17 tests pass, and rerunning saved-output reports changes only those added
+fields and implementation hashes; all scores, cost counts and paired tests persist.
+
+```
+research/.venv/bin/python -m unittest discover -s bench/reasoning -p 'test_report.py' > research/runs/solver-audit/report-coverage-tests.log 2>&1
+research/.venv/bin/python research/runs/phase-e-reports/run-initial.py > research/runs/phase-e-reports/initial-final.log 2>&1
+```
+
+### E-report4 result, 2026-10-14
+
+All17 report tests pass. Regenerated baseline/pilot reports preserve every score
+and paired count; coverage intervals and descriptive route/reason/strength counts
+are now included. Root's concurrent checkpoint briefly observed the intentional
+red import window before this green run; that is resolved. Report/test sources
+are frozen for the checkpoint. No model calls were made by this analysis work.
+
+### 2026-10-14 01:54 UTC — FOLIO main C120 prediction
+Root sealed complete default FOLIO120 and authorizes graph condition with existing fixed policy; no observed errors/tools on active calls. Prediction C may not exceed raw A92/120 because broader English leaves residuals and accepted wrong readings; expect fewer useful query proofs than controlled synthetic text. No prompt tuning based on pilot labels. Command `research/.venv/bin/python bench/reasoning/llm.py call --bench folio --parses research/runs/phase-d/folio-default120.jsonl --backend z3 --or-semantics inclusive --limit 120 --mode graph --output research/runs/phase-e-baselines/folio-c120-raw.jsonl > research/runs/phase-e-baselines/folio-c120.log 2>&1`. Three sequential conditions concurrent at most3CLIcalls (ProverC,FOLIOC,translationpilot). Current code hashes frozen until these conditions scored.
+
+## 2026-10-14 — owner correction: primary weak/strong contrast
+
+Owner overrides the original Gemini quota note: small models have usable free
+quota and complete raw120 baselines. Primary C/D must use gemini-3.1-flash-lite
+(budget0) and gemma-4-26b-a4b-it (minimal), compared paired against each own raw
+baseline and GPT-5.5 high. GPT low/high is only an effort control; no model-strength
+claim will use it. Stop further GPT graph collection, preserve completed exploratory
+rows, and adapt the existing Gemini runner with throttle/backoff429 and explicit
+quota-failure logging. Key will only be sourced within the requesting process;
+never read, print or store it in artifacts. STATE updated before continuing.
+
+### 2026-10-14 01:55 UTC — USER model steering; stop GPT graph main conditions
+User specifies primary weak models gemini-3.1-flash-lite/budget0 and gemma-4-26b-a4b-it/minimal via common/run_gemini.py; earlier quota assumption was wrong. Stopped own GPT Prover/FOLIO runner process trees with SIGTERM and preserve completed partial rows as exploratory; in-flight unfinished calls may have unreported cost. Translationpilot finished12 and will score under preserved original source before provider changes. Snapshots llm.py/run.py/solver.py saved under ignored research/runs/phase-e-baselines/gpt-code-snapshot. No key file read or key printed; future provider process will source owner envfile before import.
+
+## 2026-10-14 — checkpoint verification concurrency correction
+
+The all-files Python run caught a concurrent test-first report edit: the new
+coverage-interval test imported score_summary before its implementation landed.
+This was one import error (88 tests), not an inference failure; the agent completed
+that addition and reports17/17. The owner has meanwhile redirected the active
+LLM harness to real small-model C/D; those unfinished files remain unstaged.
+Prediction: the stable checkpoint's76 Python tests pass. Exact command:
+`PYTHONPATH=bench/reasoning research/.venv/bin/python -m unittest test_solver test_runner test_domain test_report -v > research/runs/scoped-python-committed.log 2>&1`.
+
+### 2026-10-14 01:55 UTC — preserved GPT exploratory conditions scoring prediction
+Stopped GPT Prover main after25completedrows, FOLIO after3; bothzeroerrors/tools, one in-flight call each mayhaveunreportedcost. Translationpilot12complete. Beforegoldjoin predict translation has highvalidity butlowcoverage due residuals; GPT Cpartials exploratory only, likely notimprovement. Commands (same frozen implementation):
+`research/.venv/bin/python bench/reasoning/llm.py score --bench proverqa --parses research/runs/phase-d/proverqa-pilot12.jsonl --backend z3 --or-semantics proverqa --limit 12 --mode translate --raw research/runs/phase-e-baselines/proverqa-translate-pilot12-raw.jsonl --output research/runs/phase-e-baselines/proverqa-translate-pilot12-scored.jsonl > research/runs/phase-e-baselines/proverqa-translate-pilot12-summary.json`
+`research/.venv/bin/python bench/reasoning/llm.py score --bench proverqa --parses research/runs/phase-d/proverqa-default120.jsonl --backend z3 --or-semantics proverqa --limit 25 --mode graph --raw research/runs/phase-e-baselines/proverqa-c120-raw.jsonl --output research/runs/phase-e-baselines/proverqa-c120-scored.jsonl > research/runs/phase-e-baselines/proverqa-c120-summary.json`
+`research/.venv/bin/python bench/reasoning/llm.py score --bench folio --parses research/runs/phase-d/folio-default120.jsonl --backend z3 --or-semantics inclusive --limit 3 --mode graph --raw research/runs/phase-e-baselines/folio-c120-raw.jsonl --output research/runs/phase-e-baselines/folio-c120-scored.jsonl > research/runs/phase-e-baselines/folio-c120-summary.json`
+
+### E-primary-small-model reporting correction and prediction, 2026-10-14
+
+The owner clarified the primary weak models: Gemini3.1 Flash-Lite at budget0 and
+Gemma4 26B A4B at minimal effort, both through Gemini. GPT5.5 low/high is retained
+only as an effort control, not a weak/strong model comparison. Existing raw120
+outputs for both requested small models are historical. Prediction: the new
+manifest report reproduces supplied ProverQA61/120 and37/120, FOLIO81/120 and77/120;
+all fresh C/D conditions remain explicitly pending with no paired claims. Gemini
+usage aliases should normalize prompt/candidate tokens, while multi-attempt costs
+remain lower bounds. Optional Gemma31B has duplicate retry rows in three benches,
+so it is omitted from these primary reports rather than silently deduplicated.
+No inference or model calls are performed. Source/test freeze remains in effect.
+
+```
+research/.venv/bin/python research/runs/phase-e-reports/run-primary.py > research/runs/phase-e-reports/primary-baselines.log 2>&1
+```
+
+Stable checkpoint verification result:76/76 Python checks passed, plus5/5 generated
+retraction checks. Full Haskell gates passed1169 checks/12 suites,19 negative+2
+positive oracle clients and Explain. This checkpoint integrates the closed-scope
+oracle repair, budget/malformed-input solver fixes, optional benchmark domain
+adapter, standalone scoring, deterministic F benchmark and G seam probes.
+LLM provider adaptation and plotting are intentionally still in progress and
+untracked; they will receive their own verified checkpoint. All datasets, caches
+and model replies remain local/ignored.

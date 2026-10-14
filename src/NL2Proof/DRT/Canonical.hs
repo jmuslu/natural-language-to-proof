@@ -30,6 +30,8 @@ module NL2Proof.DRT.Canonical
   , canonSize
   , canonConditionCount
   , canonPredicates
+  , freeCanonRefs
+  , isClosedCanonCond
     -- * Rendering
   , renderCanonical
   , renderCanonCond
@@ -38,6 +40,7 @@ module NL2Proof.DRT.Canonical
 
 import Data.List (intercalate, nub)
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import NL2Proof.DRT.Types
 
@@ -140,6 +143,30 @@ canonicalize top = go top
 --------------------------------------------------------------------------------
 -- Inspection
 --------------------------------------------------------------------------------
+
+-- | References a condition needs from its enclosing box. A bare condition is
+-- an independently interpretable proposition only when this list is empty.
+-- In an implication, antecedent binders are accessible in the consequent;
+-- binders inside a negation or one disjunct never escape to a sibling.
+freeCanonRefs :: CanonCond -> [CRef]
+freeCanonRefs = S.toAscList . condition S.empty
+  where
+    terms env = S.fromList . filter (`S.notMember` env) . foldr refs []
+      where refs (CRefT r) rs = r : rs
+            refs (CConstT _) rs = rs
+    withUniverse env = S.union env . S.fromList . canonUniverse
+    box env k = S.unions (map (condition (withUniverse env k)) (canonConds k))
+    condition env c = case c of
+      CanPred _ args -> terms env args
+      CanEq a b -> terms env [a, b]
+      CanNot k -> box env k
+      CanImp a b -> box env a `S.union` box (withUniverse env a) b
+      CanOr a b -> box env a `S.union` box env b
+      CanAtt _ args k -> terms env args `S.union` box env k
+      CanPresup k -> box env k
+
+isClosedCanonCond :: CanonCond -> Bool
+isClosedCanonCond = null . freeCanonRefs
 
 -- | Referents plus conditions, at all depths. Comparing this before and after a
 -- compression step is how fusion measures what it discarded.
