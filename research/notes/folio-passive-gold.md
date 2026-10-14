@@ -155,3 +155,48 @@ Validation result: all three exact source texts and six occurrence locators matc
 No proposed fixture exists, and diff check is clean. Reviewer's preliminary
 feedback distinguishes a possible new bibliographic contract from an established
 one; final concrete-note review follows commit. No parser/model/source changes.
+
+## Approved narrow gold follow-up
+
+Reviewer approved 8cac3c4's ledger and the single-source bibliographic contract:
+author(Dani Shapiro, Family History), no writing event/date/sole-authorship or
+anonymous agent. Coordinator authorized one exact source row plus two independent
+explicitly authored book-title/named-author contrasts under that same contract.
+This supersedes only the earlier decision to emit no fixture; the source audit
+and past/generic/degree blockers remain unchanged.
+
+Prediction before authoring/checks: the three complete references should have one
+Asserted author(author-person,work-title) atom, empty root universe and no other
+claim classes. Source repeats count as one benchmark example; authored rows add
+no source observations. Name/title constants preserve full case-sensitive text.
+No parser observations, source implementation or root membership changes.
+
+The new source row retains the full unchanged sentence and verified context[5]
+novel/title cue, used for title disambiguation only. It does not import the year
+or novel predicate into the isolated sentence's reference. Two authored examples
+use Amber Road/Mira Cole and Winter Map/Nora Vale as explicitly declared work-title
+and person pairs; they are authored controls, not independent benchmark records.
+All three references were authored directly, with no exporter claim derivation.
+
+Checks passed: exact source and title-context strings/hash, three strict gold
+canonical/schema validations using root validator SHA256
+98682bb1d2e8dfa9ce16af2d30206383f8dd1fb7fa8e155e3376567bf5997dac,
+no existing fixture ID/text collisions, explicit one-source/two-authored origins,
+and clean diff. Validator only: no evaluate_case, producer or parser invocation.
+Proposed fixture SHA256 before independent final review:
+f5a09b9ceb5f34c658ab013b1e78cccb8de76557b263298c749be4ba9a479e7d.
+Review requested before freeze; past/generic/degree source rows stay blocked.
+
+Reviewer approved all three meanings before observations, with this explicit
+limitation: producer requests contain only id/text, not title_context or
+authorship_context. The fixture measures a declared-context interpretation while
+that context is unavailable in runtime input; it does not certify unconditional
+isolated-English disambiguation or a context-aware parser. Gold metadata must
+never be transmitted as a runtime sense hint. This qualification is also included
+in every row's notes. The fixture is a separate contract diagnostic, not strict
+representative acceptance evidence.
+
+Final metadata qualification preserves all three DRS/claim values; strict schema
+checks passed again and project_request verified id/text only for every row.
+Final frozen fixture SHA256:
+94039010092a4bece4b473c1dc41b8ea48124f9f79709ab21555c0b4a9ba97a7.
