@@ -2595,3 +2595,9 @@ Independent baseline review approved all source/binary/cases/ordered2000input ha
 Coordinator now authorizes ONE context-unknown diagnostic under reviewed a1a5e88, same accepted5fb8272a binary, frozen190, source/modelinputs and600s deadline. Command python3 research/runs/paired190.py context-unknown. Prediction fixed before baseline remains two universal nonce hypotheses and conditional named nonce complement hypotheses; no guaranteed gain, any exact regression/new wrong/unsupported off-target change/target wrong alternative blocks activation recommendation. Defaults remain known-only. Run is local construction fidelity, not a solver/model/answer benchmark; launch gate remains CLOSED.
 
 Result nominal-name-licensing: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration nominal-open-nouns (38b260d)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/nominal-open-nouns; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/nominal-open-nouns.
+
+Result nominal-open-nouns: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.

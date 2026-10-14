@@ -32,3 +32,5 @@
 - Active serial integration: nominal-name-licensing (c77ad00), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/nominal-name-licensing; committing/pushing now.
 
 - Expanded190known-only baseline approved:63/32/94/1, old173 unchanged; new17=3exact7wrong7noparse, obs7217d0d.... Starting ONE pairedcontextunknown run via paired190.py withsameacceptedbinary/source/cases/orderedinputs and600s, afterreviewedprerequisites. No defaultchange; allretainedtargetreadings andstatus/selecteddeltas mandatory, no newwrong/regressionallowed. Docsmergeonly whileit runs.
+
+- Active serial integration: nominal-open-nouns (38b260d), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/nominal-open-nouns; committing/pushing now.
