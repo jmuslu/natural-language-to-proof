@@ -85,7 +85,7 @@ records the existing primary-source inspection.
 
 ## Validation
 
-Prediction before static validation:all6 meanings satisfy JSON/schema/ref scope,
+Static validation contract: all6 meanings satisfy JSON/schema/ref scope,
 and r0 appears only in the antecedent universe with consequent accessibility.
 Ran validate_case only (not fidelity.run/evaluate/parser) and extra authored
 binder-placement/asserted-implication checks:6/6 pass. All6 input locator checks
