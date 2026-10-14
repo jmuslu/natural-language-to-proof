@@ -3,8 +3,10 @@
 Full-access shell verified in isolated astra/particle-head-audit; initial tree
 clean. Only proposal and this note owned. No source, gold or model changes.
 
-Prediction before inspection: the existing best-tag output cannot establish
-absence of IV; inspect actual alternatives before considering category repair.
+Audit question: the existing best-tag output cannot establish absence of IV;
+inspect actual alternatives before considering category repair. This is a
+read-only analysis of the coordinator's already predicted and completed run,
+not a new experiment or a retrospectively registered prediction.
 Result: focused accepted logs offer gives S[dcl]\NP (-4.23) and give S[b]\NP
 (-4.35), both interpretable, plus up VP\VP (-0.56) without meaning. Required
 head availability is met in the observed positive and negative contexts.
