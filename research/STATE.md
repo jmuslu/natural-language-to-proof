@@ -1,7 +1,7 @@
 # Research state
 
 - OWNER linguistic-design-first redirect; original ASTRA_GOAL active. Saved usage resets/full-access continuation authorized without prompts. Shells work; actual eight specialist tasks accepted, no claim32 slots.
-- Branch astra/research, last pushed: 52d5699. CONSTRUCTIONS/DESIGN delivered7c6e90f; quantifiersd64d3e6,29-contract scorerba9d13d, have irregular+residual audit04a85b8 all pushed after full gates. Preserve unrelated provider/report/solver/SEAMS/plot dirty work.
+- Branch astra/research, last pushed: a59dde4. CONSTRUCTIONS/DESIGN delivered7c6e90f; quantifiersd64d3e6,29-contract scorerba9d13d, have irregular+residual audit04a85b8 all pushed after full gates. Preserve unrelated provider/report/solver/SEAMS/plot dirty work.
 - Next three actions: (1) merge reviewed conditional01a4933 plus10 independent nestedProver gold; register14controls, allgates/fresh114 fidelity before push; (2) integrate remaining reviewed nestedPronto/reflexive/FOLIO gold, coverage report and proposals sequentially with fidelity after each; (3) implement reviewed local reflexive guard; revisit nominal licensing only after correcting exposed dependencies.
 - Nominal candidate REJECTED:55 direct checks and16suites pass but6 Explain failures;114 fidelity24/33/57→33exact/67wrong/14noparse,6exactregressions. Safely isolated LOCAL astra/nominal-candidate c2bff11 (source91645ae; worktree removed after evidence preservation); no push. Source/rootwiring/tests/cabal preserved; verified snapshot research/runs/nominal-quarantine. Root restored04a85 baseline; unrelateddirty hashes identical. Need NP-origin licensing and names/relatives fixes; no surface exceptions or gold weakening.
 - Fidelity gate CLOSED: no new model/LLM/answerbenchmark. Current accepted114row diagnostic27exact/30wrong/57noparse,112 unique texts; Proverstarter10/24exact, broaderProver38rows/37texts incomplete. >=90%exact and nearzero wrong requires independent representative construction evidence, not easy subset or any-reading exact.
@@ -21,3 +21,5 @@
 - Active serial integration: fidelity-coverage-next (5e69ab2), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/fidelity-coverage-next; committing/pushing now.
 
 - Active serial integration: proofwriter-residual (b910abd), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/proofwriter-residual; committing/pushing now.
+
+- Active serial integration: gold-folio-extended (b89930c), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-folio-extended; committing/pushing now.
