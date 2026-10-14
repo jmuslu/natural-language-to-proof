@@ -1,7 +1,7 @@
 # Research state
 
 - OWNER linguistic-design-first redirect; original ASTRA_GOAL remains active. Saved usage resets and full-access continuation authorized without prompts in both STATE and ASTRA_GOAL. Shell works; eight specialist follow-up tasks accepted on isolated branches this continuation, not a claim that32 slots were exercised.
-- Branch astra/research, last pushed: cdc73db. CONSTRUCTIONS/DESIGN delivered7c6e90f. Quantifier, scorer, have and conditional repairs accepted; nested Pronto/reflexive gold, coverage audit, complete PW residual audit and FOLIO extension integrated separately with all gates. Preserve unrelated provider/report/solver/SEAMS/plot dirty work.
+- Branch astra/research, last pushed: 61f52d8. CONSTRUCTIONS/DESIGN delivered7c6e90f. Quantifier, scorer, have and conditional repairs accepted; nested Pronto/reflexive gold, coverage audit, complete PW residual audit and FOLIO extension integrated separately with all gates. Preserve unrelated provider/report/solver/SEAMS/plot dirty work.
 - Next three actions: (1) commit/push independently approved reflexive repair with allgates and fresh121 complete; (2) integrate reviewed new gold/audit branches separately, with explicit strict-English versus historical controlled contract panels and fidelity after every merge; (3) review fused-relative certificate contract and coordination diagnosis before next source repair.
 - Fidelity gate CLOSED: no new model/LLM/answerbenchmark. Reflexive candidate fresh121rows/119distincttexts34exact25wrong62noparse; prior baseline27exact32wrong62noparse (conditional11427/30/57 plus FOLIO7 0/2/5). Prover starter10/24exact; representative independent construction gate not satisfied. >=90%exact and nearzero wrong cannot be claimed from easy subset/any-reading score.
 - Active root job: none. Reflexive integration finished and independently approved for landing; research/runs/reflexive-integration contains frozen121 cases, fresh observations/results, binary/source hashes and allgate logs. Sealed replay now points to this cache; never reuse stale hashes.
@@ -12,3 +12,7 @@
 - Preserve original dirty40file snapshot research/runs/worktree-transfer; worktree archives verified in worktree-archives, ignored evidence in worktree-evidence before removal. Explicit staging only; no raw datasets/secrets/main/tags. Sole coordinator; remote only origin astra/research.
 
 - Active source trial: reflexive5f2d513 allgates/fresh121 passed, seven wrong→exact and no other changes, independent final review APPROVED; committing/pushing now; research/runs/reflexive-integration. No commit/push until evidence reviewed.
+
+- Active root diagnostic: approved28 new gold rows, gold-extension-baseline; sealed reflexive binary, sharedslot; report contract partitions separately. No new production change.
+
+- Active serial integration: fidelity-contract-review (f3567ff), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/fidelity-contract-review; committing/pushing now.
