@@ -1,7 +1,7 @@
 # Research state
 
 - OWNER linguistic-design-first redirect; original ASTRA_GOAL remains active. Saved usage resets and full-access continuation authorized without prompts in both STATE and ASTRA_GOAL. Shell works; eight specialist follow-up tasks accepted on isolated branches this continuation, not a claim that32 slots were exercised.
-- Branch astra/research, last pushed: 0324255. CONSTRUCTIONS/DESIGN delivered7c6e90f. Quantifier, scorer, have and conditional repairs accepted; nested Pronto/reflexive gold, coverage audit, complete PW residual audit and FOLIO extension integrated separately with all gates. Preserve unrelated provider/report/solver/SEAMS/plot dirty work.
+- Branch astra/research, last pushed: d993c83. CONSTRUCTIONS/DESIGN delivered7c6e90f. Quantifier, scorer, have and conditional repairs accepted; nested Pronto/reflexive gold, coverage audit, complete PW residual audit and FOLIO extension integrated separately with all gates. Preserve unrelated provider/report/solver/SEAMS/plot dirty work.
 - Next three actions: (1) commit/push independently approved reflexive repair with allgates and fresh121 complete; (2) integrate reviewed new gold/audit branches separately, with explicit strict-English versus historical controlled contract panels and fidelity after every merge; (3) review fused-relative certificate contract and coordination diagnosis before next source repair.
 - Fidelity gate CLOSED: no new model/LLM/answerbenchmark. Reflexive candidate fresh121rows/119distincttexts34exact25wrong62noparse; prior baseline27exact32wrong62noparse (conditional11427/30/57 plus FOLIO7 0/2/5). Prover starter10/24exact; representative independent construction gate not satisfied. >=90%exact and nearzero wrong cannot be claimed from easy subset/any-reading score.
 - Active root serial queue: names69688d8,transitiveseb7b4f3,relatives4eb9d18,Prontocoordinationef73c92,PWbindingf8bd7b3,coordinationproposal889a1ce. Each full gates/sealed replay before commit/push; logs research/runs/serial-*.log. Reflexive integration is pushed61f52d8; research/runs/reflexive-integration contains frozen121 cases, fresh observations/results, binary/source hashes and allgate logs. Sealed replay now points to this cache; never reuse stale hashes.
@@ -18,3 +18,5 @@
 - Active serial integration: fidelity-contract-review (f3567ff), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/fidelity-contract-review; committing/pushing now.
 
 - Active serial integration: gold-prover-names (69688d8), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-prover-names; committing/pushing now.
+
+- Active serial integration: gold-prover-transitives (eb7b4f3), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-prover-transitives; committing/pushing now.
