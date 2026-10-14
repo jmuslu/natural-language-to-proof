@@ -19,3 +19,10 @@ coverage gains are outside this task. Inspection of saved logs is read-only.
 
 Checks planned: git diff --check; document links/owned-path inspection;
 independent reviewer assessment of representation, scope, and source comparison.
+
+Validation: git diff --check passed; all relative proposal links resolve.
+Independent reviewer approved 5f1d6c1 for design investigation only, with no
+source authorization or fidelity claim. Clarified that resolved competing name
+analysis is an outstanding admission capability, not provided by current
+NameStatus/majority POS. Mandatory Pending/Complete states must not escape as
+Plain; full-role packing and root-only boundaries may cost search.

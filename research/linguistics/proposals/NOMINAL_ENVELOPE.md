@@ -77,7 +77,10 @@ Complete(subjectOrigin, copulaOrigin, complementOrigin, meaning)
 indefinite even where Q normalizes identically. A lexical name uses the existing
 licensed reference decision; initial capitalization, arbitrary NP type, or
 majority POS without a resolved competing adjective/common-noun analysis is not
-sufficient new evidence. Unresolved names remain unresolved. A noun leaf needs
+sufficient new evidence. The current NameStatus/majority-POS interface does
+not itself provide a resolved-competing-analysis admission capability; this is
+an explicit implementation blocker for the name branch, not an assumed
+existing guarantee. Unresolved names remain unresolved. A noun leaf needs
 an actual lexical N decision and its existing lemma; this contract supplies no
 new singularization, fictional-noun dictionary, or adjective→N coercion.
 
