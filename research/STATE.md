@@ -2,13 +2,13 @@
 
 - Original ASTRA_GOAL remains active; linguistic-design-first redirect overrides phase order. Phases B–H unfinished. **No new model/LLM/answer-benchmark launches**: representative ProverQA >=90% exact/near-zero wrong gate CLOSED. Local independent fidelity/Explain diagnostics only. Default noun policy remains known-only.
 - Owner saved usage resets, full-access/no-approval continuation and useful parallelism remain authorized (also persisted ASTRA_GOAL). Shell works; never pass sandbox_permissions. Runtime actually observed root+8 running this continuation; not all32 slots tested. Specialists use isolated ~/astra-wt/<name>, own astra/<name> branches/files. Coordinator alone root source integration, STATE/LOG/cabal, staging/commits/push. Never main/tags/rawdata/secrets.
-- last pushed: 2d0ecfb learner names (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
+- last pushed: 579db46 learner names (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
 
 ## Next three actions and active drivers
 
-1. Let **learner-docs-queue.py** finish serial integration (log research/runs/learner-docs-queue.log, shell session67659). Nine reviewed branches, seven learner sections plus wrong-first-divergence9fd6c74/everyone-n-originf266d49. Names35611fb done; quantifiers active at this snapshot. Each branch merged alone, build/test/oracle/Explain/contracts/sealed190 replay/hand, then commit/push/archive/remove. Script contains exact pinned hashes. DESIGN gets verified relative links and historical-checkpoint caveat. **Do not start another root merge.**
-2. Scheduled **after-learners-gold.py/log**, session88563, waits for that queue's success/finalf266d49 ancestry, then runs approved gold-only canonical admission5c187c9 source trial against current190. It never commits/pushes: independent results review required, then advance replay/hand pointers, explicit commit/push/cleanup. Fresh evidence label gold-canonical-integration. Expected all190 readings/statuses unchanged;111 Python tests pass with no skips/xfails, original two failing-policy cases now genuine passes.
-3. After source admission accepted, observe separately frozen202 diagnostic, review and integrate its four gold branches one at a time with explicit membership and all gates. Then reviewed remaining design/evidence branches and reviewer notes; prioritize actual construction repairs without relaxing fidelity. No acceptance-panel draw or benchmark launch authorized by a design document.
+1. Gold canonical admission5c187c9 passed all merged gates and independent review733bdb0:111 Python passes, hand4exact,31 Haskell suites, fresh190 all retained readings/statuses unchanged65/32/92/1. Replay and serial hand pointers advanced to gold-canonical-integration. Commit/push this reviewed change; preserve unrelated dirty files.
+2. Run `python3 research/runs/baseline202.py` after that commit/push. Preregistered frozen202 separate diagnostic only, source/binary/input sealed. Compare old190 full readings unchanged and new12 by contract; independent review before admitting four gold branches serially with all gates.
+3. Continue coherent either implementation candidates in isolated worktrees (chart names; carrier relatives; protocol quantifiers; kernel operators; actual scope tests particles; independent review). No unused kernel/helper landing and no model/answer benchmarks. Separate FOLIO passive gold audit and either boundary gold audit. Reviewer-approved designs do not replace source review.
 
 ## Current source and sealed evidence
 
@@ -45,3 +45,7 @@
 - Active serial integration: wrong-first-divergence (9fd6c74), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/wrong-first-divergence; committing/pushing now.
 
 - Active serial integration: everyone-n-origin (f266d49), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/everyone-n-origin; committing/pushing now.
+
+- Active root source trial gold-canonical-admission(5c187c9), research/runs/gold-canonical-integration; fresh190/allgates and independent review pending. No next root merge until trial resolved.
+
+- Gold-admission result: review733bdb0 verifies all hashes and111 genuine passes. Learner/evidence queues completed through579db46. Current worker shell full-access verified; resumed independent implementation and gold tasks, no corpus loads authorized to workers.

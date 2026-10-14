@@ -12,9 +12,9 @@ The construction inventories and learner-facing [design](linguistics/DESIGN.md)
 cover ProverQA, all110 ProofWriter files, ProntoQA and the FOLIO sample; see
 [construction accounting](linguistics/CONSTRUCTIONS.md). Surface counts are not
 semantic coverage. The reviewed bounded nominal-negation source `17a17f9`
-(with preregistration `0613299`) has31 Haskell suites with1,970 checks and97
-Python checks (95 pass, two documented expected failures requesting stricter
-gold-admission policy). Build, oracle boundary, Explain and hand controls pass.
+(with preregistration `0613299`) has31 Haskell suites with1,970 checks. The subsequent gold-only canonical
+admission change `5c187c9` has111 passing Python contract checks, with no skips
+or expected failures; all190 complete retained readings and outcomes are unchanged. Build, oracle boundary, Explain and hand controls pass.
 The frozen190 default diagnostic now has65 exact,32 wrong-but-typed,92 no-parse
 and one incomplete result: two previously unparsed named negative nominals
 become sole-exact readings, while every other retained reading is unchanged.

@@ -127,7 +127,6 @@ class FidelityScopeReview(unittest.TestCase):
         wrong = fixture(box([q], ['r9']), [q])['gold'][0]
         self.assertEqual(self.status(row, wrong), 'wrong_but_typed')
 
-    @unittest.expectedFailure
     def test_gold_requires_canonical_first_occurrence_numbering(self):
         # Canonicalize always starts at r0; r9 cannot be the first canonical ref.
         p = pred('dog', {'ref': 'r9'})
@@ -135,7 +134,6 @@ class FidelityScopeReview(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_case(row)
 
-    @unittest.expectedFailure
     def test_gold_cannot_redeclare_enclosing_canonical_binder(self):
         # Canonical reference identity is global, not a lexical variable name
         # whose nested redeclaration may harmlessly shadow the outer binding.
