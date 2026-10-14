@@ -13,12 +13,15 @@ Its POS-backed `posTags` is an optional additive repair: NN/NNS adds N and JJ ad
 N/N plus S[adj]\\NP when absent. It does not veto an already offered adjective.
 POS is a dictionary support set, not contextual tagging or proof of sense.
 
-The sealed selected trace establishes hawks/mammals as S[adj]\\NP surface
+The sealed Explain replay reconstructs a compatible route with hawks/mammals as S[adj]\\NP surface
 predicates, despite successful bird/monkey normalization in subject N. Excels
-selects S[adj]\\NP with excels; its alternative S[pss]\\NP gives excel. A passive
+has a compatible replay using S[adj]\\NP with excels; its alternative S[pss]\\NP gives excel. A passive
 category matching the expected predicate does not establish correct finite
-syntax. These are selected-category errors relative to the independently
-specified constructions; the trace alone does **not** tell whether their
+syntax. These are mismatching category routes relative to the independently
+specified constructions, not retained original-chart lexical witnesses. Explain
+replays recorded rules and matches the selected root meaning (see tools/Explain.hs);
+its internal categories need not be the original producer choices. The trace
+alone does **not** tell whether their
 adjective tags were word-attested, smoothed, or OOV-prior, or supply their full
 POS support sets. That distinction is necessary before predicting applicability.
 
@@ -135,7 +138,7 @@ Proposed one-pass command, **not executed; separate coordinator approval needed*
 ```sh
 mkdir -p research/runs/adjective-admission-evidence
 python3 /home/gram/nl2proof-astra/scripts/with-ccgbank-slot.py \
-  runghc -isrc research/tools/AdjectiveAdmissionEvidence.hs \
+  /usr/bin/time -v runghc -isrc research/tools/AdjectiveAdmissionEvidence.hs \
   --extract /home/gram/ccgbank/ccgbank_1_1/data \
   > research/runs/adjective-admission-evidence/target-counts.json \
   2> research/runs/adjective-admission-evidence/stderr.log

@@ -44,3 +44,16 @@ counting exactly while retaining only 14 requested forms. Synthetic self-test
 14 forms and Explain lacks complete own-category/POS sets. Proposed guarded
 one-pass command, provenance requirements and pre-evidence prediction recorded
 in adjective-admission-plan.md; source remains frozen pending review/evidence.
+
+Reviewer correction: earlier 'selected leaf'/'actual derivation' descriptions in
+this note are superseded. tools/Explain.hs explicitly reconstructs internal
+categories from recorded rules and lexical candidates, retaining a root-meaning
+match. Thus adjective/N coordination routes are compatible replays, not original
+chart producer witnesses. Selected root claims remain verified 26/26. Both audit
+and proposal now state this limitation; no rerun is necessary or authorized.
+
+Coordinator conditionally authorized one streaming extraction only after reviewer
+validates this loader contract/input list. Command in proposal now includes global
+slot wrapper and /usr/bin/time -v. Pre-load prediction: target eligibility may be
+zero; POS/category absence, mixed support and spelling/base gate failures remain
+open. No extractor load has run; reviewer approval is still pending.
