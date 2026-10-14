@@ -2283,3 +2283,13 @@ Result gold-pronto-coordination: all merged-result gates passed,scorer contracts
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-proofwriter-binding; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-proofwriter-binding.
 
 Result gold-proofwriter-binding: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration coordination-diagnosis (889a1ce)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/coordination-diagnosis; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/coordination-diagnosis.
+
+### 2026-10-14 — FOLIO mixed gold baseline before core feature trial
+
+Reviewer approved b19d2e7 five strict-English diagnostic rows before parser observation:3relative/negative-quantifier scope contrasts (not3examples per refined scope),2mixed VP clauses;1exact input and4disclosed adaptations. Prediction: existing nominal/relative gaps leave most non-exact. Token-wrapped test/fidelity/run.py --cases research/runs/folio-mixed-baseline/cases.jsonl --binary research/runs/reflexive-integration/fidelity-reflexive --parser default --output research/runs/folio-mixed-baseline/fresh.json. No model/answerbenchmark; these form a separate strict diagnostic extension, historical121 untouched.
+
+Result coordination-diagnosis: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
