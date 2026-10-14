@@ -128,3 +128,16 @@ regeneration, no changes to observed semantic scoring or historical results.
 
 Final validation result: all25 replay integrity tests PASS, including subprocess
 runs under Python -O and rejection of malformed recorded scorer digests.
+
+Final integration review requested two path-binding corrections. Prediction:
+legacy factory called with root-relative report path must resolve against the
+supplied root independent of cwd; copied verifier with separately imported
+scorer must hash the actual fidelity.__file__, not a nonexistent sibling.
+Added independent controls for both deployment shapes plus bool retrospective
+schema rejection. No scoring or parser behavior changed. Running full Python
+fidelity discovery, including existing comparator/contract guards and new seals.
+
+Final full Python discovery completed77 tests, OK with2 pre-existing documented
+expected failures. All28 replay integrity controls pass, including the3 new
+path/schema regressions and actual-scorer staging hash. No historical report or
+cache changes. These integration fixes retain the original audit failure record.

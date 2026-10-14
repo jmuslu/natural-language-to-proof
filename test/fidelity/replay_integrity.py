@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 
+import fidelity
 from fidelity import unique_object, validate_case
 
 
@@ -73,7 +74,7 @@ def audit_legacy_seal(root, report_path, audit_note):
     This records bytes now; it does not assert they were sealed at production.
     """
     root = Path(root)
-    report, report_hash, frozen, observations = snapshot(root, report_path)
+    report, report_hash, frozen, observations = snapshot(root, resolve(root, report_path))
     require('observations_sha256' not in report, 'producer digest exists; use producer seal')
     require(isinstance(audit_note, str) and audit_note.strip(), 'audit note required')
     return {'schema': 1, 'kind': 'retrospective-audited-snapshot',
@@ -106,7 +107,7 @@ def verify_replay(root, report_path, datasets, *, required_sources=None,
     else:
         require(retrospective_seal is not None, 'legacy observations lack producer digest; audited retrospective seal required')
         seal, seal_hash = document(resolve(root, retrospective_seal))
-        require(seal.get('schema') == 1 and seal.get('kind') == 'retrospective-audited-snapshot'
+        require(type(seal.get('schema')) is int and seal['schema'] == 1 and seal.get('kind') == 'retrospective-audited-snapshot'
                 and seal.get('producer_binding') is False, 'invalid retrospective seal kind')
         require(isinstance(seal.get('audit_note'), str) and bool(seal['audit_note'].strip())
                 and isinstance(seal.get('audited_at_utc'), str) and bool(seal['audited_at_utc']),
@@ -166,7 +167,7 @@ def verify_replay(root, report_path, datasets, *, required_sources=None,
         dataset_manifest[label] = {'path': str(path), 'sha256': digest(data),
                                    'ids': list(index),
                                    'semantics_contracts': {r['id']: r.get('semantics_contract') for r in cases}}
-    tools = [Path(__file__).resolve(), Path(__file__).with_name('fidelity.py').resolve()]
+    tools = [Path(__file__).resolve(), Path(fidelity.__file__).resolve()]
     tools += [resolve(root, p).resolve() for p in helper_paths]
     tool_hashes = {str(p): digest(p.read_bytes()) for p in tools}
     manifest = {'schema': 1, 'seal': seal_info, 'producer_report_sha256': report_hash,

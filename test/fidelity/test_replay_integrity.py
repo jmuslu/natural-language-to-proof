@@ -257,5 +257,42 @@ class ReplaySealIntegrity(unittest.TestCase):
         self.report_path.write_text(json.dumps(self.report))
         self.rejected()
 
+    def test_legacy_factory_resolves_report_from_root_not_working_directory(self):
+        from replay_integrity import audit_legacy_seal
+        del self.report['observations_sha256']
+        self.report_path.write_text(json.dumps(self.report))
+        relative=self.report_path.relative_to(self.root)
+        seal=audit_legacy_seal(self.root,relative,'Independent relative-path fixture audit')
+        self.assertEqual(seal['report_sha256'],self.sha(self.report_path))
+
+    def test_boolean_retrospective_schema_rejected(self):
+        self.make_legacy_seal()
+        path=self.root/'audit-seal.json'
+        seal=json.loads(path.read_text())
+        seal['schema']=True
+        path.write_text(json.dumps(seal))
+        self.rejected()
+
+    def test_hashes_actual_scorer_when_verifier_is_staged_elsewhere(self):
+        staged=self.root/'staged-verifier'
+        staged.mkdir()
+        shutil.copyfile(VERIFIER,staged/'replay_integrity.py')
+        self.driver.write_text(
+            'import json,sys\n'
+            'from pathlib import Path\n'
+            'sys.path[:0]='+repr([str(staged),str(self.gold_dir)])+'\n'
+            'from replay_integrity import verify_replay\n'
+            'result=verify_replay(Path.cwd(),"research/runs/coordination-integration/fresh.json",'
+            '{"synthetic":"test/fidelity/prontoqa.jsonl"},required_sources=["src/Fixture.hs"],'
+            'helper_paths=[__file__])\n'
+            'Path("verified.json").write_text(json.dumps(result["manifest"]))\n')
+        result=self.replay()
+        self.assertEqual(result.returncode,0,result.stderr)
+        manifest=json.loads((self.root/'verified.json').read_text())
+        actual_scorer=str((self.gold_dir/'fidelity.py').resolve())
+        self.assertEqual(manifest['replay_tool_sha256'][actual_scorer],self.sha(Path(actual_scorer)))
+        self.assertIn(str(staged/'replay_integrity.py'),manifest['replay_tool_sha256'])
+        self.assertNotIn(str(staged/'fidelity.py'),manifest['replay_tool_sha256'])
+
 if __name__ == '__main__':
     unittest.main()
