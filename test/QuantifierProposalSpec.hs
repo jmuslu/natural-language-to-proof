@@ -1,4 +1,4 @@
--- Standalone red specification for the reviewed quantifier proposal.
+-- Standalone acceptance specification for the reviewed quantifier repair.
 -- No corpus or parser model is loaded. Run: runghc -isrc test/QuantifierProposalSpec.hs
 module Main (main) where
 
@@ -14,6 +14,15 @@ main = do
         ++ [(w ++ " determiner has intended normal form", entryIs w meaning)
            | (w, meaning) <- [("some", someTerm), ("no", TNot someTerm), ("each", eachTerm)]]
         ++ [("intersective restriction emits noun head before modifier", modifierOrder)]
+        ++ [(w ++ " retains established determiner meaning", entryIs w meaning)
+           | (w, meaning) <- [("a", someTerm), ("an", someTerm), ("all", eachTerm), ("every", eachTerm)]]
+        ++ [(w ++ " rejects incompatible category " ++ category,
+               null (closedEntries 0 w (cc category)))
+           | w <- ["some", "no", "each"], category <- ["NP/N", "N/N", "N", "NP"]]
+        ++ [("some with negative scope keeps existential outside negation",
+               entryWith "some" negativeScope someNegative)
+           ,("no with negative scope negates the whole existential",
+               entryWith "no" negativeScope (TNot someNegative))]
   mapM_ (\(name, ok) -> putStrLn ((if ok then "PASS " else "FAIL ") ++ name)) checks
   unless (all snd checks) exitFailure
   where
@@ -23,9 +32,12 @@ main = do
     someTerm = TExists "x" TyE (TAnd (App noun x) (App scope x))
     eachTerm = TForall "x" TyE (TImp (App noun x) (App scope x))
     cc s = either error id (parseCCGCat s)
-    entryIs w expected = any (matches expected) (closedEntries 0 w (cc "NP[nb]/N"))
-    matches expected (LexTerm t _ _) = alphaEq (normalize (apply t [noun, scope])) expected
-    matches _ _ = False
+    negativeScope = Lam "y" TyE (TNot (App scope (Var "y")))
+    someNegative = TExists "x" TyE (TAnd (App noun x) (TNot (App scope x)))
+    entryIs w = entryWith w scope
+    entryWith w predicate expected = any (matches predicate expected) (closedEntries 0 w (cc "NP[nb]/N"))
+    matches predicate expected (LexTerm t _ _) = alphaEq (normalize (apply t [noun, predicate])) expected
+    matches _ _ _ = False
     modifierOrder = case openTemplate "red" (cc "N/N") of
       Just (LexTerm t _ _) -> alphaEq (normalize (apply t [noun, entity "Mira"]))
         (TAnd (App noun (entity "Mira")) (App scope (entity "Mira")))

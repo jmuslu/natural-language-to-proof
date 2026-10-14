@@ -1,23 +1,23 @@
 # Quantifiers and determiners: a reviewed interface, not a word substitution
 
 Proposal against `fe5bf33`, with independently authored gold conventions from
-`astra/gold-folio` (`169165e`) and `astra/gold-proverqa` (`43ac355`). No production
-implementation is claimed. Historical caches are not current-head measurements.
+`astra/gold-folio` (`169165e`) and `astra/gold-proverqa` (`43ac355`). The bounded implementation is recorded below; whole-sentence coverage remains
+unmeasured on this branch. Historical caches are not current-head measurements.
 
 ## Unit 2: categories and derivations
 
 Use `N` for properties and `NP` for generalized quantifiers. Features such as
 `NP[nb]` constrain syntactic matching; they do not change the semantic type.
 A determiner has CCGbank category `NP[nb]/N`, a common noun `N`, an intersective
-attributive adjective `N/N`, an adjective predicate `S[adj]\\NP`, and present
-copular *is/are* `(S[dcl]\\NP)/(S[adj]\\NP)` in the adjective construction.
+attributive adjective `N/N`, an adjective predicate `S[adj]\NP`, and present
+copular *is/are* `(S[dcl]\NP)/(S[adj]\NP)` in the adjective construction.
 
 For **Some red cats are quiet**, the intended derivation is:
 
 1. `red:N/N + cats:N → N` by forward application.
 2. `some:NP[nb]/N + red cats:N → NP[nb]` by forward application.
-3. `are:(S[dcl]\\NP)/(S[adj]\\NP) + quiet:S[adj]\\NP → S[dcl]\\NP` by forward application.
-4. `some red cats:NP + are quiet:S[dcl]\\NP → S[dcl]` by backward application.
+3. `are:(S[dcl]\NP)/(S[adj]\NP) + quiet:S[adj]\NP → S[dcl]\NP` by forward application.
+4. `some red cats:NP + are quiet:S[dcl]\NP → S[dcl]` by backward application.
 
 Replacing *some* with *every*, *each*, or *no* changes the closed lexical meaning,
 not the derivation. The determiner entries must also be reserved closed-class
@@ -27,9 +27,9 @@ category and its meaning; adding a meaning does not establish tagger coverage.
 
 **Some birds are hawks** needs predicative nominal classification as well. A
 proposed bounded construction gives plural `N` predicate *hawks* the property
-`hawk`, and copular classification category `(S[dcl]\\NP)/N` with meaning
+`hawk`, and copular classification category `(S[dcl]\NP)/N` with meaning
 `λP.λQ.Q(P)`. This is a declared reanalysis, not an assertion that CCGbank always
-assigns that category. A full standard `(S[dcl]\\NP)/NP` copula must distinguish
+assigns that category. A full standard `(S[dcl]\NP)/NP` copula must distinguish
 predicative from referential NP meanings. Do not apply existential NP identity
 indiscriminately, or turn object **has a degree** into classification. The nouns
 specialist/reviewer must approve this seam before corpus fidelity is claimed.
@@ -158,3 +158,13 @@ sentence construction repaired. Protect every/all/a/an/the, object existentials,
 negated existentials, relative restriction, and claim nesting. Any change to
 `N/N` licensing needs its own contrastive tests. If another branch owns
 `CCGSem.hs`, the coordinator integrates this proposal rather than parallel edits.
+
+## Bounded implementation after independent review
+
+Implemented exact `NP[nb]/N` some/no/each meanings with closed-word reservation
+and noun-first ordering in the existing intersective modifier template. No
+category injection, nominal copula change, or broader modifier licensing was
+added. `test/QuantifierProposalSpec.hs` now has 25 direct semantic checks: all
+pass, including scope contrasts, established determiners and incompatible-tag
+rejections. The earlier seven-failure report above is the pre-repair result.
+Full independent fidelity and release gates remain required on integration.
