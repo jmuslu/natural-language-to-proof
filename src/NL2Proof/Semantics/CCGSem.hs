@@ -45,6 +45,7 @@ module NL2Proof.Semantics.CCGSem
   , openTemplate
   , openTemplateWith
   , nameItem
+  , particleLexeme
   , restrictedPronounEntries
   , lemma3sg
   , verbLemma
@@ -133,6 +134,24 @@ detAll = Lam "P" tyPred1 (Lam "Q" tyPred1
 -- | @a@\/@an@: @\\P \\Q. exists x. P(x) & Q(x)@.
 detSome = Lam "P" tyPred1 (Lam "Q" tyPred1
   (TExists "x" TyE (TAnd (App p_ x_) (App q_ x_))))
+
+-- | A complete adjacent lexical sense, licensed by original offered categories.
+-- This is sense/valency data, not a generic identity meaning for particles.
+-- The parser supplies occurrence and span evidence for both input tokens.
+particleLexeme :: String -> CCat -> String -> CCat -> Maybe LexItem
+particleLexeme headWord headCat particle particleCat = do
+  feature <- lookup (map toLower headWord) [("gives", "dcl"), ("give", "b")]
+  let np = CAtom "NP" []
+      vp = CSlash Bwd (CAtom "S" [Feat feature]) np []
+      bareVP = CSlash Bwd (CAtom "S" []) np []
+  if map toLower particle == "up" && headCat == vp
+     && particleCat == CSlash Bwd bareVP bareVP []
+    then Just (LexTerm
+      (Lam "S" tyGQ (App (Var "S") (Lam "x" TyE (App (pred1 "give_up") x_))))
+      "particle-lexeme:give_up"
+      (Just (Stipulation "particle-lexeme" "intransitive-give-up-fixed-effort-v1" []
+        "intransitive stop-trying sense; fixed effort context; tense/aspect abstracted")))
+    else Nothing
 
 -- | Negative determiner: negate the entire restricted existential.
 -- Its witness cannot escape into the main DRS or become an asserted atom.
