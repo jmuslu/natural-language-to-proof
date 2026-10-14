@@ -41,3 +41,12 @@ consumer compatibility is claimed; those remain explicit blockers.
 Optimized `python3 -O` focused protocol run also19/19 PASS with actual exporter
 and GHC renderer/error probe enabled (17.297 seconds). Implementation commit is
 staged protocol capability only, deliberately fail-closed for enabled execution.
+
+Reviewer found argparse last-value behavior could bypass exporter duplicate
+rejection. Added SingleEitherPolicy argparse action: repeated/conflicting new
+policy options fail during argument parsing, including separate/= spellings and
+accepted abbreviation aliases. No historical nominal-option behavior changed.
+Independent four-spelling prelaunch test asserts exit2, no subprocess, no report.
+Focused actual-exporter suite now20/20 PASS normally and under python-O. No new
+corpus loads. Carrier/chart integration and actual origin-failure diagnostic
+fixture remain active work; this correction does not claim vertical completion.

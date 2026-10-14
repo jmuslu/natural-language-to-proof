@@ -126,6 +126,22 @@ class EitherProtocolProposal(unittest.TestCase):
         self.assertIn('--either-policy=legacy-disabled',call.args[0])
         self.assertEqual(report['execution'],DISABLED)
 
+    def test_driver_duplicate_or_conflicting_policy_rejected_before_launch(self):
+        spellings=[['--either-policy','legacy-disabled','--either-policy','legacy-disabled'],
+                   ['--either-policy=legacy-disabled','--either-policy=legacy-disabled'],
+                   ['--either-policy=legacy-disabled','--either-policy','surface-inclusive-v1'],
+                   ['--either-p','legacy-disabled','--either-policy=surface-inclusive-v1']]
+        for flags in spellings:
+            with self.subTest(flags=flags):
+                argv=['run.py','--cases',str(self.gold_path),'--binary',str(self.binary),
+                      '--parser','default','--output',str(self.root/'duplicate.json')]+flags
+                with patch.object(sys,'argv',argv),patch.object(fidelity.subprocess,'run') as run, \
+                     contextlib.redirect_stderr(io.StringIO()),self.assertRaises(SystemExit) as error:
+                    fidelity.main()
+                self.assertEqual(error.exception.code,2)
+                run.assert_not_called()
+                self.assertFalse((self.root/'duplicate.json').exists())
+
     def test_typed_reading_without_drs_remains_failure_not_no_parse(self):
         response=copy.deepcopy(self.observations[0]['response'])
         response.update(drs_sentences=0,selected=None,readings=[

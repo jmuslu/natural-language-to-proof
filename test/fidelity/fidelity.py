@@ -400,6 +400,14 @@ def validate_execution(value):
     return value
 
 
+class SingleEitherPolicy(argparse.Action):
+    """Reject repetition before launch, including argparse's accepted spellings."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        if getattr(namespace,self.dest,None) is not None:
+            parser.error('--either-policy may be supplied only once')
+        setattr(namespace,self.dest,values)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cases',type=Path,required=True)
@@ -407,7 +415,7 @@ def main():
     parser.add_argument('--parser',choices=['hand','default','pos'],required=True)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--nominal-nouns',choices=['known-only','context-unknown'])
-    parser.add_argument('--either-policy',choices=['legacy-disabled','surface-inclusive-v1'])
+    parser.add_argument('--either-policy',choices=['legacy-disabled','surface-inclusive-v1'],action=SingleEitherPolicy)
     parser.add_argument('--timeout-seconds',type=float,default=600)
     parser.add_argument('--require-exact',action='store_true')
     args=parser.parse_args()
