@@ -2517,3 +2517,19 @@ Prediction: Eligible plain-N plural readings should use the independently specif
 ### 2026-10-14 — bounded noun lemma release
 
 Noun0c1da37 merged unchanged. All25Haskell suites(1702checks),build/oracle/Explain,77Python(75pass2existingexpectedfailures),hand4 pass. Reviewer independently verified source/binary/cases/observations and three selected deltas: birds→bird in folio-some-2 and folio-some-not-2, monkeys→monkey in folio-extended-universal-3. Bindings/operators/claimstatus preserved; consequent hawks/mammals remainunmatched, so zeroexactgain and all167statuses52/26/88/1 unchanged. Allother selectedobjects unchanged. Prediction of bounded lexicalnormalization holds only where actuallicense fires; broader seven-casegain was explicitlynotpredicted. Evidence noun-lemma-integration.
+
+### 2026-10-14 — expanded173 accepted baseline prediction
+
+Before Everyone source merge, measure unchanged accepted169c761 on frozen173 SHA327dd14c96bb4e2c375f4f9f46025de28dfc7fca9b9e149c85f986345d1d1f3a, independently frozen/reviewed48d86af beforeobservations. Prediction original167 statuses+selectedobjects identical to noun-lemma-integration; six new strictperson authored controls expose current Everyone gap, no prior outcome assumption. Command: token-wrapped test/fidelity/run.py --cases research/runs/expanded173-baseline/cases.jsonl --binary research/runs/expanded173-baseline/fidelity-candidate --parser default --output research/runs/expanded173-baseline/fresh.json. Membership stays167 until newfixturemerge; no model/answerbenchmark.
+
+Also freeze accepted169c761 Explainbinary+source manifest in noun-lemma-integration for one26-wrong-case first-divergence diagnostic. Prediction selectedwrong meanings match currentcache; actual category causes remain unknown pending trace. Worker uses one token-wrapped batch, no goldchanges.
+
+### 2026-10-14 — serial integration pronto-nominal-coverage-plan (0faf6b8)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/pronto-nominal-coverage-plan; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/pronto-nominal-coverage-plan.
+
+### 2026-10-14 — memory-bounded concurrency adjustment
+
+Sixteen CPUs visible,13.5GiB availableRAM and no swap use. Recorded Explain peak163072KiB; later bounded lexical extraction peak263936KiB is larger. floor(10,000,000,000/(263936*1024))=37, so raise conservative global reader/loader tokens2→3, still far below measured memorybound. This permits independent acceptedbaseline, requiredExplaingate and targetedfirst-divergence batch concurrently. Shared flockwrapper retained; processes already waiting under oldlimit may continue using2. No model/answerbenchmark launch or gate relaxation.
+
+Result pronto-nominal-coverage-plan: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
