@@ -114,8 +114,10 @@ The accepted same-category comma-list construction retains a final overt OR,
 recomposes its certified list, and preserves explicit mixed-operator subtrees.
 Its certificate and pending-state identity participate in packing. This does not
 make mixed nominal/adjective complements interchangeable or license arbitrary
-functor coordination. A list's OR box is Asserted, with disjunct contents Embedded;
-no individual disjunct becomes asserted by appearing in the same chart.
+functor coordination. For a top-level clause OR, the OR condition is Asserted and its disjunct
+contents are Embedded. An OR under a quantifier, negation or attitude receives
+its status from that enclosing context; list membership never promotes a
+disjunct to assertion.
 
 Explain can fail to reconstruct accepted list provenance. Its final formula,
 DRS and claim split come from Pipeline, while its derivation is a separate

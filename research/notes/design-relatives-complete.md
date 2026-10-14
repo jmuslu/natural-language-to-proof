@@ -17,3 +17,7 @@ Object-relative proposal stays unimplemented/lower priority and authored-only;
 full source guards still require separate review. Upstream comparisons use the
 existing retrieved primary-source audit and pinned entries, not new searches or
 claims to have run Boxer/ccg2lambda. git diff --check before explicit own staging.
+
+Reviewer correction: qualified the OR claim-status sentence to top-level clause
+OR; nested OR status depends on its enclosing quantifier, negation or attitude.
+Examples unchanged. Static diff check passes.
