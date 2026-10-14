@@ -32,3 +32,23 @@ es/ss/us/is/ews; original/base POS support exactlyNNS/NN. This deliberately defe
 valid cranes and -ews nouns to avoid broad inference. Source predicates remain
 unchanged; target benchmark lexical evidence is still unobserved. Reviewer must
 approve refined contract before any source implementation.
+
+Before source implementation added six requested controls: conflicting base
+adjective/name POS, nonplain N/NP/modifier/adjective/verbal category exclusion,
+reserved things, retained category/score and explicit surface/POS provenance.
+Prediction: previous2normalization reds plus missing-provenance red; all29other
+checks pass. Then implement only open actual-offered plainN candidate hook.
+
+Implementation result: red32controls29pass3fail before source; after bounded
+lexicalSigns hook all32pass. Added POS-backoff-only N preservation regression:
+final33/33pass. Source change is only CCGSemParse open lexical candidate handling
+and isSuffixOf import. Actual offered plainN condition, lowercase spelling gates,
+exact dictionaryPOS support sets and original score/category retention enforced;
+changed meaning gets noun-lemma stipulation with original/base and both sets.
+Closed classes/names/verbal templates/reportingLemma/model attestation untouched.
+
+Focused existing suites via runghc (no corpus): NameSemSpec30/30,
+HasLemmaProposalSpec12/12, CCGSemSpec89/89 pass. No cabal registration or shared
+root files changed. These unit checks do not predict actual CCGbank lexical
+qualification or population improvements. Candidate requires independent source
+review, coordinator fresh fixed gold and all release gates before landing.

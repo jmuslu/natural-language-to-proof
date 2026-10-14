@@ -1,6 +1,7 @@
 -- Independent red controls for a POS/category/base-attested regular noun rule.
 -- No licensed corpus is loaded and no production implementation is bundled.
 module Main (main) where
+import Data.List (isInfixOf)
 import qualified Data.Set as Set
 import Harness
 import NL2Proof.Semantics.CCGSem
@@ -72,6 +73,29 @@ main = runChecks "noun-lemma-proposal"
   , expectEq "proper name keeps s and written case"
       (Just (canonicalAC (Lam "P" tyPred1 (App (Var "P") (entity "James")))))
       (case nameItem "James" of LexTerm t _ _ -> Just (canonicalAC t); _ -> Nothing)
+  , expectN "ambiguous singular base adjective evidence blocks change"
+      [("gardens","N","NNS"),("garden","N","NN"),("garden","N","JJ")]
+      "gardens" "gardens"
+  , expectN "singular base name evidence blocks change"
+      [("gardens","N","NNS"),("garden","N","NN"),("garden","N","NNP")]
+      "gardens" "gardens"
+  , expect "nonplain categories do not acquire noun-lemma notes" $ and
+      [ all (not . lemmaNote) (lexicalSigns (model
+          [("gardens",category,"NNS"),("garden","N","NN")]) 1 "gardens")
+      | category <- ["N[num]","N/N","NP","S[adj]\\NP","S[dcl]\\NP"] ]
+  , expect "reserved things never takes the open noun lemma hook"
+      (all (not . lemmaNote) (lexicalSigns (model
+        [("things","N","NNS"),("thing","N","NN")]) 1 "things"))
+  , expectEq "POS-backoff-only N retains its surface predicate"
+      [noun "gardens"]
+      [normalize t | sign <- lexicalSigns
+          ((model [("gardens","NP","NNS"),("garden","N","NN")]) {smPOSBackoff=True})
+          1 "gardens", lxCat sign == cc "N", LexTerm t _ _ <- [lxItem sign]]
+  , expect "successful normalization records surface and both POS sets"
+      (any evidenceNote (lexicalSigns (model base) 1 "lanterns"))
+  , expectEq "normalization preserves offered category and lexical score"
+      (offeredTags (model base) False "lanterns")
+      [(lxCat sign,lxScore sign) | sign <- lexicalSigns (model base) 1 "lanterns"]
   , expectEq "verbal excels already has correct base lemma" "excel" (verbLemma "excels")
   , expectEq "reporting normalization retains added key" "add" (reportingLemma "Added")
   , expectEq "explicit-that set uses shared reporting key" (Set.singleton "add")
@@ -84,3 +108,11 @@ main = runChecks "noun-lemma-proposal"
       (case openTemplate "excels" (cc "S[adj]\\NP") of
         Just (LexTerm t _ _) -> Just (canonicalAC (normalize t)); _ -> Nothing)
   ]
+
+lemmaNote sign = case lxItem sign of
+  LexTerm _ _ (Just st) -> "noun-lemma" `isInfixOf` stKind st
+  _ -> False
+evidenceNote sign = case lxItem sign of
+  LexTerm _ _ (Just st) -> stKind st == "noun-lemma" &&
+    all (`isInfixOf` (stChoice st ++ stWhy st)) ["lanterns","lantern","NNS","NN"]
+  _ -> False

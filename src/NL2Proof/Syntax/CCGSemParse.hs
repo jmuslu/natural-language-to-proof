@@ -51,7 +51,7 @@ module NL2Proof.Syntax.CCGSemParse
 import Control.Exception (IOException, try)
 import Control.Monad (foldM)
 import Data.Char (isUpper, toLower)
-import Data.List (foldl', isPrefixOf, sortBy)
+import Data.List (foldl', isPrefixOf, isSuffixOf, sortBy)
 -- Strict maps for counting; the chart table must be the lazy map (it is
 -- defined by self-reference, as in "NL2Proof.Syntax.CCGParse").
 import qualified Data.Map as ML
@@ -360,8 +360,31 @@ lexicalSigns m i w
       ("recognized reflexive reanalysis " ++ show original ++ " -> " ++ show target
         ++ "; local lexical transitive subject binds its object, not a discourse antecedent")
     tags = offeredTags m (i == 0) w
-    open = [ LexSign c (tagNote c it) s | (c, s) <- tags ++ thatTags ++ posTags
-                            , Just it <- [openTemplateWith (`Set.member` smThatAttested m) w c] ]
+    open = [ LexSign c (tagNote c (nounLemmaNote c it)) s
+           | (c, s) <- tags ++ thatTags ++ posTags
+           , Just it <- [openTemplateWith (`Set.member` smThatAttested m) (nounWord c) c] ]
+    -- A deliberately narrow regular-plural policy, not a general lemmatizer.
+    -- Only an actually offered plain N with unambiguous dictionary support may
+    -- change predicate spelling. Names, closed classes, backoff-only tags,
+    -- verbal/attitude keys, adjectives and compounds keep their existing paths.
+    nounBase
+      | length w >= 4, all (\ch -> 'a' <= ch && ch <= 'z') w
+      , last w == 's'
+      , not (any (`isSuffixOf` w) ["es", "ss", "us", "is", "ews"])
+      , Set.fromList (map fst (posCounts (smPOS m) w)) == Set.singleton "NNS"
+      , let base = init w
+      , Set.fromList (map fst (posCounts (smPOS m) base)) == Set.singleton "NN"
+      = Just base
+      | otherwise = Nothing
+    nounWord c
+      | c == CAtom "N" [], c `elem` map fst tags, Just base <- nounBase = base
+      | otherwise = w
+    nounLemmaNote c it
+      | nounWord c /= w = withNote
+          (Stipulation "noun-lemma" (w ++ " -> " ++ nounWord c ++ " at offered N")
+            ["unchanged surface predicate " ++ w]
+            "regular-s-noun-v1: lowercase single-word shape; surface POS support {NNS}, base POS support {NN}; es/ss/us/is/ews excluded; token, category and score retained") it
+      | otherwise = it
     names = [ LexSign c' (withNote (nameNote c) (nameItem w)) s
             | (c, s) <- tags, Just c' <- [nameCategory c] ]
     -- NP[nb] is non-bare, not an expletive or a pending conjunct. Keep that
