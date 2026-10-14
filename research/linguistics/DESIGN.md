@@ -812,3 +812,38 @@ Explain may report that it cannot replay a repaired list and display raw
 provenance: its separate replay engine does not yet carry this certificate.
 That limitation is explicit; the displayed Pipeline DRS/claims remain authoritative.
 This is a bounded list rule, not general NP coordination or nominal predication.
+
+### Expanded independent gold and observed next gaps
+
+The frozen diagnostic now has167 rows after13 independently specified additions:
+three ProverQA nominal classifications, four person-quantifier controls, three
+finite active object relatives and three intransitive *give up* controls. Two
+Someone controls are exact; the other eleven additions are no-parse. All original
+154 statuses and selected meanings are unchanged: the resulting49 exact,
+26 wrong-but-typed,91 no-parse and1 incomplete are bookkeeping totals across
+separate semantic contracts, **not** a representative acceptance percentage.
+The finite active object relatives are authored controls: the audit found none
+in the439 distinct FOLIO sample inputs. Their inclusion does not establish FOLIO
+population coverage.
+
+The accepted Explain observations sharpen the next Unit2/3 decisions:
+
+- The three positive nominal examples have a category-only sentence derivation
+  but no semantic sentence. Their displayed name NP tags do not establish the
+  unpruned POS evidence needed by a future name-licensing certificate.
+- In the explicit exclusive-disjunction Everyone example, *but* has no
+  interpretable category. An AND meaning for a conjunction would need separate
+  controls against exceptive uses such as *everyone but Bob*; adding a word to
+  an unrestricted conjunction table is not a sufficient design.
+- For *Raul gives up* and its negative control, full alternative inspection
+  confirms admitted intransitive `gives:S[dcl]\NP` and `give:S[b]\NP` heads.
+  The offered `up:(S\NP)\(S\NP)` has no admitted meaning. The first observed
+  gap is particle semantic admission, not an absent intransitive head category.
+  The top-tag display alone obscures these lower-ranked alternatives.
+
+The proposed particle repair must license the whole two-token lexeme, preserving
+both tokens' categories, spans and provenance. Treating *up* as identity or
+rewriting an already-built predicate would lose this evidence. The licensed
+intransitive sense denotes `λQ.Q(λx.give_up(x))`; negation places the atom inside
+an Embedded box, with only the enclosing negation Asserted. Independent gold is already frozen; the concrete implementation still requires
+review before it is admitted.
