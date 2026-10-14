@@ -123,7 +123,7 @@ q_ = Var "Q"
 liftE :: Term -> Term
 liftE e = Lam "P" tyPred1 (App p_ e)
 
-detThe, detAll, detSome :: Term
+detThe, detAll, detSome, detNo :: Term
 -- | @the@: @\\P \\Q. Q(iota P)@ — a definite description (see 'iota').
 detThe = Lam "P" tyPred1 (Lam "Q" tyPred1 (App q_ (iota p_)))
 -- | @all@\/@every@: @\\P \\Q. forall x. P(x) -> Q(x)@.
@@ -132,6 +132,11 @@ detAll = Lam "P" tyPred1 (Lam "Q" tyPred1
 -- | @a@\/@an@: @\\P \\Q. exists x. P(x) & Q(x)@.
 detSome = Lam "P" tyPred1 (Lam "Q" tyPred1
   (TExists "x" TyE (TAnd (App p_ x_) (App q_ x_))))
+
+-- | Negative determiner: negate the entire restricted existential.
+-- Its witness cannot escape into the main DRS or become an asserted atom.
+detNo = Lam "P" tyPred1 (Lam "Q" tyPred1
+  (TNot (TExists "x" TyE (TAnd (App p_ x_) (App q_ x_)))))
 
 -- | Copula and auxiliary: semantically empty, @\\V. V@ over a VP meaning.
 vpIdentity :: Term
@@ -191,8 +196,9 @@ subjectRelative = Lam "V" (tyGQ ~> TyT) (Lam "N" tyPred1 (Lam "x" TyE
 closedTable :: Int -> [(String, CCat, LexItem)]
 closedTable i =
   [ (w, cat "NP[nb]/N", LexTerm detThe "definite determiner" Nothing) | w <- ["the"] ]
-  ++ [ (w, cat "NP[nb]/N", LexTerm detAll "universal determiner" Nothing) | w <- ["all", "every"] ]
-  ++ [ (w, cat "NP[nb]/N", LexTerm detSome "indefinite determiner" Nothing) | w <- ["a", "an"] ]
+  ++ [ (w, cat "NP[nb]/N", LexTerm detAll "universal determiner" Nothing) | w <- ["all", "every", "each"] ]
+  ++ [ (w, cat "NP[nb]/N", LexTerm detSome "indefinite determiner" Nothing) | w <- ["a", "an", "some"] ]
+  ++ [ ("no", cat "NP[nb]/N", LexTerm detNo "negative determiner" Nothing) ]
   ++ [ (w, cat "(S[dcl]\\NP)/(S[adj]\\NP)", LexTerm vpIdentity "copula (predicative adjective)" Nothing)
      | w <- ["is", "are"] ]
   ++ [ (w, cat "(S[dcl]\\NP)/(S[b]\\NP)", LexTerm vpIdentity "do-support auxiliary" Nothing)
@@ -383,7 +389,7 @@ failSafe shape = Stipulation
 -- transitive verb predicate @is(x, y)@ just because CCGbank offers that category.
 closedClassWords :: [String]
 closedClassWords =
-  [ "the", "all", "every", "a", "an", "is", "are", "does", "do", "not", "if"
+  [ "the", "all", "every", "each", "a", "an", "some", "no", "is", "are", "does", "do", "not", "if"
   , "then", "something", "someone", "things", "people", "and", "or", "it"
   , "they", "did", "that", "which", "who" ]
 
@@ -409,7 +415,7 @@ closedEntries i w c
 -- conservative 'verbLemma', so known inflections share one predicate.
 --
 -- * @N@: @\\x. w(x)@
--- * @N\/N@: @\\P \\x. w(x) & P(x)@ (intersective)
+-- * @N\/N@: @\\P \\x. w(x) & P(x)@ (intersective; preserves descriptive-name order)
 -- * @S[f]\\NP@: @\\S. S(\\x. w(x))@ (predicative adjective or intransitive verb)
 -- * @(S[f]\\NP)\/NP@: @\\O \\S. S(\\x. O(\\y. w(x, y)))@ (transitive, subject wide scope)
 --
