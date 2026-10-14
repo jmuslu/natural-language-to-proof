@@ -812,3 +812,112 @@ Explain may report that it cannot replay a repaired list and display raw
 provenance: its separate replay engine does not yet carry this certificate.
 That limitation is explicit; the displayed Pipeline DRS/claims remain authoritative.
 This is a bounded list rule, not general NP coordination or nominal predication.
+
+### Expanded independent gold and observed next gaps
+
+The frozen diagnostic now has167 rows after13 independently specified additions:
+three ProverQA nominal classifications, four person-quantifier controls, three
+finite active object relatives and three intransitive *give up* controls. Two
+Someone controls are exact; the other eleven additions are no-parse. All original
+154 statuses and selected meanings are unchanged: the resulting49 exact,
+26 wrong-but-typed,91 no-parse and1 incomplete are bookkeeping totals across
+separate semantic contracts, **not** a representative acceptance percentage.
+The finite active object relatives are authored controls: the audit found none
+in the439 distinct FOLIO sample inputs. Their inclusion does not establish FOLIO
+population coverage.
+
+The accepted Explain observations sharpen the next Unit2/3 decisions:
+
+- The three positive nominal examples have a category-only sentence derivation
+  but no semantic sentence. Their displayed name NP tags do not establish the
+  unpruned POS evidence needed by a future name-licensing certificate.
+- In the explicit exclusive-disjunction Everyone example, *but* has no
+  interpretable category. An AND meaning for a conjunction would need separate
+  controls against exceptive uses such as *everyone but Bob*; adding a word to
+  an unrestricted conjunction table is not a sufficient design.
+- For *Raul gives up* and its negative control, full alternative inspection
+  confirms admitted intransitive `gives:S[dcl]\NP` and `give:S[b]\NP` heads.
+  The offered `up:(S\NP)\(S\NP)` has no admitted meaning. The first observed
+  gap is particle semantic admission, not an absent intransitive head category.
+  The top-tag display alone obscures these lower-ranked alternatives.
+
+The proposed particle repair must license the whole two-token lexeme, preserving
+both tokens' categories, spans and provenance. Treating *up* as identity or
+rewriting an already-built predicate would lose this evidence. The licensed
+intransitive sense denotes `λQ.Q(λx.give_up(x))`; negation places the atom inside
+an Embedded box, with only the enclosing negation Asserted. Independent gold is already frozen; the concrete implementation still requires
+review before it is admitted.
+
+### Direct universal nominal predication: bounded implementation
+
+The paired reanalysis in C2 now has a deliberately narrow implemented route:
+`Every/Each N is a/an N`, with a direct lexical noun at both positions and no
+embedding. Unit2 uses source-offered nominal copula/article categories to license
+internal `(S[dcl]\NP)/N` and `N/N` categories for those exact occurrences.
+Unit3 gives the article property identity and the copula `λP Q.Q(P)`; the
+ordinary existential article keeps its existing meaning on ordinary routes.
+The direct universal subject supplies `λR.∀x(N(x)→R(x))`. Unit4 therefore
+asserts the whole implication, with its two atoms Embedded and no existential
+witness added to the main box.
+
+The occurrence certificate permits only the paired article/noun application,
+matching copula application and direct universal subject application. Its
+completed clause may reach the root, optionally with a literal final period;
+it cannot enter arbitrary composition, coordination or embedding. Origin and
+capability participate in chart packing. Proper names, bare generics, indefinite
+subjects, negation and relative/modified nouns remain outside this new route.
+Both nouns require positive NN/NNS evidence and no adjective/proper-name conflict.
+Unknown POS does not license this implementation. This bounded route avoided the
+unbounded candidate's earlier equative and generic-reading regressions in the
+frozen diagnostic.
+
+The 59 independent controls test meanings, Asserted/Embedded allocation,
+occurrence mismatch, packing and escape routes. The full frozen167 diagnostic
+shows no status or selected-meaning gain; the earlier broad candidate remains
+rejected. In particular, a separate lexical inventory audit finds no observed
+POS evidence for any of the38 noun keys needed by ProntoQA's86,788 matching
+surface occurrences. This establishes failure of a necessary v1 condition in
+the measured training snapshot, not a full parser-coverage measurement. An
+explicit context-licensed unknown-noun policy is a separate reviewed proposal;
+it must preserve this route's obligations and be tested independently.
+
+### Adjacent intransitive give-up lexeme
+
+The bounded particle route now licenses adjacent finite `gives up` or base
+`give up` from the original offered intransitive head and backward VP-modifier
+categories. One complete two-token seed enters both the category and semantic
+charts before usefulness filtering. Its meaning is the independently specified
+unary `give_up` predicate; both original token spans, categories and scores are
+retained in provenance. Ordinary alternatives survive. There is no general
+identity meaning for *up*, no transitive-to-intransitive conversion, and no
+unfulfilled obligation carried by the completed lexical VP.
+
+Thirty-five independent controls cover scope, original evidence, competing
+categories, malformed continuations and repeated source positions. Full release
+gates pass. On frozen167, the one unchanged ProverQA source and two authored
+particle controls change no-parse→exact; all164 other statuses and selected
+meanings remain unchanged. Totals are52 exact,26 wrong-but-typed,88 no-parse and
+1 incomplete across separate contracts. Positive `give_up(Raul)` is Asserted;
+for the negative case, only its enclosing negation is Asserted and the atom is
+Embedded. This measures that licensed sense and those three controls, not general
+particle or ProverQA population coverage. Explain's separate derivation replay
+still needs the shared span-seed API before it can justify this construction.
+
+### Evidence-bound regular plural noun normalization
+
+An actually offered plain `N` can now use a singular predicate for a narrowly
+licensed lowercase regular plural. The surface must have only NNS evidence and
+the candidate base only NN evidence in the loaded dictionary; ambiguous suffix
+families, capitals, compounds and other category paths remain unchanged. The
+original token, category and score survive, with the normalization recorded as a
+stipulation. This is a lexical interpretation rule, not a rewrite of exported
+DRSs, and it does not alter verbal lemmas or that-clause attestation.
+
+Thirty-three independent controls and all release gates pass. Three selected
+readings improve a restriction predicate (`birds→bird` twice and `monkeys→monkey`
+once), preserving binders, negation and claim status. They remain wrong against
+the full independent gold because the consequent predicates retain `hawks` or
+`mammals`. All other selected meanings and all167 statuses remain unchanged:
+52 exact,26 wrong-but-typed,88 no-parse,1 incomplete. This is partial lexical
+progress, **not** three additional exact sentences; the remaining category and
+lexical-evidence causes require their own Explain diagnosis.

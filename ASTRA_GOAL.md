@@ -140,11 +140,14 @@ gate. This authorization persists across coordinator/session refreshes.
 The owner authorizes all saved usage resets and requests greater parallelism,
 including specialist subagents spawned by subagents. Use available concurrency
 for independent work, with explicit file ownership and independent fidelity review.
-The owner also authorized changing local Codex configuration: the requested cap is
-now eight subagents (`agents.max_concurrent_threads_per_session = 8`). The previous running
-session rejected a fourth subagent; configuration on disk is not evidence that
-the active runtime accepted it. A CLI resume or app refresh must verify the actual
-available slots before claiming a larger team.
+The owner earlier authorized changing local Codex configuration to eight subagents
+(`agents.max_concurrent_threads_per_session = 8`); the later session instruction
+sets a32-thread limit and requests about eight useful concurrent specialists.
+The old running session rejected a fourth subagent, so configuration on disk is
+not evidence of active capacity. This full-access restart actually observed the
+coordinator plus eight running specialists. That observation establishes the
+used capacity, not that all32 slots were tested. Verify actual available slots
+after a CLI resume or app refresh before claiming a larger team.
 
 After any refresh, model switch, CLI resume, usage reset, or context loss, read
 `research/STATE.md` first and resume its next three actions on this same branch.

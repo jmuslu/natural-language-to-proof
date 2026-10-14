@@ -37,7 +37,7 @@ module NL2Proof.Syntax.Tokenize
   , latticeForks
   ) where
 
-import Data.Char (isAlphaNum, isSpace, toLower)
+import Data.Char (isAlphaNum, isDigit, isSpace, toLower)
 import Data.List (dropWhileEnd)
 import qualified Data.Map as M
 
@@ -58,25 +58,34 @@ data Sentence = Sentence
   }
   deriving (Eq, Show)
 
--- | Split a document on @.@, @!@, @?@. Spans are relative to the whole document,
--- so downstream provenance is document-global.
+-- | Split a document on @.@ or contiguous @!?@ groups, except a period
+-- immediately between digits. This is an orthographic rule, not numeric
+-- interpretation or abbreviation recognition. Spans are document-global.
 splitSentences :: String -> [Sentence]
 splitSentences src = filter (not . null . sentText) (map trim (go 0 src))
   where
-    isTerm c = c `elem` ".!?"
+    go _ [] = []
+    go i cs =
+      let (chunk, rest) = takeSentence Nothing [] cs
+          len = length chunk
+      in Sentence (Span i (i + len)) chunk : go (i + len) rest
 
-    go i cs = case break isTerm cs of
-      (chunk, []) ->
-        [Sentence (Span i (i + length chunk)) chunk | not (all isSpace chunk)]
-      (chunk, term : rest) ->
-        let len = length chunk + 1
-        in Sentence (Span i (i + len)) (chunk ++ [term]) : go (i + len) rest
+    takeSentence _ acc [] = (reverse acc, [])
+    takeSentence previous acc (c : rest)
+      | c == '.', Just left <- previous, right : _ <- rest
+      , isDigit left, isDigit right = takeSentence (Just c) (c : acc) rest
+      | c == '.' = (reverse (c : acc), rest)
+      | c `elem` "!?" =
+          let (suffix, remaining) = span (`elem` "!?") rest
+          in (reverse (c : acc) ++ suffix, remaining)
+      | otherwise = takeSentence (Just c) (c : acc) rest
 
-    -- Pull the span start forward past leading whitespace so a sentence's span
-    -- begins at its first real character.
-    trim (Sentence (Span a b) s) =
+    -- Both ends identify the exact trimmed source slice.
+    trim (Sentence (Span a _) s) =
       let lead = length (takeWhile isSpace s)
-      in Sentence (Span (a + lead) b) (dropWhileEnd isSpace (dropWhile isSpace s))
+          text = dropWhileEnd isSpace (drop lead s)
+          start = a + lead
+      in Sentence (Span start (start + length text)) text
 
 -- | Whitespace tokenization. @base@ is the document offset of the first
 -- character of @str@.
@@ -102,8 +111,8 @@ rawTokens base str = go base str
 -- A CCGbank-trained parser needs both back: CCGbank's grammar has categories for
 -- @,@ and @.@ (coordination, punctuation absorption), and its tag dictionary is
 -- case-sensitive (proper names, sentence-initial capitals). So here a token is a
--- maximal alphanumeric run (apostrophes and hyphens inside a word kept) or a
--- single punctuation character, with exact spans and original case.
+-- maximal alphanumeric run (internal apostrophes, hyphens and digit-dot-digit
+-- periods kept) or a single punctuation character, with exact spans and case.
 casedTokens :: Int -> String -> [Token]
 casedTokens base = go base
   where
@@ -118,6 +127,8 @@ casedTokens base = go base
     -- An inner apostrophe or hyphen continues a word only if a letter or digit
     -- follows it, so a trailing quote is still its own token.
     spanWord (x : y : z : more)
+      | isDigit x, y == '.', isDigit z =
+          let (w, r) = spanWord (z : more) in (x : y : w, r)
       | isAlphaNum x, y `elem` "'-", isAlphaNum z =
           let (w, r) = spanWord (z : more) in (x : y : w, r)
     spanWord (x : more)

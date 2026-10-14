@@ -2481,3 +2481,55 @@ Result folio-object-relative-gold: all merged-result gates passed,scorer contrac
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/particle-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/particle-gold.
 
 Result particle-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — source trial token-boundaries (821ea12)
+
+Prediction: tokenizer changes fix boundary controls; bounded nominal v1 fixes authored scoped controls. Neither is predicted to change the frozen167 statuses or selected meanings; any exact regression or new wrong-but-typed case blocks landing. Frozen167 cases and separate semantic contracts retained; previous accepted binary expanded-gold167. Commands: merge --no-ff --no-commit astra/token-boundaries; register token-boundaries; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/token-boundaries-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — tokenizer integrated release
+
+Tokenizer821ea12 merged with37 independent controls. All22Haskell suites(1575checks),77Python(75pass,2documentedexpectedfailures), build/oracle/Explain andhand4 pass. Fresh167 retains every status and selected meaning:49exact26wrong91no-parse1incomplete. Observationdigest identical to accepted expanded167. Reviewer independently verified source,binary,cases,observations and approved landing. No coverage gain or gate opening. Evidence research/runs/token-boundaries-integration; replay adapter and serialhandbinary now use this newsourcecache. Reviewed DESIGN expandedgold/first-divergence account included.
+
+### 2026-10-14 — source trial nominal-universal-trial (8e2a6ad)
+
+Prediction: tokenizer changes fix boundary controls; bounded nominal v1 fixes authored scoped controls. Neither is predicted to change the frozen167 statuses or selected meanings; any exact regression or new wrong-but-typed case blocks landing. Frozen167 cases and separate semantic contracts retained; previous accepted binary token-boundaries-integration. Commands: merge --no-ff --no-commit astra/nominal-universal-trial; register nominal-universal; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/nominal-universal-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — bounded nominal universal release
+
+Nominal8e2a6ad merged without source changes;59 independent controls registered. All23Haskell suites(1634checks), build/oracle/Explain,77Python(75pass2existingexpectedfailures),hand4 pass. Fresh16789.05s retains49exact26wrong91no-parse1incomplete and every selected object; observations digest identical to tokenizer baseline. Independent reviewer rehashed candidate binary/source/cases/observations and approved landing. No measured corpus gain; Pronto POS inventory independently explains v1 necessary-gate failure on all86788 matching surface opportunities in observed snapshot. DESIGN and STUDY_PLAN scoped updates reviewed. Next particle then further bounded source trials; model/benchmark gate closed.
+
+### 2026-10-14 — source trial particle-implementation-plan (c8b34c4)
+
+Prediction: Licensed adjacent give-up is predicted to repair the three independently frozen particle cases; preserve every other exact result and introduce no new wrong-but-typed case. Actual survival and selected readings remain unmeasured. Frozen167 cases and separate semantic contracts retained; previous accepted binary nominal-universal-integration. Commands: merge --no-ff --no-commit astra/particle-implementation-plan; register particle-lexeme; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/particle-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+Particle integration compatibility: initialize new nominal role to NominalPlain on the complete particle span, as reviewer prescribed; no pending nominal capability is minted.
+
+### 2026-10-14 — particle release result
+
+Prediction held: three independent give-up controls change no-parse→exact, all164other statuses and selected objects unchanged. Frozen16752exact26wrong88no-parse1incomplete; one source sentence and two authored controls, no population extrapolation. All24Haskell suites(1669checks),build/oracle/Explain,77Python75pass2existingexpectedfailures,hand4 pass. Reviewer61a7638 independently verified source,binary,cases,observations and each changed DRS/claim boundary. Only merged-source adaptation beyondc8b34c4 is NominalPlain initialization. ASTRA operational cap paragraph clarified historical8 vs owner32 and observed9running, without claiming tested32capacity. No model/benchmarklaunch.
+
+Prediction for accepted59955b6 targetedparticle Explain diagnostics: Pipeline meanings match threeexact particle gold; separate derivation replay may fail to reconstruct span seed and must report honest fallback. Frozen Explainbinary/source manifest copied to particle-integration before nextsourcebuild. Specialist writes outputs in ownignoredruns, underglobaltoken; no model/benchmark.
+
+### 2026-10-14 — source trial lemma-fidelity-plan (0c1da37)
+
+Prediction: Eligible plain-N plural readings should use the independently specified singular predicate, preserving scope and all exact cases. Actual dictionary eligibility is unknown; no promise that all seven noun-error rows improve. Any new wrong or exact regression blocks landing. Frozen167 cases and separate semantic contracts retained; previous accepted binary particle-integration. Commands: merge --no-ff --no-commit astra/lemma-fidelity-plan; register noun-lemma; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/noun-lemma-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — bounded noun lemma release
+
+Noun0c1da37 merged unchanged. All25Haskell suites(1702checks),build/oracle/Explain,77Python(75pass2existingexpectedfailures),hand4 pass. Reviewer independently verified source/binary/cases/observations and three selected deltas: birds→bird in folio-some-2 and folio-some-not-2, monkeys→monkey in folio-extended-universal-3. Bindings/operators/claimstatus preserved; consequent hawks/mammals remainunmatched, so zeroexactgain and all167statuses52/26/88/1 unchanged. Allother selectedobjects unchanged. Prediction of bounded lexicalnormalization holds only where actuallicense fires; broader seven-casegain was explicitlynotpredicted. Evidence noun-lemma-integration.
+
+### 2026-10-14 — expanded173 accepted baseline prediction
+
+Before Everyone source merge, measure unchanged accepted169c761 on frozen173 SHA327dd14c96bb4e2c375f4f9f46025de28dfc7fca9b9e149c85f986345d1d1f3a, independently frozen/reviewed48d86af beforeobservations. Prediction original167 statuses+selectedobjects identical to noun-lemma-integration; six new strictperson authored controls expose current Everyone gap, no prior outcome assumption. Command: token-wrapped test/fidelity/run.py --cases research/runs/expanded173-baseline/cases.jsonl --binary research/runs/expanded173-baseline/fidelity-candidate --parser default --output research/runs/expanded173-baseline/fresh.json. Membership stays167 until newfixturemerge; no model/answerbenchmark.
+
+Also freeze accepted169c761 Explainbinary+source manifest in noun-lemma-integration for one26-wrong-case first-divergence diagnostic. Prediction selectedwrong meanings match currentcache; actual category causes remain unknown pending trace. Worker uses one token-wrapped batch, no goldchanges.
+
+### 2026-10-14 — serial integration pronto-nominal-coverage-plan (0faf6b8)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/pronto-nominal-coverage-plan; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/pronto-nominal-coverage-plan.
+
+### 2026-10-14 — memory-bounded concurrency adjustment
+
+Sixteen CPUs visible,13.5GiB availableRAM and no swap use. Recorded Explain peak163072KiB; later bounded lexical extraction peak263936KiB is larger. floor(10,000,000,000/(263936*1024))=37, so raise conservative global reader/loader tokens2→3, still far below measured memorybound. This permits independent acceptedbaseline, requiredExplaingate and targetedfirst-divergence batch concurrently. Shared flockwrapper retained; processes already waiting under oldlimit may continue using2. No model/answerbenchmark launch or gate relaxation.
+
+Result pronto-nominal-coverage-plan: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.

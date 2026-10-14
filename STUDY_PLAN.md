@@ -164,7 +164,7 @@ Things to notice: *not* attaches to *is* by backward crossed composition (`<Bx`)
 
 ### Repaired seams and remaining limits
 
-Same-category comma-list coordination retains a closing overt OR and preserves explicit mixed-operator subtrees. Twenty-four independent controls pass; all154 selected diagnostic meanings are unchanged. The separate Explain derivation replay may fall back to raw provenance for repaired lists; Pipeline meanings remain authoritative. Nominal predication and general NP coordination are still unresolved.
+Same-category comma-list coordination retains a closing overt OR and preserves explicit mixed-operator subtrees. Twenty-four independent controls pass; all154 selected diagnostic meanings are unchanged. The separate Explain derivation replay may fall back to raw provenance for repaired lists; Pipeline meanings remain authoritative. General nominal predication and NP coordination remain unresolved; the bounded direct-universal nominal route below is narrower than those problems.
 
 The table distinguishes bounded repairs from remaining coverage and meaning errors. A passing handwritten regression does not establish coverage of every instance of the construction. The recorded corpus checks and paired coverage experiment are summarized in `research/FINDINGS.md`.
 
@@ -172,10 +172,13 @@ The table distinguishes bounded repairs from remaining coverage and meaning erro
 |---|---|---|
 | 2 | Endomorphic modifiers preserve matched features: `is not` retains `[dcl]` through `<Bx`. | This is targeted feature propagation, not a full feature-variable unifier. |
 | 2 | Final punctuation may still attach inside the tree (`red .`). | Usually semantically inert; punctuation constructions need their own checks. |
+| 2 | Sentence and cased-token boundaries preserve digit-dot-digit strings, contiguous `!?` endings, and exact trimmed source spans. |37 independent controls; all167 diagnostic statuses/selected meanings unchanged. Honorifics, initialisms and ellipses are deliberately unchanged. |
 | 2, 3 | Structural punctuation meanings require a nonempty punctuation-only surface, preventing lexical words from being silently absorbed under punctuation tags. |139 independent controls; all154 selected diagnostic meanings unchanged. This does not resolve general sentence/token segmentation or punctuation attachment. |
 | 2 | The existing type-raising/composition semantics now activate for the recognized argument-cluster coordination pattern, including `Bob likes and Anne hates the cat`. | Raising is not globally enabled. The selected corpus reading is correct, but a second returned reading is `likes(Bob) ∧ hate(Anne,cat)`. The shared indefinite-object regression introduces one existential, not one per conjunct. |
 | 2 | An optional `--pos-backoff` uses known NN/NNS/JJ evidence to add missing noun/adjective categories. | Off by default; no invented verb valency or contextual POS tagger. The licensed-model probe repairs round but not kind: round has JJ evidence, whereas kind has none in sections 02–21. On 120 OWA depth-5 dev theories (2,244 theory sentences), exact translation rises from 86.7% to 93.0%; 2,560 question translations rise from 90.5% to 95.6%; whole-theory exactness rises from 32/120 to 65/120. These are translation measurements, not QA accuracy. |
 | 2, 3, 4 | A name licensed by the existing POS/casing policy receives a rigid generalized-quantifier meaning from offered `N`, `NP`, or `NP[nb]`; ordinary NP features and scores are preserved. Positive and negated name sentences retain their Asserted/Embedded claim boundary. | This repairs missing direct-NP meanings, not name recognition. Initial `Legend is red` still selects the common-noun universal instead of the intended rigid name; unseen capitals can retain competing generic readings. `NP[expl]`, `NP[thr]`, and `NP[conj]` are excluded. See [name controls](research/linguistics/NAMES.md). |
+| 2, 3, 4 | Direct `Every/Each N is a/an N` uses an occurrence-bound predicative article/copula reanalysis and asserts a universal implication. |59 independent controls; frozen167 unchanged. Requires known noun POS without adjective/name conflict; no names, unknown nouns, negation, modified nouns or embedding. General nominal predication remains open. |
+| 2, 3, 4 | Adjacent intransitive `gives up`/`give up` can form a complete lexical VP from both original offered categories, preserving token evidence and negative scope. |35 controls; one ProverQA source plus two authored cases become exact, other164 meanings unchanged. No general particle identity, valency conversion or broad particle coverage; separate Explain replay still needs span-seed support. |
 | 3, 4 | Restrictive subject relatives compose at N level, so `Every cat that is red is big` restricts the universal to red cats. | Object-gap relatives remain unsupported. Comma-marked relatives fail closed rather than silently becoming restrictive. Verified on the licensed-model regression. |
 | 4 | Main-box named and definite constants can antecede later pronouns, while subordinate content remains inaccessible. | Recency is deterministic and logged; this is not gender/animacy inference. Attitude participants are excluded from the neuter `it` candidate set. |
 | 5 | A matrix factive complement is listed as Presupposed, without a duplicate Reported row. | Factive content inside a report retains the enclosing source chain. It is not promoted to assertion. |
@@ -187,9 +190,9 @@ The table distinguishes bounded repairs from remaining coverage and meaning erro
 Construction fidelity checkpoint: `some`, `no`, and `each` now have closed
 `NP[nb]/N` meanings (restricted existential, negated restricted existential,
 and universal implication). Twenty-four direct scope/category checks pass;
-the85-case starter diagnostic improves only `pronto-each-1`, to22 exact,
-23 wrong-but-typed and40 no-parse. ProverQA remains7/24 exact, so the owner’s
-fidelity gate is closed. Modifier order still differs from independent gold;
+the historical85-case starter diagnostic improved only `pronto-each-1`, to22 exact,
+23 wrong-but-typed and40 no-parse. ProverQA was7/24 exact at that checkpoint;
+the current starter is10/24, and the representative fidelity gate remains closed. Modifier order still differs from independent gold;
 reordering predicates naively also renames definite identifiers. Newly audited
 the original nested-conditional and reflexive failures are recorded below;
 unseen initial bare plurals can still be selected as names.
