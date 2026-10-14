@@ -111,9 +111,10 @@ production-exporter annotations:
 
 Nested paths continue through `body`, `left`, or `right` and `conditions`, then a
 condition index. Its ordered value must match. Paths must cover every `or` condition in preorder,
-including nested disjunctions. Inclusive disjunction requires `either: false` and
-`scope_ambiguous: false`; this prevents an erroneous exclusive marker from being
-ignored. Paths must be unique and point to actual `or` conditions; negative
+including nested disjunctions. Specify the surface `either` marker independently
+from inclusive or exclusive truth conditions: inclusive OR may have `either: true`.
+The intended unambiguous attachment requires `scope_ambiguous: false`. Exclusive
+meaning must be represented in the full DRS, not inferred from this marker. Paths must be unique and point to actual `or` conditions; negative
 indices are invalid. With no disjunction, the field may be omitted or set to `[]`.
 It records the existing exporter marker; it does not certify a universal linguistic
 interpretation of “either”, and it never changes the canonical representation.
@@ -165,6 +166,23 @@ loads the same local licensed model as `nl2proof-parse-json`. Neither training d
 nor learned data is stored here. `--require-exact` makes a regression command fail
 unless every case is exact; omit it when measuring documented open failures.
 
+Execution policy is explicit. For a corpus-backed diagnostic, the driver accepts
+`--nominal-nouns known-only` (the unchanged default) or
+`--nominal-nouns context-unknown` (the bounded experimental noun policy).
+The hand parser rejects either nominal-policy option. This option controls
+lexical admission; it does not change the independent gold or comparison rules.
+The active research gate and reviewed measurement plan still govern launches.
+
+Every current exporter response, including errors, echoes an `execution` object
+with schema `nominal-policy-v1`, parser and nominal-noun policy. The producer
+checks that echo against its invocation before scoring; replay checks it against
+the report across every frozen response, including responses outside a requested
+subset. A consumer can also require `expected_execution`. Historical reports
+without this protocol remain explicitly legacy-unrecorded: a binary hash does
+not establish their execution policy. Run all contract tests with
+`NOMINAL_PROTOCOL_EXPORTER` set to the built exporter path to include real
+hand-parser success/error and invalid-flag checks without loading CCGbank.
+
 The report contains case and executable hashes, relevant source hashes, per-case
 first differences and selected meanings. Full gold-free observations and parser
 stderr are saved beside it. Reports belong under ignored `research/runs/`, not in
@@ -187,7 +205,7 @@ fields document policy; the scorer does not interpret or enforce their content.
 IDs are preserved exactly, not inferred from text or benchmark names. Metadata
 is optional; absence becomes `semantics_contract_id: null` in the evaluated row.
 Explicit null or malformed metadata is rejected before invoking the executable.
-Only `id` and `text` are projected to the parser; neither policy nor gold is sent.
+Only `id` and `text` are projected as sentence requests; neither semantic-contract policy nor gold is sent. Execution configuration is supplied separately through explicit CLI options.
 
 Reports retain their existing aggregate and per-construction counts, adding
 `by_semantics_contract`: a list of partitions ordered with null first, then IDs

@@ -325,19 +325,40 @@ def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def validate_execution(value):
+    """Validate protocol metadata only; never interpret a sentence or gold."""
+    if not isinstance(value, dict) or set(value) != {'schema', 'parser', 'nominal_nouns'}:
+        raise ValueError('execution requires exact schema/parser/nominal_nouns keys')
+    if value['schema'] != 'nominal-policy-v1':
+        raise ValueError('invalid execution schema')
+    parser, policy = value['parser'], value['nominal_nouns']
+    allowed = {'hand': {'not-applicable'},
+               'default': {'known-only', 'context-unknown'},
+               'pos': {'known-only', 'context-unknown'}}
+    if not isinstance(parser, str) or parser not in allowed or not isinstance(policy, str) or policy not in allowed[parser]:
+        raise ValueError('invalid execution parser/nominal policy combination')
+    return value
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cases',type=Path,required=True)
     parser.add_argument('--binary',type=Path,required=True)
     parser.add_argument('--parser',choices=['hand','default','pos'],required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--nominal-nouns',choices=['known-only','context-unknown'])
     parser.add_argument('--timeout-seconds',type=float,default=600)
     parser.add_argument('--require-exact',action='store_true')
     args=parser.parse_args()
+    if args.parser == 'hand' and args.nominal_nouns is not None:
+        parser.error('hand parser does not accept nominal policy')
+    execution=validate_execution(dict(schema='nominal-policy-v1',parser=args.parser,nominal_nouns=
+        'not-applicable' if args.parser == 'hand' else (args.nominal_nouns or 'known-only')))
     cases=[validate_case(row) for row in read_jsonl(args.cases)]
     if len({row['id'] for row in cases})!=len(cases):raise ValueError('duplicate case IDs')
     binary=args.binary.resolve();binary_hash=file_hash(binary)
     flags={'hand':['--hand'],'default':[],'pos':['--pos-backoff']}[args.parser]
+    if args.parser != 'hand':flags.append('--nominal-nouns='+execution['nominal_nouns'])
     requests=[project_request(row) for row in cases]
     started=time.monotonic()
     process=subprocess.run([str(binary)]+flags,input=''.join(json.dumps(row,ensure_ascii=False)+'\n' for row in requests),
@@ -345,6 +366,9 @@ def main():
     elapsed=time.monotonic()-started
     observations=[json.loads(line,object_pairs_hook=unique_object) for line in process.stdout.splitlines() if line.strip()]
     if len(observations)!=len(cases):raise ValueError('one response per case required')
+    for response in observations:
+        if not isinstance(response,dict) or validate_execution(response.get('execution')) != execution:
+            raise ValueError('exporter execution does not match requested configuration')
     evaluated=[evaluate_case(row,response) for row,response in zip(cases,observations)]
     args.output.parent.mkdir(parents=True,exist_ok=True)
     observations_path=args.output.with_suffix('.observations.jsonl')
@@ -353,7 +377,7 @@ def main():
     stderr_path=args.output.with_suffix('.stderr.log');stderr_path.write_text(process.stderr)
     source_paths=['test/fidelity/Export.hs','test/fidelity/fidelity.py','test/fidelity/run.py']+[
         str(path.relative_to(ROOT)) for path in sorted((ROOT/'src').rglob('*.hs'))]
-    report=dict(schema=1,parser=args.parser,cases=str(args.cases.resolve()),cases_sha256=file_hash(args.cases),
+    report=dict(schema=1,parser=args.parser,execution=execution,cases=str(args.cases.resolve()),cases_sha256=file_hash(args.cases),
                 binary=str(binary),binary_sha256=binary_hash,wall_seconds=elapsed,
                 source_sha256={path:file_hash(ROOT/path) for path in source_paths},
                 source_hash_interpretation='Observed at evaluation; these hashes may differ from the compiled source snapshot. The executable SHA256 identifies the parser actually run.',
