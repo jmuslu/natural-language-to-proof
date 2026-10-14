@@ -44,7 +44,7 @@ module NL2Proof.Syntax.CCGSemParse
 import Control.Exception (IOException, try)
 import Control.Monad (foldM)
 import Data.Char (isUpper, toLower)
-import Data.List (foldl', sortBy)
+import Data.List (foldl', isPrefixOf, sortBy)
 -- Strict maps for counting; the chart table must be the lazy map (it is
 -- defined by self-reference, as in "NL2Proof.Syntax.CCGParse").
 import qualified Data.Map as ML
@@ -58,7 +58,7 @@ import NL2Proof.Provenance
 import NL2Proof.Semantics.CCGSem
 import NL2Proof.Semantics.Intensional (applyIntensional, isIntensionalTerm, liftsTo)
 import NL2Proof.Semantics.Lambda
-import NL2Proof.Syntax.CCGBank (CCat(..), Feat(..), eraseFeatures, parseCCGCat)
+import NL2Proof.Syntax.CCGBank (CCat(..), Dir(..), Feat(..), eraseFeatures, parseCCGCat)
 import NL2Proof.Syntax.CCGDeriv (AutoNode(..), leafHeaders, nodeCat, parseAuto)
 import NL2Proof.Syntax.CCGParse (Rules(..), chartParseScored)
 import NL2Proof.Syntax.CCGTypeChange (TypeChange(..), inducements, normalizeTC)
@@ -66,6 +66,7 @@ import NL2Proof.Syntax.CCGRules
   (Combinator(..), combineNamed, allCombinators, isCoordinator, isPunct, unifiable)
 import NL2Proof.Syntax.CCGSupertag
 import NL2Proof.Syntax.Tokenize (Token(..))
+import NL2Proof.Trace
 
 --------------------------------------------------------------------------------
 -- Model
@@ -88,8 +89,8 @@ data SemModel = SemModel
     -- ^ Read a sentence-initial word through its lower-cased form when that
     -- form is attested (see 'lookupForm').
   , smTypeRaise    :: Bool
-    -- ^ Use the learned type-raising rules (@X -> T\/(T\\X)@ etc.). Off by
-    -- default: see 'defaultSemModel'.
+    -- ^ Enable learned type raising globally. Off by default; the bounded
+    -- argument-cluster coordination trigger still enables it locally.
   , smSeen         :: Set.Set (CCat, CCat)
     -- ^ Feature-erased @(left, right)@ category pairs of every binary node in
     -- the training trees.
@@ -111,8 +112,12 @@ data SemModel = SemModel
     -- unlisted verb is read as reporting under a bare-complement category
     -- only if its lemma is here (see 'attitudeEntryWith'). Computed
     -- from the licensed corpus at load time, so no derived word list is
-    -- committed. On sections 02-21 it includes @noted@, @added@,
-    -- @announced@ and @see@ (@see that ...@).
+    -- committed. On sections 02-21 it includes @note@, @add@,
+    -- @announce@ and @see@ (@see that ...@).
+  , smPOSBackoff :: Bool
+    -- ^ Optional dictionary-POS backoff for missing noun/adjective tags.
+    -- This is not a contextual POS tagger: truly unseen words have no POS
+    -- evidence, and verb POS alone supplies no argument structure.
   }
 
 -- | The search parameters of @ccg-supertag-parse@'s defaults (β = 0.01, k = 20,
@@ -125,18 +130,20 @@ data SemModel = SemModel
 -- (@rabbit@, once in sections 02–21, as @N\/N@) is mostly prior, a word seen
 -- thousands of times (@is@) is all its own counts.
 --
--- Type-raising is off. Its meaning is fixed (@\\f. f(a)@) and it is
+-- Global type-raising is off. Its meaning is fixed (@\\f. f(a)@) and it is
 -- implemented, but in a chart that also has composition it mostly re-derives
 -- what application already derives, while multiplying the categories per cell
 -- (measured on ProofWriter train sentences: at most ~15 categories per cell
 -- without it, ~100 with it, and 2-4x the parse time). It is needed for
--- extraction and argument-cluster coordination, neither of which occurs in
--- ProofWriter's training sentences. A stated, train-set-informed restriction.
+-- extraction and argument-cluster coordination. The latter is now enabled
+-- locally after a transitive-verb + coordinator + new-NP trigger; ordinary VP
+-- and adjective lists keep the cheaper search.
 defaultSemModel :: TagModel -> POSModel -> Rules -> Set.Set (CCat, CCat) -> SemModel
 defaultSemModel tm pm rs seen =
   SemModel tm pm rs 0.01 20 40 1.0 20 True False seen True
     (M.fromList (tmPrior tm)) (fromIntegral (sum (map snd (tmPrior tm))))
     (Set.fromList [ reportingLemma w | (w, cs) <- M.toList (tmWord tm), any (thatClauseCat . fst) cs ])
+    False
 
 -- | @$CCGBANK_DIR@ if set, else @~/ccgbank/ccgbank_1_1/data@ (the licensed
 -- corpus lives outside the repository and is never committed).
@@ -214,7 +221,17 @@ binaryPairs (AutoTree _ kids) =
 
 -- | Is a binary combination of these two categories allowed ('smSeenRules')?
 seenPair :: SemModel -> CCat -> CCat -> Bool
-seenPair m l r = not (smSeenRules m) || (eraseFeatures l, eraseFeatures r) `Set.member` smSeen m
+seenPair m l r = not (smSeenRules m)
+  || (eraseFeatures l, eraseFeatures r) `Set.member` smSeen m
+  || relativePair l r
+  where
+    -- The restrictive relative is interpreted below the determiner even
+    -- when CCGbank attaches it at NP. Its two local combinations are licensed
+    -- by this stated construction instead of the corpus's NP attachment.
+    relativePair (CAtom "N" _) (CSlash Bwd (CAtom "N" _) (CAtom "N" _) _) = True
+    relativePair (CSlash Fwd (CSlash Bwd (CAtom "N" _) (CAtom "N" _) _) vp _) arg =
+      unifiable vp arg
+    relativePair _ _ = False
 
 --------------------------------------------------------------------------------
 -- Lexical assignment
@@ -302,17 +319,66 @@ data LexSign = LexSign
 lexicalSigns :: SemModel -> Int -> String -> [LexSign]
 lexicalSigns m i w
   | isClosedClass w || all (not . isWordChar) w =
-      [ LexSign c it s | (c, s) <- tags, it <- closedEntries i w c ]
+      [ LexSign c' (relativeNote c c' it) s
+      | (c, s) <- tags, let c' = restrictiveTag c, it <- closedEntries i w c' ]
   | otherwise = case nameStatus m (i == 0) w of
       NotName     -> open
       NameOnly    -> names
       NameOrOther -> names ++ open
   where
     tags = offeredTags m (i == 0) w
-    open = [ LexSign c it s | (c, s) <- tags
+    open = [ LexSign c (tagNote c it) s | (c, s) <- tags ++ thatTags ++ posTags
                             , Just it <- [openTemplateWith (`Set.member` smThatAttested m) w c] ]
     names = [ LexSign (CAtom "NP" []) (nameItem w) s | (CAtom "N" _, s) <- tags ]
     isWordChar c = c `notElem` ".,;:!?\"'()"
+    lw = map toLower w
+    restrictiveTag c
+      | lw `elem` ["that", "which", "who"]
+      , c == cat "(NP\\NP)/(S[dcl]\\NP)" = cat "(N\\N)/(S[dcl]\\NP)"
+      | otherwise = c
+    relativeNote old new it
+      | old /= new = withNote (Stipulation "relative-attachment"
+          "restrictive relative modifies N before the determiner"
+          ["NP-level attachment (requires quantifier restriction semantics)", "nonrestrictive relative"]
+          "CCGbank's NP attachment is reanalysed below the determiner to preserve universal/existential restrictions") it
+      | otherwise = it
+    -- Inflected forms can lose S[em] in the frequency beam even when the
+    -- normalized lexeme is attested with that. Bare and that complements have
+    -- the same intensional meaning; restore only this attested alternation.
+    thatTags =
+      [ (c', s) | reportingLemma w `Set.member` smThatAttested m
+                , (CSlash Fwd vp (CAtom "S" [Feat "dcl"]) fs, s) <- tags
+                , let c' = CSlash Fwd vp (CAtom "S" [Feat "em"]) fs
+                , thatClauseCat c', c' `notElem` map fst tags ]
+    -- POS is dictionary evidence only. No valency, adjective gradability or
+    -- unknown-word morphology is guessed. Backoff tags are deliberately below
+    -- every offered tag; this score ranks search and never admits facts.
+    posTags =
+      [ (c, minimum (0 : map snd tags) - 1)
+      | smPOSBackoff m
+      , c <- Set.toList (Set.fromList
+          ([cat "N" | any (`elem` ["NN", "NNS"]) poses]
+            ++ [cat c' | "JJ" `elem` poses, c' <- ["N/N", "S[adj]\\NP"]]))
+      , c `notElem` map fst tags ]
+    poses = map fst (posCounts (smPOS m) (lookupForm m (i == 0) w))
+    tagNote c it
+      | c `elem` map fst posTags = withNote
+          (Stipulation "pos-backoff" ("dictionary POS licenses " ++ show c)
+            ["corpus word-category dictionary only"]
+            "optional noun/adjective backoff: an attested NN/NNS/JJ POS supplies a missing open-class category; no contextual POS or verb valency is inferred") it
+      | c `elem` map fst thatTags = withNote
+          (Stipulation "attested-that-complement" "explicit that-clause tag from lexeme attestation"
+            ["only the inflected word's offered tags"]
+            "the lemma has an explicit-that attestation; its offered bare-clause tag has the same intensional meaning") it
+      | otherwise = it
+    -- Preserve an existing semantic decision (notably see-sense) while
+    -- documenting a simultaneous lexical category repair.
+    withNote st (LexTerm tm gloss Nothing) = LexTerm tm gloss (Just st)
+    withNote st (LexTerm tm gloss (Just old)) = LexTerm tm gloss
+      (Just old { stWhy = stWhy old ++ "; " ++ stWhy st
+                , stAlternatives = stAlternatives old ++ stAlternatives st })
+    withNote _ it = it
+    cat = either error id . parseCCGCat
 
 --------------------------------------------------------------------------------
 -- Chart
@@ -343,6 +409,8 @@ data SemParse = SemParse
     -- ^ Interpretable readings per token.
   , spMaxCats :: Int
     -- ^ Largest category set in the category-only pre-pass (a size statistic).
+  , spTrace :: Trace
+    -- ^ Sentence-wide safety decisions, including a quote rejected entirely.
   }
 
 key :: SSign -> (CCat, Term, Maybe String, Maybe String)
@@ -368,7 +436,7 @@ finish = simplifyConj . normalize
 -- so it changes speed, not results, except that the per-cell beam is now spent
 -- only on items that can still matter.
 semParse :: SemModel -> SourceId -> [Token] -> SemParse
-semParse m src toks = SemParse roots lexs maxCats
+semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
   where
     n = length toks
     lexs = [ lexicalSigns m i (tokText t) | (i, t) <- zip [0 ..] toks ]
@@ -475,7 +543,18 @@ semParse m src toks = SemParse roots lexs maxCats
     -- inventory is filtered out once, up front (a pure optimisation: a rule
     -- 'unarySem' rejects produces no item either way).
     meaningful = [ (fr, to) | (fr, to) <- rUnary (smRules m), Just _ <- [unarySem fr to]
-                            , smTypeRaise m || not (isTypeRaise to) ]
+                            , smTypeRaise m || clusterCoord || not (isTypeRaise to) ]
+    -- The expensive raising search is enabled automatically only for a
+    -- transitive verb immediately followed by a coordinator and a new NP.
+    -- Plain adjective/VP lists do not trigger it.
+    clusterCoord = or
+      [ any (isTransitive . lxCat) (lexs !! (i - 1)) && startsNP (i + 1)
+      | (i,t) <- zip [0..] toks, i > 0, i + 1 < n
+      , map toLower (tokText t) `elem` ["and", "or"] ]
+    isTransitive (CSlash Fwd (CSlash Bwd (CAtom "S" _) (CAtom "NP" _) _) (CAtom "NP" _) _) = True
+    isTransitive _ = False
+    startsNP i = nameStatus m (i == 0) (tokText (toks !! i)) /= NotName
+      || map toLower (tokText (toks !! i)) `elem` ["the", "a", "an", "every", "all", "someone", "something"]
     isTypeRaise (CSlash _ _ (CSlash _ _ _ _) _) = True
     isTypeRaise _                                = False
 
@@ -483,14 +562,19 @@ semParse m src toks = SemParse roots lexs maxCats
       | ssCoord x /= Nothing || ssStructural x /= Nothing = []
       | otherwise =
           [ SSign to (finish (f (ssSem x))) pv (ssScore x - smUnaryPenalty m) Nothing Nothing
-                  (ssNotes x ++ [ (st, pv) | Just st <- [mst] ])
+                  (ssNotes x ++ [ (st, pv) | Just st <- [mst] ]
+                    ++ [(raisingNote, pv) | isTypeRaise to])
           | (fr, to) <- meaningful
           , unifiable (ssCat x) fr
           , Just (f, mst) <- [unarySem (ssCat x) to]
           , let pv = provRule ("unary " ++ show to) [ssProv x]
           ]
 
-    roots =
+    raisingNote = Stipulation "type-raising" "type raising for argument-cluster coordination"
+      ["application/composition without type raising"]
+      "a transitive verb followed by a coordinator and a new NP requires the subject-verb cluster as a constituent; explicit smTypeRaise also enables this rule"
+
+    unguardedRoots =
       let rs = [ s | s <- ML.findWithDefault [] (0, n) table
                    , unifiable (ssCat s) (CAtom "S" [])
                    -- A root asserts: an embedded clause (S[em], a proposition)
@@ -500,6 +584,59 @@ semParse m src toks = SemParse roots lexs maxCats
           byMeaning = M.fromListWith (\new old -> if ssScore new > ssScore old then new else old)
                         [ (canonicalAC (ssSem s), s) | s <- rs ]
       in sortBy (comparing (Down . ssScore)) (M.elems byMeaning)
+
+    -- Inverted quote tags can be absent altogether: a comma-coordinated
+    -- transitive reading then silently asserts P and boast(cat,Bob). For the
+    -- bounded suffix constructions P, VERB NP and P, NP VERB, retain only a
+    -- whole-root attribution by that verb. Missing safe tags means no parse.
+    -- The suffix NP must be present in the category chart and start with a
+    -- name/determiner/pronoun. This deliberately also abstains on ambiguous
+    -- independent comma clauses of this shape; plain adjective lists survive.
+    -- It does not claim to recognize every English quotation.
+    quoteCues = concat
+      [ [cue (i+1) (i+2) contentEnd | verbAt (i+1), npSpan (i+2) contentEnd]
+        ++ [cue (contentEnd-1) (i+1) (contentEnd-1)
+           | verbAt (contentEnd-1), npSpan (i+1) (contentEnd-1)]
+      | (i,t) <- zip [0..] toks, tokText t == ",", i+2 < contentEnd ]
+    contentEnd = n - length (takeWhile (\t -> tokText t `elem` [".", "!", "?", "\"", "'"]) (reverse toks))
+    verbAt i = any (isPrefixOf "VB" . fst)
+      (posCounts (smPOS m) (map toLower (tokText (toks !! i))))
+    npSpan a b = a < b && startsNP a
+      && any (unifiable (CAtom "NP" []))
+         (Set.toList (ML.findWithDefault Set.empty (a,b) catTable))
+    cue v a b =
+      ( reportingLemma (tokText (toks !! v))
+      , if b == a+1 && nameStatus m False (tokText (toks !! a)) == NameOnly
+          then Just (tokText (toks !! a)) else Nothing )
+    safeQuote (verb,holder) tm = case tm of
+      App (App (Con v _) h) (Lam _ TyS _) -> v == verb && typeOf [] h == Right TyE
+        && maybe True (\name -> h == entity name) holder
+      _ -> False
+    roots = [r | null nonrestrictives, r <- unguardedRoots
+               , all (\quoteCue -> safeQuote quoteCue (ssSem r)) quoteCues]
+    nonrestrictives =
+      [t | (previous,t) <- zip toks (drop 1 toks), tokText previous == ","
+         , map toLower (tokText t) `elem` ["that", "which", "who"]]
+    relativeTrace
+      | null nonrestrictives = mempty
+      | otherwise = note Decision
+          { decKind = "relative-safety"
+          , decChoice = "abstain: comma-marked nonrestrictive relative is unsupported"
+          , decAlternatives = ["erase commas and incorrectly restrict the quantifier domain"]
+          , decWhy = "restrictive relative semantics cannot express supplementary content; punctuation absorption must not turn one into the other"
+          , decProv = provRule "relative-safety" [ProvLex src (tokSpan t) (tokText t) | t <- nonrestrictives]
+          }
+    quoteTrace
+      | null quoteCues = mempty
+      | otherwise = note Decision
+          { decKind = "quote-safety"
+          , decChoice = if null roots then "abstain: no whole-quote attribution reading"
+                        else "retain only whole-quote attribution readings"
+          , decAlternatives = [pretty (ssSem r) | r <- unguardedRoots
+                             , not (all (\quoteCue -> safeQuote quoteCue (ssSem r)) quoteCues)]
+          , decWhy = "comma + verb/NP suffix is quote-shaped; extensional coordination must not assert the quoted clause"
+          , decProv = provRule "quote-safety" [ProvLex src (tokSpan t) (tokText t) | t <- toks]
+          }
 
 -- | The sign a combinator application yields from two adjacent items, if the
 -- semantics admits it: each combinator of 'combineNamed' has one fixed semantic

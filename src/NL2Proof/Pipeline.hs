@@ -224,7 +224,7 @@ processCCG model src sent =
     , srChosen = chosen
     , srForm = form
     , srDRS = drs
-    , srTrace = unknownTrace <> backTrace
+    , srTrace = unknownTrace <> spTrace sp <> backTrace
     }
   where
     toks = casedTokens (spanStart (sentSpan sent)) (sentText sent)

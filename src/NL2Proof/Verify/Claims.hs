@@ -62,6 +62,7 @@
 module NL2Proof.Verify.Claims
   ( -- * Claims
     Fact(..)
+  , factClaim
   , ClaimTable(..)
   , claimsOf
   , claimsOfDRS
@@ -103,12 +104,17 @@ data Fact = Fact
   { factId    :: Int
     -- ^ Position in the original condition order. Stable, and unique per fact
     -- even when claims coincide.
-  , factClaim :: CanonCond
-    -- ^ /What/ is claimed, provenance-free. Shared by convergent facts.
+  , factAssertion :: Claim 'Asserted
+    -- ^ Structural top-level witness retained through oracle admission.
   , factProv  :: Prov
     -- ^ /How/ it was derived: the full derivation tree, retained.
   }
   deriving (Eq, Show)
+
+-- | Inspect the content without being able to replace it with an arbitrary
+-- embedded condition. Confirmation uses 'factAssertion', not this accessor.
+factClaim :: Fact -> CanonCond
+factClaim = claimCond . factAssertion
 
 -- | The retained claim table for a selected reading.
 data ClaimTable = ClaimTable

@@ -40,3 +40,6 @@ __pycache__/
 # Autonomous research: local logs, raw runs, and isolated tool environments
 research/runs/
 research/.venv/
+
+# New benchmark output stays local; previously tracked baselines remain tracked.
+bench/*/results/

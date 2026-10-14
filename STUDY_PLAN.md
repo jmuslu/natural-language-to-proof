@@ -36,11 +36,12 @@ cabal run -v0 nl2proof-explain            # REPL: loads the lexicon once, one te
 - `--stage=tags|deriv|lambda|drs|claims` prints one section only.
 - `--all-readings` prints every reading (the selected one is marked `[SELECTED]`) and every candidate supertag (`*` marks the one the selected derivation used; `---` lines are tags the tagger offered that have no meaning).
 - `--hand` uses the hand-written fragment lexicon (`attitudeLexicon`: John, Mary, student, smiles, says, knows, ...) instead of CCGbank. It starts instantly, so it is the quickest way to check a Unit 1 or Unit 3 derivation.
+- `--pos-backoff` enables experimental POS-dictionary noun/adjective backoff, off by default. Selected entries log a `pos-backoff` decision; the ranking score is not evidence strength.
 - In the REPL, `:all` toggles `--all-readings`, `:stage=deriv` (or `:stage=all`) changes the section, `:help` lists the commands.
 
 The CCGbank lexicon is read from `$CCGBANK_DIR`, else `~/ccgbank/ccgbank_1_1/data`. Loading sections 02-21 (39,604 trees) takes about 80 seconds, so for more than one sentence use the REPL. `scripts/check-explain.sh` is the smoke test.
 
-Real output for "Bob says that the cat is not red." (compare it with your Unit 2 exercise 1):
+Historical pre-repair output for "Bob says that the cat is not red." (compare it with your Unit 2 exercise 1). The current parser preserves `[dcl]` through `is not`: its result is `(S[dcl]\NP)/(S[adj]\NP)` and the clause is `S[dcl]`. This transcript is retained as a baseline; regenerate with the command above for current trees, scores and candidate counts:
 
 ```
 == 1. TOKENS + SUPERTAGS ===================================================
@@ -161,23 +162,25 @@ Real output for "Bob says that the cat is not red." (compare it with your Unit 2
 
 Things to notice: *not* attaches to *is* by backward crossed composition (`<Bx`), the that-clause is a proposition (`\w1:s. ...`, type `s->t`), and `red(cat)` sits two boxes down, so it is reported (`say(Bob)`) and never asserted.
 
-### Known deviations: when the tool disagrees with the textbook
+### Repaired seams and remaining limits
 
-The tool shows what the system *does*. In the places below, the system differs from the textbook, so if your hand answer differs from the tool's output here, the system is wrong, not you. Spotting each one yourself, before checking this list, is a good test that you've understood the unit.
+The table distinguishes bounded repairs from remaining coverage and meaning errors. A passing handwritten regression does not establish coverage of every instance of the construction. The recorded corpus checks and paired coverage experiment are summarized in `research/FINDINGS.md`.
 
-| Unit | What the tool shows | Textbook answer | Matters for meaning? |
-|---|---|---|---|
-| 2 | "is not" combines by `<Bx` to `(S\NP)/(S[adj]\NP)` and the clause is bare `S` | the `[dcl]` feature carries through the combination, giving `S[dcl]` | no: bare `S` matches `S[dcl]` |
-| 2 | the final "." attaches deep inside the tree ("red .") | punctuation attaches at the top | no |
-| 2 | "Bob likes and Anne hates the cat." fails at the parse stage (the category-only parse reaches S, but no meaning survives) | `>T` + `>B` make "Bob likes" an `S/NP`, and the two `S/NP`s coordinate | yes: non-constituent coordination has no semantics yet, so do Unit 2 exercise 2 on paper only |
-| 2 | "round" has no `S[adj]\NP` reading, so "… is round" fails | it's an ordinary predicative adjective | yes: a coverage gap, open decision (a) |
-| 3, 4 | "Every cat that is red is big." doesn't parse | a standard relative clause, "every cat that is red" = `λQ. ∀x((cat(x) ∧ red(x)) → Q(x))` | yes: there's no meaning entry for relative "that" |
-| 4 | "The cat is red. It is big." asserts `big(?it_0)` | "it" refers to the cat | yes: names and definites become constants, not DRS referents, so a pronoun has nothing to bind to |
-| 5 | "Bob knows that P" lists P as both Reported and Presupposed | Presupposed only | no: it's never asserted either way |
-| 5 | "added" stays `added`, not `add` | the predicate should be the lemma, "add" | no: still handled safely as reported |
-| — | "Bob likes the cat and the dog." has a spurious second reading treating "the cat and the dog" as one thing, shown as `cat dog` | one reading: Bob likes both | only under `--all-readings` |
+| Unit | Current behavior | Scope or remaining limit |
+|---|---|---|
+| 2 | Endomorphic modifiers preserve matched features: `is not` retains `[dcl]` through `<Bx`. | This is targeted feature propagation, not a full feature-variable unifier. |
+| 2 | Final punctuation may still attach inside the tree (`red .`). | Usually semantically inert; punctuation constructions need their own checks. |
+| 2 | The existing type-raising/composition semantics now activate for the recognized argument-cluster coordination pattern, including `Bob likes and Anne hates the cat`. | Raising is not globally enabled. The selected corpus reading is correct, but a second returned reading is `likes(Bob) ∧ hate(Anne,cat)`. The shared indefinite-object regression introduces one existential, not one per conjunct. |
+| 2 | An optional `--pos-backoff` uses known NN/NNS/JJ evidence to add missing noun/adjective categories. | Off by default; no invented verb valency or contextual POS tagger. The licensed-model probe repairs round but not kind: round has JJ evidence, whereas kind has none in sections 02–21. On 120 OWA depth-5 dev theories (2,244 theory sentences), exact translation rises from 86.7% to 93.0%; 2,560 question translations rise from 90.5% to 95.6%; whole-theory exactness rises from 32/120 to 65/120. These are translation measurements, not QA accuracy. |
+| 3, 4 | Restrictive subject relatives compose at N level, so `Every cat that is red is big` restricts the universal to red cats. | Object-gap relatives remain unsupported. Comma-marked relatives fail closed rather than silently becoming restrictive. Verified on the licensed-model regression. |
+| 4 | Main-box named and definite constants can antecede later pronouns, while subordinate content remains inaccessible. | Recency is deterministic and logged; this is not gender/animacy inference. Attitude participants are excluded from the neuter `it` candidate set. |
+| 5 | A matrix factive complement is listed as Presupposed, without a duplicate Reported row. | Factive content inside a report retains the enclosing source chain. It is not promoted to assertion. |
+| 5 | A conservative inflection table normalizes `added` to `add`, `noted` to `note`, and selected other known forms; reporting attestation uses the same normalization. | This is not a general English lemmatizer. Unsupported past forms are preserved, not guessed. |
+| 5 | Recognized comma quotation suffixes retain only an exact matching attribution root; otherwise the sentence abstains, with discarded meanings logged. | Bounded suffix patterns are VERB+NP and NP+VERB with known verb POS and a parsable name/determiner NP. Unknown POS, adverbial tails and general dialogue are outside this guard. The corpus example `The cat is red, boasted Bob` now abstains. |
+| 5 | `see that` has a logged unresolved sense choice and defaults to non-factive attribution. | Perceptual `see that` is factive; supervisory `see that` need not be. The system does not yet disambiguate these senses. The corpus example now parses with Reported content only; the baseline failed to parse. |
+| — | `Bob likes the cat and the dog` may retain the spurious `cat dog` reading. | No general NP-coordination repair was made in this phase. Check all returned readings, not just the ranked selection. |
 
-These are queued as fixes for after the matching units.
+The broader ambiguity policy is still a separate inference obligation. Passing the highest-ranked reading does not establish a skeptical conclusion across the parser's bounded candidate set.
 
 ---
 
@@ -187,14 +190,14 @@ These come at the start because they are the payoff. Each unit below exists to m
 
 | # | Invariant | Theory it comes from | Where it bit us or will bite us |
 |---|---|---|---|
-| 1 | The category determines the semantic type (`catTy` is a homomorphism). Slash direction carries no meaning. | CCG + typed λ | `S[em] ↦ s→t`. A wrong category gives a well-typed wrong meaning, which is the "silent" error class. |
-| 2 | The grammar is about 10 rules. Every coverage failure is a lexicon, tagger or CCGbank-unary-rule failure. | CCG / CCGbank | round/kind: Wall Street Journal text never uses those words as predicative adjectives. |
+| 1 | The category determines the base semantic type; declared intensional parameter lifting is checked separately. Slash direction controls combination, not semantic function type. | CCG + typed λ | `S[em] ↦ s→t`. A wrong category gives a well-typed wrong meaning, which is the "silent" error class. |
+| 2 | A small combinator inventory does not make every failure lexical: semantics, features, learned rules, bounded search and safety guards also matter. | CCG / CCGbank | round/kind: desired word/category pairs are missing; only round has adjective POS evidence in the loaded dictionary. |
 | 3 | Only the top-level conditions of the main DRS are asserted. A sub-box belongs to exactly one complex claim. | DRT truth definition | Negation leak: 25,227 → 6,781 facts, including 775 polarity flips. |
 | 4 | An attitude complement is evaluated at another world. Only factives bring it back to the actual world, and then as a presupposition. | Intensional semantics | The reported default, quote categories, "boasted", "sees that". |
 | 5 | Classical proof is monotone. A partially parsed theory can prove things, but it can never conclude "Unknown". | Logic / OWA | Error-handling decision (b): abstain and fall back. |
-| 6 | Under ambiguity, assert only what holds in every reading (skeptical reasoning). | Nonmonotonic reasoning | The "Bob added" lower-ranked reading that asserts. |
+| 6 | Required inference policy: accept a skeptical conclusion only across all admitted readings, and disclose search truncation. The display pipeline still selects one ranked reading. | Nonmonotonic reasoning | The "Bob added" lower-ranked reading that asserts. |
 | 7 | Strength is algebra: ⊗ along a chain, ⊕ across alternatives, and no self-support through cycles. | Provenance semirings / TMS | Fusion graph: "fuse strongly" vs "linger". |
-| 8 | Only the oracle creates `Confirmed`, and the types enforce it, not discipline. | Type-level programming | The bare-`CanonCond` `confirm` loophole. |
+| 8 | Only the oracle creates `Confirmed`, and the types enforce it, not discipline. | Type-level programming | The raw-condition and coercion/promotion routes are closed; caller-authored DRSs remain a trust boundary. |
 
 ---
 
@@ -274,13 +277,14 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
   - That's essentially the whole grammar.
 - **CCGbank adds engineering rules that are not "pure" CCG.** These are unary type-changing rules (for example N→NP for bare plurals) and punctuation rules. They live in `Syntax/CCGTypeChange.hs`. Many oddities come from here.
 - **Why composition and raising exist.** Take "Bob likes and Anne hates cats". "Bob likes" must become a constituent of type `S/NP`. The side effect is **spurious ambiguity**: many derivations with the same meaning. That's harmless for meaning but costly for parsing.
-- **The lexicon carries everything.** All language-specific knowledge sits in the word→category map, so coverage = lexicon coverage.
+- **The lexicon carries much of the language-specific work.** Word/category evidence and closed/open lexical meanings interact with feature-sensitive combinators, learned type changes, construction guards and bounded search. A parse failure may arise at any of these boundaries.
 - **Supertagging is "almost parsing"** (Clark & Curran). Choosing each word's category is the hard part; once categories are chosen, combining them is nearly deterministic.
-- **CCGbank was derived automatically from Penn Treebank Wall Street Journal text.** Its lexicon is whatever 1989 newswire happened to contain. **round/kind** fail because that text never uses them as `S[adj]\NP`. This is a fact about the corpus, not about CCG. It's the key to decision (a): a POS backoff means "trust the grammar beyond the corpus."
+- **CCGbank was derived from Penn Treebank Wall Street Journal text.** Its loaded word/category dictionary lacks the desired predicative tags for round/kind. Optional POS backoff repairs round using observed JJ evidence; kind has no such evidence and remains unsupported. Measure exact translation as well as coverage: a successful parse alone is not validation.
 - **The category → type map:**
-  - `S ↦ t`, `NP ↦ e`, `N ↦ e→t`
+  - `S[dcl] ↦ t`, `S[em] ↦ s→t`, `NP ↦ (e→t)→t`, `N ↦ e→t`
   - `X/Y` and `X\Y ↦ catTy(Y) → catTy(X)`
   - Direction disappears, so the semantics cannot tell `/` from `\`.
+  - Proper-name constants have type `e`, but lexical NP entries lift them to generalized-quantifier type. Declared intensional parameter lifting may give a lexical term a different type from the base category interpretation; composition checks that lifting explicitly.
 
 **Lives in:** `Syntax/Category.hs`, `CCGRules.hs`, `CCGBank.hs` (the `.auto` reader), `CCGSupertag.hs`, `CCGTypeChange.hs`.
 
@@ -298,7 +302,7 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
 4. Pick five ProofWriter sentences and predict which word, if any, lacks a category. Then check with `proofwriter-coverage`.
 5. Check 1 with `nl2proof-explain --stage=deriv "Bob says that the cat is not red."` (`--stage=tags` for the categories alone). For 4, section 6 of the full output names the failing stage.
 
-**You've got it when:** you can look at a parse failure and say whether it is a lexicon gap, a tagger mistake or a missing unary rule.
+**You've got it when:** you can localize a failure to lexical/category coverage, semantic entry, combinator/feature handling, a safety guard or the search bound, and distinguish no parse from a well-typed wrong meaning.
 
 **Read:**
 - Steedman & Baldridge (2011), "Combinatory Categorial Grammar", in Borsley & Börjars (eds.), *Non-Transformational Syntax*. These are the best 40 pages on CCG; start here.
@@ -326,7 +330,7 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
   - Open-class words (nouns, verbs, adjectives) get a template chosen by their category.
   - That's why CCGSem keys closed-class entries on the pair (word, category).
 - **Where meaning gets lost:** punctuation rules, unary rules, multi-word expressions, and words used in categories the templates never anticipated.
-- **The silent-error class.** The parse succeeds and the result type-checks, but the meaning is wrong. It's the most dangerous number in the coverage report (about 0.35%), because nothing downstream can detect it.
+- **The silent-error class.** A parse may succeed and type-check while its meaning is wrong. Report this with a dataset, split, denominator and manual or reference criterion. Parse coverage alone cannot measure semantic precision; the old approximately 0.35% figure is historical, not a current universal error rate.
 
 **Exercise:**
 1. Write the open-class templates for `N`, `S[adj]\NP` and `(S[dcl]\NP)/NP`.
@@ -353,6 +357,7 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
   - A referent introduced in the antecedent of `⇒` is visible in the consequent: "If a farmer owns a donkey, he beats it."
   - Nothing inside `¬` is visible outside.
   - Donkey sentences are the classic test.
+  - Main-box names and definite constants can also antecede later pronouns; they are not converted into existential variables. The implementation logs recency and excludes attitude participants from neuter `it` candidates. This is a bounded heuristic, not full salience or animacy inference.
 - **Presupposition as anaphora** (van der Sandt). A presupposition tries to bind to something already in context; failing that, it is *accommodated* at the highest box it can reach. That's why "Bob doesn't know that the cat is red" still presupposes red(cat), and why `CPresup` projects through negation.
 
 **Exercise:**
@@ -387,12 +392,12 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
   - *know, realize, regret* presuppose their complement.
   - *say, believe, claim* do not.
   - *prove, manage* are implicative, which is a different behaviour.
-  - Factivity is what decides Reported vs. Presupposed.
+  - A matrix factive complement is Presupposed only. Inside an outer report, projected factive content retains that outer source chain. Neither case promotes it to an asserted world fact.
 
 **Exercise:** Classify *say, believe, know, see, add, note, boast, regret, claim, prove* as factive, non-factive or implicative. For each, predict whether "Bob V that the cat is red" should report, presuppose or assert red(cat), then check what the system does.
 Check each prediction with `nl2proof-explain --stage=claims "Bob V that the cat is red."`: Reported (with its source chain) vs. Presupposed is the answer.
 
-**Watch out for "see that":** it is usually treated as factive. The agent left "sees" with the reported reading, which is safe (fail-closed) but may be semantically wrong. Decide this once you've done the exercise.
+**Sense matters for `see that`:** perceptual `see that P` is factive, while supervisory uses that mean ensuring something is done do not license P as already true. The parser logs `see-sense` and retains an unresolved non-factive attribution. This is a limitation, not a claim that perceptual seeing is non-factive. The baseline corpus example failed to parse; the repaired example is Reported only. See Christina H. Dietz, [“Reasons and factive emotions,” §3](https://link.springer.com/article/10.1007/s11098-017-0929-y), and Vitaly Voinov, [“Seeing is trying”](https://www.cambridge.org/core/journals/language-and-cognition/article/abs/seeing-is-trying-the-relation-of-visual-perception-to-attemptive-modality-in-the-worlds-languages/A0F8846B72AEB95F3A22E02B614CB86B).
 
 **Read:**
 - von Fintel & Heim, *Intensional Semantics* (MIT lecture notes, free), chs. 1–3.
@@ -483,11 +488,12 @@ Your informal vocabulary maps onto established formalisms. Pick one formalism fo
 - Unexported constructors make `Confirmed` unforgeable outside the module.
 - "Parse, don't validate."
 - The "Ghosts of Departed Proofs" pattern, a type-level token that proves a check happened. That is exactly `Confirmed`.
-- A typeclass instance grants a capability, so an overly broad instance (`Confirmable CanonCond`) is a hole in the lock. That's invariant 8 and the open loophole.
+- The token-producing oracle accepts only a `Claim 'Asserted` witness obtained structurally from a top-level DRS condition. `Claim` has a nominal role, so `Data.Coerce` cannot relabel Reported or Embedded content. Raw conditions can be checked diagnostically without producing `Confirmed`; public arbitrary promotion is removed.
+- This protects the module boundary, not the truth or provenance of a caller-authored DRS. Source authenticity and semantic correctness remain separate obligations.
 
 **Exercise:**
 1. Explain why compile-fail tests, rather than unit tests, are the right tests for the lock.
-2. Sketch how to close the loophole without breaking legitimate callers.
+2. Trace a top-level condition through `assertedClaims`, `splitClaims` and `confirm`; explain why an extracted negated-box literal cannot obtain the same witness. Read the compile-fail cases for raw conditions, nonasserted kinds, constructor forging and coercion.
 3. `--stage=claims` shows which kind (Asserted, Reported, Presupposed, Embedded) each condition gets, i.e. what the oracle boundary is checking.
 
 **Read:**
@@ -523,8 +529,8 @@ Your informal vocabulary maps onto established formalisms. Pick one formalism fo
 
 | Decision | Settled by |
 |---|---|
-| (a) round/kind: POS backoff vs. hand entries | Unit 2 |
+| (a) POS backoff: retain the experimental flag or enable by default based on measured coverage and precision | Unit 2 |
 | (b) error handling: all readings, LLM translation at hearsay strength, solver | Units 6 + 7 |
 | (c) wire Readings/Discourse into Pipeline | Unit 4 sidebar |
-| "see that": reported or factive | Unit 5 |
-| bare-`CanonCond` loophole | Unit 8 |
+| `see that`: disambiguate perceptual and supervisory senses; retain the logged conservative default meanwhile | Unit 5 |
+| oracle boundary: audit structural witnesses and caller-authored DRS trust boundary (raw promotion closed) | Unit 8 |

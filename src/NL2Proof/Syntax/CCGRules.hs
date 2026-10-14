@@ -24,10 +24,10 @@
 --     unify iff equal. This matches CCGbank usage and is the only policy under
 --     which the corpus's top rules combine at all. The alternative, strict
 --     equality, is what the core parser does and is exactly what fails here.
---   * __Ground unification, no variable binding.__ @GRAMMAR@ categories are
---     ground (no @S_1@-style variables), so reproducing an attested parent needs
---     no binding propagation. A generative parser emitting novel categories
---     would need it; that is deferred, not done.
+--   * __Ground unification, limited feature propagation.__ Endomorphic
+--     modifiers X/X and X\\X inherit their argument's specified features.
+--     We do not treat unrelated bare S occurrences as one shared variable:
+--     doing so could confuse a result clause with its embedded complement.
 module NL2Proof.Syntax.CCGRules
   ( -- * Unification
     unifiable
@@ -70,6 +70,24 @@ featCompat [] _ = True
 featCompat _ [] = True
 featCompat a b  = norm a == norm b
   where norm = sort . nub
+
+-- | Most specific compatible category. Callers first check 'unifiable'.
+mergeFeatures :: CCat -> CCat -> CCat
+mergeFeatures (CAtom n fs) (CAtom _ gs) = CAtom n (choose fs gs)
+mergeFeatures (CSlash d r a fs) (CSlash _ r' a' gs) =
+  CSlash d (mergeFeatures r r') (mergeFeatures a a') (choose fs gs)
+mergeFeatures a _ = a
+
+choose :: [Feat] -> [Feat] -> [Feat]
+choose [] gs = gs
+choose fs _ = fs
+
+-- The identity of the modifier's two category occurrences is the evidence
+-- that their features should covary. No arbitrary atom-name substitution.
+specialize :: CCat -> CCat -> CCat -> CCat
+specialize result slot actual
+  | result == slot = mergeFeatures slot actual
+  | otherwise = result
 
 --------------------------------------------------------------------------------
 -- Coordination and punctuation helpers
@@ -132,22 +150,22 @@ allCombinators = [minBound .. maxBound]
 -- | Apply one combinator to an ordered pair of adjacent categories.
 step :: Combinator -> CCat -> CCat -> [CCat]
 step FwdApp l r = case l of
-  CSlash Fwd x y _ | unifiable y r -> [x]
+  CSlash Fwd x y _ | unifiable y r -> [specialize x y r]
   _ -> []
 step BwdApp l r = case r of
-  CSlash Bwd x y _ | unifiable y l -> [x]
+  CSlash Bwd x y _ | unifiable y l -> [specialize x y l]
   _ -> []
 step FwdComp l r = case (l, r) of
-  (CSlash Fwd x y _, CSlash Fwd y' z _) | unifiable y y' -> [CSlash Fwd x z []]
+  (CSlash Fwd x y _, CSlash Fwd y' z _) | unifiable y y' -> [CSlash Fwd (specialize x y y') z []]
   _ -> []
 step BwdComp l r = case (l, r) of
-  (CSlash Bwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Bwd x z []]
+  (CSlash Bwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Bwd (specialize x y' y) z []]
   _ -> []
 step FwdXComp l r = case (l, r) of
-  (CSlash Fwd x y _, CSlash Bwd y' z _) | unifiable y y' -> [CSlash Bwd x z []]
+  (CSlash Fwd x y _, CSlash Bwd y' z _) | unifiable y y' -> [CSlash Bwd (specialize x y y') z []]
   _ -> []
 step BwdXComp l r = case (l, r) of
-  (CSlash Fwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Fwd x z []]
+  (CSlash Fwd y z _, CSlash Bwd x y' _) | unifiable y y' -> [CSlash Fwd (specialize x y' y) z []]
   _ -> []
 step CoordMark l r
   | isCoordinator l = [addConjFeat r]

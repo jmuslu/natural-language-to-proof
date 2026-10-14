@@ -282,7 +282,8 @@ setEdge p c rel s =
 antecedentsFor :: Policy -> [Ranked] -> Antecedents
 antecedentsFor policy rs =
   Antecedents
-    { antCandidates = map rkRef rs
+    { antCandidates = map (DRef . rkRef) rs
+    , antPersonal = []
     , antWhy = case policy of
         Committed ->
           "most recent referent on the SDRT right frontier under the top-ranked"
@@ -436,8 +437,8 @@ threadedDRS t =
 -- | A pronoun the two threadings resolved differently.
 data Divergence = Divergence
   { dvAnaphor :: String
-  , dvFlat    :: Maybe Ref
-  , dvSDRT    :: Maybe Ref
+  , dvFlat    :: Maybe DTerm
+  , dvSDRT    :: Maybe DTerm
   , dvWhy     :: String
   }
   deriving (Eq, Show)
@@ -477,7 +478,7 @@ compareThreading policy segs =
       , n <- anaphorConstants d
       ]
       where
-        sdrtPick = listToMaybe (map rkRef (stRanked st))
+        sdrtPick = listToMaybe (map (DRef . rkRef) (stRanked st))
         why
           | sdrtPick == Nothing = "closed by the right frontier"
           | otherwise           = "the frontier ranks a different referent first"

@@ -42,7 +42,8 @@ module NL2Proof.DRT.Build
   , runDiscourse
   ) where
 
-import Data.List (nub)
+import Data.Char (toLower)
+import Data.List (isPrefixOf, nub, sortBy)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe, mapMaybe)
 
@@ -242,16 +243,22 @@ resolveAnaphora context = resolveAnaphoraWith (flatAntecedents context)
 -- missing antecedent is inside a negated box, SDRT threading would say it was
 -- closed off by a coordinating relation.
 data Antecedents = Antecedents
-  { antCandidates :: [Ref]
+  { antCandidates :: [DTerm]
     -- ^ Best first.
+  , antPersonal :: [DTerm]
+    -- ^ Attitude participants, conservatively excluded for neuter @it@. This is a
+    -- selection heuristic, not an animacy ontology.
   , antWhy        :: String
     -- ^ The rule that ordered them.
   , antNoneNote   :: String
     -- ^ Why there may be none, for the diagnostic.
   }
 
--- | Stage 1's source: every top-level referent of the accumulated context,
--- most recent first.
+-- | Stage 1's source: top-level referents and directly mentioned named
+-- entities, most recent first. Names and definite descriptions remain constants
+-- in the logic; making them bindable does not invent an existential or equality.
+-- Only direct arguments in the main box (including attitude holders) enter here.
+-- Constants in subordinate boxes never become discourse candidates.
 --
 -- Ordering comes from 'recencyOrdered', which reads the surface position of the
 -- words that introduced each referent. It deliberately does /not/ reverse
@@ -262,18 +269,40 @@ data Antecedents = Antecedents
 flatAntecedents :: DRS -> Antecedents
 flatAntecedents context =
   Antecedents
-    { antCandidates = recencyOrdered context
-    , antWhy = "most recently introduced accessible referent, by surface position"
+    { antCandidates = nub [ t | (_, _, t) <- sortBy laterFirst keyed ]
+    , antPersonal = nub [a | CAtt _ as _ _ <- drsConds context, a <- as]
+    , antWhy = "most recently introduced accessible referent or directly mentioned named entity, by lexical surface position; it conservatively excludes personal attitude participants"
     , antNoneNote =
         "referents inside negated, implicational or attitude boxes are correctly"
-          ++ " inaccessible"
+          ++ " inaccessible; it also excludes personal attitude participants"
     }
+  where
+    mentions = [(DRef r, p) | (r, p) <- drsUniverse context]
+      ++ concatMap named (drsConds context)
+    keyed = [(provSpan p, i, t) | (i, (t, p)) <- zip [0 :: Int ..] mentions]
+    laterFirst (p, i, _) (q, j, _) = compare q p <> compare j i
+    named c =
+      [ (DConst n, nameProv n (condProv c))
+      | DConst n <- directArgs c, not (isAnaphorName n) ]
+    directArgs (CPred _ as _) = as
+    directArgs (CEq a b _) = [a, b]
+    directArgs (CAtt _ as _ _) = as
+    directArgs _ = []
+    -- A condition can mention both subject and object. Its covering span would
+    -- tie their recency, so recover the entity's own words when available.
+    nameProv n p = case
+      [ ProvLex src sp w | (src, sp, w) <- provLeaves p
+                        , map toLower w `elem` words (map toLower n) ] of
+      [] -> p
+      ps -> provRule "named-antecedent" ps
 
 resolveAnaphoraWith :: Antecedents -> DRS -> Prov -> (DRS, Trace)
 resolveAnaphoraWith ants new sentProv =
   foldl step (new, mempty) (anaphorConstants new)
   where
-    step (drs, tr) name = case antCandidates ants of
+    eligible name t = not (isIt name && t `elem` antPersonal ants)
+    isIt n = n == "?it" || "?it_" `isPrefixOf` n
+    step (drs, tr) name = case filter (eligible name) (antCandidates ants) of
       [] ->
         ( drs
         , tr
@@ -287,13 +316,13 @@ resolveAnaphoraWith ants new sentProv =
                 }
         )
       (chosen : rejected) ->
-        ( substConstDRS name (DRef chosen) drs
+        ( substConstDRS name chosen drs
         , tr
             <> note
               Decision
                 { decKind = "anaphora"
                 , decChoice = show chosen
-                , decAlternatives = map show rejected
+                       , decAlternatives = map show (rejected ++ filter (not . eligible name) (antCandidates ants))
                 , decWhy = antWhy ants
                 , decProv = provFor name
                 }

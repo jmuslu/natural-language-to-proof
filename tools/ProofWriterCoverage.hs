@@ -23,7 +23,7 @@
 --                        [--questions] [--syntax] [--examples K] [--check-context N]
 --                        [--debug SENTENCE]...
 --   parser overrides:    [--alpha A] [--beam N] [--no-truecase] [--no-seen-rules]
---                        [--type-raise]   (all off = the tagger of ccg-supertag-parse)
+--                        [--type-raise] [--pos-backoff]
 module Main (main) where
 
 import Control.Concurrent (forkIO, getNumCapabilities, newEmptyMVar, putMVar, takeMVar)
@@ -80,6 +80,7 @@ parseOpts = go (Opts False [] 0 False False 3 20 [] id)
     go o ("--no-truecase" : r) = go (cfg o (\m -> m { smTruecase = False })) r
     go o ("--no-seen-rules" : r) = go (cfg o (\m -> m { smSeenRules = False })) r
     go o ("--type-raise" : r) = go (cfg o (\m -> m { smTypeRaise = True })) r
+    go o ("--pos-backoff" : r) = go (cfg o (\m -> m { smPOSBackoff = True })) r
     go o (_ : r) = go o r
     go o [] = o { oSplits = if null (oSplits o) then ["train"] else oSplits o }
     cfg o f = o { oModel = f . oModel o }
@@ -243,9 +244,9 @@ main = do
   (model0, ntrees) <- loadSemModel cdir
   let model = oModel opts model0
   hPutStrLn stderr ("  " ++ show ntrees ++ " trees")
-  printf "parser: beta %.3f, k %d, beam %d, alpha %.1f, truecase %s, seen-rules %s (%d pairs), type-raising %s\n"
+  printf "parser: beta %.3f, k %d, beam %d, alpha %.1f, truecase %s, seen-rules %s (%d pairs), type-raising %s, POS-backoff %s\n"
     (smBeta model) (smKmax model) (smBeam model) (smAlpha model) (show (smTruecase model))
-    (show (smSeenRules model)) (length (smSeen model)) (show (smTypeRaise model))
+    (show (smSeenRules model)) (length (smSeen model)) (show (smTypeRaise model)) (show (smPOSBackoff model))
   forM_ (oDebug opts) (debugSentence model)
   let world = if oOWA opts then "OWA" else "CWA"
   forM_ (if null (oDebug opts) then oSplits opts else []) $ \split -> do

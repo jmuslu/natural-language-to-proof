@@ -270,7 +270,7 @@ reachable ct =
     ++ fusedClaims base ++ entailedFrom base
   where
     g = genealogyOf credulous ct
-    base = fuse (confirmAll credulous (factClaims ct))
+    base = fuse (confirmAll credulous (map factAssertion (ctFacts ct)))
 
 oracleChecks :: [Check]
 oracleChecks =
@@ -290,7 +290,7 @@ oracleChecks =
   ++
   [ expect "control: the rule stays usable whole; with its antecedent asserted, entailment detaches it"
       (happyBob `elem` entailedFrom (fuse (confirmAll credulous
-         (factClaims (tableOf ccg "the cat is red. If the cat is red then Bob is happy.")))))
+         (map factAssertion (ctFacts (tableOf ccg "the cat is red. If the cat is red then Bob is happy."))))))
   , expect "control: an asserted literal is reachable" (redCat `elem` reachable (tableOf ccg "the cat is red."))
   ]
 
@@ -319,7 +319,7 @@ embeddedChecks =
       (let ct = tableOf ccg "the cat is red. If the cat is red then Bob is happy."
        in redCat `elem` map claimCond (ctEmbedded ct) && redCat `elem` factClaims ct
           && happyBob `notElem` factClaims ct)
-  , expect "the explicit route still exists: asCandidate, then an oracle"
-      (map confClaim [ c | Just c <- map (confirm credulous . asCandidate) (ctEmbedded (tableOf ccg "the cat is not red.")) ]
-         == [redCat])
+  , expect "embedded hypotheses remain inspectable without obtaining assertion tokens"
+      (map (check credulous . claimCond) (ctEmbedded (tableOf ccg "the cat is not red."))
+         == [Confirmed])
   ]

@@ -14,7 +14,7 @@ import qualified Data.Set as Set
 import Harness
 import NL2Proof.Bench.JSON
 import NL2Proof.Bench.ProofWriter
-import NL2Proof.DRT.Build (describeIota, resolveLocalAnaphora)
+import NL2Proof.DRT.Build (describeIota, resolveLocalAnaphora, dscDRS, runDiscourse)
 import NL2Proof.DRT.Types
 import NL2Proof.Pipeline
 import NL2Proof.Provenance
@@ -31,7 +31,7 @@ import NL2Proof.Trace
 main :: IO ()
 main = runChecks "ccgsem"
   (closedChecks ++ templateChecks ++ combinatorChecks ++ termChecks
-   ++ tokenChecks ++ sentenceChecks ++ disciplineChecks ++ goldChecks)
+   ++ tokenChecks ++ sentenceChecks ++ disciplineChecks ++ namedAnaphoraChecks ++ goldChecks)
 
 --------------------------------------------------------------------------------
 -- Fixtures
@@ -378,3 +378,54 @@ goldChecks =
       , "\"representation\":\"(\\\"cow\\\" \\\"is\\\" \\\"big\\\" \\\"+\\\")\"}},"
       , "\"rules\":{\"rule1\":{\"text\":\"Big things are red.\","
       , "\"representation\":\"(((\\\"something\\\" \\\"is\\\" \\\"big\\\" \\\"+\\\")) -> (\\\"something\\\" \\\"is\\\" \\\"red\\\" \\\"+\\\"))\"}}}" ]
+
+-- Names and definites are constants for claim identity, but still license
+-- discourse anaphora. These checks preserve subordinate-box accessibility.
+namedAnaphoraChecks :: [Check]
+namedAnaphoraChecks =
+  [ expect "discourse definite: following it resolves to cow"
+      (has "big" "cow" "The cow is red. It is big.")
+  , expect "discourse name: following they resolves to Anne"
+      (has "big" "Anne" "Anne is red. They are big.")
+  , expect "discourse named candidates are ordered by lexical recency"
+      (has "quiet" "dog" "The cow is red. The dog is big. It is quiet.")
+  , expect "discourse object is later than subject within one sentence"
+      (has "big" "dog" "The cow likes the dog. It is big.")
+  , expect "discourse decision records chosen named candidate and alternatives"
+      (any (\d -> decKind d == "anaphora" && decChoice d == "dog"
+                  && "cow" `elem` decAlternatives d)
+           (traceDecisions (prTrace (pipeline "The cow is red. The dog is big. It is quiet."))))
+  , expect "repeated name is not an alternative to itself"
+      (let p = pipeline "The cow is red. The cow is big. It is quiet."
+       in null (anaphorConstants (dscDRS (prDiscourse p)))
+           && all (\d -> decChoice d `notElem` decAlternatives d)
+                  (traceDecisions (prTrace p)))
+  , expect "named mention inside conditional remains inaccessible"
+      (not (null (anaphorConstants (discourse "If the cow is red then the dog is big. It is quiet."))))
+  , expect "unresolved pronoun is not its own antecedent"
+      (not (null (anaphorConstants (discourse "It is red. It is big."))))
+  , expect "neuter it excludes an attitude addressee as well as holder"
+      (not (null (anaphorConstants (afterReport "?it_0"))))
+  , expect "personal they can still bind to an attitude participant"
+      (null (anaphorConstants (afterReport "?they_0")))
+  ] ++
+  [ expect ("named mention under " ++ label ++ " does not escape")
+      (not (null (anaphorConstants (dscDRS (runDiscourse [(DRS [] [wrap inner], pv), (next, pv)])))))
+  | (label, wrap) <-
+      [("negation", \d -> CNot d pv), ("report", \d -> CAtt "say" [] d pv)
+      ,("presupposition", \d -> CPresup d pv), ("disjunction", \d -> COr d emptyDRS pv)]
+  ]
+  where
+    pipeline = runPipelineWith (CCGBankParser mini) (SourceId "anaphora-regression")
+    discourse = dscDRS . prDiscourse . pipeline
+    has predName entityName text =
+      any (\c -> case c of
+              CPred p [DConst e] _ -> p == predName && e == entityName
+              _ -> False) (drsConds (discourse text))
+        && null (anaphorConstants (discourse text))
+    pv = ProvLex (SourceId "anaphora-regression") (Span 0 3) "cow"
+    inner = DRS [] [CPred "red" [DConst "cow"] pv]
+    next = DRS [] [CPred "big" [DConst "?it_0"] pv]
+    afterReport pron = dscDRS (runDiscourse
+      [(DRS [] [CAtt "tell" [DConst "Bob", DConst "Alice"] inner pv], pv)
+      ,(DRS [] [CPred "big" [DConst pron] pv], pv)])

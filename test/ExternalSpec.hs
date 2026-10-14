@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 -- | Checked external snapshots through the existing Haskell substrate.
 module Main (main) where
 
@@ -7,12 +8,19 @@ import qualified Data.Set as S
 
 import Harness
 import NL2Proof.DRT.Canonical
+import NL2Proof.DRT.Types
 import NL2Proof.Fusion
 import NL2Proof.Genealogy
 import NL2Proof.Provenance
 import NL2Proof.Reward
 import NL2Proof.Verify.External
+import NL2Proof.Verify.ClaimKind (Claim, ClaimKind(Asserted), assertedClaims)
 import NL2Proof.Verify.Oracle
+
+-- Explicitly authored receipt statements, admitted as whole DRS conditions.
+receiptAssertions :: [String] -> [Claim 'Asserted]
+receiptAssertions runIds = map fst (assertedClaims (DRS []
+  [ CPred "passes_validation" [DConst n] (provRule "receipt-fixture" []) | n <- runIds ]))
 
 snapshot :: String
 snapshot = unlines
@@ -78,13 +86,13 @@ oracleChecks = withBook $ \book ->
       (check oracle (CanPred "passes_validation" []))
   , expectEq "only confirmed token enters fusion" 1
       (length (fusedClaims (fuse (confirmAll oracle
-        (map validationClaim ["run-pass", "run-fail", "run-pending", "missing"])))))
+        (receiptAssertions ["run-pass", "run-fail", "run-pending", "missing"])))))
   , expectEq "weakening removes confirmed claim" []
       (fusedClaims (withoutClaim (validationClaim "run-pass")
-        (fuse (confirmAll oracle [validationClaim "run-pass"]))))
+        (fuse (confirmAll oracle (receiptAssertions ["run-pass"])))))
   , expectEq "weakening cannot introduce unconfirmed claim" [validationClaim "run-pass"]
       (fusedClaims (withoutClaim (validationClaim "run-fail")
-        (fuse (confirmAll oracle [validationClaim "run-pass"]))))
+        (fuse (confirmAll oracle (receiptAssertions ["run-pass"])))))
   , expect "empty request returns no evidence and zero reward"
       (case evaluateReceipts book [] of
         Right ev -> null (evaluationRuns ev)

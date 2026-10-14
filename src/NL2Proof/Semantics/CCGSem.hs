@@ -46,6 +46,7 @@ module NL2Proof.Semantics.CCGSem
   , openTemplateWith
   , nameItem
   , lemma3sg
+  , verbLemma
     -- * Sortal predicates
   , sortalThing
   , sortalPerson
@@ -177,6 +178,14 @@ sortalNoun sortal = Lam "x" TyE (App (pred1 sortal) x_)
 pronoun :: String -> Int -> Term
 pronoun w i = Lam "P" tyPred1 (App p_ (mkAnaphor (w ++ "_" ++ show i)))
 
+-- | Restrictive subject relatives attach to the noun, before its determiner.
+-- An NP-level pointwise conjunction would incorrectly require /all/ cats to
+-- be red in "every cat that is red". Object-gap and nonrestrictive relatives
+-- need distinct constructions and are deliberately not supplied here.
+subjectRelative :: Term
+subjectRelative = Lam "V" (tyGQ ~> TyT) (Lam "N" tyPred1 (Lam "x" TyE
+  (TAnd (App (Var "N") x_) (App (Var "V") (liftE x_)))))
+
 -- | The closed-class table: @(word, category, entry)@. Lower-case keys. The
 -- pronoun entries take the token position, hence the function.
 closedTable :: Int -> [(String, CCat, LexItem)]
@@ -201,6 +210,8 @@ closedTable i =
      ]
   ++ [ (w, cat "NP", LexTerm (pronoun w i) "pronoun" Nothing) | w <- ["it", "they"] ]
   ++ [ ("did", cat "(S[dcl]\\NP)/(S[b]\\NP)", LexTerm vpIdentity "do-support auxiliary (past)" Nothing) ]
+  ++ [ (w, cat "(N\\N)/(S[dcl]\\NP)", LexTerm subjectRelative "restrictive subject relative" Nothing)
+     | w <- ["that", "which", "who"] ]
 
 --------------------------------------------------------------------------------
 -- Intensional entries
@@ -270,6 +281,7 @@ attitudeEntryWith attested w c = do
         Just (l, a) -> (l, a, True)
         Nothing     -> (reportingLemma w, NonFactive, False)
       st
+        | lemma == "see"      = Just seeSense
         | not listed          = Just (failSafe shape)
         | shape == "bare"     = Just bareComplement
         | shape == "fronted"  = Just frontedReport
@@ -281,10 +293,21 @@ attitudeEntryWith attested w c = do
     then Just (LexTerm (term lemma) gloss st)
     else Nothing
 
--- | The key an unlisted reporting verb is looked up by: lower-cased, then
--- 'lemma3sg' (@Notes@, @notes@, @note@ are one key; @noted@ is another).
+-- | Shared normalization for attestation construction and lexical lookup.
 reportingLemma :: String -> String
-reportingLemma = lemma3sg . map toLower
+reportingLemma = verbLemma . map toLower
+
+-- | Perception see-that is factive, but supervisory see-that means ensure.
+-- The category alone does not distinguish these senses. Keep attribution
+-- until a construction supplies the missing distinction (see research log).
+seeSense :: Stipulation
+seeSense = Stipulation
+  { stKind = "see-sense"
+  , stChoice = "non-factive attribution while the sense of see is unresolved"
+  , stAlternatives = ["perception: complement presupposed", "supervision/ensure: non-factive complement"]
+  , stWhy = "perceptual see-that is factive, but the same clausal category admits"
+      ++ " supervisory ensure readings; lexical categories alone cannot choose the sense"
+  }
 
 -- | An explicit that-clause category: @(S\\NP)\/S[em]@ or
 -- @((S\\NP)\/S[em])\/NP@, any @S@ feature on the result. What a lemma must
@@ -362,7 +385,7 @@ closedClassWords :: [String]
 closedClassWords =
   [ "the", "all", "every", "a", "an", "is", "are", "does", "do", "not", "if"
   , "then", "something", "someone", "things", "people", "and", "or", "it"
-  , "they", "did", "that" ]
+  , "they", "did", "that", "which", "who" ]
 
 isClosedClass :: String -> Bool
 isClosedClass w = map toLower w `elem` closedClassWords
@@ -382,9 +405,8 @@ closedEntries i w c
 --------------------------------------------------------------------------------
 
 -- | Category-shape templates for open-class words. Predicate names are the
--- lower-cased word, except that verbs (an @S@ result other than @S[adj]@) are
--- lemmatised by 'lemma3sg' so @likes@ and @like@ (after @does not@) are one
--- predicate.
+-- lower-cased word, except that verbs (an @S@ result other than @S[adj]@) use
+-- conservative 'verbLemma', so known inflections share one predicate.
 --
 -- * @N@: @\\x. w(x)@
 -- * @N\/N@: @\\P \\x. w(x) & P(x)@ (intersective)
@@ -425,7 +447,7 @@ openTemplateWith _ w c = case c of
     -- predicate (likes vs like) that differs only by inflection.
     predName (CAtom _ fs)
       | Feat "adj" `elem` fs = lw
-    predName _ = lemma3sg lw
+    predName _ = verbLemma lw
 
 -- | A proper name: @NP@, @\\P. P(n)@, the name keeping its written case.
 --
@@ -448,6 +470,28 @@ lemma3sg w
   | "ss" `isSuffixOf` w = w
   | "s" `isSuffixOf` w = init w
   | otherwise = w
+
+-- | Conservative verb normalization. Known inflections share one lexical
+-- key, including when building the that-clause attestation set. Unknown past
+-- and participial forms are preserved: spelling alone cannot distinguish
+-- hoped/hopped or lexical dd in added from inflectional doubling. This small
+-- hand-authored inventory is not a corpus-derived lexical dump.
+verbLemma :: String -> String
+verbLemma w
+  | Just (lemma, _) <- attitudeOf w = lemma
+  | Just lemma <- lookup w inflections = lemma
+  | otherwise = lemma3sg w
+  where
+    inflections =
+      [(form, base) | (base, forms) <-
+        [ ("add", ["added", "adding"]), ("note", ["noted", "noting"])
+        , ("announce", ["announced", "announcing"]), ("boast", ["boasted", "boasting"])
+        , ("lament", ["lamented", "lamenting"]), ("like", ["liked", "liking"])
+        , ("hate", ["hated", "hating"]), ("chase", ["chased", "chasing"])
+        , ("watch", ["watched", "watching"]), ("walk", ["walked", "walking"])
+        , ("smile", ["smiled", "smiling"]), ("see", ["saw", "seen", "seeing"])
+        , ("go", ["goes", "went", "gone"]), ("do", ["does", "did", "done"])
+        ] , form <- forms]
 
 --------------------------------------------------------------------------------
 -- Combinators

@@ -128,7 +128,7 @@ substrate = do
           let table = claimsOf sel
               claims = map factClaim (ctFacts table)
               g = genealogyOf demoOracle table
-              fused = fuse (confirmAll demoOracle claims)
+              fused = fuse (confirmAll demoOracle (map factAssertion (ctFacts table)))
 
           putStrLn "-- stage 2: claims retained, then offered to the oracle"
           putStr (renderCoverage (coverage demoOracle claims))
@@ -148,7 +148,7 @@ substrate = do
           putStrLn "-- and the same text under an oracle that covers nothing"
           let blind = demoOracle { oracleName = "blind", oracleCovers = const False }
               gb = genealogyOf blind table
-              fb = fuse (confirmAll blind claims)
+              fb = fuse (confirmAll blind (map factAssertion (ctFacts table)))
           putStr (renderReward (score fb gb))
   where
     src = SourceId "demo"

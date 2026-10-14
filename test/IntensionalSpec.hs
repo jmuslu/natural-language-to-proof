@@ -13,7 +13,6 @@
 -- 'attitudeLexicon'. Terms are compared with 'alphaEq'.
 module Main (main) where
 
-import Data.Maybe (mapMaybe)
 import qualified Data.Set as Set
 
 import Harness
@@ -328,6 +327,14 @@ factiveChecks =
       [CanAtt "know" [CConstT "Bob"] (box [pc "red" ["cat"]]), CanPresup (box [pc "red" ["cat"]])]
       (topConds (drsOf ccg knowsText))
   , expectEq "red(cat) is a presupposed claim" [pc "red" ["cat"]] (presupposedClaims (tableOf ccg knowsText))
+  , expectEq "a matrix factive complement is Presupposed only, never also Reported"
+      [] (reportedClaims (tableOf ccg knowsText))
+  , expectEq "a nested factive complement has exactly the outer report's source chain"
+      [[attr "say" ["Alice"] False]]
+      [ ch | (c, ch) <- chains (tableOf ccg "Alice said that Bob knows that the cat is red.")
+           , c == pc "red" ["cat"] ]
+  , expectEq "hand: a matrix factive complement is never also Reported"
+      [] (reportedClaims (tableOf hand "John knows that Mary smiles."))
   , expect "...not an asserted one"
       (pc "red" ["cat"] `notElem` factClaims (tableOf ccg knowsText))
   , expect "factivity and the hoisting are logged"
@@ -368,7 +375,7 @@ toldChecks =
 failSafeChecks :: [Check]
 failSafeChecks =
   [ expectForm "unlisted 'noted' with a that-clause is a reporting verb" ccg
-      "Bob noted that the cat is red." (att "noted" bob (lamW 1 (redCatAt (w_ 1))))
+      "Bob noted that the cat is red." (att "note" bob (lamW 1 (redCatAt (w_ 1))))
   , expect "...its content is reported, not asserted, and the fail-safe is logged"
       (reportedClaims (tableOf ccg "Bob noted that the cat is red.") == [pc "red" ["cat"]]
         && pc "red" ["cat"] `notElem` factClaims (tableOf ccg "Bob noted that the cat is red.")
@@ -383,7 +390,7 @@ failSafeChecks =
         && "unlisted-reporting-verb" `notElem` decisionKinds (run1 ccg "Bob announced the cat is red."))
   , expectEq "the attested set is derived from the tag dictionary: lemmas seen with (S\\NP)/S[em]"
       (True, True, False)
-      (let a = smThatAttested mini in (Set.member "noted" a, Set.member "say" a, Set.member "announced" a))
+      (let a = smThatAttested mini in (Set.member "note" a, Set.member "say" a, Set.member "announce" a))
   , expect "an unattested unlisted inverted quote stays reported (dropping it would let an asserted reading win)"
       (not (Set.member "lament" (smThatAttested mini))
         && reportedClaims (tableOf ccg "the cat is red , laments Bob.") == [pc "red" ["cat"]]
@@ -505,12 +512,11 @@ guardChecks =
      , expectEq "the genealogy has exactly the attitude node" 1 (length (nodeIds g))
      , expect "nor does a presupposition"
          (pc "red" ["cat"] `notElem` nodeClaims (genealogyOf credulous (tableOf ccg knowsText)))
-     , expect "the legitimate path: asCandidate, then an oracle"
-         (map confClaim (mapMaybe (confirm credulous . asCandidate . reportedClaim') (ctReported ct))
-            == [pc "red" ["cat"]])
-     , expect "asCandidate yields an unconfirmed candidate: a blind oracle confirms nothing"
-         (null (mapMaybe (confirm (Oracle "blind" "nothing" (const False) (const False))
-                            . asCandidate . reportedClaim') (ctReported ct)))
+     , expect "reported hypotheses remain inspectable without obtaining assertion tokens"
+         (map (check credulous . reportedContent) (ctReported ct) == [Confirmed])
+     , expect "nonpromoting hypothesis inspection preserves a blind oracle's Unknown verdict"
+         (map (check (Oracle "blind" "nothing" (const False) (const False))
+                            . reportedContent) (ctReported ct) == [Unknown])
      , expect "when the content is also asserted, that assertion is a premise of its own"
          (pc "red" ["cat"] `elem` nodeClaims (genealogyOf credulous both))
      , expect "...and the report stays a report beside it" (reportedClaims both == [pc "red" ["cat"]])

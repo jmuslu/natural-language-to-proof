@@ -31,8 +31,8 @@
 -- 'NL2Proof.Verify.Oracle.confirm' rejects at compile time. The constructor is
 -- not exported and the fields are positional, so a report cannot be forged or
 -- have its attribution edited away. To check reported content against the
--- world, promote it with 'NL2Proof.Verify.ClaimKind.asCandidate' and ask an
--- oracle: the token is for the candidate, and says nothing about the report.
+-- world, inspect its content with the oracle's @check@. Inspection does not
+-- manufacture an assertion witness or a confirmation token.
 -- @test/compile-fail/Reported*.hs@ check this with the compiler.
 module NL2Proof.Verify.Reported
   ( -- * Attribution
@@ -124,8 +124,8 @@ presupposedProv (MkPresupposed _ p) = p
 -- | Split a DRS into asserted claims (with provenance), reported claims,
 -- presupposed claims and embedded claims.
 --
--- __Only a top-level condition of the main box is asserted__ ('topCond' is
--- the one place that decides it). A negation, conditional or disjunction at
+-- __Only a top-level condition of the main box is asserted__ ('assertedClaims'
+-- is the one place that decides it). A negation, conditional or disjunction at
 -- the top level is asserted /whole/, as the single condition it is: @~[red(cat)]@
 -- for @"The cat is not red"@, the rule @[red(x)] => [big(x)]@ for @"All red
 -- things are big"@. Nothing inside such a box is asserted: the text denies,
@@ -139,18 +139,21 @@ presupposedProv (MkPresupposed _ p) = p
 -- claims are the conditions of top-level 'CPresup' boxes. All four share one
 -- canonical renaming, so a reported @red(r0)@ and an asserted @red(r0)@ are
 -- about the same referent.
-splitClaims :: DRS -> ([(CanonCond, Prov)], [Reported], [Presupposed], [Claim 'Embedded])
-splitClaims top = mconcat (zipWith topCond (drsConds top) (canonConds canon))
+splitClaims :: DRS -> ([(Claim 'Asserted, Prov)], [Reported], [Presupposed], [Claim 'Embedded])
+splitClaims top = (assertedClaims top, rs, ps, es)
   where
     canon = canonicalize top
+    (rs, ps, es) = mconcat (zipWith topCond (drsConds top) (canonConds canon))
 
     topCond c k = case (c, k) of
+      -- Build projects factive content into CPresup at this same scope. Reading
+      -- it again from the attitude would duplicate it as Reported.
       (CAtt v _ x _, CanAtt _ hs kx) ->
-        ([(k, condProv c)], reported [attribution v hs] x kx, [], [])
+        (if isFactiveVerb v then [] else reported [attribution v hs] x kx, [], [])
       (CPresup x _, CanPresup kx) ->
-        ([], [], zipWith (\c' k' -> MkPresupposed (presupposedClaim k') (condProv c'))
+        ([], zipWith (\c' k' -> MkPresupposed (presupposedClaim k') (condProv c'))
                          (drsConds x) (canonConds kx), [])
-      _ -> ([(k, condProv c)], [], [], map embeddedClaim (below k))
+      _ -> ([], [], map embeddedClaim (below k))
 
     -- Every condition strictly inside a top-level negation, conditional or
     -- disjunction, at every depth. None of it is asserted.
@@ -171,9 +174,11 @@ splitClaims top = mconcat (zipWith topCond (drsConds top) (canonConds canon))
     reported chain (DRS _ cs) (Canonical _ ks) = concat (zipWith (reportCond chain) cs ks)
     reportCond chain c k = case (c, k) of
       (CPresup x _, CanPresup kx) -> reported chain x kx
+      -- Inside a report, the projected CPresup retains the enclosing source
+      -- chain. The factive attitude itself is reported, but adds no second copy.
       (CAtt v _ x _, CanAtt _ hs kx) ->
         MkReported (reportedClaim k) chain (condProv c)
-          : reported (chain ++ [attribution v hs]) x kx
+          : if isFactiveVerb v then [] else reported (chain ++ [attribution v hs]) x kx
       _ -> [MkReported (reportedClaim k) chain (condProv c)]
 
     attribution v hs = Attribution v hs (isFactiveVerb v)

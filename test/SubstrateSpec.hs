@@ -22,6 +22,7 @@ import Data.List (sort)
 import Harness
 import NL2Proof.Collapse.Class
 import NL2Proof.DRT.Canonical
+import NL2Proof.DRT.Types
 import NL2Proof.Fragment
 import NL2Proof.Fusion
 import NL2Proof.Genealogy
@@ -29,6 +30,7 @@ import NL2Proof.Pipeline
 import NL2Proof.Provenance
 import NL2Proof.Reward
 import NL2Proof.Verify.Claims
+import NL2Proof.Verify.ClaimKind (assertedClaims)
 import NL2Proof.Verify.Oracle
 
 --------------------------------------------------------------------------------
@@ -37,6 +39,33 @@ import NL2Proof.Verify.Oracle
 
 pv :: Prov
 pv = ProvLex (SourceId "substrate") (Span 0 1) "w"
+
+-- These test-only fixtures explicitly author a whole DRS. They do not recover
+-- assertion witnesses from a pipeline's bare/embedded contents. The production
+-- API always retains the witnesses produced at structural extraction.
+fixtureDRS :: [CanonCond] -> DRS
+fixtureDRS = fromBox . Canonical []
+  where
+    fromRef (CRef i) = Ref ("fixture" ++ show i)
+    fromTerm (CRefT r) = DRef (fromRef r)
+    fromTerm (CConstT n) = DConst n
+    fromBox (Canonical us cs) = DRS [(fromRef r, pv) | r <- us] (map fromCond cs)
+    fromCond c = case c of
+      CanPred p ts -> CPred p (map fromTerm ts) pv
+      CanEq a b -> CEq (fromTerm a) (fromTerm b) pv
+      CanNot d -> CNot (fromBox d) pv
+      CanImp a b -> CImp (fromBox a) (fromBox b) pv
+      CanOr a b -> COr (fromBox a) (fromBox b) pv
+      CanAtt v ts d -> CAtt v (map fromTerm ts) (fromBox d) pv
+      CanPresup d -> CPresup (fromBox d) pv
+
+confirmFixtures :: Oracle -> [CanonCond] -> [Confirmed]
+confirmFixtures o = confirmAll o . map fst . assertedClaims . fixtureDRS
+
+confirmFixture :: Oracle -> CanonCond -> Maybe Confirmed
+confirmFixture o c = case assertedClaims (fixtureDRS [c]) of
+  [(a, _)] -> confirm o a
+  _ -> Nothing
 
 -- | A unary claim about a named individual.
 cl :: String -> CanonCond
@@ -125,16 +154,16 @@ oracleChecks =
     -- compile-time property; what is checkable at runtime is that no token ever
     -- escapes for a non-confirming verdict.
     expect "oracle: confirm yields a token exactly when the verdict confirms"
-      (all (\c -> (confirm unaryOracle c /= Nothing) == (check unaryOracle c == Confirmed))
+      (all (\c -> (confirmFixture unaryOracle c /= Nothing) == (check unaryOracle c == Confirmed))
            [cl "student", cl "dragon", impl (cl "student") (cl "book")])
   , expectEq "oracle: refuted claims yield no token" Nothing
-      (confirm noOracle (cl "student"))
+      (confirmFixture noOracle (cl "student"))
   , expectEq "oracle: uncovered claims yield no token either" Nothing
-      (confirm blindOracle (cl "student"))
+      (confirmFixture blindOracle (cl "student"))
   , expect "oracle: every token names the oracle that issued it"
-      (all ((== "unary") . confOracle) (confirmAll unaryOracle [cl "student", cl "book"]))
+      (all ((== "unary") . confOracle) (confirmFixtures unaryOracle [cl "student", cl "book"]))
   , expectEq "oracle: confirmAll keeps only the confirmed" [cl "book", cl "student"]
-      (sort (map confClaim (confirmAll unaryOracle [cl "student", cl "dragon", cl "book"])))
+      (sort (map confClaim (confirmFixtures unaryOracle [cl "student", cl "dragon", cl "book"])))
 
   , -- Coverage reporting: the uncovered count is the ungroundable remainder.
     expectEq "oracle: coverage partitions the claim set" (2, 1, 1)
@@ -323,17 +352,17 @@ retractionChecks =
 fusionChecks :: [Check]
 fusionChecks =
   [ expectEq "fusion: redundant confirmations are deduped" 1
-      (length (fusedClaims (fuse (confirmAll yesOracle [cl "p", cl "p", cl "p"]))))
+      (length (fusedClaims (fuse (confirmFixtures yesOracle [cl "p", cl "p", cl "p"]))))
   , expectEq "fusion: and the loss is measured" 2
-      (fusedDropped (fuse (confirmAll yesOracle [cl "p", cl "p", cl "p"])))
+      (fusedDropped (fuse (confirmFixtures yesOracle [cl "p", cl "p", cl "p"])))
   , expectEq "fusion: distinct claims are kept" 2
-      (length (fusedClaims (fuse (confirmAll yesOracle [cl "p", cl "q"]))))
+      (length (fusedClaims (fuse (confirmFixtures yesOracle [cl "p", cl "q"]))))
   , expect "fusion: the contributing oracles are named"
-      (fusedOracles (fuse (confirmAll yesOracle [cl "p"])) == ["yes"])
+      (fusedOracles (fuse (confirmFixtures yesOracle [cl "p"])) == ["yes"])
   , expect "fusion: nothing refuted can reach this stage"
-      (null (fusedClaims (fuse (confirmAll noOracle [cl "p", cl "q"]))))
+      (null (fusedClaims (fuse (confirmFixtures noOracle [cl "p", cl "q"]))))
   , expect "fusion: nor anything uncovered"
-      (null (fusedClaims (fuse (confirmAll blindOracle [cl "p"]))))
+      (null (fusedClaims (fuse (confirmFixtures blindOracle [cl "p"]))))
 
   , -- Box-level compression, with its honest limitation asserted so it stays
     -- visible.
@@ -352,8 +381,8 @@ fusionChecks =
     expect "fusion: ~(p|q) and ~p & ~q are logically equivalent and do NOT merge"
       (let negOr = CanNot (box [CanOr (box [cl "p"]) (box [cl "q"])])
            deMorgan = [CanNot (box [cl "p"]), CanNot (box [cl "q"])]
-           a = fusedClaims (fuse (confirmAll yesOracle [negOr]))
-           b = fusedClaims (fuse (confirmAll yesOracle deMorgan))
+           a = fusedClaims (fuse (confirmFixtures yesOracle [negOr]))
+           b = fusedClaims (fuse (confirmFixtures yesOracle deMorgan))
        in a /= b)
 
   , -- Mechanical entailment, with its soundness side condition.
@@ -367,11 +396,11 @@ fusionChecks =
          CanImp a _ -> not (null (canonUniverse a))
          _          -> False)
   , expect "fusion: entailedFrom closes over chained implications"
-      (let f = fuse (confirmAll yesOracle
+      (let f = fuse (confirmFixtures yesOracle
                        [cl "p", impl (cl "p") (cl "q"), impl (cl "q") (cl "r")])
        in cl "r" `elem` entailedFrom f)
   , expect "fusion: entailedFrom adds nothing without a detachable premise"
-      (let f = fuse (confirmAll yesOracle [impl (cl "p") (cl "q")])
+      (let f = fuse (confirmFixtures yesOracle [impl (cl "p") (cl "q")])
        in entailedFrom f == fusedClaims f)
   ]
 
@@ -404,20 +433,20 @@ selfAgreementChecks =
 
   , -- What does score.
     expect "reward: confirmed claims score positively"
-      (rwScore (score (fuse (confirmAll yesOracle [cl "p", cl "q"])) twoSupport) > 0)
+      (rwScore (score (fuse (confirmFixtures yesOracle [cl "p", cl "q"])) twoSupport) > 0)
   , expect "reward: refuted premises are penalised"
       (rwScore (score (fuse []) refutedPremise) < 0)
   , expect "reward: refutation costs more than silence"
       (rwScore (score (fuse []) refutedPremise)
          < rwScore (score (fuse []) uncoveredPremise))
   , expect "reward: entailed consequences contribute"
-      (let f = fuse (confirmAll yesOracle [cl "p", impl (cl "p") (cl "q")])
+      (let f = fuse (confirmFixtures yesOracle [cl "p", impl (cl "p") (cl "q")])
        in rwEntailed (score f emptyGenealogy) == 1)
   , expect "reward: but less than direct confirmation"
       (wEntailed defaultWeights < wConfirmed defaultWeights)
   , expect "reward: score is monotone in confirmations"
-      (rwScore (score (fuse (confirmAll yesOracle [cl "p"])) emptyGenealogy)
-         < rwScore (score (fuse (confirmAll yesOracle [cl "p", cl "q"])) emptyGenealogy))
+      (rwScore (score (fuse (confirmFixtures yesOracle [cl "p"])) emptyGenealogy)
+         < rwScore (score (fuse (confirmFixtures yesOracle [cl "p", cl "q"])) emptyGenealogy))
 
   , -- The admissibility self-check has teeth.
     expect "reward: the default weights are admissible"
@@ -515,7 +544,7 @@ scalarBlindSpotChecks =
 
   , -- Novelty: content the oracle had to supply.
     expectEq "blind: a claim implied by the others is not novel" 2
-      (rwNovel (score (fuse (confirmAll yesOracle [cl "p", impl (cl "p") (cl "q"), cl "q"]))
+      (rwNovel (score (fuse (confirmFixtures yesOracle [cl "p", impl (cl "p") (cl "q"), cl "q"]))
                   emptyGenealogy))
   , expectEq "blind: with nothing implied, every claim is novel" 2
       (rwNovel (score confirmedTwo emptyGenealogy))
@@ -537,7 +566,7 @@ scalarBlindSpotChecks =
       (spanCoverage [Span 4 4, Span 9 9])
   ]
   where
-    confirmedTwo = fuse (confirmAll yesOracle [cl "p", cl "q"])
+    confirmedTwo = fuse (confirmFixtures yesOracle [cl "p", cl "q"])
 
     -- Two confirmed premises, plus k premises no oracle covers.
     overGenerate k =
@@ -605,20 +634,20 @@ endToEndChecks =
       (case tableOf "anaphora" of
          Just ct ->
            let g = genealogyOf blindOracle ct
-               f = fuse (confirmAll blindOracle (map factClaim (ctFacts ct)))
+               f = fuse (confirmAll blindOracle (map factAssertion (ctFacts ct)))
            in rwScore (score f g) == 0.0
          Nothing -> False)
   , expect "e2e: and the whitelist oracle scores above zero on the same text"
       (case tableOf "anaphora" of
          Just ct ->
            let g = genealogyOf unaryOracle ct
-               f = fuse (confirmAll unaryOracle (map factClaim (ctFacts ct)))
+               f = fuse (confirmAll unaryOracle (map factAssertion (ctFacts ct)))
            in rwScore (score f g) > 0.0
          Nothing -> False)
   , expect "e2e: fusion never sees more claims than verification retained"
       (case tableOf "anaphora" of
          Just ct ->
-           let f = fuse (confirmAll unaryOracle (map factClaim (ctFacts ct)))
+           let f = fuse (confirmAll unaryOracle (map factAssertion (ctFacts ct)))
            in length (fusedClaims f) <= length (ctFacts ct)
          Nothing -> False)
   , expect "e2e: the retaining strategy names itself"

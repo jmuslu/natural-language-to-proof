@@ -72,17 +72,19 @@ data Opts = Opts
   { oAll   :: Bool
   , oStage :: Maybe Stage
   , oHand  :: Bool
+  , oPOSBackoff :: Bool
   , oText  :: [String]
   }
 
 usage :: String
 usage = unlines
-  [ "usage: nl2proof-explain [--all-readings] [--stage=tags|deriv|lambda|drs|claims] [--hand] [TEXT]"
+  [ "usage: nl2proof-explain [--all-readings] [--stage=tags|deriv|lambda|drs|claims] [--hand] [--pos-backoff] [TEXT]"
   , ""
   , "  TEXT            a sentence or short text; omitted: interactive REPL (:q quits)"
   , "  --all-readings  every reading (and every candidate supertag), selected one marked"
   , "  --stage=S       only one section: tags, deriv, lambda, drs or claims"
   , "  --hand          hand-written fragment lexicon (attitudeLexicon) instead of CCGbank"
+  , "  --pos-backoff   experimental POS-dictionary lexical backoff (CCGbank only)"
   , ""
   , "CCGbank: $CCGBANK_DIR, else ~/ccgbank/ccgbank_1_1/data (sections 02-21)."
   , "REPL commands: :q quit, :all toggle --all-readings, :stage=S or :stage=all, :help"
@@ -99,12 +101,13 @@ parseStage s = case s of
   _        -> Nothing
 
 parseOpts :: [String] -> Either String Opts
-parseOpts = go (Opts False Nothing False [])
+parseOpts = go (Opts False Nothing False False [])
   where
     go o [] = Right o { oText = reverse (oText o) }
     go o (a : as)
       | a == "--all-readings" = go o { oAll = True } as
       | a == "--hand" = go o { oHand = True } as
+      | a == "--pos-backoff" = go o { oPOSBackoff = True } as
       | "--stage=" `isPrefixOf` a = case parseStage (drop 8 a) of
           Just st -> go o { oStage = st } as
           Nothing -> Left ("unknown stage: " ++ drop 8 a)
@@ -139,7 +142,7 @@ main = do
           exitFailure
         hPutStrLn stderr (printf "  %d trees, %d word forms, loaded in %.1fs"
           ntrees (M.size (tmWord (smTags m))) (t1 - t0))
-        pure (CCGBankParser m)
+        pure (CCGBankParser m { smPOSBackoff = oPOSBackoff opts })
   if null (oText opts)
     then repl choice opts
     else explainSafe choice opts (unwords (oText opts))
@@ -224,6 +227,7 @@ explain choice o text = unlines (concat (perSentence ++ [discourseDRS, claims, f
       let fs = concat [ map (prefix k) (seFailures x) | (k, x) <- zip [1 :: Int ..] xs ]
           ns = concat [ map (prefix k) (seNotes x) | (k, x) <- zip [1 :: Int ..] xs ]
                  ++ map ("  " ++) (concatMap (lines . renderDiagnostic) (traceDiagnostics (dscTrace (prDiscourse pr))))
+                 ++ map ("  " ++) (concatMap (lines . renderDecision) (traceDecisions (dscTrace (prDiscourse pr))))
           prefix k l = if multi then "  [s" ++ show k ++ "] " ++ drop 2 l else l
       in case oStage o of
            Just _ | null fs -> []
@@ -692,7 +696,7 @@ claimLines :: DRS -> [String]
 claimLines d =
   [ "  rule: only top-level conditions of the main box are asserted; whatever sits inside"
   , "        ~, =>, OR, an attitude box (K) or a presupposition box is not."
-  , "  Asserted:" ] ++ orNone [ "    " ++ renderCanonCond c | (c, _) <- as ]
+  , "  Asserted:" ] ++ orNone [ "    " ++ renderCanonCond (claimCond c) | (c, _) <- as ]
   ++ [ "  Reported:" ] ++ orNone
        [ "    " ++ renderCanonCond (reportedContent rp) ++ "    source chain: "
            ++ intercalate " > " (map renderAttribution (reportedChain rp))

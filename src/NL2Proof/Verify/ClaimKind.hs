@@ -1,37 +1,41 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE RoleAnnotations #-}
 
 -- | Claims indexed by how the text commits to them: 'Asserted', 'Reported'
 -- (attributed to someone under an attitude verb), 'Presupposed' (the
 -- complement of a factive verb), or 'Embedded' (mentioned inside a negation,
 -- conditional or disjunction, and so not committed to at all).
 --
--- The index is a phantom type (@DataKinds@, @KindSignatures@; both ship with
--- GHC). "NL2Proof.Verify.Oracle".'NL2Proof.Verify.Oracle.confirm' accepts only
--- the asserted index, so handing it a reported claim is a compile error, not a
--- runtime check. The only way from another index to 'Asserted' is
--- 'asCandidate', which yields an /unconfirmed/ top-level candidate: it still
--- has to go through an oracle like anything else.
+-- "NL2Proof.Verify.Oracle".'NL2Proof.Verify.Oracle.confirm' accepts only the
+-- asserted index. 'assertedClaims' is the only admission path: it extracts
+-- whole root conditions from a supplied DRS, never their nested contents.
+-- Bare hypotheses may be inspected with the oracle's @check@ without creating
+-- confirmation tokens.
 --
 -- The constructor is not exported, so the index of a claim cannot be changed
--- by re-wrapping it.
+-- by re-wrapping it. Its nominal role also forbids @Data.Coerce@ reindexing.
+-- This witnesses structural top-levelness in the supplied DRS, not source
+-- authenticity: callers can author a DRS, just as they can author text.
 module NL2Proof.Verify.ClaimKind
   ( ClaimKind(..)
   , Claim
   , claimCond
-  , assertedClaim
+  , assertedClaims
   , reportedClaim
   , presupposedClaim
   , embeddedClaim
-  , asCandidate
   ) where
 
 import NL2Proof.DRT.Canonical
+import NL2Proof.DRT.Types
+import NL2Proof.Provenance (Prov)
 
 -- | How the text commits to a claim.
 data ClaimKind = Asserted | Reported | Presupposed | Embedded
 
 -- | A canonical claim with its commitment index.
+type role Claim nominal
 newtype Claim (k :: ClaimKind) = MkClaim CanonCond
   deriving (Eq, Ord, Show)
 
@@ -39,9 +43,15 @@ newtype Claim (k :: ClaimKind) = MkClaim CanonCond
 claimCond :: Claim k -> CanonCond
 claimCond (MkClaim c) = c
 
--- | A claim the text asserts.
-assertedClaim :: CanonCond -> Claim 'Asserted
-assertedClaim = MkClaim
+-- | Structural witnesses for the whole, top-level non-presupposed conditions.
+-- Canonicalize the complete box once, preserving shared referent identities.
+-- In particular a negative claim stays negative and a rule stays a rule.
+assertedClaims :: DRS -> [(Claim 'Asserted, Prov)]
+assertedClaims d =
+  [ (MkClaim k, condProv c)
+  | (c, k) <- zip (drsConds d) (canonConds (canonicalize d))
+  , case c of CPresup _ _ -> False; _ -> True
+  ]
 
 -- | A claim the text attributes to someone. Built by
 -- "NL2Proof.Verify.Reported" from attitude boxes.
@@ -58,10 +68,3 @@ presupposedClaim = MkClaim
 -- "NL2Proof.Verify.Reported".'NL2Proof.Verify.Reported.splitClaims'.
 embeddedClaim :: CanonCond -> Claim 'Embedded
 embeddedClaim = MkClaim
-
--- | Promote a reported or presupposed claim to a top-level /candidate/. That
--- is all it does: the result is unconfirmed and can only become
--- 'NL2Proof.Verify.Oracle.Confirmed' through an oracle. Being reported is not
--- evidence.
-asCandidate :: Claim k -> Claim 'Asserted
-asCandidate (MkClaim c) = MkClaim c

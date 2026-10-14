@@ -25,6 +25,7 @@ import Data.List (intercalate, nub)
 import qualified Data.Map.Strict as M
 
 import NL2Proof.DRT.Canonical
+import NL2Proof.DRT.Types
 import NL2Proof.Fusion
 import NL2Proof.Genealogy
 import NL2Proof.Provenance
@@ -130,13 +131,14 @@ evaluateReceipts book@(ReceiptBook receipts) runIds
       }
   where
     oracle = receiptOracle book
-    claims = map validationClaim runIds
+    claims = map factAssertion (ctFacts table)
     fused = fuse (confirmAll oracle claims)
-    genealogy = genealogyOf oracle (ClaimTable [] facts "external run validation receipts" [] [] [])
-    facts =
-      [ Fact i (validationClaim runId)
+    genealogy = genealogyOf oracle table
+    table = claimsOfDRS "external run validation receipts" (DRS [] conditions)
+    conditions =
+      [ CPred "passes_validation" [DConst runId]
           (provRule ("external-receipt:" ++ maybe "uncovered" id (evidenceFor runId)) [])
-      | (i, runId) <- zip [0 ..] runIds
+      | runId <- runIds
       ]
     evidenceFor runId = case M.lookup runId receipts of
       Just (Receipt _ "-") -> Nothing

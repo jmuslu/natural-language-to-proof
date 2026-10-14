@@ -2,23 +2,24 @@
 module ReportedAccessors where
 
 import NL2Proof.DRT.Canonical
+import NL2Proof.DRT.Types
 import NL2Proof.Verify.ClaimKind
 import NL2Proof.Verify.Oracle
 import NL2Proof.Verify.Reported
 
--- Reports can be inspected.
+-- Reports can be inspected without changing their commitment kind.
 inspectReport :: Reported -> (Claim 'Reported, CanonCond, [Attribution], Maybe CTerm, Maybe String)
 inspectReport r =
   (reportedClaim' r, reportedContent r, reportedChain r, reportedSource r, reportedVerb r)
 
--- The legitimate path: promote to an unconfirmed candidate, then ask an oracle.
-checkCandidate :: Oracle -> Reported -> Maybe Confirmed
-checkCandidate oracle r = confirm oracle (asCandidate (reportedClaim' r))
+-- Explicit hypothesis inspection never manufactures a confirmation token.
+checkHypothesis :: Oracle -> Reported -> Verdict
+checkHypothesis oracle r = check oracle (reportedContent r)
 
--- Asserted claims, indexed or bare, are confirmable as before.
-checkAsserted :: Oracle -> CanonCond -> (Maybe Confirmed, Maybe Confirmed)
-checkAsserted oracle c = (confirm oracle c, confirm oracle (assertedClaim c))
+-- Only witnesses extracted at the structural root are confirmable.
+checkAsserted :: Oracle -> DRS -> [Confirmed]
+checkAsserted oracle d = confirmAll oracle (map fst (assertedClaims d))
 
--- Embedded claims can be inspected, and promoted explicitly like a report.
-inspectEmbedded :: Oracle -> Claim 'Embedded -> (CanonCond, Maybe Confirmed)
-inspectEmbedded oracle e = (claimCond e, confirm oracle (asCandidate e))
+-- Embedded claims remain inspectable without assertion admission.
+inspectEmbedded :: Oracle -> Claim 'Embedded -> (CanonCond, Verdict)
+inspectEmbedded oracle e = (claimCond e, check oracle (claimCond e))

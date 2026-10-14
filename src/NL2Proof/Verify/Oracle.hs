@@ -151,35 +151,30 @@ confClaim (MkConfirmed claim _) = claim
 confOracle :: Confirmed -> String
 confOracle (MkConfirmed _ oracle) = oracle
 
--- | What 'confirm' accepts: asserted claims only. A bare 'CanonCond' is the
--- asserted form the claim table has always produced, and @'Claim' 'Asserted@
--- is the indexed one. @'Claim' 'Reported@ and @'Claim' 'Presupposed@ have
--- (and @'Claim' 'Embedded@) have instances only to turn the attempt into a
--- readable compile error; the class
+-- | What 'confirm' accepts: structural top-level assertion witnesses only.
+-- Bare conditions can be inspected with 'check', but cannot issue tokens.
+-- The other claim kinds have instances only to produce readable errors; the class
 -- method is not exported, so no other instance can be written to work around
 -- it.
 class Confirmable c where
   assertedCond :: c -> CanonCond
 
-instance Confirmable CanonCond where
-  assertedCond = id
-
 instance Confirmable (Claim 'Asserted) where
   assertedCond = claimCond
 
 instance TypeError ('Text "A reported claim cannot be confirmed: being reported is not evidence."
-                    ':$$: 'Text "Promote it with asCandidate and ask an oracle about the candidate.")
+                    ':$$: 'Text "Use check to inspect a hypothesis without creating an assertion token.")
       => Confirmable (Claim 'Reported) where
   assertedCond = claimCond
 
 instance TypeError ('Text "A presupposed claim cannot be confirmed directly."
-                    ':$$: 'Text "Promote it with asCandidate and ask an oracle about the candidate.")
+                    ':$$: 'Text "Use check to inspect a hypothesis without creating an assertion token.")
       => Confirmable (Claim 'Presupposed) where
   assertedCond = claimCond
 
 instance TypeError ('Text "An embedded claim cannot be confirmed: the text does not assert it."
                     ':$$: 'Text "It occurs under a negation, a conditional or a disjunction; confirm the whole"
-                    ':$$: 'Text "top-level condition, or promote it with asCandidate and ask an oracle.")
+                    ':$$: 'Text "top-level condition; use check for nonpromoting hypothesis inspection.")
       => Confirmable (Claim 'Embedded) where
   assertedCond = claimCond
 
@@ -193,7 +188,7 @@ confirm o x = case check o c of
   _         -> Nothing
   where c = assertedCond x
 
-confirmAll :: Oracle -> [CanonCond] -> [Confirmed]
+confirmAll :: Oracle -> [Claim 'Asserted] -> [Confirmed]
 confirmAll o cs = [x | Just x <- map (confirm o) cs]
 
 --------------------------------------------------------------------------------

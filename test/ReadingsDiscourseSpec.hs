@@ -388,6 +388,9 @@ threadingChecks =
       [Nothing] (map dvSDRT (compareThreading Committed (segsOf threeSent)))
   , expectEq "threading: while Permissive diverges nowhere"
       [] (compareThreading Permissive (segsOf threeSent))
+  , expect "threading: original named middle sentence exposes Ref-only ranking gap"
+      (not (null (compareThreading Permissive
+         (segsOf "A student arrived. Mary smiles. She reads a book."))))
 
   , -- Forcing a subordinating relation restores it even under Committed. This
     -- is the check that the loss above is about the stipulated cue weights and
@@ -444,7 +447,7 @@ threadingChecks =
          == drsConds (dscDRS (prDiscourse (runFragment thrSrc threeSent))))
   ]
   where
-    threeSent = "A student arrived. Mary smiles. She reads a book."
+    threeSent = "A student arrived. Every professor smiles. She reads a book."
     genericSent = "Every student reads a book. Mary smiles. She sleeps."
     anaphoraCase = "A student arrived. She smiles."
     blockedCase = "No student sleeps. She smiles."
@@ -584,7 +587,7 @@ muChecks =
   where
     collide = "A student arrived. A professor walks."
     collideAna = "A student arrived. A professor walks. She smiles."
-    threeSent = "A student arrived. Mary smiles. She reads a book."
+    threeSent = "A student arrived. Every professor smiles. She reads a book."
     fourSent = "A student arrived. Mary smiles. John sleeps. She reads a book."
 
     threeM = threadDiscourse Permissive (segsOf threeSent)
