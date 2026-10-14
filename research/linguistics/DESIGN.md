@@ -1025,3 +1025,9 @@ gains five against its own prior baseline. Every other retained reading is
 unchanged in each comparison. The default stays known-only; unknown names,
 coordination and embedding acquire no extra license. Earlier construction cards
 record their stated checkpoints; this result supplies the newer bounded evidence.
+
+## Worked construction lessons (Units 2, 3 and 4)
+
+These reviewed lessons expand the cards above with categories, derivations, typed meanings, DRS and claim scope, current divergences, and Boxer/ccg2lambda comparisons. Proposed rules remain distinct from accepted behavior. Each lesson records its stated evidence checkpoint; subsequent optional noun-policy measurements are reported in [the paired result](NOMINAL_POLICY_RESULT.md), without changing the default policy.
+
+- [Names and nominal predication (C1–C2)](sections/design-names-nominals.md)
