@@ -117,3 +117,19 @@ unchanged. A first proposal write encountered an absent directory; created the
 owned proposals directory and wrote the complete proposal successfully. No
 shared production path or cabal file changed. Reviewer must resolve the lexical
 transitive locality gate before root implements.
+
+## Locality refinement
+
+Before the expanded corpus-free test: predict compilation succeeds, intended
+positive local-binding/provenance controls remain red; unsupported public-grammar
+controls may already pass. Added exact lexical ProvLex / BwdApp gate proposal,
+finite/base features, closed marker, and pending-sign unary/composition rejection;
+no new all-sign payload or private combinator export. Public returned-provenance
+checks cannot prove exclusion of packed-away paths; documented that review duty.
+
+Expanded contract result: compiled, 8/20 pass, 12 red, matching prediction.
+Added auxiliary/negation returned-provenance checks are red; five new negative
+miniature-grammar cases already pass. The extracted-clause case uses a
+clause-gap category and does not by itself prove rejection of every same-type
+extraction derivation. Exact early-guard review remains required. Gold unchanged;
+no corpus load, shared source or cabal changes. `git diff --check` passed.

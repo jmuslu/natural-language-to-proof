@@ -71,3 +71,46 @@ in [REFERENCES](../REFERENCES.md) found no dedicated reflexive entry in its thre
 inspected English YAML files. Do not claim upstream validation or paste its
 incompatible event/NP continuation terms. This proposal supplies a general local
 construction with explicit unresolved extensions, not a ProverQA gate release.
+
+## Exact bounded gate after reviewer follow-up
+
+Reuse existing `SSign.ssProv` and `ssNotes`; no new payload on all signs.
+Identify a pending reflexive by the construction category above and its closed
+`reflexive-local-binding` stipulation at the same lexical provenance. A category
+with that special shape but no licensed closed marker is not an ordinary open
+functor fallback. In `semCombine`, guard pending items before ordinary dispatch:
+
+- The only consuming rule is `BwdApp`, with reflexive on the right and lexical
+  transitive on the left. Both signs must be plain (no pending coordinator or
+  structural placeholder). A pending reflexive on the left is rejected.
+- Left `ssProv` must be exactly `ProvLex`, not a ProvRule with one leaf. Left
+  category is exactly `(S[dcl]\NP)/NP` or `(S[b]\NP)/NP`, with ordinary
+  argument NPs; explicitly reject passive, adjectival, embedded and generic S.
+  Left cannot be a clause-gap `S/NP`, PP governor, unary-extracted sign or
+  composition. Word identity does not decide eligibility.
+- Right must also remain its marked lexical sign, with expected reflexive
+  category whose VP feature agrees with the left; resulting category must be
+  that same finite/base VP. Require ordinary type agreement as well as category
+  matching. Do not erase features to make the gate pass.
+- Pending reflexives may not undergo unary change, composition, coordination,
+  or punctuation attachment before consumption. Sentence-final punctuation can
+  attach after the lexical verb/reflexive VP has been built. This retains a
+  licensed derivation without manufacturing a nonlexical pending binder.
+- Once the reflexive is consumed, its category is ordinary VP; the inherited
+  note remains provenance, not a permanent ban on subsequent composition.
+  Apply `not` and `does` to that completed VP. In particular `does defend` as
+  a composed T cannot consume the reflexive, but `does (defend herself)` can.
+
+This lexical-leaf restriction deliberately excludes composed/extracted governors
+until independently reviewed. It avoids carrying a new universal sign flag and
+makes the domain inspectable in the existing derivation tree. All standard
+reflexive words remain protected from ordinary noun/name meanings, including
+unsupported contexts; otherwise the guard can be bypassed through lexical fallback.
+
+Additional public-API tests inspect returned provenance for auxiliary and negated
+inputs and reject PP, subject intensifier, clause-extracted and incompatible
+passive/adjective governors in miniature tag models. These are not a substitute
+for reviewing the early gate: root packing can hide a discarded spurious route,
+and some negative miniature grammars already lack a semantic parse. No private
+function is exported solely for testing. Coordinator integration must inspect
+all branches of the gate and confirm unary closure cannot alter a pending sign.
