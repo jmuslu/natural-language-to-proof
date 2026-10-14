@@ -2507,3 +2507,13 @@ Particle integration compatibility: initialize new nominal role to NominalPlain 
 ### 2026-10-14 — particle release result
 
 Prediction held: three independent give-up controls change no-parse→exact, all164other statuses and selected objects unchanged. Frozen16752exact26wrong88no-parse1incomplete; one source sentence and two authored controls, no population extrapolation. All24Haskell suites(1669checks),build/oracle/Explain,77Python75pass2existingexpectedfailures,hand4 pass. Reviewer61a7638 independently verified source,binary,cases,observations and each changed DRS/claim boundary. Only merged-source adaptation beyondc8b34c4 is NominalPlain initialization. ASTRA operational cap paragraph clarified historical8 vs owner32 and observed9running, without claiming tested32capacity. No model/benchmarklaunch.
+
+Prediction for accepted59955b6 targetedparticle Explain diagnostics: Pipeline meanings match threeexact particle gold; separate derivation replay may fail to reconstruct span seed and must report honest fallback. Frozen Explainbinary/source manifest copied to particle-integration before nextsourcebuild. Specialist writes outputs in ownignoredruns, underglobaltoken; no model/benchmark.
+
+### 2026-10-14 — source trial lemma-fidelity-plan (0c1da37)
+
+Prediction: Eligible plain-N plural readings should use the independently specified singular predicate, preserving scope and all exact cases. Actual dictionary eligibility is unknown; no promise that all seven noun-error rows improve. Any new wrong or exact regression blocks landing. Frozen167 cases and separate semantic contracts retained; previous accepted binary particle-integration. Commands: merge --no-ff --no-commit astra/lemma-fidelity-plan; register noun-lemma; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/noun-lemma-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — bounded noun lemma release
+
+Noun0c1da37 merged unchanged. All25Haskell suites(1702checks),build/oracle/Explain,77Python(75pass2existingexpectedfailures),hand4 pass. Reviewer independently verified source/binary/cases/observations and three selected deltas: birds→bird in folio-some-2 and folio-some-not-2, monkeys→monkey in folio-extended-universal-3. Bindings/operators/claimstatus preserved; consequent hawks/mammals remainunmatched, so zeroexactgain and all167statuses52/26/88/1 unchanged. Allother selectedobjects unchanged. Prediction of bounded lexicalnormalization holds only where actuallicense fires; broader seven-casegain was explicitlynotpredicted. Evidence noun-lemma-integration.

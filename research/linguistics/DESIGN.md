@@ -902,3 +902,22 @@ for the negative case, only its enclosing negation is Asserted and the atom is
 Embedded. This measures that licensed sense and those three controls, not general
 particle or ProverQA population coverage. Explain's separate derivation replay
 still needs the shared span-seed API before it can justify this construction.
+
+### Evidence-bound regular plural noun normalization
+
+An actually offered plain `N` can now use a singular predicate for a narrowly
+licensed lowercase regular plural. The surface must have only NNS evidence and
+the candidate base only NN evidence in the loaded dictionary; ambiguous suffix
+families, capitals, compounds and other category paths remain unchanged. The
+original token, category and score survive, with the normalization recorded as a
+stipulation. This is a lexical interpretation rule, not a rewrite of exported
+DRSs, and it does not alter verbal lemmas or that-clause attestation.
+
+Thirty-three independent controls and all release gates pass. Three selected
+readings improve a restriction predicate (`birds→bird` twice and `monkeys→monkey`
+once), preserving binders, negation and claim status. They remain wrong against
+the full independent gold because the consequent predicates retain `hawks` or
+`mammals`. All other selected meanings and all167 statuses remain unchanged:
+52 exact,26 wrong-but-typed,88 no-parse,1 incomplete. This is partial lexical
+progress, **not** three additional exact sentences; the remaining category and
+lexical-evidence causes require their own Explain diagnosis.
