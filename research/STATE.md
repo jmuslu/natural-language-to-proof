@@ -14,3 +14,5 @@
 - Scope: explicit staging, predictions before experiments, gates before push origin astra/research; no secrets/raw datasets/main/tags. Sole coordinator this session.
 
 - Active serial integration: inventory-proverqa (b6278c2), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/inventory-proverqa; committing/pushing now.
+
+- Active serial integration: inventory-prontoqa (d0c8436), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/inventory-prontoqa; committing/pushing now.
