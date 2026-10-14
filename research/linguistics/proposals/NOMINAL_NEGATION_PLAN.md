@@ -179,3 +179,19 @@ remain red even after named-subject integration1b9fc27;19/19 boundary/preservati
 checks pass. Existing source-category/operator checks6/6pass. Default standalone
 execution therefore has25/37pass and12known failures, not a production regression
 suite. Modes and the earlier isolated-base comparison are recorded in the note.
+
+## Isolated implementation status
+
+The above was approved as a design before implementation. The isolated candidate
+now realizes that exact frame in CCGSemParse; it is not yet accepted research
+source or measured corpus coverage. The concrete API uses a second
+`NegativeNominalCertificate` constructor to keep the original positive
+constructor compatible, with a total `nominalNegation` view for shared code.
+Private `ClosedNotChoice` records the actual selected closed lexical branch.
+`NominalNegator` and `NominalNegatedCopula` remain mandatory until the existing
+Pending/Complete checks discharge the full frame. Distinct name and universal
+Complete constructors retain their existing subject origins. See
+`test/NominalNegationOriginSpec.hs` for actual-minted-origin attacks and
+`test/NominalNegationPlanSpec.hs` for independent scope, claim and all-reading
+checks. Local success does not substitute for the coordinator's source-pinned
+fresh fidelity and Explain gates.

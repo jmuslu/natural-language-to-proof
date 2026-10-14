@@ -41,3 +41,50 @@ certificate. No global property-not category or generic pending-composition
 permission. Parent/reviewer must approve before any source implementation.
 Pronto47,529 predicate-negation and Prover562 negative-copula totals are not
 nominal intersections; no recovered-count forecast or new inventory scan.
+
+## Bounded implementation candidate (after c90f2d5 review)
+
+Resumed full-access shell in this isolated branch; merged accepted d83adaa before
+source edits. Only owned CCGSemParse, independent negation tests and these
+proposal/notes changed. No cabal, export/scorer, shared state or gold edits.
+
+Prediction before source: the four independent nominal clauses (12 semantic,
+all-retained-reading and claim checks) remain red on accepted source; exact
+source-frame implementation should make them green without changing ordinary
+adjective or argument-indefinite negation. Baseline observed0/12. The additional
+origin suite was authored before source; after correcting a test-only reserved
+Haskell identifier its baseline fails to compile because the new API is absent.
+That API-red is not counted as a passing semantic baseline.
+
+Implementation uses a second NegativeNominalCertificate constructor sharing all
+positive fields, with typed closed-not occurrence evidence. This preserves the
+original positive constructor API and uses the total nominalNegation helper in
+all shared paths. The private ClosedNotChoice is minted alongside the actual
+selected closed lexical entry, never recovered from a note or lambda shape.
+The mandatory duplicate not and copula share one frame. Exactly BwdXComp is
+allowed before direct property application; source-pair evidence is required
+for both original not composition and composed NP application. Complete keeps
+all noun/name origins and negator evidence; packing distinguishes certificates.
+No global not category, existential contraction, NP inversion or default-policy
+change. A dedicated negative stipulation states the actual composition route.
+
+Focused results before final regression completion:48/48 semantic/boundary/
+existing-operator checks;60/60 origin/source-pair/packing/escape controls. Both
+KnownNounsOnly and ContextUnknownNouns check known named/universal clauses;
+unknown common nouns are tested only under the existing opt-in rule. The
+all-reading checks require nonempty readings and Just the exact DRS for every
+reading, including embedded claim status. Unknown names remain blocked.
+Reviewer inspected live source and found no blocker; approval remains contingent
+on final committed snapshot and full suites, then coordinator fresh fidelity,
+Explain and all integration gates. No corpus gain is asserted here.
+
+Final local validation: `cabal test all --offline --test-show-details=failures`
+passed all29 registered suites. Current final source was compiled after its last
+edit. Standalone semantic controls48/48 pass; final origin controls71/71 pass,
+including two actual minted negative frames with identical not meaning retained
+separately by packing and complete/active-role escapes against ordinary signs.
+`git diff --check` is clean. New standalone suites remain unregistered because
+cabal is coordinator-owned; run both explicitly until root registers them.
+Full logs are copied into ignored research/runs/nominal-negation-local/ for
+coordinator preservation before worktree cleanup. No source fidelity or coverage
+measurement was run locally; reviewed candidate still requires root fresh gates.

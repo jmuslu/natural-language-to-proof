@@ -1,4 +1,4 @@
--- Independent scoped nominal-negation controls; known red plan, no source fix.
+-- Independent scoped nominal-negation controls, authored red before source fix.
 -- Tiny synthetic dictionaries only; no model/corpus loader.
 module Main (main) where
 import qualified Data.Map.Strict as M
@@ -60,13 +60,15 @@ universal m text noun predicate=
  in exact m text (Canonical [] [whole]) [whole] [n,neg,p]
 
 positive :: [Check]
-positive=
- universal mini "Every cat is not an animal." "cat" "animal"
- ++ universal mini "Each dog is not a mammal." "dog" "mammal"
- ++ let atom=CanPred "animal" [CConstT "Ari"]; neg=CanNot(Canonical [] [atom])
-    in exact mini "Ari is not an animal." (Canonical [] [neg]) [neg] [atom]
+positive=concatMap known [KnownNounsOnly,ContextUnknownNouns]
  ++ universal (mini {smNominalPolicy=ContextUnknownNouns})
       "Every dax is not a wug." "dax" "wug"
+ where
+  known policy=let m=mini {smNominalPolicy=policy} in
+    universal m "Every cat is not an animal." "cat" "animal"
+    ++ universal m "Each dog is not a mammal." "dog" "mammal"
+    ++ let atom=CanPred "animal" [CConstT "Ari"]; neg=CanNot(Canonical [] [atom])
+       in exact m "Ari is not an animal." (Canonical [] [neg]) [neg] [atom]
 
 blocked :: String -> SemModel -> String -> Check
 blocked label m text=expect label (null(srReadings(result m text)))
@@ -74,6 +76,8 @@ blocked label m text=expect label (null(srReadings(result m text)))
 boundaries :: [Check]
 boundaries=
  [blocked "no indefinite subject extension" mini "A cat is not an animal."
+ ,blocked "relative embedding cannot escape" mini "Every cat that is not an animal is red."
+ ,blocked "coordination cannot escape" mini "Every cat is not an animal and red."
  ,blocked "unknown initial name never licensed by noun policy"
     (mini {smNominalPolicy=ContextUnknownNouns}) "Zorlan is not an animal."
  ,blocked "KnownNounsOnly still blocks unknown noun predicate" mini "Every cat is not a wug."

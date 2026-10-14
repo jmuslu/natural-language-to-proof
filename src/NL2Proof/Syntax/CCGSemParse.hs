@@ -44,6 +44,8 @@ module NL2Proof.Syntax.CCGSemParse
   , fusedUnaryAllowed
   , fusedRootAllowed
   , NominalCertificate(..)
+  , NominalNegationOrigin(..)
+  , nominalNegation
   , NominalRole(..)
   , NominalNounPolicy(..)
   , NominalNounOrigin(..)
@@ -363,6 +365,7 @@ data NameLexOrigin = NameLexOrigin
   , nloCategoryStep :: NameCategoryStep
   } deriving (Eq, Ord)
 data LexicalOrigin = OrdinaryOrigin | RigidNameChoice NameLexOrigin
+  | ClosedNotChoice Int String CCat
 
 -- Bound once to the selected lexical occurrence in the current parse context.
 data NominalNameOrigin = NominalNameOrigin
@@ -411,7 +414,9 @@ lexicalChoices m i w
       , let target = cat ("(S[" ++ feature ++ "]\\NP)\\((S[" ++ feature ++ "]\\NP)/NP)")
       , item <- closedEntries i w target ]
   | isClosedClass w || all (not . isWordChar) w =
-      [ (LexSign c' (relativeNote c c' it) s, OrdinaryOrigin)
+      [ (LexSign c' (relativeNote c c' it) s,
+          if lw=="not" && c==nominalNotSource && c'==c
+          then ClosedNotChoice i w c else OrdinaryOrigin)
       | (c, s) <- tags, let c' = restrictiveTag c, it <- closedEntries i w c' ]
   | otherwise = case nameStatus m (i == 0) w of
       NotName     -> ordinary open
@@ -535,7 +540,7 @@ lexicalChoices m i w
 -- Chart
 --------------------------------------------------------------------------------
 
--- | The positive universal nominal fragment keeps its obligation to root.
+-- | The bounded nominal fragment keeps its obligation to root.
 -- Ordinary noun/subject capabilities may be dropped on unrelated routes;
 -- paired nominal roles must never be silently dropped.
 data NominalCertificate = NominalCertificate
@@ -548,7 +553,32 @@ data NominalCertificate = NominalCertificate
   , ncArticleWord :: String
   , ncCopulaCategory :: CCat
   , ncArticleCategory :: CCat
+  }
+  | NegativeNominalCertificate
+  { ncSource :: SourceId
+  , ncCopulaIndex :: Int
+  , ncArticleIndex :: Int
+  , ncCopulaSpan :: Span
+  , ncArticleSpan :: Span
+  , ncCopulaWord :: String
+  , ncArticleWord :: String
+  , ncCopulaCategory :: CCat
+  , ncArticleCategory :: CCat
+  , ncNegationOrigin :: NominalNegationOrigin
   } deriving (Eq, Ord)
+
+-- This evidence is minted only by the selected closed backward-not entry,
+-- then bound to its actual token/source occurrence. No term or note matching.
+data NominalNegationOrigin = NominalNegationOrigin
+  { nnProv :: Prov
+  , nnIndex :: Int
+  , nnCategory :: CCat
+  } deriving (Eq, Ord)
+
+-- Total view: the positive constructor's positional API remains unchanged.
+nominalNegation :: NominalCertificate -> Maybe NominalNegationOrigin
+nominalNegation (NegativeNominalCertificate {ncNegationOrigin=o}) = Just o
+nominalNegation _ = Nothing
 
 -- A model policy, not a per-sign permission to ignore lexical evidence.
 data NominalNounPolicy = KnownNounsOnly | ContextUnknownNouns deriving (Eq, Ord, Show)
@@ -578,13 +608,15 @@ data NominalRole
   | NominalArticle NominalCertificate
   | NominalPredicate NominalCertificate NominalNounOrigin
   | NominalCopula NominalCertificate
+  | NominalNegator NominalCertificate
+  | NominalNegatedCopula NominalCertificate
   | NominalPending NominalCertificate NominalNounOrigin
   | NominalComplete NominalCertificate Prov NominalNounOrigin NominalNounOrigin
   | NominalNamedComplete NominalCertificate NominalNameOrigin NominalNounOrigin
   deriving (Eq, Ord)
 
 nominalN, nominalNP, nominalArticleSource, nominalCopulaSource,
-  nominalArticleInternal, nominalCopulaInternal, nominalVP, nominalS :: CCat
+  nominalArticleInternal, nominalCopulaInternal, nominalVP, nominalS, nominalNotSource :: CCat
 nominalN = CAtom "N" []
 nominalNP = CAtom "NP" [Feat "nb"]
 nominalArticleSource = CSlash Fwd nominalNP nominalN []
@@ -593,6 +625,8 @@ nominalVP = CSlash Bwd nominalS (CAtom "NP" []) []
 nominalCopulaSource = CSlash Fwd nominalVP (CAtom "NP" []) []
 nominalArticleInternal = CSlash Fwd nominalN nominalN []
 nominalCopulaInternal = CSlash Fwd nominalVP nominalN []
+nominalNotSource = let v = CSlash Bwd (CAtom "S" []) (CAtom "NP" []) []
+                   in CSlash Bwd v v []
 
 -- | A same-category coordinate chain, certified by chart rules rather than by
 -- inspecting logical terms. Nothing means comma edges have no overt operator.
@@ -731,7 +765,8 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
             ++ [(LexSign fusedRelCat relEntry rs, FusedRelOp certificate, OrdinaryOrigin) | i == fcRelativeIndex certificate]
           | (certificate,hs,rs,headEntry,relEntry) <- fusedPairs ]
       | (i, original) <- zip [0..] choices ]
-    nominalPairs =
+    nominalPairs = positiveNominalPairs ++ negativeNominalPairs
+    positiveNominalPairs =
       [ (certificate,cs,as)
       | (i,(copula,article)) <- zip [0..] (zip toks (drop 1 toks))
       , map toLower (tokText copula) == "is"
@@ -740,13 +775,30 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       , (ac,as) <- offeredTags m False (tokText article), ac == nominalArticleSource
       , let certificate = NominalCertificate src i (i+1) (tokSpan copula)
                (tokSpan article) (tokText copula) (tokText article) cc ac ]
+    negativeNominalPairs =
+      [ (certificate,cs,as)
+      | (i,(copula,(negator,article))) <- zip [0..] (zip toks (zip (drop 1 toks) (drop 2 toks)))
+      , map toLower (tokText copula)=="is"
+      , map toLower (tokText article) `elem` ["a","an"]
+      , (cc,cs) <- offeredTags m (i==0) (tokText copula), cc==nominalCopulaSource
+      , (ac,as) <- offeredTags m False (tokText article), ac==nominalArticleSource
+      , (_,ClosedNotChoice j word category) <- choices !! (i+1)
+      , j==i+1, word==tokText negator, category==nominalNotSource
+      , let origin=NominalNegationOrigin (ProvLex src (tokSpan negator) word) j category
+            certificate=NegativeNominalCertificate src i (i+2) (tokSpan copula)
+              (tokSpan article) (tokText copula) (tokText article) cc ac origin ]
     annotated =
-      [ [(l,f,nominalCapability i t l origin) | (l,f,origin) <- original] ++ concat
+      [ [(l,f,nominalCapability i t l origin) | (l,f,origin) <- original]
+          ++ [(l,FusedPlain,NominalNegator certificate)
+             | (l,_,ClosedNotChoice j word category) <- original
+             , (certificate,_,_) <- nominalPairs, Just origin <- [nominalNegation certificate]
+             , nnIndex origin==i, j==i, word==tokText t, category==nnCategory origin]
+          ++ concat
           [ [(LexSign nominalCopulaInternal (LexTerm nominalCopulaMeaning
-                  "licensed nominal predication" (Just nominalReanalysis)) cs,
+                  "licensed nominal predication" (Just (nominalReanalysisFor certificate))) cs,
                   FusedPlain,NominalCopula certificate) | i==ncCopulaIndex certificate]
             ++ [(LexSign nominalArticleInternal (LexTerm nominalArticleMeaning
-                  "licensed predicative article" (Just nominalReanalysis)) as,
+                  "licensed predicative article" (Just (nominalReanalysisFor certificate))) as,
                   FusedPlain,NominalArticle certificate) | i==ncArticleIndex certificate]
           | (certificate,cs,as) <- nominalPairs ]
       | (i,(t,original)) <- zip [0..] (zip toks fusedAnnotated) ]
@@ -794,9 +846,13 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
           (i==ncArticleIndex certificate && k==i+1
            && left==nominalArticleInternal && right==nominalN
            && sourcePair m (ncArticleCategory certificate) nominalN)
-          || (i==ncCopulaIndex certificate && k==i+1
+          || (i==ncCopulaIndex certificate && k==ncArticleIndex certificate
               && left==nominalCopulaInternal && right==nominalN
               && sourcePair m (ncCopulaCategory certificate) nominalNP)
+          || (i==ncCopulaIndex certificate && k==i+1
+              && maybe False (\origin -> left==nominalCopulaInternal && right==nnCategory origin
+                && sourcePair m (ncCopulaCategory certificate) (nnCategory origin))
+                   (nominalNegation certificate))
         mapsSource (certificate,_,_,_,_) =
           (i == fcRelativeIndex certificate && k == i+1
            && left == fusedRelCat && right == fusedVPCat
@@ -1125,7 +1181,7 @@ semCombine comb0 out0 l r
     compose comb out f g (Just zTy) = Just (mk comb out (composeTerm zTy f g) Nothing)
     compose _ _ _ _ Nothing = Nothing
 
--- | Source-category evidence for the two internal reanalysis applications.
+-- | Source-category evidence for the bounded internal reanalysis steps.
 -- Do not turn a licensed local reanalysis into a global unseen-pair exception.
 sourcePair :: SemModel -> CCat -> CCat -> Bool
 sourcePair model left right = not (smSeenRules model)
@@ -1141,6 +1197,14 @@ nominalReanalysis = Stipulation "nominal-universal-reanalysis"
   ["ordinary existential argument article"]
   "source nominal copula/article categories and occurrence certificate; root-only direct applications"
 
+nominalReanalysisFor :: NominalCertificate -> Stipulation
+nominalReanalysisFor c = case nominalNegation c of
+  Nothing -> nominalReanalysis
+  Just _ -> Stipulation "nominal-negative-reanalysis"
+    "paired article supplies a lexical property beneath subject-wide VP negation"
+    ["ordinary existential argument article"]
+    "source is/not/article categories and closed-not occurrence; one certified BwdXComp then direct applications to root"
+
 -- Only inferred lexical choices add this note; ordinary paths may discard an
 -- optional capability, but cannot erase a mandatory pending construction role.
 nominalOriginNotes :: NominalRole -> Prov -> [(Stipulation,Prov)]
@@ -1151,7 +1215,9 @@ nominalOriginNotes (NominalNoun origin) pv = case nnoAdmission origin of
     ["KnownNounsOnly: no nominal capability without dictionary NN/NNS"]
     ("no POS evidence; lowercase alphabetic non-name; " ++ case context of
       DirectUniversalSubject _ _ -> "direct Every/each lexical determiner context"
-      PairedNominalComplement _ -> "occurrence-bound is+a/an nominal complement"),pv)]
+      PairedNominalComplement c -> case nominalNegation c of
+        Nothing -> "occurrence-bound is+a/an nominal complement"
+        Just _ -> "occurrence-bound is+not+a/an nominal complement"),pv)]
 nominalOriginNotes _ _ = []
 
 nominalActive :: NominalRole -> Bool
@@ -1176,7 +1242,11 @@ nominalSeenPair :: SemModel -> SSign -> SSign -> Bool
 nominalSeenPair model left right = case (ssNominal left,ssNominal right) of
   (NominalArticle c,NominalNoun _) ->
     sourcePair model (ncArticleCategory c) nominalN
-  (NominalCopula c,NominalPredicate d _) -> c==d
+  (NominalCopula c,NominalPredicate d _) -> c==d && nominalNegation c==Nothing
+    && sourcePair model (ncCopulaCategory c) nominalNP
+  (NominalCopula c,NominalNegator d) -> c==d
+    && maybe False (\o -> sourcePair model (ncCopulaCategory c) (nnCategory o)) (nominalNegation c)
+  (NominalNegatedCopula c,NominalPredicate d _) -> c==d && nominalNegation c/=Nothing
     && sourcePair model (ncCopulaCategory c) nominalNP
   _ -> fusedSeenPair model left right
 
@@ -1199,8 +1269,25 @@ nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
     , ssProv left==articleLeaf c, ssProv right==np, lexical np
     , after c (ncArticleSpan c) np, complementOrigin c origin
     -> Just (NominalPredicate c origin)
-  (NominalCopula c,NominalPredicate d origin)
+  (NominalCopula c,NominalNegator d)
+    | Just origin <- nominalNegation c
+    , comb==BwdXComp, out==nominalCopulaInternal, c==d, valid c
+    , clean left, clean right
+    , ssCat left==nominalCopulaInternal, ssCat right==nnCategory origin
+    , ssProv left==copulaLeaf c, ssProv right==nnProv origin
+    -> Just (NominalNegatedCopula c)
+  (NominalNegatedCopula c,NominalPredicate d origin)
     | let np=nnoProv origin; nc=nnoCategory origin
+    , nominalNegation c/=Nothing
+    , comb==FwdApp, out==nominalVP, c==d, valid c, clean left, clean right
+    , ssCat left==nominalCopulaInternal, ssCat right==nominalN, nc==nominalN
+    , ssProv left==copulaHead c
+    , ssProv right==provRule "FwdApp" [articleLeaf c,np]
+    , complementOrigin c origin
+    -> Just (NominalPending c origin)
+  (NominalCopula c,NominalPredicate d origin)
+    | nominalNegation c==Nothing
+    , let np=nnoProv origin; nc=nnoCategory origin
     , comb==FwdApp, out==nominalVP, c==d, valid c, clean left, clean right
     , ssCat left==nominalCopulaInternal, ssCat right==nominalN, nc==nominalN
     , ssProv left==copulaLeaf c
@@ -1214,7 +1301,7 @@ nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
     , ssCat left==nominalNP, ssCat right==nominalVP
     , dc==nominalArticleSource, nc==nominalN, cc==nominalN
     , ssProv left==provRule "FwdApp" [dp,np]
-    , ssProv right==provRule "FwdApp" [copulaLeaf c,provRule "FwdApp" [articleLeaf c,cp]]
+    , ssProv right==provRule "FwdApp" [copulaHead c,provRule "FwdApp" [articleLeaf c,cp]]
     , provSources (ssProv left)==[ncSource c]
     , maybe False ((<=spanStart (ncCopulaSpan c)) . spanEnd) (provSpan (ssProv left))
     , subjectOrigin dp dc subject, complementOrigin c complement
@@ -1229,7 +1316,7 @@ nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
     , source==ncSource c, word==nloWord choice
     , nloIndex choice + 1 == ncCopulaIndex c
     , spanEnd span<=spanStart (ncCopulaSpan c)
-    , ssProv right==provRule "FwdApp" [copulaLeaf c,provRule "FwdApp" [articleLeaf c,cp]]
+    , ssProv right==provRule "FwdApp" [copulaHead c,provRule "FwdApp" [articleLeaf c,cp]]
     , complementOrigin c complement
     -> Just (NominalNamedComplete c name complement)
   (role@(NominalNamedComplete _ _ _),NominalPlain)
@@ -1268,12 +1355,25 @@ nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
     lexical _ = False
     articleLeaf c = ProvLex (ncSource c) (ncArticleSpan c) (ncArticleWord c)
     copulaLeaf c = ProvLex (ncSource c) (ncCopulaSpan c) (ncCopulaWord c)
+    copulaHead c = case nominalNegation c of
+      Nothing -> copulaLeaf c
+      Just o -> provRule "BwdXComp" [copulaLeaf c,nnProv o]
     after c sp pv = provSources pv==[ncSource c]
       && maybe False ((>=spanEnd sp) . spanStart) (provSpan pv)
-    valid c = ncArticleIndex c==ncCopulaIndex c+1 && ncCopulaIndex c>=0
+    valid c = frame c && ncCopulaIndex c>=0
       && ncCopulaCategory c==nominalCopulaSource && ncArticleCategory c==nominalArticleSource
       && map toLower (ncCopulaWord c)=="is" && map toLower (ncArticleWord c) `elem` ["a","an"]
       && spanEnd (ncCopulaSpan c)<=spanStart (ncArticleSpan c)
+    frame c = case nominalNegation c of
+      Nothing -> ncArticleIndex c==ncCopulaIndex c+1
+      Just o -> nnIndex o==ncCopulaIndex c+1 && ncArticleIndex c==nnIndex o+1
+        && nnCategory o==nominalNotSource
+        && case nnProv o of
+          ProvLex source sp word -> source==ncSource c && map toLower word=="not"
+            && spanStart sp<spanEnd sp
+            && spanEnd (ncCopulaSpan c)<=spanStart sp
+            && spanEnd sp<=spanStart (ncArticleSpan c)
+          _ -> False
 
 fusedSeenPair :: SemModel -> SSign -> SSign -> Bool
 fusedSeenPair model left right = case (ssFused left, ssFused right) of
