@@ -40,3 +40,7 @@ Helpers research/runs/integrate-reviewed.py and source-trial.py enforce pin/path
 - Active serial integration: prover-universal-gold (104429b), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/prover-universal-gold; committing/pushing now.
 
 - Active independent known-only208 diagnostic: research/runs/baseline208.py and expanded208-baseline, alongside serial202goldqueue. Freeze independently approved208IDs206texts SHA1639b17ef41c4b905a10b1bdd7160adb1b415aca36c29f10d6254bca723fdb89; exact202+3authoredinclusiveOR+3declaredcontextpassive. No source edits/newmodel/benchmark. Review results before membership expansion.
+
+- Active serial integration: folio-source-gold (afdc71b), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/folio-source-gold; committing/pushing now.
+
+- Scheduled after202-followups.py waits successful gold202queue, then reviewed208gold2branches (e13692e,56fb675) and nine reviewed followups, each fullgates/replay/push/cleanup. DO NOT start competing merge.208baseline reviewedcomplete70/36/101/1, all202entireobjectsunchanged. Source208cache selected only after202queuecomplete.
