@@ -2241,3 +2241,81 @@ Independent review approved candidate5f2d513 for integration experiment. Fixed12
 Reflexive result: all17 Haskell suites (1270 checks),29 scorer contracts, build/oracle/Explain and4/4 hand controls pass. Fresh fixed121/119texts:27exact32wrong62no-parse→34exact25wrong62no-parse. Exactly7local reflexive rows wrong→exact, no other status changes and no instrumentation/type/incomplete exclusions. Source/binary/gold hashes and per-case outputs in research/runs/reflexive-integration; prediction holds. Independent final review requested before landing. No model/answerbenchmark; Prover gate still closed.
 
 Independent reviewer verified all fresh source/binary/case hashes, the seven exact selected DRS+claim tables and unchanged remainder, then approved reflexive landing. Explicit staging contains only reviewed implementation, suite registration, learner docs/inventory follow-up and state/log; unrelated dirty files remain untouched.
+
+### 2026-10-14 — independently reviewed gold extension diagnostic
+
+Prediction:28 new rows (9transitives,2titlednames,4relatives/orboth,7Prontocoordination,6PWbinding) retain substantial name/scope/nominal/coordination limitations on accepted reflexive61f52d8. Gold was source-checked and reviewed before this parse. Historical121 remains frozen; strict-English person-restricted rows must be reported separately from controlled-domain fixtures, never pooled for acceptance. Commands: token-wrapped test/fidelity/run.py --cases research/runs/gold-extension-baseline/cases.jsonl --binary research/runs/reflexive-integration/fidelity-reflexive --parser default --output research/runs/gold-extension-baseline/fresh.json. Branch hashes pinned in manifest.json. This is local construction fidelity, no answerbenchmark/model.
+
+### 2026-10-14 — serial integration fidelity-contract-review (f3567ff)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/fidelity-contract-review; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/fidelity-contract-review.
+
+Gold extension result (separate contracts, no pooled acceptance): {"compatible-extension-diagnostic": {"exact": 6, "wrong_but_typed": 0, "no_parse": 11, "type_failure": 0, "incomplete": 1, "error": 0}, "proverqa-strict-english-v1": {"exact": 0, "wrong_but_typed": 1, "no_parse": 1, "type_failure": 0, "incomplete": 0, "error": 0}, "proverqa-controlled-v1": {"exact": 0, "wrong_but_typed": 0, "no_parse": 2, "type_failure": 0, "incomplete": 0, "error": 0}, "strict-English": {"exact": 6, "wrong_but_typed": 0, "no_parse": 0, "type_failure": 0, "incomplete": 0, "error": 0}}. Historical121 remains34/25/62. Logs sealed gold-extension-baseline; no model/answerbenchmark. Prediction of unresolved limitations holds.
+
+Result fidelity-contract-review: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration gold-prover-names (69688d8)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-prover-names; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-prover-names.
+
+Result gold-prover-names: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration gold-prover-transitives (eb7b4f3)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-prover-transitives; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-prover-transitives.
+
+Result gold-prover-transitives: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration gold-prover-relatives (4eb9d18)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-prover-relatives; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-prover-relatives.
+
+Result gold-prover-relatives: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration gold-pronto-coordination (ef73c92)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-pronto-coordination; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-pronto-coordination.
+
+Result gold-pronto-coordination: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration gold-proofwriter-binding (f8bd7b3)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-proofwriter-binding; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-proofwriter-binding.
+
+Result gold-proofwriter-binding: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration coordination-diagnosis (889a1ce)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/coordination-diagnosis; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/coordination-diagnosis.
+
+### 2026-10-14 — FOLIO mixed gold baseline before core feature trial
+
+Reviewer approved b19d2e7 five strict-English diagnostic rows before parser observation:3relative/negative-quantifier scope contrasts (not3examples per refined scope),2mixed VP clauses;1exact input and4disclosed adaptations. Prediction: existing nominal/relative gaps leave most non-exact. Token-wrapped test/fidelity/run.py --cases research/runs/folio-mixed-baseline/cases.jsonl --binary research/runs/reflexive-integration/fidelity-reflexive --parser default --output research/runs/folio-mixed-baseline/fresh.json. No model/answerbenchmark; these form a separate strict diagnostic extension, historical121 untouched.
+
+Result coordination-diagnosis: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+FOLIOmixed baseline result5rows:1exact/3wrong/1no-parse; no exclusions. Sealed acceptedreflexive source/binary in folio-mixed-baseline. These strict-English diagnostic rows remain separate from historical121. Prediction of mostly non-exact held.
+
+### 2026-10-14 — serial integration gold-folio-mixed (b19d2e7)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-folio-mixed; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-folio-mixed.
+
+Result gold-folio-mixed: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — symmetric composition feature trial
+
+Reviewed candidatef761082 changes four composition rules: specialize the surviving argument when its whole category equals the matched inner result, symmetric to existing result specialization. No subterm-wide bareS unification. Prediction before integration: prevent finite clauses entering adjective slots and the exposed relative matrix-negation error; preserve all exact gold and claim barriers. Existing17suites1270checks +16new directcontrols passed worker; fused prospective overlay89/89 is dependency evidence only. Root commands: git merge --no-ff --no-commit astra/composition-features; register16controls; cabal build all; cabal test all; oracle; token Explain + fresh154/152texts;42scorerchecks(2documentedexpectedfailures);hand4. Frozen cases and baseline in research/runs/composition-integration. Contract panels remain separate; no pooled population/acceptance claim, no model/answerbenchmark. Reviewer must inspect fresh results before landing.
+
+Composition result:18Haskell suites1286checks,42Pythonchecks40pass2documentedexpectedfailures,build/oracle/Explain/hand4 allpass. Frozen154/152texts keeps47exact; three FOLIOnegative-relative wrong→no-parse, no other statuschanges (26wrong80noparse1incomplete). Historical121unchanged34/25/62; strict-English11 becomes7exact0wrong4no-parse; othercontractpartitionsunchanged. Prediction of removing feature-invalid scope paths with no exact regressions holds; no new coverage claim. Reviewer independently verified source/binary/case hashes, actual zero-parse outputs, allgatelogs and approved landing. Fusedcandidate prospective89/89 remains separate future evidence, not acceptedproduction.
+
+### 2026-10-14 — serial integration fused-relatives (fa15a45)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/fused-relatives; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/fused-relatives.
+
+Result fused-relatives: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — source trial fused-relative-implementation (80204c5)
+
+Prediction: reviewed bounded construction improves intended scoped meanings without exact regressions or new wrong-but-typed cases. Frozen154/152texts and semantic contracts retained; previous accepted binary composition-integration. Commands: merge --no-ff --no-commit astra/fused-relative-implementation; register fused-relative; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh154; scorer contracts; hand4. Evidence research/runs/fused-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+Fused result:19suites1375checks including89independent fusedcontrols,42Pythonchecks(40pass2documentedxfail),build/oracle/Explain/hand4allpass. Fresh154 statuses47exact26wrong80no-parse1incomplete unchanged from corebaseline; selectedDRS/claimobjects also allidentical. No benchmark-gold gain; prediction of improvement did not hold on this panel, while no-regression prediction held. Nominal-heavy relatives remain blocked. Reviewer verified every source hash and binary/cases hashes and approved bounded capability landing based on89 independent scope/locality/packing controls, without claiming coverage or opening modelgate.

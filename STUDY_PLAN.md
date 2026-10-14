@@ -210,6 +210,21 @@ changes in the frozen121 cases (34exact/25wrong/62no-parse). Twenty-one new
 controls and all release gates pass. PP, plural and nonlocal reflexives remain
 outside this bounded rule; the construction fidelity gate remains closed.
 
+Composition now preserves the remaining argument's matched whole-category
+modifier features as well as the result's. This blocks a finite VP from filling
+an adjective VP slot after crossed composition, even though both have the same
+Montague type. Sixteen direct controls and all release gates pass. Three wrong
+FOLIO negative-relative meanings become no-parse on the frozen154-case
+diagnostic; all exact cases survive. This is conservative grammar correction,
+not a claim of new semantic coverage.
+
+A bounded paired reanalysis now exposes the relative restrictor for Everything
+and person-restricted Someone. It permits only the two local applications and
+keeps occurrence identity through chart packing. Eighty-nine independent scope
+and transition controls pass after the composition repair, but all154 corpus
+diagnostic statuses and selected meanings remain unchanged. Nominal predication
+still blocks those examples; Something's domain convention remains deferred.
+
 The broader ambiguity policy is still a separate inference obligation. Passing the highest-ranked reading does not establish a skeptical conclusion across the parser's bounded candidate set.
 
 ---

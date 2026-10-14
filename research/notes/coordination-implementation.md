@@ -71,3 +71,13 @@ Final SHA256 `src/NL2Proof/Syntax/CCGSemParse.hs`: `8fd459408e39680b8505e78dee35
 Final SHA256 `test/CoordinationDiagnosisSpec.hs`: `2ae4be732356b51f83adafac51e4c5906db4054cf9bcb3fcce6636ce306810af`.
 
 Known limitations: Explain independently replays legacy comma-AND, so repaired roots may use its honest raw-provenance fallback; comma-list stipulation explicitly records the semantic repair. No claim that the original replay tree denotes the rebuilt term. Either/XOR is not repaired. Unseen uppercase OR may be admitted as punctuation by independent lexical fallback and disappear via PunctLeft; preserved earlier failure and exact reproduction comment in the test model. Explicit OR/conj observation isolates certificate casing, not lexical admission. Root owns fresh merged fidelity/no-regression gates and any lexical follow-up.
+
+## Upstream integration sync
+
+Owner corrected prior suite totals:1246 summary-counted checks plus24 individually printed quantifier checks means1270 existing checks, not1246 total. The earlier results remain pass; this is counting correction.
+
+Before sync validation: merge accepted upstream c409f22 into this isolated branch. Resolve chart metadata by retaining both ssList and ssFused, both packing-key fields and all constructors; preserve fusedTransition before semantics, local reflexive guard and conditional roles. Keep upstream source unchanged except coordinate certificate integration. Predict24/24 standalone controls and19/19 upstream suites pass; no corpus load authorized or performed.
+Sync run:24/24 direct controls pass;18/19 upstream suites pass, fused-relative crashes after its semantic checks because its manually constructed SSign omits new ssList field. Initialize fixture ssList=Nothing; no expectation/gold changed. Reviewer approved resolved chart diff; notify coordinator of necessary fourth integration file. Prediction before repeat:19/19 suites pass.
+Final upstream-sync validation: `cabal test all -j2` exits0;19/19 suites and1375 checks pass (1335 summary/ok-counted plus24 quantifier and16 composition PASS-line controls). Standalone coordination24/24 also passes, giving1399 combined checks. Reviewer approves resolved chart vs c409f22; fixture correction initializes absent metadata only. No corpus measurement.
+Sync SHA256 `src/NL2Proof/Syntax/CCGSemParse.hs`: `2099b1ad7fb8d0a19ba352e51e7acdb427e3f255a55ee6aff920e806af28323a`.
+Sync SHA256 `test/FusedRelativeProposalSpec.hs`: `566ca419c84bedebc3c6c3c3fa01ba9a5ce64ae3c8f8580b9de2060d459dc984`.
