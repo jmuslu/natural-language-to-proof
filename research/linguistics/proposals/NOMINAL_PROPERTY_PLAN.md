@@ -45,7 +45,7 @@ NominalPropertyOrigin
   | PropertyCoordination(actual connective occurrence,
                           guarded N-coordination derivation,
                           leftOrigin, rightOrigin)
-  | CertifiedSubjectRelative(existing relative certificate,
+  | CertifiedSubjectRelative(new ordinary-N relative origin evidence,
                              nominalHeadOrigin, relativeVPEvidence)
 ```
 
@@ -106,13 +106,18 @@ scope outside N coordination is distinct from coordinating two article NPs. Firs
 controls use a shared article. No distributive/collective semantics or arbitrary
 mixed nesting follows from this increment.
 
-**Subject relative on N:** require the existing paired relative certificate and
-a certified VP with the same gap witness; head property and relative property
+**Subject relative on N:** the ordinary cat+that route currently uses
+restrictiveTag/local seenPair N-relative reanalysis; it does not carry the
+FusedCertificate for restricted pronoun NP heads. A new actual-occurrence/
+derivation property-evidence transition must be specified for this ordinary
+N-relative route, together with a certified VP using the same gap witness; head property and relative property
 combine in the restriction, not as a new matrix conjunct. A nominal complement
 can then denote animal(x) and quiet(x) without changing the universal's subject
-restriction. This needs an explicit compatibility rule with existing fused
-relative roles: their mandatory obligations must be discharged into a typed
-property origin, never erased to NominalPlain. No object gaps, comma relatives,
+restriction. That ordinary-N origin interface remains unresolved. Separately, when a
+restricted-pronoun fused route actually participates, it needs an explicit
+compatibility rule with its FusedCertificate/roles: mandatory obligations must
+be discharged into typed property evidence, never erased to NominalPlain.
+The inapplicable NP-head certificate cannot certify ordinary cat+that. No object gaps, comma relatives,
 nested nominal copula, independent reference or finite sentence closure can
 silently enter this constructor. If the two evidence protocols cannot compose
 locally, defer it rather than setting one role to plain.

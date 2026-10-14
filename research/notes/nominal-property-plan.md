@@ -23,3 +23,5 @@ edited. OR metadata and future origin-constructor adversaries are explicitly
 pending, not covered by the current canonical/claims miniature suite. Diff check
 clean. The proposal rejects automatic implementation until intersective admission
 and ordered-property/definite compatibility are independently reviewed.
+
+Reviewer corrected relative-interface distinction: ordinary N+that uses restrictiveTag/local seenPair, not fused NP-head certificate. Proposal now explicitly requires new ordinary N-relative property-origin evidence and defers it; separate FusedCertificate compatibility applies only when a fused role actually participates. No tests/source changed.
