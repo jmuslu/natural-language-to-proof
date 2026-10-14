@@ -33,3 +33,11 @@ Ignored output research/runs/fused-relatives/controls.log. Proposal explicitly
 marks category reanalysis and required paired-origin guards; source NP* route
 compared. Something sortal mismatch with existing standalone entry is an explicit
 review decision, not silently repaired. No source/gold/cabal changes.
+
+Independent reviewer approved f4150f8 proposal and red controls, not source
+implementation. Confirmed restriction/property scope, OR accessibility and
+claim tables. Preserve person for someone; something may be unrestricted only
+under an explicit coherent domain policy covering standalone and restricted
+forms. Before implementation, spell out propagation through coordination,
+composition and chart packing, and add raised/unary/mixed-origin negative
+controls. Feature-only licensing is insufficient. No existing gold was changed.
