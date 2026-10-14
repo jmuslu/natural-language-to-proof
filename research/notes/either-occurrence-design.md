@@ -1,0 +1,9 @@
+# Either operator occurrence design
+
+Isolated astra/either-occurrence-design from accepted82efe8d; shell works, STATE then GOAL read. Own proposal/test/notes only. No source/gold/cabal edits or corpus loads.
+
+Prediction before prototype tests: a sparse OR-path certificate transported alongside each beta rewrite can preserve distinct equal-formula occurrences and nested TT/TF/FT markers, without new Term constructors. An annotation must not be keyed by formula equality. To bound the first implementation, reject marked-argument beta duplication/deletion and any annotation-bearing simplification that changes tree shape; unmarked existing parsing stays unchanged. Tests will exercise capture avoidance, shadowing, logical boundaries, repeated formulas and deliberate rejected transformations. This is an independent transport prototype, not public parser source or a passing construction fidelity claim.
+
+Executed `runghc -isrc -itest test/EitherOccurrenceProposalSpec.hs`: final20/20pass. Sixteen typed sparse-map normalization/boundary controls plus four Boolean lowering/existing-exporter controls. During authoring fixed let-layout and a local boolean variable typo; no expected meanings changed. Erasure checked against existing normalize for accepted examples; explicit DRS operator-only provenance gives exact TF/TT and no nested leakage under the unchanged exporter. Quantifier prototype checks transport, not final scoped DRS lowering. No public parser fidelity or source readiness is claimed.
+
+Source audit additionally found both chart key and root byMeaning dedup, finish's simplifyConj, Pipeline's second normalize/toDRS conversion and DRT attitude deindexing. Proposal covers the first three with explicit transport/payload requirements; intensional transformations remain hard boundary. No source/gold edits. git diff --check passes. Reviewer requested before implementation; root owns all integration/gates.
