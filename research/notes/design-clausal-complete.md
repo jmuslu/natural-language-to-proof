@@ -18,3 +18,7 @@ paper claims use retained source account, not claimed new PDF verification.
 
 Validation: source/trace evidence boundaries manually checked; no runnable gold
 or tests changed. Review required before coordinator includes section in DESIGN.
+
+Reviewer approved semantic/status scope of 6cc172c. Normalized literal doubled
+backslashes in category notation to one backward slash; Markdown code does not
+require escaping. Notation-only correction; no meaning or licensing changes.

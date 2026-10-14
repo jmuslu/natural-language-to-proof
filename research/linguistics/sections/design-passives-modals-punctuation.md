@@ -23,7 +23,7 @@ relation `chase(agent,patient)` is a proposed tense/event abstraction for these
 controls only. It is not an event ontology for unrestricted passives, ditransitives,
 idioms, adjectival participles or impersonal reporting.
 
-**Unit 2: proposed complete by-complement route.** Let `Vpss=S[pss]\\NP`:
+**Unit 2: proposed complete by-complement route.** Let `Vpss=S[pss]\NP`:
 
 ```text
 by: PP/NP       Anne: NP
@@ -32,10 +32,10 @@ by: PP/NP       Anne: NP
 chased: Vpss/PP     by Anne: PP
 ------------------------------ >
         chased by Anne: Vpss
-is: (S[dcl]\\NP)/Vpss       chased by Anne: Vpss
+is: (S[dcl]\NP)/Vpss       chased by Anne: Vpss
 ------------------------------------------------ >
-                    is chased by Anne: S[dcl]\\NP
-Bob: NP                 is chased by Anne: S[dcl]\\NP
+                    is chased by Anne: S[dcl]\NP
+Bob: NP                 is chased by Anne: S[dcl]\NP
 ----------------------------------------------------- <
                          S[dcl]
 ```
@@ -70,7 +70,7 @@ has `[ | chase(Bob,Anne)]` and must remain distinct. Negative passive must keep
 the relation under negation rather than assert either argument ordering.
 
 **Licensed versus first mismatch.** The current open template for a unary
-`S[pss]\\NP` is a one-place predicate; it does not create an agent slot merely
+`S[pss]\NP` is a one-place predicate; it does not create an agent slot merely
 because the feature says passive. The closed `is/are` table supplies the adjective
 copula, not a general passive auxiliary. These source facts identify candidate
 construction obligations, not an observed first failure for the teaching example.
@@ -87,7 +87,7 @@ invent holders for passive reporting/knowledge or to treat adjectival states as
 events.
 
 **Units 2/3: complete candidate derivation.**
-`chased:Vpss`, `is:(S[dcl]\\NP)/Vpss`, then Bob NP by backward application:
+`chased:Vpss`, `is:(S[dcl]\NP)/Vpss`, then Bob NP by backward application:
 
 ```text
 chased_agentless = λQs.Qs(λpatient.∃agent.chase(agent,patient)) : Q→t
@@ -108,9 +108,9 @@ controls before implementing this contract.
 ## C11c. Progressive, gerund and modality: interfaces still unresolved
 
 **Unit 2 licensed distinctions.** CCGbank features distinguish
-`S[ng]\\NP` from `S[pss]\\NP` and `S[b]\\NP`. Candidate auxiliary frames are
-`is:(S[dcl]\\NP)/(S[ng]\\NP)` for a progressive and
-`can:(S[dcl]\\NP)/(S[b]\\NP)` for a modal. They are not interchangeable with
+`S[ng]\NP` from `S[pss]\NP` and `S[b]\NP`. Candidate auxiliary frames are
+`is:(S[dcl]\NP)/(S[ng]\NP)` for a progressive and
+`can:(S[dcl]\NP)/(S[b]\NP)` for a modal. They are not interchangeable with
 the adjective copula. Authored `Bob is running`, `Running is tiring` and
 `Bob can run` require respectively progressive predication, a nominalized
 activity, and modal predication. Category shape does not choose their ontology.
@@ -176,7 +176,7 @@ recover an unrecorded internal producer.
 
 **Existing indirect-report contract.** `Bob says that Anne is red` is an
 indirect report, **not itself a quotation**. Candidate categories are
-`that:S[em]/S[dcl]`, `says:(S[dcl]\\NP)/S[em]` and names NP. Forward application
+`that:S[em]/S[dcl]`, `says:(S[dcl]\NP)/S[em]` and names NP. Forward application
 forms the intensional complement; says consumes it; Bob completes the clause.
 With `K=λw.red_w(Anne)`, the reporting meaning is schematically
 `λK Qs.Qs(λx.say(x,K))`. The complementizer declares an intensional parameter;
@@ -199,7 +199,7 @@ Dropping quote marks or inventing a missing proposition is not fidelity.
 
 | Verified input | Units 2/3 obligation | Unit 4 boundary; unresolved contract |
 |---|---|---|
-| Alan is also said to be very kind. | Proposed passive raising `said:(S[pss]\\NP)/(S[to]\\NP)`; preserve also and very, not just kind. | Alan is the embedded subject, not the reporter. Implicit source, additive presupposition and degree content remain unresolved; do not invent an omitted speaker. |
+| Alan is also said to be very kind. | Proposed passive raising `said:(S[pss]\NP)/(S[to]\NP)`; preserve also and very, not just kind. | Alan is the embedded subject, not the reporter. Implicit source, additive presupposition and degree content remain unresolved; do not invent an omitted speaker. |
 | Bob is known to be rough and green. | Proposed passive raising known with one shared embedded subject and both adjectives. | Knowledge holder omission plus factive projection need a contract. An empty holders array is schema permission, not semantics. Bob is not thereby the knower. |
 | A young someone is red in thought but green in ideas. | Indefinite/modifier, PP-qualified predicates and contrast; thought is nominal here. | No speech report follows from the word thought. Keep PP/metaphorical content and contrast unresolved; literal colors alone are not complete gold. |
 
