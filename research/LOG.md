@@ -2543,3 +2543,21 @@ Prediction: Exact offered-NP Everyone should receive strict person-restricted un
 ### 2026-10-14 — Everyone NP release
 
 Independent final review approved landing: all26 Haskell suites (1720checks), build/oracle/Explain, hand4 and77 Python contracts (75pass,2existing expected failures). Frozen173 improves52/32/88/1 to59exact25wrong88no-parse1incomplete. Six independent authored strict-person controls and prover-who-restriction-1 change wrong→exact. Two legacy unrestricted-domain cases change only everyone→person restriction and remain wrong under unchanged gold; all164 other selected meanings unchanged. Prediction holds for licensed NP paths, with no exact regression/new wrong. Binary b939e551ca9741cc877337f1c4c8b66d8a50be8b709b64d03a9b3e9342f98c0f; observations73d13a81846ae6e9e22534e6af7fbcccb2802a1897921923725542e07ffc684c. Separate contracts retained; mixed diagnostic does not open benchmark gate. Replay/hand pointers updated to everyone-closed-integration. Shell fullaccess verified and runtime root+8 running observed again after refresh.
+
+### 2026-10-14 — source trial nominal-v2-controls (a4846ca)
+
+Prediction: Default KnownNounsOnly must preserve all173 statuses and selected meanings while typed origins carry the existing nominal obligations. ContextUnknownNouns remains unmeasured and is not certified by this default trial; explicit protocol binding required before opt-in measurements. Frozen173 cases and separate semantic contracts retained; previous accepted binary everyone-closed-integration. Commands: merge --no-ff --no-commit astra/nominal-v2-controls; register nominal-open-noun-v2; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh173; scorer contracts; hand4. Evidence research/runs/nominal-v2-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+V2 merge required only import union: retain noun-lemma isSuffixOf and new policy isAlpha/isLower. No semantic conflict resolution. Resume same frozen173 trial after explicit source staging.
+
+### 2026-10-14 — source trial nominal-v2-controls (a4846ca)
+
+Prediction: Default KnownNounsOnly must preserve all173 statuses and selected meanings while typed origins carry the existing nominal obligations. ContextUnknownNouns remains unmeasured and is not certified by this default trial; explicit protocol binding required before opt-in measurements. Frozen173 cases and separate semantic contracts retained; previous accepted binary everyone-closed-integration. Commands: merge --no-ff --no-commit astra/nominal-v2-controls; register nominal-open-noun-v2; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh173; scorer contracts; hand4. Evidence research/runs/nominal-v2-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — targeted lexical evidence prerequisite
+
+Before any adjective admission change, reviewer-approved extractor c5236c8 will inspect only hawks/mammals/excels/pets/animals/humans/frogs and bases, with ordered read/missing/file-hash manifest and source/extractor/output seal. Prediction: actual word category/POS evidence may or may not satisfy the proposed narrow filter; Explain reconstruction alone cannot establish its applicability or original selected derivation. One streaming load, global token wrapper and time-v; compact target summaries only. No production filtering or model/answer benchmark authorized. Worker records exact command and evidence in wrong-first-divergence worktree.
+
+### 2026-10-14 — nominal v2 default compatibility release
+
+Independent final review approves a4846ca integration (only import union conflict). All27 Haskell suites1778checks, build/oracle/Explain/hand4 and77Python75pass2expectedfailures pass. All173 statuses and selected meanings identical to Everyone baseline59/25/88/1; prediction holds. Binaryd3cad047a257daa0391c50976d2fb2379c7b8811a373b52a8a08161511891851; observations73d13a81846ae6e9e22534e6af7fbcccb2802a1897921923725542e07ffc684c. DefaultKnownNounsOnly unchanged, optionalContextUnknownNouns unmeasured; protocol binding required first. Replay pointers switched to nominal-v2-integration. Learner documentation also corrects Explain reconstruction-versus-original-witness claims and category-only semantic claims using audit5b4fa3c.

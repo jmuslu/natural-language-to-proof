@@ -10,12 +10,14 @@ LLMs (and the agents working on this repo) know each theory's textbook statement
 
 Every exercise below ends with "predict by hand, then run the system, then diff". `nl2proof-explain` is the "run the system" half: for one sentence (or a short text) it prints every stage side by side, in the order you would derive them by hand:
 
-1. **TOKENS + SUPERTAGS**: each token's chosen CCGbank category, its supertagger log-probability, and whether its meaning is a closed-class entry, a name or an open-class template.
-2. **DERIVATION**: the derivation tree, every node labelled with its rule (`>`, `<`, `>B`, `<B`, `>Bx`, `<Bx`, `>T`, `TC` type-change, `conj`/`coord`, `punct`), its category and its meaning.
-3. **LAMBDA**: each leaf's λ-term and Montague type (`catTy`, so `S[em]` is `s->t`), where it came from, and the β-normal form with its type.
+1. **TOKENS + SUPERTAGS**: each token's compatible-reconstruction category choice, or best-tag fallback when replay is absent, its supertagger log-probability, and whether its meaning is a closed-class entry, a name or an open-class template.
+2. **DERIVATION**: when compatible replay succeeds, a reconstructed tree with nodes labelled by rule (`>`, `<`, `>B`, `<B`, `>Bx`, `<Bx`, `>T`, `TC` type-change, `conj`/`coord`, `punct`), its category and its meaning.
+3. **LAMBDA**: each reconstructed leaf's λ-term and Montague type (`catTy`, so `S[em]` is `s->t`), where it came from, and the β-normal form with its type.
 4. **DRS**: the box, with negation, `=>`, `OR`, attitude (`K:`) and `PRESUPPOSED:` sub-boxes nested.
 5. **CLAIMS**: `splitClaims` grouped into Asserted, Reported (with source chain), Presupposed and Embedded.
 6. **FAILURES / NOTES**: which stage failed (lexicon, parse or meaning) and why, the number of readings if the parse is ambiguous, and every logged decision.
+
+Compatible replay is constrained by recorded provenance and the root meaning; it is not necessarily the original lexical derivation. On fallback, raw provenance and Pipeline formula/DRS/claims remain available, but leaf-term tables may be empty. Parser diagnostics and replay failures do not alone establish the first linguistic mismatch against independent gold.
 
 First time only, build it (from the repo root):
 
@@ -34,7 +36,7 @@ cabal run -v0 nl2proof-explain            # REPL: loads the lexicon once, one te
 ```
 
 - `--stage=tags|deriv|lambda|drs|claims` prints one section only.
-- `--all-readings` prints every reading (the selected one is marked `[SELECTED]`) and every candidate supertag (`*` marks the one the selected derivation used; `---` lines are tags the tagger offered that have no meaning).
+- `--all-readings` prints every reading (the selected one is marked `[SELECTED]`) and every candidate supertag (`*` marks the choice in its compatible reconstruction; `---` lines are tags the tagger offered that have no meaning).
 - `--hand` uses the hand-written fragment lexicon (`attitudeLexicon`: John, Mary, student, smiles, says, knows, ...) instead of CCGbank. It starts instantly, so it is the quickest way to check a Unit 1 or Unit 3 derivation.
 - `--pos-backoff` enables experimental POS-dictionary noun/adjective backoff, off by default. Selected entries log a `pos-backoff` decision; the ranking score is not evidence strength.
 - In the REPL, `:all` toggles `--all-readings`, `:stage=deriv` (or `:stage=all`) changes the section, `:help` lists the commands.
@@ -179,6 +181,7 @@ The table distinguishes bounded repairs from remaining coverage and meaning erro
 | 2, 3, 4 | A name licensed by the existing POS/casing policy receives a rigid generalized-quantifier meaning from offered `N`, `NP`, or `NP[nb]`; ordinary NP features and scores are preserved. Positive and negated name sentences retain their Asserted/Embedded claim boundary. | This repairs missing direct-NP meanings, not name recognition. Initial `Legend is red` still selects the common-noun universal instead of the intended rigid name; unseen capitals can retain competing generic readings. `NP[expl]`, `NP[thr]`, and `NP[conj]` are excluded. See [name controls](research/linguistics/NAMES.md). |
 | 2, 3, 4 | Direct `Every/Each N is a/an N` uses an occurrence-bound predicative article/copula reanalysis and asserts a universal implication. |59 independent controls; frozen167 unchanged. Requires known noun POS without adjective/name conflict; no names, unknown nouns, negation, modified nouns or embedding. General nominal predication remains open. |
 | 2, 3, 4 | Adjacent intransitive `gives up`/`give up` can form a complete lexical VP from both original offered categories, preserving token evidence and negative scope. |35 controls; one ProverQA source plus two authored cases become exact, other164 meanings unchanged. No general particle identity, valency conversion or broad particle coverage; separate Explain replay still needs span-seed support. |
+| 2, 3, 4 | Offered `NP` for *everyone* receives a person-restricted universal; the guarded subject-relative route retains that restriction. |18 controls; six authored cases and one strict-English source case become exact. Two legacy unrestricted-domain cases remain wrong under unchanged gold. N-only category repair is deferred; mixed173 totals do not certify population fidelity. |
 | 3, 4 | Restrictive subject relatives compose at N level, so `Every cat that is red is big` restricts the universal to red cats. | Object-gap relatives remain unsupported. Comma-marked relatives fail closed rather than silently becoming restrictive. Verified on the licensed-model regression. |
 | 4 | Main-box named and definite constants can antecede later pronouns, while subordinate content remains inaccessible. | Recency is deterministic and logged; this is not gender/animacy inference. Attitude participants are excluded from the neuter `it` candidate set. |
 | 5 | A matrix factive complement is listed as Presupposed, without a duplicate Reported row. | Factive content inside a report retains the enclosing source chain. It is not promoted to assertion. |
@@ -350,8 +353,8 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
    - *red* `S[adj]\NP`
 2. Derive "Bob likes and Anne hates cats". You will need `>T` and `>B`.
 3. Open a real `.auto` file under `~/ccgbank/ccgbank_1_1/data/AUTO/00/` and find a "says that" sentence. Read the bracket notation until it looks like your hand derivation.
-4. Pick five ProofWriter sentences and predict which word, if any, lacks a category. Then check with `proofwriter-coverage`.
-5. Check 1 with `nl2proof-explain --stage=deriv "Bob says that the cat is not red."` (`--stage=tags` for the categories alone). For 4, section 6 of the full output names the failing stage.
+4. Pick five ProofWriter sentences and predict which word, if any, lacks a category. Then check with `proofwriter-coverage`. During the active research fidelity gate, use sealed outputs: this exercise does not authorize a new benchmark launch.
+5. Check 1 with `nl2proof-explain --stage=deriv "Bob says that the cat is not red."` (`--stage=tags` for the categories alone). For 4, section 6 reports parser diagnostics; distinguish those from replay failure and an independently established first divergence against gold.
 
 **You've got it when:** you can localize a failure to lexical/category coverage, semantic entry, combinator/feature handling, a safety guard or the search bound, and distinguish no parse from a well-typed wrong meaning.
 
@@ -375,19 +378,19 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
   - application is function application;
   - composition `>B` is `λx. f (g x)`;
   - type raising is `λf. f a`.
-  So the meaning comes for free from the derivation.
+  Given licensed lexical meanings and valid guarded transitions, these operations compose the meanings. Successful typing alone does not establish fidelity.
 - **Closed-class vs. open-class words.**
-  - Closed-class words carry the logic as hand-written λ-terms: *the, every, no, not, if, that, and, or, either*.
-  - Open-class words (nouns, verbs, adjectives) get a template chosen by their category.
+  - Closed-class words carry the logic as hand-written λ-terms: *the, every, no, not, if, that, and, or*. Ordinary *either* remains an unresolved lexical interface.
+  - Open-class templates are constrained by category, POS, lexical identity, features and construction state.
   - That's why CCGSem keys closed-class entries on the pair (word, category).
 - **Where meaning gets lost:** punctuation rules, unary rules, multi-word expressions, and words used in categories the templates never anticipated.
 - **The silent-error class.** A parse may succeed and type-check while its meaning is wrong. Report this with a dataset, split, denominator and manual or reference criterion. Parse coverage alone cannot measure semantic precision; the old approximately 0.35% figure is historical, not a current universal error rate.
 
 **Exercise:**
 1. Write the open-class templates for `N`, `S[adj]\NP` and `(S[dcl]\NP)/NP`.
-2. Show that `>T` followed by `>B` gives the same meaning as two plain applications. This is why spurious ambiguity is semantically harmless.
+2. Show that `>T` followed by `>B` gives the same meaning as two plain applications. Hold lexical meanings and construction licenses fixed: this restricted derivational ambiguity is semantically harmless, unlike competing lexical interpretations.
 3. Find one silent error in the coverage output and explain which closed-class entry or template produced it.
-4. `--stage=lambda` shows each leaf's term and whether it came from a closed-class entry or an open-class template; use it for 1 and 3.
+4. When compatible replay succeeds, `--stage=lambda` shows reconstructed leaf terms and lexical origins; use it for 1 and 3, keeping the replay limitation above explicit.
 
 **Read:**
 - Blackburn & Bos (2005), chs. 2–3. It builds exactly this in Prolog.

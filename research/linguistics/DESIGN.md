@@ -129,8 +129,9 @@ classification is `yumpus(Max)`; *a yumpus* is not a second newly discovered
 individual standing in an arbitrary relation to Max.
 
 **Unit 2:** CCGbank permits a copular NP complement with `(S[dcl]\NP)/NP`;
-`a:NP[nb]/N`, `yumpus:N` yields that complement. The present adjective-only
-copula table does not thereby supply its nominal meaning. Two coherent designs
+`a:NP[nb]/N`, `yumpus:N` yields that complement. An adjective copula entry does not thereby supply this nominal meaning.
+The implemented direct-universal checkpoint below is a bounded exception; general
+named and embedded nominal predication remain unsupported. Two coherent designs
 are possible: retain this syntax and add a marked predicative-NP interpretation,
 or log a predicative reanalysis `a:N/N` (identity on P) and
 `is:(S[dcl]\NP)/N`. The latter gives `a yumpus:N`, then a VP and sentence by
@@ -395,7 +396,7 @@ is insufficient.
 `λR Q.Q(λx.R(lift(x))(lift(x))) : (Q→Q→t)→V`.
 Backward application to a transitive verb produces the reflexive VP, then
 application to the subject gives `see(Bob,Bob)` or
-`∀x(cat(x)→see(x,x))`. This is a proposed derived category, not an assertion that
+`∀x(cat(x)→see(x,x))`. This category is derived by the bounded reanalysis, not an assertion that
 CCGbank assigns it lexically. The implementation requires a closed reflexive
 lexical leaf and a direct finite/base lexical transitive governor; it rejects
 unary raising, composition and punctuation before the binding step. Both the
@@ -936,9 +937,12 @@ N-only source is outside this repair and needs a separate licensing design.
 In Unit 4, the outer universal implication is Asserted; its person restriction,
 relative predicate and consequent stay Embedded. Negated VP controls use the
 explicit surface-scope reading `∀x(person(x) → ¬P(x))`. This does not resolve
-English scope ambiguity in general. The closed lexical treatment follows the
-Montague quantifier analysis used in the existing Boxer/ccg2lambda comparison;
-it does not infer semantic class merely from an available type.
+English scope ambiguity in general. The pinned ccg2lambda 2015 English template, lines192–194, uses `_people(x)`
+and two NP predicate slots. Adapting that person restriction to project `person`
+and the one-slot continuation type is an explicit lexical/interface choice;
+see [the pinned implementation references](REFERENCES.md#official-implementation-pinned-separately-from-the-paper).
+Bos2008 supplies methodological context, not evidence for this exact entry.
+Semantic class does not follow merely from an available type.
 
 Six independently authored controls were frozen and scored with the previous
 binary before this implementation. On the unchanged 173-case diagnostic, these
@@ -951,3 +955,25 @@ contracts and authored controls do not certify representative ProverQA fidelity.
 Eighteen focused controls cover all retained readings, source-category guards,
 relative restriction and claim status. All release gates pass, and independent
 review verified the source, fixture, binary, observation hashes and every change.
+
+
+### Explicit policy for context-licensed unknown nouns
+
+The bounded direct-universal nominal route now carries a typed noun origin:
+positive dictionary evidence, or an explicitly enabled context hypothesis.
+`KnownNounsOnly` remains the default. `ContextUnknownNouns` can admit an offered
+`N` with no POS evidence only for a lowercase alphabetic non-name in the direct
+Every/each subject position or an occurrence-bound copula/article complement.
+It does not invent a noun category, change POS evidence or grant a generic
+permission to ignore lexical evidence.
+
+Unit 3 transitions check the original determiner or exact nominal pair when
+consuming the hypothesis. Origin distinctions survive completion and chart
+packing; the existing root and scope guards remain. Inferred origins add a
+logged stipulation. Fifty-eight independent controls cover both policies,
+source/context mismatch, packing and retained meanings; the old 59 nominal
+assertions remain unchanged. All 27 suites and release gates pass, and the
+fresh default-policy 173-case diagnostic preserves every status and selected
+meaning. This certifies default compatibility only. An explicit invocation,
+exporter response, report and replay policy contract must precede measuring the
+optional mode; no enabled-mode corpus gain is claimed here.
