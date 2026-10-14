@@ -31,3 +31,47 @@ texts match their exact referenced input-field sentence. IDs unique. Prediction
 held. Coordinator confirmed coordinated consequences are the correct attested
 replacement for the absent coordinated bare-plural restriction request.
 Independent reviewer notified before integration. No parser observation used.
+
+Independent reviewer approved all12 meanings/17 readings before observation.
+Coverage caveat: mixed adjective+nominal bare-plural consequence has1 case;
+negative OR versus AND restriction subfamilies have2/1 cases. Three per coarse
+family does not certify every finer profile. Gold commit77e9338 remains frozen.
+
+Prediction before parser diagnostic: nested restriction coordination will remain
+a major failure, so fewer than6/12 selected meanings will be exact. Expected
+failures include no-parse and wrong-but-typed; successful single-word bare-plural
+subjects may still produce the wrong generic reading. Run only the existing
+frozen parser binary through the shared CCG slot wrapper, parser=default;
+no model API, solver or answer benchmark. Gold SHA256:
+`23c17010af94fae6f5cad66fe109995c2e4af373171b912280e6b16e699b9025`.
+Command:
+`python3 /home/gram/nl2proof-astra/scripts/with-ccgbank-slot.py python3 test/fidelity/run.py --cases test/fidelity/prontoqa-nested.jsonl --binary /home/gram/nl2proof-astra/research/runs/integration-fidelity/fidelity-frozen --parser default --output research/runs/nested-prontoqa/default-report.json --timeout-seconds 600`.
+
+Diagnostic result (frozen default parser,87.54 seconds excluding lock wait):
+
+| Construction | exact | wrong-but-typed | no-parse |
+|---|---:|---:|---:|
+| Relative disjunction + conjunctive consequence |0|0|3|
+| Relative conjunction + conjunctive consequence |0|0|3|
+| Relative negative consequence |0|0|3|
+| Bare-plural coordinated consequence |0|3|0|
+| Total |0|3|9|
+
+No type failures, incomplete documents or instrumentation errors. No alternative
+reading matched any case. Prediction held. All three bare-plural outputs assert
+two predicates of capitalized name constants (`Gorpuses`, `Impuses`, `Dumpuses`),
+retain plural noun predicate strings, and lack the expected universal implication.
+This is meaning/status corruption, not coverage success. All nine nested relative
+inputs have no selected parse; this output alone cannot locate their earlier
+lexical/category divergence. Gold remained byte-identical to the pre-run hash.
+
+Frozen binary SHA256:
+`5b3f5e9fe4fbe58928bd6d43facc8657cf344c80a55fd06afc8b79f27dc7f035`.
+Sealed ignored cache directory:
+`/home/gram/astra-wt/gold-nested-prontoqa/research/runs/nested-prontoqa/`.
+Files: `default-report.json`, `default-report.observations.jsonl`,
+`default-report.stderr.log`, `SHA256.json` (hash manifest).
+These must be preserved by coordinator before worktree cleanup. Source hashes in
+the report describe the worktree at observation; the binary hash identifies the
+actual compiled parser. This is a frozen-foundation baseline, not proof that later
+unmerged proposed repairs have these results. Only notes changed after observing.
