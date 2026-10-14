@@ -26,3 +26,5 @@
 - Active serial integration: gold-proofwriter (727aa46), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-proofwriter; committing/pushing now.
 
 - Active serial integration: design-names (34277a5), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-names; committing/pushing now.
+
+- Active serial integration: design-operators (e4dceb6), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-operators; committing/pushing now.
