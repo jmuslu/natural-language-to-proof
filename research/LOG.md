@@ -2443,3 +2443,67 @@ Result nominal-envelope: all merged-result gates passed,scorer contracts (counts
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/abbreviation-design; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/abbreviation-design.
 
 Result abbreviation-design: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration prover-occurrence-strata (698a187)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/prover-occurrence-strata; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/prover-occurrence-strata.
+
+### 2026-10-14 — continuation runtime and nominal preflight
+
+Read STATE then ASTRA_GOAL; full-access shell commands succeed without sandbox overrides. Runtime list_agents confirms root plus eight simultaneously running specialists after followup_task restarts. New tasks use isolated branches/worktrees and disjoint proposal/test/notes ownership. No configuration-cap inference. Existing serial docs/gold queue continues; no second coordinator merge.
+
+Nominal-universal8e2a6ad authorized preflight completed89.03s: all167 statuses and selected meanings unchanged (49exact26wrong91no-parse1incomplete), zero coverage gain. Candidate source and binary manifests checked by worker; independent reviewer verifying evidence before root merged-result trial. Source remains frozen. No model or answer-benchmark launches.
+
+Result prover-occurrence-strata: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration prover-positive-nominals (678571e)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/prover-positive-nominals; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/prover-positive-nominals.
+
+Result prover-positive-nominals: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration prover-person-gold (ec3605e)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/prover-person-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/prover-person-gold.
+
+Result prover-person-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration folio-object-relative-gold (b0d8bb6)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/folio-object-relative-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/folio-object-relative-gold.
+
+Independent reviewer bb18e0b verified nominal preflight39source/Export hashes against frozen8e2a6ad, copied accepted Python tools, binary/cases/observations, and identical167selected objects/statuses; observations are byte-identical to accepted baseline. Root trial remains required. Reviewer approved DESIGN expanded-gold/first-divergence section; clarified independent particle gold already frozen and concrete implementation review still required.
+
+Result folio-object-relative-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration particle-gold (b649e61)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/particle-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/particle-gold.
+
+Result particle-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — source trial token-boundaries (821ea12)
+
+Prediction: tokenizer changes fix boundary controls; bounded nominal v1 fixes authored scoped controls. Neither is predicted to change the frozen167 statuses or selected meanings; any exact regression or new wrong-but-typed case blocks landing. Frozen167 cases and separate semantic contracts retained; previous accepted binary expanded-gold167. Commands: merge --no-ff --no-commit astra/token-boundaries; register token-boundaries; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/token-boundaries-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — tokenizer integrated release
+
+Tokenizer821ea12 merged with37 independent controls. All22Haskell suites(1575checks),77Python(75pass,2documentedexpectedfailures), build/oracle/Explain andhand4 pass. Fresh167 retains every status and selected meaning:49exact26wrong91no-parse1incomplete. Observationdigest identical to accepted expanded167. Reviewer independently verified source,binary,cases,observations and approved landing. No coverage gain or gate opening. Evidence research/runs/token-boundaries-integration; replay adapter and serialhandbinary now use this newsourcecache. Reviewed DESIGN expandedgold/first-divergence account included.
+
+### 2026-10-14 — source trial nominal-universal-trial (8e2a6ad)
+
+Prediction: tokenizer changes fix boundary controls; bounded nominal v1 fixes authored scoped controls. Neither is predicted to change the frozen167 statuses or selected meanings; any exact regression or new wrong-but-typed case blocks landing. Frozen167 cases and separate semantic contracts retained; previous accepted binary token-boundaries-integration. Commands: merge --no-ff --no-commit astra/nominal-universal-trial; register nominal-universal; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/nominal-universal-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — bounded nominal universal release
+
+Nominal8e2a6ad merged without source changes;59 independent controls registered. All23Haskell suites(1634checks), build/oracle/Explain,77Python(75pass2existingexpectedfailures),hand4 pass. Fresh16789.05s retains49exact26wrong91no-parse1incomplete and every selected object; observations digest identical to tokenizer baseline. Independent reviewer rehashed candidate binary/source/cases/observations and approved landing. No measured corpus gain; Pronto POS inventory independently explains v1 necessary-gate failure on all86788 matching surface opportunities in observed snapshot. DESIGN and STUDY_PLAN scoped updates reviewed. Next particle then further bounded source trials; model/benchmark gate closed.
+
+### 2026-10-14 — source trial particle-implementation-plan (c8b34c4)
+
+Prediction: Licensed adjacent give-up is predicted to repair the three independently frozen particle cases; preserve every other exact result and introduce no new wrong-but-typed case. Actual survival and selected readings remain unmeasured. Frozen167 cases and separate semantic contracts retained; previous accepted binary nominal-universal-integration. Commands: merge --no-ff --no-commit astra/particle-implementation-plan; register particle-lexeme; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/particle-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+Particle integration compatibility: initialize new nominal role to NominalPlain on the complete particle span, as reviewer prescribed; no pending nominal capability is minted.
+
+### 2026-10-14 — particle release result
+
+Prediction held: three independent give-up controls change no-parse→exact, all164other statuses and selected objects unchanged. Frozen16752exact26wrong88no-parse1incomplete; one source sentence and two authored controls, no population extrapolation. All24Haskell suites(1669checks),build/oracle/Explain,77Python75pass2existingexpectedfailures,hand4 pass. Reviewer61a7638 independently verified source,binary,cases,observations and each changed DRS/claim boundary. Only merged-source adaptation beyondc8b34c4 is NominalPlain initialization. ASTRA operational cap paragraph clarified historical8 vs owner32 and observed9running, without claiming tested32capacity. No model/benchmarklaunch.

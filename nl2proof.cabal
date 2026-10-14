@@ -420,3 +420,33 @@ test-suite coordination-list
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+-- Independent construction scope and boundary controls.
+test-suite token-boundaries
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          TokenBoundarySpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Independent construction scope and boundary controls.
+test-suite nominal-universal
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          NominalUniversalProposalSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Independent construction scope and boundary controls.
+test-suite particle-lexeme
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          ParticleLicensingProposalSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof

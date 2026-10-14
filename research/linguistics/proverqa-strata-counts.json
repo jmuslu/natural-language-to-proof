@@ -1,0 +1,188 @@
+{
+  "schema": "proverqa-occurrence-strata-v1",
+  "scope": "all JSON inputs under supplied root; duplicates retained; no sampling",
+  "role_mapping": {
+    "question": "existing inventory query; stripped once, never sentence-split"
+  },
+  "frame_order": "sorted relative path, zero-based record index, theory then question, sentence index",
+  "digest_encoding": "UTF-8 canonical JSON arrays, ensure_ascii=False, sorted keys, compact separators, LF",
+  "input_projection_fields": [
+    "context",
+    "question"
+  ],
+  "sources": [
+    {
+      "path": "dev/easy.json",
+      "sha256": "b38f8da5207e29bee19a6db1093f0b2a44d50402c9a4c86bec9f3aa41c606d7f",
+      "records": 500,
+      "occurrences": 2529,
+      "roles": {
+        "question": 500,
+        "theory": 2029
+      }
+    },
+    {
+      "path": "dev/hard.json",
+      "sha256": "79428ef614d43729ce82e4d065055fdc6a39abad0f20cb226c5288fc315468e4",
+      "records": 500,
+      "occurrences": 9449,
+      "roles": {
+        "question": 500,
+        "theory": 8949
+      }
+    },
+    {
+      "path": "dev/medium.json",
+      "sha256": "053210391c40a46e3f126a3ef54067659232cbc02204a6fdbe09df32a396c61e",
+      "records": 500,
+      "occurrences": 5367,
+      "roles": {
+        "question": 500,
+        "theory": 4867
+      }
+    }
+  ],
+  "splitter_source_sha256": "439c25ec9fa9af618643eeba6cf9c720e0aecd50bb87bd4383eb46d9aef51938",
+  "script_sha256": "2f4fec1d7f8a9dbfcbae625838ba8d1988fa35e72f93ee0ff8a8f33579f46c66",
+  "projected_inputs_sha256": "feca7c56c75383b26454096ae5d81c9ef35e839faa8bde755fc4eee81e17d7f0",
+  "occurrence_frame_sha256": "3a86ffca1c854570475a28541e07252c9f520c202d6944982bc81a995c4274db",
+  "records": 1500,
+  "occurrences": 17345,
+  "unique_surfaces": 17285,
+  "duplicate_excess": 60,
+  "roles": {
+    "theory": 15845,
+    "question": 1500
+  },
+  "strata": [
+    {
+      "difficulty": "easy",
+      "role": "theory",
+      "N_h": 2029,
+      "unique_surfaces": 2025,
+      "outer_family_occurrences": {
+        "conditional_final": 4,
+        "conditional_initial": 536,
+        "existential_nominal": 2,
+        "for_topic": 86,
+        "quantified_pronoun_or_relative": 56,
+        "sentence_either_or": 36,
+        "subject_copula": 340,
+        "subject_do": 195,
+        "subject_have": 91,
+        "subject_modal": 10,
+        "unclassified": 496,
+        "universal_nominal": 22,
+        "vp_either_or": 155
+      }
+    },
+    {
+      "difficulty": "easy",
+      "role": "question",
+      "N_h": 500,
+      "unique_surfaces": 499,
+      "outer_family_occurrences": {
+        "conditional_initial": 26,
+        "sentence_either_or": 1,
+        "subject_copula": 153,
+        "subject_do": 126,
+        "subject_have": 11,
+        "subject_modal": 19,
+        "unclassified": 154,
+        "universal_nominal": 1,
+        "vp_either_or": 9
+      }
+    },
+    {
+      "difficulty": "medium",
+      "role": "theory",
+      "N_h": 4867,
+      "unique_surfaces": 4856,
+      "outer_family_occurrences": {
+        "conditional_final": 8,
+        "conditional_initial": 1580,
+        "existential_nominal": 5,
+        "for_topic": 138,
+        "quantified_pronoun_or_relative": 309,
+        "sentence_either_or": 45,
+        "subject_copula": 354,
+        "subject_do": 455,
+        "subject_have": 214,
+        "subject_modal": 12,
+        "unclassified": 1143,
+        "universal_nominal": 112,
+        "vp_either_or": 492
+      }
+    },
+    {
+      "difficulty": "medium",
+      "role": "question",
+      "N_h": 500,
+      "unique_surfaces": 494,
+      "outer_family_occurrences": {
+        "conditional_initial": 21,
+        "existential_nominal": 1,
+        "quantified_pronoun_or_relative": 2,
+        "sentence_either_or": 1,
+        "subject_copula": 143,
+        "subject_do": 124,
+        "subject_have": 11,
+        "subject_modal": 15,
+        "unclassified": 175,
+        "vp_either_or": 7
+      }
+    },
+    {
+      "difficulty": "hard",
+      "role": "theory",
+      "N_h": 8949,
+      "unique_surfaces": 8948,
+      "outer_family_occurrences": {
+        "conditional_final": 27,
+        "conditional_initial": 3099,
+        "existential_nominal": 16,
+        "for_topic": 267,
+        "quantified_pronoun_or_relative": 616,
+        "sentence_either_or": 38,
+        "subject_copula": 448,
+        "subject_do": 1286,
+        "subject_have": 292,
+        "subject_modal": 58,
+        "unclassified": 1683,
+        "universal_nominal": 282,
+        "vp_either_or": 837
+      }
+    },
+    {
+      "difficulty": "hard",
+      "role": "question",
+      "N_h": 500,
+      "unique_surfaces": 498,
+      "outer_family_occurrences": {
+        "conditional_initial": 17,
+        "sentence_either_or": 2,
+        "subject_copula": 169,
+        "subject_do": 122,
+        "subject_have": 13,
+        "subject_modal": 25,
+        "unclassified": 140,
+        "universal_nominal": 1,
+        "vp_either_or": 11
+      }
+    }
+  ],
+  "reconciliation": {
+    "reference_sha256": "8fd5f996b7ac795549a7c2d488b433b6443841c090cd7b67eff9cbb07dd8c94b",
+    "checked": [
+      "records",
+      "file_count",
+      "occurrences",
+      "unique_surfaces",
+      "roles",
+      "files",
+      "outer_families"
+    ],
+    "matches": true,
+    "mismatches": {}
+  }
+}
