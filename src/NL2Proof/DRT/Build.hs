@@ -24,6 +24,8 @@ module NL2Proof.DRT.Build
   , lookupProv
     -- * Translation
   , toDRS
+  , toDRSWithOrOrigins
+  , OrLoweringFailure(..)
   , predicatesOn
   , describeIota
     -- * Anaphora resolution
@@ -42,6 +44,7 @@ module NL2Proof.DRT.Build
   , runDiscourse
   ) where
 
+import Data.Functor.Identity (Identity(..))
 import Data.Char (toLower)
 import Data.List (isPrefixOf, nub, sortBy)
 import qualified Data.Map as M
@@ -94,47 +97,122 @@ lookupProv = flip M.lookup
 --
 -- @fallback@ is the sentence's full CCG derivation, used for any node whose
 -- provenance cannot be pinned to specific words.
+-- | Active occurrence failures are distinct from semantic type-check failures.
+data OrLoweringFailure
+  = MissingOrOrigin [Int]
+  | UnconsumedOrOrigin [Int]
+  | UnsupportedOrTerm [Int]
+  | UnsupportedOrAttitude [Int]
+  deriving (Eq, Show)
+
+-- Internal state consumes each supplied occurrence once. It is not an origin
+-- certificate constructor: the caller must supply independently licensed sources.
+newtype OriginWalk a = OriginWalk
+  { runOriginWalk :: M.Map [Int] Prov -> Either OrLoweringFailure (a, M.Map [Int] Prov) }
+instance Functor OriginWalk where
+  fmap f (OriginWalk g) = OriginWalk $ \m -> do
+    (a,m') <- g m
+    pure (f a,m')
+instance Applicative OriginWalk where
+  pure a = OriginWalk $ \m -> Right (a,m)
+  OriginWalk f <*> OriginWalk g = OriginWalk $ \m -> do
+    (h,m') <- f m
+    (a,m'') <- g m'
+    pure (h a,m'')
+instance Monad OriginWalk where
+  OriginWalk g >>= f = OriginWalk $ \m -> do
+    (a,m') <- g m
+    runOriginWalk (f a) m'
+
+-- | Legacy lowering keeps its exact fallback and unsupported-term behavior.
 toDRS :: ProvIndex -> Prov -> Term -> DRS
-toDRS idx fallback = go
+toDRS idx fallback t = runIdentity
+  (buildDRS (\_ _ -> pure ()) (\_ -> pure fallback) idx fallback t)
+
+-- | Lower an already normalized term with occurrence-local OR provenance.
+-- Uses the SAME conversion as toDRS; only explicit active validation and OR
+-- provenance differ. Every map entry must be consumed, and every OR needs one.
+-- This structural API does not license source markers or select English senses.
+toDRSWithOrOrigins :: ProvIndex -> Prov -> Term -> M.Map [Int] Prov
+                  -> Either OrLoweringFailure DRS
+toDRSWithOrOrigins idx fallback t origins = do
+  (d, remaining) <- runOriginWalk (buildDRS supported takeOrigin idx fallback t) origins
+  case M.lookupMin remaining of
+    Nothing -> Right d
+    Just (p,_) -> Left (UnconsumedOrOrigin p)
   where
-    go term = case term of
-      -- An existential introduces a referent into the universe.
-      TExists v _ body ->
-        addRef (Ref v) (refProv v body) (go body)
+    takeOrigin p = OriginWalk $ \m -> case M.lookup p m of
+      Nothing -> Left (MissingOrOrigin p)
+      Just origin -> Right (origin,M.delete p m)
+    supported p term = OriginWalk $ \m ->
+      let failWith f = Left (f p)
+      in case term of
+        TExists{} -> Right ((),m)
+        TForall{} -> Right ((),m)
+        TAnd{} -> Right ((),m)
+        TImp{} -> Right ((),m)
+        TOr{} -> Right ((),m)
+        TNot{} -> Right ((),m)
+        TEq a b | not (containsOr a || containsOr b) -> Right ((),m)
+        Con{} -> Right ((),m)
+        App{} -> case spine term of
+          (Con _ _, args)
+            | not (null args), Lam _ TyS _ <- last args -> failWith UnsupportedOrAttitude
+            | not (any containsOr args) -> Right ((),m)
+          _ -> failWith UnsupportedOrTerm
+        _ -> failWith UnsupportedOrTerm
+    containsOr term = case term of
+      TOr{} -> True
+      Lam _ _ x -> containsOr x
+      TExists _ _ x -> containsOr x
+      TForall _ _ x -> containsOr x
+      TNot x -> containsOr x
+      App x y -> containsOr x || containsOr y
+      TAnd x y -> containsOr x || containsOr y
+      TImp x y -> containsOr x || containsOr y
+      TEq x y -> containsOr x || containsOr y
+      _ -> False
 
-      TAnd a b -> mergeDRS (go a) (go b)
-
-      -- A universal over an implication is the classic duplex condition, with
-      -- the bound referent living in the antecedent box.
-      TForall v _ (TImp a b) ->
-        DRS [] [CImp (addRef (Ref v) (refProv v a) (go a)) (go b) fallback]
-
-      TForall v _ body ->
-        DRS [] [CImp (DRS [(Ref v, refProv v body)] []) (go body) fallback]
-
-      TImp a b -> DRS [] [CImp (go a) (go b) fallback]
-      TOr a b  -> DRS [] [COr (go a) (go b) fallback]
-      TNot a   -> DRS [] [CNot (go a) fallback]
-
-      TEq a b  -> DRS [] [CEq (dterm a) (dterm b) (condProvFor [a, b] [])]
-
-      App{} -> case spine term of
-        -- An attitude verb applied to a proposition @\wn. P_wn@: strip the
-        -- world index (@c_s wn@ back to @c@) and build the proposition's own
-        -- box, attached to the attitude condition and never merged here.
-        (Con c _, args)
-          | not (null args), Lam w TyS body <- last args ->
-              DRS [] [CAtt c (map dterm (init args)) (go (deindexWith (Var w) body))
-                           (condProvFor (init args) [c])]
-        (Con c _, args) -> DRS [] [CPred c (map dterm args) (condProvFor args [c])]
-        _               -> unsupported term
-
-      Con c _ -> DRS [] [CPred c [] (condProvFor [] [c])]
-
-      _ -> unsupported term
-
-    -- Anything the fragment cannot express is recorded as an opaque condition
-    -- rather than dropped, so it stays visible in the output.
+-- One semantic conversion for legacy and occurrence-aware modes. Paths refer
+-- to the original normalized Term tree, never the flattened DRS condition list.
+buildDRS :: Monad m => ([Int] -> Term -> m ()) -> ([Int] -> m Prov)
+         -> ProvIndex -> Prov -> Term -> m DRS
+buildDRS check orOrigin idx fallback = go []
+  where
+    go path term = do
+      check path term
+      case term of
+        TExists v _ body -> addRef (Ref v) (refProv v body) <$> go (path ++ [0]) body
+        TAnd a b -> mergeDRS <$> go (path ++ [0]) a <*> go (path ++ [1]) b
+        TForall v _ (TImp a b) -> do
+          left <- go (path ++ [0,0]) a
+          right <- go (path ++ [0,1]) b
+          pure (DRS [] [CImp (addRef (Ref v) (refProv v a) left) right fallback])
+        TForall v _ body -> do
+          right <- go (path ++ [0]) body
+          pure (DRS [] [CImp (DRS [(Ref v,refProv v body)] []) right fallback])
+        TImp a b -> do
+          left <- go (path ++ [0]) a
+          right <- go (path ++ [1]) b
+          pure (DRS [] [CImp left right fallback])
+        TOr a b -> do
+          origin <- orOrigin path
+          left <- go (path ++ [0]) a
+          right <- go (path ++ [1]) b
+          pure (DRS [] [COr left right origin])
+        TNot a -> do
+          child <- go (path ++ [0]) a
+          pure (DRS [] [CNot child fallback])
+        TEq a b -> pure (DRS [] [CEq (dterm a) (dterm b) (condProvFor [a,b] [])])
+        App{} -> case spine term of
+          (Con c _, args)
+            | not (null args), Lam w TyS body <- last args -> do
+                child <- go (path ++ [1,0]) (deindexWith (Var w) body)
+                pure (DRS [] [CAtt c (map dterm (init args)) child (condProvFor (init args) [c])])
+          (Con c _, args) -> pure (DRS [] [CPred c (map dterm args) (condProvFor args [c])])
+          _ -> pure (unsupported term)
+        Con c _ -> pure (DRS [] [CPred c [] (condProvFor [] [c])])
+        _ -> pure (unsupported term)
     unsupported t = DRS [] [CPred ("UNSUPPORTED[" ++ pretty t ++ "]") [] fallback]
 
     dterm t = case t of
