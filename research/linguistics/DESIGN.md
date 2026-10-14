@@ -1035,3 +1035,5 @@ These reviewed lessons expand the cards above with categories, derivations, type
 - [Quantifiers and determiners (C3)](sections/design-quantifiers.md)
 
 - [Negation, conditionals and disjunction (C4–C5, C7)](sections/design-operators.md)
+
+- [Relatives and coordination (C6, C8)](sections/design-relatives-coordination.md)

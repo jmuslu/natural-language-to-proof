@@ -2,7 +2,7 @@
 
 - Original ASTRA_GOAL remains active; linguistic-design-first redirect overrides phase order. Phases B–H unfinished. **No new model/LLM/answer-benchmark launches**: representative ProverQA >=90% exact/near-zero wrong gate CLOSED. Local independent fidelity/Explain diagnostics only. Default noun policy remains known-only.
 - Owner saved usage resets, full-access/no-approval continuation and useful parallelism remain authorized (also persisted ASTRA_GOAL). Shell works; never pass sandbox_permissions. Runtime actually observed root+8 running this continuation; not all32 slots tested. Specialists use isolated ~/astra-wt/<name>, own astra/<name> branches/files. Coordinator alone root source integration, STATE/LOG/cabal, staging/commits/push. Never main/tags/rawdata/secrets.
-- last pushed: 35611fb learner names (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
+- last pushed: 8bd0adf learner names (source release fcd813e nominal negation). Previous reviewed docs queue completed through f26366d; paired noun-policy result published45df821. All push gates required, explicit staging, trailer Co-Authored-By: Codex Astra. Preserve unrelated dirty work listed below.
 
 ## Next three actions and active drivers
 
@@ -28,6 +28,10 @@
 
 ## Operational safeguards
 
-- Memory15GiB; global loader/reader cap3 via scripts/with-ccgbank-slot.py and ~/astra-wt/.ccgbank-slots. Measured Explain163072KiB85.21s; largestreader263936KiB implies floor(10GBdecimal/peak)=37 but conservative3 retained. Optionalnegation175616KiB90.97s; default91.99s. Prefer sealed caches. Currently root gates plus bounded name reader; no model/answerbenchmark.
+- Memory15GiB; global loader/reader cap3 via scripts/with-ccgbank-slot.py and ~/astra-wt/.ccgbank-slots. Measured Explain163072KiB85.21s; largestreader298240KiB implies floor(10GBdecimal/peak)=32 but conservative3 retained. Optionalnegation175616KiB90.97s; default91.99s. Prefer sealed caches. Currently root gates plus bounded name reader; no model/answerbenchmark.
 - Coordinator helpers under ignored research/runs: integrate-reviewed.py pinsbranch/pathallowlist, gates then explicitstage/push/archive/remove; source-trial.py nevercommits; compare-negation190.py compares full retained meanings plus statuses/selected/trace-only. All futures must succeed. Do not rerun active merge driver. Cleanup preserves ignored research/runs and dirty/untracked files, verifies archive before worktree remove. No deletion of unmerged worktrees.
 - PRESERVE unrelated dirty bench/reasoning/{report.py,solver.py,test_report.py,test_solver.py,llm.py,test_llm.py}, research/SEAMS.md, research/plot-risk-coverage.py, research/requirements-figures.txt. Never stash/reset-all/add-all. Original snapshot and evidence archives under ignored research/runs/worktree-transfer,worktree-archives,worktree-evidence retained. Earlier fullstate preserved research/runs/state-before-learner-refresh.md; LOG remains append-only.
+
+- Active serial integration: design-relatives-complete (56bea1b), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-relatives-complete; committing/pushing now.
+
+- Nameevidencereader completed; compactcommit/reviewpending. DaveNNP11 butostrichnoPOS/categories proves necessary knownnoun gatefail inloaded snapshot; Sam/Polly analogousnoncecomplements. All2000inputbeforeafterhashes matchbaseline. Newpeak298240KiB6m22s, globalcap3unchanged. No sentenceparse.
