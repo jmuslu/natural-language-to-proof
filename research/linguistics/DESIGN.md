@@ -350,10 +350,15 @@ need separate projection/status semantics; the existing fail-closed guard stays.
 **Forms:** `Bob wakes up`, `Bob settles down`, `Bob walks up the hill`,
 `Bob picks the box up`, `the cat runs through the garden`.
 A selected `up:S[adj]\NP` is not a valid particle merely because it type checks.
-CCGbank may use a `PR` particle argument or PP-shaped lexical frames; inspect the
-actual offered frame. A particle-taking `(S[dcl]\NP)/PR` plus `PR` can combine by `>`;
-a PP modifier commonly has `((S\NP)\(S\NP))/NP`, consuming its object before
-attaching to the VP. Separated particles require their licensed valency/order.
+The original [CCGbank manual §3.7.6, p.53](https://shannon.cs.illinois.edu/Papers/CCGbank/CCGbankManual.pdf)
+does not subcategorize phrasal verbs for particles. Its offered categories must
+be inspected; sealed evidence includes VP-modifier-shaped `up:(S\NP)\(S\NP)`.
+The `PR` analyses in the pinned ccg2lambda templates belong to rebanked parses,
+not evidence that this original CCGbank model offers that category. An explicit
+reanalysis could combine `(S[dcl]\NP)/PR` and `PR` by `>`, but requires a reviewed
+category and meaning interface. A PP modifier commonly has
+`((S\NP)\(S\NP))/NP`, consuming its object before attaching to the VP.
+Separated particles require their licensed valency/order.
 
 **Unit 3 design choice:** either introduce a shared event continuation with verb,
 particle and role conditions, or a declared lexical verb–particle construction
