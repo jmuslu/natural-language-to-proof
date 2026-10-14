@@ -1037,3 +1037,5 @@ These reviewed lessons expand the cards above with categories, derivations, type
 - [Negation, conditionals and disjunction (C4–C5, C7)](sections/design-operators.md)
 
 - [Relatives and coordination (C6, C8)](sections/design-relatives-coordination.md)
+
+- [Particles and reflexives (C9–C10)](sections/design-particles-reflexives.md)
