@@ -18,3 +18,22 @@ someone/everything boundaries pass. Input-only multiplicity audit of previously
 sealed proverqa-unique cache gives281 occurrences with everyone,202 with contiguous
 everyone who; overlapping surface cues, not recovered semantic constructions.
 No new source experiments or parser observations. `git diff --check` clean.
+
+## Authorized bounded source step
+Reviewer approved gold with explicit forall-not surface-scope caveat, added to
+negative fixture without altering gold. Coordinator authorized ONLY reservation,
+exact offeredNP person-universal and existing NP-head fused extension. No offeredN
+repair or source-pair bypass. Before edit/run predict9lexical controls green,
+6new hand-category pipeline cases exact across all retained readings; bareN-only
+Everyone remains uninterpretable. Existing89fused controls should remain green.
+First candidate17/17focused and89/89existing fused controls pass. Reviewer source diff approved bounded NP-only behavior; caught test comprehension filtering missing rrDRS. Tighten to nonempty retained readings, every rrDRS Just matching, AND selected srDRS matching; keep all6means unchanged. Add expletive rejection (conj already covered). Prediction final18/18focus pass; any missing/alternate-scope reading fails.
+Final candidate18/18focused controls pass; all6 selected AND every retained DRS
+and independent claim partition match, with no filtering of missing results.
+Existing fused suite89/89 passes on same production source. Sixgold schema/scope
+checks pass; diff check clean. No cabal/shared coordinator edits, no CCGbank load.
+Source SHA256 CCGSem.hs:
+c7eec55ef53eaaf383e80616ba021c080164cbe6aca88bd8400581be4e22ed04.
+Source SHA256 CCGSemParse.hs:
+a917b315e924b3801e5077de81e1c089f649b17ebdb6f6070aaffb664cad162e.
+Frozen candidate awaits reviewer final test acknowledgment and coordinator full
+fresh panel-separated gates; no representative fidelity gain claimed.

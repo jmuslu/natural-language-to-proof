@@ -20,7 +20,9 @@ Proposed standalone `everyone:NP` has Q=(e→t)→t and meaning
 `∀x.(person(x) → tall(x))`. DRS: one asserted implication, antecedent introduces x
 with person(x), consequent tall(x); both atoms Embedded, no Reported/Presupposed.
 `Everyone is not quiet` has NOT inside the consequent, never ¬∀person.quiet.
-A domain with no persons satisfies these universals; do not add a witness at root.
+The negative fixture explicitly selects surface forall-not scope; ordinary
+English can pragmatically convey not-all. This is not a claim that all ambiguity
+is absent. A domain with no persons satisfies these universals; do not add a witness at root.
 
 Restricted `Everyone who is tall is quiet` requires
 `∀x.((person(x) ∧ tall(x)) → quiet(x))`, not
@@ -139,3 +141,13 @@ implementation. Pure lexical red controls and gold schema checks are prerequisit
 not successful parser runs. After authorized source: all retained miniature
 readings for offered NP/N variants, fused forged-certificate tests, all suites,
 root fresh gold with panel-separated predictions, and independent reviewer verdict.
+
+## Bounded candidate status
+
+The approved first source step is implemented in this branch only: strict-person
+NP entry/reservation, person-universal restricted head, and existing NP-only fused
+allowlist extension. No offered-N reanalysis/source-pair bypass. Eighteen focused
+lexical/public-miniature checks pass, including every retained and selected DRS
+plus claims for6authored golds;89existing fused controls pass. A missing DRS or
+alternative ¬∀ reading fails these scoped controls. Root full gates/fresh panels
+and final review still govern integration; later N repair remains design only.

@@ -208,6 +208,9 @@ restrictedPronounEntries :: String -> Maybe (LexItem, LexItem)
 restrictedPronounEntries word = do
   headTerm <- case map toLower word of
     "everything" -> Just detAll
+    "everyone" -> Just (Lam "P" tyPred1 (Lam "Q" tyPred1
+      (TForall "x" TyE (TImp (TAnd (App (pred1 sortalPerson) x_) (App p_ x_))
+        (App q_ x_)))))
     "someone" -> Just (Lam "P" tyPred1 (Lam "Q" tyPred1
       (TExists "x" TyE (TAnd (App (pred1 sortalPerson) x_)
         (TAnd (App p_ x_) (App q_ x_))))))
@@ -236,6 +239,10 @@ closedTable i =
      , ("everything", cat "NP", LexTerm
           (Lam "Q" tyPred1 (TForall "x" TyE (App q_ x_)))
           "unrestricted universal pronoun" Nothing)
+     , ("everyone", cat "NP", LexTerm
+          (Lam "Q" tyPred1 (TForall "x" TyE
+            (TImp (App (pred1 sortalPerson) x_) (App q_ x_))))
+          "universal pronoun (person)" Nothing)
      , ("something", cat "NP", LexTerm (indefinite sortalThing) "indefinite pronoun (thing)" Nothing)
      , ("someone", cat "NP", LexTerm (indefinite sortalPerson) "indefinite pronoun (person)" Nothing)
      , ("things", cat "N", LexTerm (sortalNoun sortalThing) "sortal noun (thing)" Nothing)
@@ -425,7 +432,7 @@ closedClassWords :: [String]
 closedClassWords =
   [ "the", "all", "every", "each", "a", "an", "some", "no", "is", "are", "does", "do", "not", "if"
   , "himself", "herself", "itself", "themselves", "myself", "yourself"
-  , "yourselves", "ourselves", "oneself", "then", "everything", "something", "someone", "things", "people", "and", "or", "it"
+  , "yourselves", "ourselves", "oneself", "then", "everything", "everyone", "something", "someone", "things", "people", "and", "or", "it"
   , "they", "did", "that", "which", "who" ]
 
 isClosedClass :: String -> Bool

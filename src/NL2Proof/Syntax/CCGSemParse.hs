@@ -942,7 +942,7 @@ validCertificate certificate = fcRelativeIndex certificate == fcHeadIndex certif
   && fcHeadIndex certificate >= 0
   && fcHeadCategory certificate == fusedNP
   && fcRelativeCategory certificate == sourceRelCat
-  && map toLower (fcHeadWord certificate) `elem` ["everything","someone"]
+  && map toLower (fcHeadWord certificate) `elem` ["everything","everyone","someone"]
   && map toLower (fcRelativeWord certificate) `elem` ["that","who","which"]
   && spanEnd (fcHeadSpan certificate) <= spanStart (fcRelativeSpan certificate)
 
