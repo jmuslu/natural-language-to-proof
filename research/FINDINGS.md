@@ -1,7 +1,30 @@
 # Research findings — working decision document
 
-Status: B/C/F measured; D/E comparisons active, G audits complete except ranking. This is not the final synthesis.
+Status: linguistic-design-first owner redirect active. New model and answer-benchmark launches are paused until the ProverQA construction-fidelity gate is met. Earlier B/C/F measurements and G audits remain historical evidence; D/E comparisons and final synthesis are incomplete.
 Results are from branch `astra/research`; commands/predictions are in `LOG.md`.
+
+## Current linguistic evidence
+
+The construction inventories and learner-facing [design](linguistics/DESIGN.md)
+cover ProverQA, all110 ProofWriter files, ProntoQA and the FOLIO sample; see
+[construction accounting](linguistics/CONSTRUCTIONS.md). Surface counts are not
+semantic coverage. The accepted154-case diagnostic at `8c390f0` contains47exact,
+26wrong-but-typed,80no-parse and1incomplete. These are bookkeeping totals across
+disclosed semantic contracts, not a pooled acceptance score or population
+estimate. The ProverQA starter is10/24 exact; representative construction gold
+and denominator work remain unfinished. The >=90% gate is closed.
+
+Accepted local-reflexive rules repair seven wrong meanings. A composition-feature
+repair removes three wrong negative-relative meanings to honest no-parse.
+Bounded quantified-pronoun relatives and lexical punctuation validation pass
+independent controls and preserve selected meanings in the154-case panel, but
+show no measured gain there. The broad nominal-copula candidate was rejected:
+six exact meanings regressed and six Explain checks failed despite increased
+parse coverage. Preserve its negative result; do not activate it or weaken gold.
+
+The following sections record earlier research checkpoints. Their local test
+counts and measured scopes are historical, not current release totals. The
+linguistic redirect does not complete or waive the remaining original phases.
 
 ## Meaning and oracle admission
 

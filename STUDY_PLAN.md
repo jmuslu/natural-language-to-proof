@@ -164,12 +164,15 @@ Things to notice: *not* attaches to *is* by backward crossed composition (`<Bx`)
 
 ### Repaired seams and remaining limits
 
+Same-category comma-list coordination retains a closing overt OR and preserves explicit mixed-operator subtrees. Twenty-four independent controls pass; all154 selected diagnostic meanings are unchanged. The separate Explain derivation replay may fall back to raw provenance for repaired lists; Pipeline meanings remain authoritative. Nominal predication and general NP coordination are still unresolved.
+
 The table distinguishes bounded repairs from remaining coverage and meaning errors. A passing handwritten regression does not establish coverage of every instance of the construction. The recorded corpus checks and paired coverage experiment are summarized in `research/FINDINGS.md`.
 
 | Unit | Current behavior | Scope or remaining limit |
 |---|---|---|
 | 2 | Endomorphic modifiers preserve matched features: `is not` retains `[dcl]` through `<Bx`. | This is targeted feature propagation, not a full feature-variable unifier. |
 | 2 | Final punctuation may still attach inside the tree (`red .`). | Usually semantically inert; punctuation constructions need their own checks. |
+| 2, 3 | Structural punctuation meanings require a nonempty punctuation-only surface, preventing lexical words from being silently absorbed under punctuation tags. |139 independent controls; all154 selected diagnostic meanings unchanged. This does not resolve general sentence/token segmentation or punctuation attachment. |
 | 2 | The existing type-raising/composition semantics now activate for the recognized argument-cluster coordination pattern, including `Bob likes and Anne hates the cat`. | Raising is not globally enabled. The selected corpus reading is correct, but a second returned reading is `likes(Bob) ∧ hate(Anne,cat)`. The shared indefinite-object regression introduces one existential, not one per conjunct. |
 | 2 | An optional `--pos-backoff` uses known NN/NNS/JJ evidence to add missing noun/adjective categories. | Off by default; no invented verb valency or contextual POS tagger. The licensed-model probe repairs round but not kind: round has JJ evidence, whereas kind has none in sections 02–21. On 120 OWA depth-5 dev theories (2,244 theory sentences), exact translation rises from 86.7% to 93.0%; 2,560 question translations rise from 90.5% to 95.6%; whole-theory exactness rises from 32/120 to 65/120. These are translation measurements, not QA accuracy. |
 | 2, 3, 4 | A name licensed by the existing POS/casing policy receives a rigid generalized-quantifier meaning from offered `N`, `NP`, or `NP[nb]`; ordinary NP features and scores are preserved. Positive and negated name sentences retain their Asserted/Embedded claim boundary. | This repairs missing direct-NP meanings, not name recognition. Initial `Legend is red` still selects the common-noun universal instead of the intended rigid name; unseen capitals can retain competing generic readings. `NP[expl]`, `NP[thr]`, and `NP[conj]` are excluded. See [name controls](research/linguistics/NAMES.md). |

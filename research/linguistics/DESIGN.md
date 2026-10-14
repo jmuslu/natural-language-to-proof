@@ -770,3 +770,40 @@ pass, and every selected meaning and status in the frozen154-row panel remains
 unchanged. This establishes a bounded capability with **no measured gain in
 the current benchmark-derived gold**; nominal-heavy relatives still need the
 missing predication construction. The historical121 stays34/25/62.
+
+
+### Punctuation categories require punctuation surfaces
+
+A sparse tagger can offer a punctuation category for a lexical word. Absorbing
+that token would erase its contribution before Montague composition: for example,
+losing an unseen OR can leave a comma chain interpreted as AND. The lexical
+interface now supplies a structural punctuation meaning only for a nonempty
+surface consisting entirely of punctuation characters. An apostrophe or hyphen
+inside a word does not make that word punctuation; arbitrary symbolic tokens
+are not accepted by this check. Actual punctuation still follows its existing
+category and chart rules.
+
+This Unit2/3 boundary has139 independent positive/negative controls and passes
+all release gates. The frozen154-case panel keeps every selected meaning and
+status, so this is an invalid lexical-analysis rejection with no measured gain
+on that panel. It does not solve general tokenization, Unicode routing, sentence
+segmentation, or all punctuation construction semantics.
+
+
+### Same-category comma lists retain their overt operator
+
+List composition now retains category, members, edges and their provenance.
+A closing overt OR can give preceding comma edges disjunctive force, while
+explicit mixed AND/OR subtrees retain their own scope. An earlier OR cannot
+turn a later trailing comma into OR. Application, composition and unary rules
+clear the list certificate; pending conditional guards still apply. Its full
+identity participates in chart packing, so unlike derivations are not collapsed
+merely because their normalized terms coincide.
+
+Twenty-four independent controls cover these boundaries and scoped claim tables.
+All release gates pass and all154 selected diagnostic meanings remain unchanged;
+the gold comma-OR nominal example is still blocked earlier in its derivation.
+Explain may report that it cannot replay a repaired list and display raw
+provenance: its separate replay engine does not yet carry this certificate.
+That limitation is explicit; the displayed Pipeline DRS/claims remain authoritative.
+This is a bounded list rule, not general NP coordination or nominal predication.

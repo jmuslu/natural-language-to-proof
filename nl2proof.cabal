@@ -410,3 +410,13 @@ test-suite lexical-punctuation
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+-- Independent construction scope and boundary controls.
+test-suite coordination-list
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          CoordinationDiagnosisSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
