@@ -2489,3 +2489,11 @@ Prediction: tokenizer changes fix boundary controls; bounded nominal v1 fixes au
 ### 2026-10-14 — tokenizer integrated release
 
 Tokenizer821ea12 merged with37 independent controls. All22Haskell suites(1575checks),77Python(75pass,2documentedexpectedfailures), build/oracle/Explain andhand4 pass. Fresh167 retains every status and selected meaning:49exact26wrong91no-parse1incomplete. Observationdigest identical to accepted expanded167. Reviewer independently verified source,binary,cases,observations and approved landing. No coverage gain or gate opening. Evidence research/runs/token-boundaries-integration; replay adapter and serialhandbinary now use this newsourcecache. Reviewed DESIGN expandedgold/first-divergence account included.
+
+### 2026-10-14 — source trial nominal-universal-trial (8e2a6ad)
+
+Prediction: tokenizer changes fix boundary controls; bounded nominal v1 fixes authored scoped controls. Neither is predicted to change the frozen167 statuses or selected meanings; any exact regression or new wrong-but-typed case blocks landing. Frozen167 cases and separate semantic contracts retained; previous accepted binary token-boundaries-integration. Commands: merge --no-ff --no-commit astra/nominal-universal-trial; register nominal-universal; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh167; scorer contracts; hand4. Evidence research/runs/nominal-universal-integration. Independent result review before commit/push; no model/answerbenchmark.
+
+### 2026-10-14 — bounded nominal universal release
+
+Nominal8e2a6ad merged without source changes;59 independent controls registered. All23Haskell suites(1634checks), build/oracle/Explain,77Python(75pass2existingexpectedfailures),hand4 pass. Fresh16789.05s retains49exact26wrong91no-parse1incomplete and every selected object; observations digest identical to tokenizer baseline. Independent reviewer rehashed candidate binary/source/cases/observations and approved landing. No measured corpus gain; Pronto POS inventory independently explains v1 necessary-gate failure on all86788 matching surface opportunities in observed snapshot. DESIGN and STUDY_PLAN scoped updates reviewed. Next particle then further bounded source trials; model/benchmark gate closed.

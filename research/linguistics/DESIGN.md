@@ -847,3 +847,36 @@ rewriting an already-built predicate would lose this evidence. The licensed
 intransitive sense denotes `λQ.Q(λx.give_up(x))`; negation places the atom inside
 an Embedded box, with only the enclosing negation Asserted. Independent gold is already frozen; the concrete implementation still requires
 review before it is admitted.
+
+### Direct universal nominal predication: bounded implementation
+
+The paired reanalysis in C2 now has a deliberately narrow implemented route:
+`Every/Each N is a/an N`, with a direct lexical noun at both positions and no
+embedding. Unit2 uses source-offered nominal copula/article categories to license
+internal `(S[dcl]\NP)/N` and `N/N` categories for those exact occurrences.
+Unit3 gives the article property identity and the copula `λP Q.Q(P)`; the
+ordinary existential article keeps its existing meaning on ordinary routes.
+The direct universal subject supplies `λR.∀x(N(x)→R(x))`. Unit4 therefore
+asserts the whole implication, with its two atoms Embedded and no existential
+witness added to the main box.
+
+The occurrence certificate permits only the paired article/noun application,
+matching copula application and direct universal subject application. Its
+completed clause may reach the root, optionally with a literal final period;
+it cannot enter arbitrary composition, coordination or embedding. Origin and
+capability participate in chart packing. Proper names, bare generics, indefinite
+subjects, negation and relative/modified nouns remain outside this new route.
+Both nouns require positive NN/NNS evidence and no adjective/proper-name conflict.
+Unknown POS does not license this implementation. This bounded route avoided the
+unbounded candidate's earlier equative and generic-reading regressions in the
+frozen diagnostic.
+
+The 59 independent controls test meanings, Asserted/Embedded allocation,
+occurrence mismatch, packing and escape routes. The full frozen167 diagnostic
+shows no status or selected-meaning gain; the earlier broad candidate remains
+rejected. In particular, a separate lexical inventory audit finds no observed
+POS evidence for any of the38 noun keys needed by ProntoQA's86,788 matching
+surface occurrences. This establishes failure of a necessary v1 condition in
+the measured training snapshot, not a full parser-coverage measurement. An
+explicit context-licensed unknown-noun policy is a separate reviewed proposal;
+it must preserve this route's obligations and be tested independently.

@@ -228,7 +228,7 @@ plainSign :: CCat -> Term -> Prov -> FusedRole -> SSign
 plainSign category meaning provenance role = SSign
   { ssCat=category,ssSem=meaning,ssProv=provenance,ssScore=0
   , ssCoord=Nothing,ssStructural=Nothing,ssOpenConditional=False
-  , ssConditionalRaised=False,ssList=Nothing,ssFused=role,ssNotes=[] }
+  , ssConditionalRaised=False,ssList=Nothing,ssFused=role,ssNominal=NominalPlain,ssNotes=[] }
 
 certificateChecks :: [Check]
 certificateChecks =
