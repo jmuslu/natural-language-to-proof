@@ -131,7 +131,8 @@ individual standing in an arbitrary relation to Max.
 **Unit 2:** CCGbank permits a copular NP complement with `(S[dcl]\NP)/NP`;
 `a:NP[nb]/N`, `yumpus:N` yields that complement. An adjective copula entry does not thereby supply this nominal meaning.
 The implemented direct-universal checkpoint below is a bounded exception; general
-named and embedded nominal predication remain unsupported. Two coherent designs
+nominal predication remains unsupported; the later attested-name checkpoint adds
+a separate direct-name case. Two coherent designs
 are possible: retain this syntax and add a marked predicative-NP interpretation,
 or log a predicative reanalysis `a:N/N` (identity on P) and
 `is:(S[dcl]\NP)/N`. The latter gives `a yumpus:N`, then a VP and sentence by
@@ -977,3 +978,28 @@ fresh default-policy 173-case diagnostic preserves every status and selected
 meaning. This certifies default compatibility only. An explicit invocation,
 exporter response, report and replay policy contract must precede measuring the
 optional mode; no enabled-mode corpus gain is claimed here.
+
+
+### Attested proper names in direct nominal predication
+
+The existing name interpretation now retains a typed record of its lexical
+origin. This record is created only by the actual name branch, using the same
+model's unpruned POS evidence, casing decision and offered category. It is not
+inferred later from a lambda term or explanatory note. Public lexical output is
+unchanged. Both ordinary offered name NPs and the existing name N repair retain
+the original evidence.
+
+A direct name can complete the bounded nominal copula/article pair only with
+positive, consistent singular proper-name evidence. The occurrence-bound origin
+survives completion and packing. This gives Unit 3 application of the nominal
+property to the rigid individual, and Unit 4 Asserted classification, such as
+`bird(Arthur)`. Unknown names, ambiguous lowercase/common-noun evidence,
+coordination, negation and embedding do not acquire this license.
+
+Twenty-seven public controls and 46 actual-origin adversarial checks cover the
+new route. The full 173-case diagnostic changes only *Arthur is a bird* from
+no-parse to exact; all 172 other statuses and selected meanings are unchanged.
+The totals are 60 exact, 25 wrong-but-typed, 87 no-parse and one incomplete across
+separate contracts. This is one measured source repair, not general named-nominal
+coverage. All 29 Haskell suites and the remaining release gates pass. Independent review
+verified all source/artifact hashes and the complete comparison before landing.

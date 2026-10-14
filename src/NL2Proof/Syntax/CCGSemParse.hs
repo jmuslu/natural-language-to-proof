@@ -47,6 +47,9 @@ module NL2Proof.Syntax.CCGSemParse
   , NominalRole(..)
   , NominalNounPolicy(..)
   , NominalNounOrigin(..)
+  , NameCategoryStep(..)
+  , NameLexOrigin(..)
+  , NominalNameOrigin(..)
   , NounAdmission(..)
   , UnknownNominalContext(..)
   , nominalTransition
@@ -343,27 +346,79 @@ data LexSign = LexSign
   , lxScore :: Double
   }
 
+-- Only the nameItem branch mints this origin. It is not inferred from a
+-- normalized term or human-readable note. Evidence is captured from the same
+-- immutable model used by this lexical assignment; no model-wide hash is needed.
+data NameCategoryStep = OrdinaryNameNP | LexicalNameNRepair deriving (Eq, Ord)
+data NameLexOrigin = NameLexOrigin
+  { nloIndex :: Int
+  , nloWord :: String
+  , nloEffective :: String
+  , nloTruecase :: Bool
+  , nloLowercaseTagMember :: Bool
+  , nloWrittenPOS :: [(String,Int)]
+  , nloEffectivePOS :: [(String,Int)]
+  , nloLowercasePOS :: [(String,Int)]
+  , nloSourceCategory :: CCat
+  , nloCategoryStep :: NameCategoryStep
+  } deriving (Eq, Ord)
+data LexicalOrigin = OrdinaryOrigin | RigidNameChoice NameLexOrigin
+
+-- Bound once to the selected lexical occurrence in the current parse context.
+data NominalNameOrigin = NominalNameOrigin
+  { nmoProv :: Prov
+  , nmoLexical :: NameLexOrigin
+  } deriving (Eq, Ord)
+
+-- A declared dictionary-only singular-name assumption, not disambiguation of
+-- all English uses. Complete unpruned counts include even rare contrary POS.
+validNameEvidence :: NameLexOrigin -> Bool
+validNameEvidence o = nloIndex o >= 0 && not (null (nloWord o))
+  && onlyNNP (nloWrittenPOS o) && onlyNNP (nloEffectivePOS o)
+  && all positiveNNP (nloLowercasePOS o)
+  && nloEffective o == expected
+  && nloEffectivePOS o == (if expected == nloWord o then nloWrittenPOS o else nloLowercasePOS o)
+  && (lower /= nloWord o || nloLowercasePOS o == nloWrittenPOS o)
+  where
+    positiveNNP (p,n) = p == "NNP" && n > 0
+    onlyNNP ps = not (null ps) && all positiveNNP ps
+    lower = map toLower (nloWord o)
+    expected | nloTruecase o && nloIndex o == 0 && lower /= nloWord o
+               && nloLowercaseTagMember o = lower
+             | otherwise = nloWord o
+
+nameOriginCategory :: NameLexOrigin -> Maybe CCat
+nameOriginCategory o = case (nloCategoryStep o,nloSourceCategory o) of
+  (LexicalNameNRepair,CAtom "N" _) -> Just (CAtom "NP" [])
+  (OrdinaryNameNP,c@(CAtom "NP" fs)) | all (== Feat "nb") fs -> Just c
+  _ -> Nothing
+
 -- | Every interpretable reading of token @i@: offered categories filtered
 -- through the semantic lexicon. Closed-class words use only their table
 -- entries; licensed names lift offered @N@ or use an already offered ordinary
 -- @NP@. The category alone never licenses a name. Everything else uses the
 -- open-class templates.
 lexicalSigns :: SemModel -> Int -> String -> [LexSign]
-lexicalSigns m i w
+lexicalSigns m i w = map fst (lexicalChoices m i w)
+
+-- Preserve the exact lexical branch; category/term/notes cannot recover it.
+lexicalChoices :: SemModel -> Int -> String -> [(LexSign, LexicalOrigin)]
+lexicalChoices m i w
   | lw `elem` ["himself", "herself", "itself"] =
-      [ LexSign target (withNote (reflexiveNote original target) item) score
+      [ (LexSign target (withNote (reflexiveNote original target) item) score, OrdinaryOrigin)
       | (original, score) <- tags, ordinaryReflexiveTag original
       , feature <- ["dcl", "b"]
       , let target = cat ("(S[" ++ feature ++ "]\\NP)\\((S[" ++ feature ++ "]\\NP)/NP)")
       , item <- closedEntries i w target ]
   | isClosedClass w || all (not . isWordChar) w =
-      [ LexSign c' (relativeNote c c' it) s
+      [ (LexSign c' (relativeNote c c' it) s, OrdinaryOrigin)
       | (c, s) <- tags, let c' = restrictiveTag c, it <- closedEntries i w c' ]
   | otherwise = case nameStatus m (i == 0) w of
-      NotName     -> open
+      NotName     -> ordinary open
       NameOnly    -> names
-      NameOrOther -> names ++ open
+      NameOrOther -> names ++ ordinary open
   where
+    ordinary = map (\l -> (l, OrdinaryOrigin))
     ordinaryReflexiveTag (CAtom "N" fs) = null fs
     ordinaryReflexiveTag (CAtom "NP" fs) = all (== Feat "nb") fs
     ordinaryReflexiveTag _ = False
@@ -397,13 +452,18 @@ lexicalSigns m i w
             ["unchanged surface predicate " ++ w]
             "regular-s-noun-v1: lowercase single-word shape; surface POS support {NNS}, base POS support {NN}; es/ss/us/is/ews excluded; token, category and score retained") it
       | otherwise = it
-    names = [ LexSign c' (withNote (nameNote c) (nameItem w)) s
-            | (c, s) <- tags, Just c' <- [nameCategory c] ]
+    names = [ (LexSign c' (withNote (nameNote c) (nameItem w)) s,
+                RigidNameChoice (NameLexOrigin i w effective (smTruecase m)
+                  (M.member (map toLower w) (tmWord (smTags m)))
+                  (posCounts (smPOS m) w) (posCounts (smPOS m) effective)
+                  (posCounts (smPOS m) (map toLower w)) c step))
+            | (c, s) <- tags, Just (c',step) <- [nameCategory c] ]
+    effective = lookupForm m (i == 0) w
     -- NP[nb] is non-bare, not an expletive or a pending conjunct. Keep that
     -- ordinary NP feature; do not erase expl/thr/conj to create an individual.
-    nameCategory (CAtom "N" _) = Just (CAtom "NP" [])
+    nameCategory (CAtom "N" _) = Just (CAtom "NP" [], LexicalNameNRepair)
     nameCategory c@(CAtom "NP" fs)
-      | all (== Feat "nb") fs = Just c
+      | all (== Feat "nb") fs = Just (c, OrdinaryNameNP)
     nameCategory _ = Nothing
     nameNote c = Stipulation
       { stKind = "name-lexicon"
@@ -514,11 +574,13 @@ data NominalRole
   | NominalNoun NominalNounOrigin
   | NominalUniversalDeterminer Prov CCat
   | NominalUniversalSubject Prov CCat NominalNounOrigin
+  | NominalNameSubject NominalNameOrigin
   | NominalArticle NominalCertificate
   | NominalPredicate NominalCertificate NominalNounOrigin
   | NominalCopula NominalCertificate
   | NominalPending NominalCertificate NominalNounOrigin
   | NominalComplete NominalCertificate Prov NominalNounOrigin NominalNounOrigin
+  | NominalNamedComplete NominalCertificate NominalNameOrigin NominalNounOrigin
   deriving (Eq, Ord)
 
 nominalN, nominalNP, nominalArticleSource, nominalCopulaSource,
@@ -634,7 +696,8 @@ semParse :: SemModel -> SourceId -> [Token] -> SemParse
 semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
   where
     n = length toks
-    ordinary = [ lexicalSigns m i (tokText t) | (i, t) <- zip [0 ..] toks ]
+    choices = [ lexicalChoices m i (tokText t) | (i, t) <- zip [0 ..] toks ]
+    ordinary = map (map fst) choices
     -- One immutable certificate list drives both category and semantic seeds.
     -- Candidate evidence precedes usefulAt: up need not have a standalone term.
     particleSeeds =
@@ -663,11 +726,11 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       , let certificate = FusedCertificate src i (i+1) (tokSpan headToken)
               (tokSpan relToken) (tokText headToken) (tokText relToken) hc rc ]
     fusedAnnotated =
-      [ [(l,FusedPlain) | l <- original] ++ concat
-          [ [(LexSign fusedHeadCat headEntry hs, FusedHead certificate) | i == fcHeadIndex certificate]
-            ++ [(LexSign fusedRelCat relEntry rs, FusedRelOp certificate) | i == fcRelativeIndex certificate]
+      [ [(l,FusedPlain,origin) | (l,origin) <- original] ++ concat
+          [ [(LexSign fusedHeadCat headEntry hs, FusedHead certificate, OrdinaryOrigin) | i == fcHeadIndex certificate]
+            ++ [(LexSign fusedRelCat relEntry rs, FusedRelOp certificate, OrdinaryOrigin) | i == fcRelativeIndex certificate]
           | (certificate,hs,rs,headEntry,relEntry) <- fusedPairs ]
-      | (i, original) <- zip [0..] ordinary ]
+      | (i, original) <- zip [0..] choices ]
     nominalPairs =
       [ (certificate,cs,as)
       | (i,(copula,article)) <- zip [0..] (zip toks (drop 1 toks))
@@ -678,7 +741,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       , let certificate = NominalCertificate src i (i+1) (tokSpan copula)
                (tokSpan article) (tokText copula) (tokText article) cc ac ]
     annotated =
-      [ [(l,f,nominalCapability i t l) | (l,f) <- original] ++ concat
+      [ [(l,f,nominalCapability i t l origin) | (l,f,origin) <- original] ++ concat
           [ [(LexSign nominalCopulaInternal (LexTerm nominalCopulaMeaning
                   "licensed nominal predication" (Just nominalReanalysis)) cs,
                   FusedPlain,NominalCopula certificate) | i==ncCopulaIndex certificate]
@@ -687,7 +750,12 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
                   FusedPlain,NominalArticle certificate) | i==ncArticleIndex certificate]
           | (certificate,cs,as) <- nominalPairs ]
       | (i,(t,original)) <- zip [0..] (zip toks fusedAnnotated) ]
-    nominalCapability i t l
+    nominalCapability i t l origin
+      | RigidNameChoice choice <- origin
+      , nloIndex choice == i, nloWord choice == tokText t
+      , validNameEvidence choice, nameOriginCategory choice == Just (lxCat l)
+      , any (\(certificate,_,_) -> ncCopulaIndex certificate == i+1) nominalPairs
+      = NominalNameSubject (NominalNameOrigin pv choice)
       | lxCat l == nominalN, nameStatus m (i==0) (tokText t) == NotName
       , any (`elem` ["NN","NNS"]) ps
       , not (any (`elem` ["JJ","JJR","JJS","NNP","NNPS"]) ps)
@@ -970,7 +1038,14 @@ semCombine comb0 out0 l r
                  "quantified head consumes its own relative restriction"
                  [] "paired input occurrences and source categories agree", ssProv result)]
             _ -> []
-      pure result { ssFused = role, ssNominal = nominal, ssNotes = ssNotes result ++ discharged }
+      let named = case (ssNominal l,ssNominal r,nominal) of
+            (NominalNameSubject origin,NominalPending _ _,NominalNamedComplete _ _ _) ->
+              [(Stipulation "nominal-name-dictionary-assumption"
+                "unopposed dictionary NNP subject in bounded nominal predication" []
+                ("actual lexical source " ++ show (nloSourceCategory (nmoLexical origin))
+                 ++ "; complete written/effective/lowercase POS support checked; not a global English disambiguation proof"), nmoProv origin)]
+            _ -> []
+      pure result { ssFused = role, ssNominal = nominal, ssNotes = ssNotes result ++ discharged ++ named }
   where
     localBinding = comb0 == BwdApp && not (pendingReflexive l)
       && pendingReflexive r && plain l && plain r
@@ -1085,6 +1160,7 @@ nominalActive role = case role of
   NominalNoun _ -> False
   NominalUniversalDeterminer _ _ -> False
   NominalUniversalSubject _ _ _ -> False
+  NominalNameSubject _ -> False
   _ -> True
 
 nominalUnaryAllowed :: SSign -> Bool
@@ -1093,6 +1169,7 @@ nominalUnaryAllowed = not . nominalActive . ssNominal
 nominalRootAllowed :: SSign -> Bool
 nominalRootAllowed sign = case ssNominal sign of
   NominalComplete _ _ _ _ -> ssCat sign == nominalS
+  NominalNamedComplete _ _ _ -> ssCat sign == nominalS
   role -> not (nominalActive role)
 
 nominalSeenPair :: SemModel -> SSign -> SSign -> Bool
@@ -1142,6 +1219,24 @@ nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
     , maybe False ((<=spanStart (ncCopulaSpan c)) . spanEnd) (provSpan (ssProv left))
     , subjectOrigin dp dc subject, complementOrigin c complement
     -> Just (NominalComplete c (ssProv left) subject complement)
+  (NominalNameSubject name,NominalPending c complement)
+    | let choice=nmoLexical name; cp=nnoProv complement
+    , comb==BwdApp, out==nominalS, valid c, clean left, clean right
+    , validNameEvidence choice, nameOriginCategory choice==Just (ssCat left)
+    , ssCat right==nominalVP, nnoCategory complement==nominalN
+    , ssProv left==nmoProv name
+    , ProvLex source span word <- nmoProv name
+    , source==ncSource c, word==nloWord choice
+    , nloIndex choice + 1 == ncCopulaIndex c
+    , spanEnd span<=spanStart (ncCopulaSpan c)
+    , ssProv right==provRule "FwdApp" [copulaLeaf c,provRule "FwdApp" [articleLeaf c,cp]]
+    , complementOrigin c complement
+    -> Just (NominalNamedComplete c name complement)
+  (role@(NominalNamedComplete _ _ _),NominalPlain)
+    | comb==PunctRight, out==nominalS, ssCat left==nominalS
+    , ssStructural right==Just ".", ssCat right==CAtom "." [], lexical (ssProv right)
+    , ssFused left==FusedPlain, ssFused right==FusedPlain
+    -> Just role
   (role@(NominalComplete _ _ _ _),NominalPlain)
     | comb==PunctRight, out==nominalS, ssCat left==nominalS
     , ssStructural right==Just ".", ssCat right==CAtom "." [], lexical (ssProv right)

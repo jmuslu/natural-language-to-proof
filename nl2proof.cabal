@@ -480,3 +480,23 @@ test-suite nominal-open-noun-v2
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof
+
+-- Independent construction scope and boundary controls.
+test-suite nominal-name-controls
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          NominalNameControlsSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Actual lexical origin adversarial controls.
+test-suite nominal-name-origin
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          NominalNameOriginSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
