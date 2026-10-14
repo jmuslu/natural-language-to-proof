@@ -2475,3 +2475,9 @@ Reviewer-approved branch only; overlapping untracked artifacts preserved under i
 Independent reviewer bb18e0b verified nominal preflight39source/Export hashes against frozen8e2a6ad, copied accepted Python tools, binary/cases/observations, and identical167selected objects/statuses; observations are byte-identical to accepted baseline. Root trial remains required. Reviewer approved DESIGN expanded-gold/first-divergence section; clarified independent particle gold already frozen and concrete implementation review still required.
 
 Result folio-object-relative-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration particle-gold (b649e61)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/particle-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/particle-gold.
+
+Result particle-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
