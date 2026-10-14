@@ -2119,3 +2119,9 @@ Result gold-proverqa: all merged-result gates passed,18 scorer contracts, sealed
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/gold-proofwriter; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;18 fidelity contracts; sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/gold-proofwriter.
 
 Result gold-proofwriter: all merged-result gates passed,18 scorer contracts, sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration design-names (34277a5)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/design-names; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;18 fidelity contracts; sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/design-names.
+
+Result design-names: all merged-result gates passed,18 scorer contracts, sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
