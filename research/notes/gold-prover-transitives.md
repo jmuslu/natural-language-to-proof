@@ -61,8 +61,9 @@ For nominal predication, the syntactic NP complement must receive its property
 interpretation in copular context. Intended standard category is
 `is:(S[dcl]\NP)/NP`; semantic obligation is predication `λP Q.Q(P)` after
 licensed predicative-NP interpretation, not a universal identity meaning for
-all articles. An equivalent existential identity analysis must lower to the same
-classifier after eliminating a bound equality witness. This is a design obligation,
+all articles. Gold requires a licensed lexical predicative interpretation before DRS construction.
+Static truth equivalence with an existential identity analysis does not authorize
+global equality contraction or removal of alias/discourse witnesses. This is a design obligation,
 not a claim that an arbitrary NP has a recoverable property or that the current
 parser realizes this derivation. Negation then scopes over that subject property.
 
