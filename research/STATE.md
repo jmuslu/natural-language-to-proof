@@ -20,3 +20,5 @@
 - Active serial integration: inventory-folio (634bc10), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/inventory-folio; committing/pushing now.
 
 - Active serial integration: gold-folio (169165e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-folio; committing/pushing now.
+
+- Active serial integration: gold-proverqa (43ac355), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-proverqa; committing/pushing now.
