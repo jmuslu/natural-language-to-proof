@@ -2813,3 +2813,13 @@ Command `python3 research/runs/baseline202.py` completed with sealed unchanged20
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/proofwriter-definite-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/proofwriter-definite-gold.
 
 Result proofwriter-definite-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration prover-conditional-gold (57bf9c1)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/prover-conditional-gold; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/prover-conditional-gold.
+
+### 2026-10-14 — future independent208 frozen before observations
+
+Frozen exact202 plus reviewed81703a1 three authored inclusive-OR controls and56fb675 three declared-context passive controls (one original source, two authored). See ignored expanded208-preparation/freeze.json hashes. No producer run yet, no membership change. Passive title/authorship contract context is not passed to id/text-only producer; never runtime goldhint. Prediction for future unchanged-default diagnostic: prior202 fullreading objects remain unchanged; new6 unknown. Keep semantic contracts separate, no acceptance-panel or model launch. Optional either source still under construction; fresh measurement requires coherent reviewed candidate.
+
+Result prover-conditional-gold: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
