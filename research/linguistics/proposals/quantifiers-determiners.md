@@ -168,3 +168,16 @@ added. `test/QuantifierProposalSpec.hs` now has 25 direct semantic checks: all
 pass, including scope contrasts, established determiners and incompatible-tag
 rejections. The earlier seven-failure report above is the pre-repair result.
 Full independent fidelity and release gates remain required on integration.
+
+### Remaining multi-modifier structural failure
+
+The noun-first change repairs a **single** intersective modifier. Composition
+of *blue young cats* still produces conditions `cat, young, blue`, because the
+inner modifier combines first. The independent convention expects noun head
+then modifiers in surface order: `cat, blue, young`. Both have equivalent truth
+conditions for intersective adjectives, but structural fidelity remains wrong.
+`test/QuantifierModifierOrderKnownFailure.hs` records that expected order without
+copying parser output; it is intentionally separate from cabal and the 25 green
+acceptance checks. Repairing composition-wide ordering needs a later reviewed
+representation decision. Do not claim that all modifier ordering is solved or
+weaken gold to accept the inside-out sequence.

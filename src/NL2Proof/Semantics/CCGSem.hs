@@ -415,7 +415,7 @@ closedEntries i w c
 -- conservative 'verbLemma', so known inflections share one predicate.
 --
 -- * @N@: @\\x. w(x)@
--- * @N\/N@: @\\P \\x. w(x) & P(x)@ (intersective)
+-- * @N\/N@: @\\P \\x. P(x) & w(x)@ (intersective; nested modifiers remain inside-out)
 -- * @S[f]\\NP@: @\\S. S(\\x. w(x))@ (predicative adjective or intransitive verb)
 -- * @(S[f]\\NP)\/NP@: @\\O \\S. S(\\x. O(\\y. w(x, y)))@ (transitive, subject wide scope)
 --
