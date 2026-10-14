@@ -51,6 +51,11 @@ SemanticRepairSpec checks universal, existential, `who`, and negated restrictors
 Sealed `research/runs/linguistics-design/explain.log` around line 1899 and
 `research/runs/phase-b/explain-final.log` around line 671 show the N attachment.
 These controls are repaired, not proof that every relative construction works.
+`restrictiveTag` in CCGSemParse explicitly rewrites the exact CCGbank
+`(NP\NP)/(S[dcl]\NP)` tag for that/which/who to its N-attaching counterpart,
+records a `relative-attachment` stipulation, and `seenPair` licenses its two local
+combinations. This bounded reanalysis is already implemented; it is not a general
+NP-interface migration or a rewrite of object-gap/nonrestrictive categories.
 
 The CCGbank-style NP-attaching category `(NP\NP)/(S[dcl]\NP)` cannot simply
 receive pointwise GQ conjunction: `λV Q P.Q(λx.V(lift(x))∧P(x))` places the
