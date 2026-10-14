@@ -2155,3 +2155,13 @@ Result: merged build and14 suites pass (original1199 plus24 quantifier checks); 
 Prediction: assembling reviewed four-benchmark CONSTRUCTIONS and family DESIGN does not change production observations. DESIGN ties category derivations, Montague meanings, DRS/claim commitments and first divergences to Units2/3/4; comparisons retain adoption limits. Counts disclose unresolved ProverQA/FOLIO frames and physical ProofWriter110 scope. Commands: full build/test, oracle, token-wrapped Explain,18 contracts, source/binary-checked fidelity replay, hand4. No model/answerbenchmark.
 
 Result: consolidated deliverables pass all release gates,14 suites/1223 checks,18 fidelity contracts, live hand4 and unchanged-source sealed replay22/23/40. All local Markdown links resolve. STUDY_PLAN records bounded determiner repair and unresolved conditional/reflexive/bare-plural errors. No new answerbenchmark/model.
+
+### 2026-10-14 — fidelity wire edge contract repair
+
+Reviewer approved dcb6043 independent11 edge tests. Prediction: current scorer fails7 methods: integer overflow, bool-as-number equality and uninformative nested differences, malformed selected object shape. Repair must retain1.0 wire counts, permit extra top-level metadata, count all6 outcomes, and keep semantic scope defects wrong-but-typed. First merge red tests and run them, then bounded scorer repair; full gates/replay/hand before push.
+
+### 2026-10-14 — expanded independent fidelity before gold integration
+
+Prediction: bounded quantifier repair will not fix nested relative/name selection or reflexive-locality failures. Combine85 currentstarter rows plus29 independently reviewed nestedProver10/nestedPronto12/reflexive7 rows authored before parser observation. Run token-wrapped test/fidelity/run.py with expanded-quantifier-fidelity/cases.jsonl and sealed quantifier-integration/fidelity-quantifiers, default parser, fresh.json output.114 rows, all failures retained, no model/answerbenchmark; this provides current-source observations for serial gold-branch merges without repeated corpus loading.
+
+Result: independent edge tests reproduced7 failing methods before repair; all29 contracts pass after bounded patch and reviewer approval514a238. Build,14 Haskell suites/1223 checks, oracle, Explain, live hand4 and sealed85 fidelity replay pass; scores unchanged22/23/40. No semantic scope validation added to observed meanings.

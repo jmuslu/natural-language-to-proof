@@ -168,12 +168,30 @@ def project_request(row):
     return {key:row[key] for key in ('id','text')}
 
 
+def json_equal(expected,observed):
+    # JSON booleans are not numeric indices, despite Python True == 1.
+    if type(expected) is bool or type(observed) is bool:
+        return type(expected) is type(observed) and expected == observed
+    if isinstance(expected,dict) and isinstance(observed,dict):
+        return expected.keys() == observed.keys() and all(
+            json_equal(value,observed[key]) for key,value in expected.items())
+    if isinstance(expected,list) and isinstance(observed,list):
+        return len(expected) == len(observed) and all(
+            json_equal(a,b) for a,b in zip(expected,observed))
+    return expected == observed
+
+
 def matches(expected,observed):
-    return isinstance(observed,dict) and all(observed.get(key)==value for key,value in expected.items())
+    # Exporter metadata is allowed only outside the specified meaning components.
+    return isinstance(observed,dict) and all(
+        key in observed and json_equal(value,observed[key]) for key,value in expected.items())
 
 
 def first_difference(expected,observed,path=()):
     if isinstance(expected,dict) and isinstance(observed,dict):
+        if path and observed.keys() - expected.keys():
+            key=sorted(observed.keys() - expected.keys())[0]
+            return dict(path=list(path)+[key],expected='<absent>',observed=observed[key])
         for key,value in expected.items():
             if key not in observed:return dict(path=list(path)+( [key]),expected=value,observed='<missing>')
             diff=first_difference(value,observed[key],path+(key,))
@@ -185,12 +203,12 @@ def first_difference(expected,observed,path=()):
             diff=first_difference(a,b,path+(index,))
             if diff:return diff
         return None
-    return None if expected==observed else dict(path=list(path),expected=expected,observed=observed)
+    return None if json_equal(expected,observed) else dict(path=list(path),expected=expected,observed=observed)
 
 
 def integral_number(value):
     # The production JNum wire format renders integral counts as 1.0.
-    return type(value) in (int,float) and math.isfinite(value) and value == int(value)
+    return type(value) is int or (type(value) is float and math.isfinite(value) and value == int(value))
 
 
 def observation_error(response):
@@ -203,7 +221,8 @@ def observation_error(response):
     if 'selected' not in response:return 'observation missing selected meaning'
     selected=response['selected']
     if (drs==0 and selected is not None) or (drs>0 and
-            (not isinstance(selected,dict) or not {'drs','claims'}<=set(selected))):
+            (not isinstance(selected,dict) or
+             not all(isinstance(selected.get(k),dict) for k in ('drs','claims')))):
         return 'selected meaning disagrees with DRS count or has invalid shape'
     readings=response.get('readings')
     if not isinstance(readings,list):return 'observation readings must be an array'
