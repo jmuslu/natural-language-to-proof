@@ -14,7 +14,7 @@ lexicon. Root must acknowledge this prediction before a test is launched.
 ## Concrete template proposed for reviewer approval
 
 Use paired source-to-internal reanalysis, not normalized-Q inspection, an
-unlicensed placeholder term, or global article/coplanar equality changes.
+unlicensed placeholder term, or global article or copular equality changes.
 
 Source offered categories:
 `is : (S[dcl]\\NP)/NP`, `a/an : NP[nb]/N`, noun `N`.
@@ -97,3 +97,45 @@ Baseline after coordinator logged prediction: runghc independent controls
 completed 0/9 pass (three sentence rows, each three assertions). All selected
 DRSs absent, as predicted. These are intentional red acceptance controls,
 not nine distinct semantic regressions. No corpus was loaded.
+
+Reviewer approved bounded investigation before source edits, requiring exact
+POS policy. Initial noun capability requires a nonempty dictionary POS set with
+NN or NNS and no JJ/JJR/JJS/NNP/NNPS entry of any positive count; it does not
+pretend to resolve contextual ambiguity. Direct lexical category must be N and
+nameStatus NotName. Competing verb POS alone does not erase noun evidence; the
+source N decision selects the noun use. Unknown/no-POS nouns get no capability.
+Ordinary analyses remain available. This intentionally loses possible coverage
+rather than admitting unresolved adjective/name-derived nominal predication.
+
+## Implemented bounded candidate and checks
+
+CCGSemParse now generates the two typed internal lexical alternatives from
+paired offered source categories and keeps NominalRole through packing,
+application, unary rejection and root admission. No Q-term unwrapping or
+reserved semantic operator was needed. Ordinary lexical noun/universal-subject
+capabilities can be dropped on unrelated ordinary paths; mandatory article,
+property, copula, pending and complete roles cannot be dropped. CCGSem unchanged.
+
+Completion supports either an unpunctuated root or a literal final period only;
+other punctuation is deliberately not part of this new route. Full source
+seen-pair mapping is checked independently in prepass and semantic chart.
+The only change to the existing fused test is initializing ssNominal to
+NominalPlain, as authorized; all original assertions remain.
+
+Post-change corpus-free validation (no corpus loads):
+- NominalUniversalProposalSpec: 59/59 (three independent exact DRS/claim/all-
+  reading rows plus actual transitions, coherence/cleanliness, packing,
+  occurrence/source mismatch, unary/composition/root/punctuation rejection,
+  source seen pairs, noun POS conflicts, and ordinary adjective/object routes).
+- FusedRelativeProposalSpec: 89/89.
+- CCGSemSpec: 89/89.
+- CoordinationDiagnosisSpec: 24/24.
+- ReflexiveProposalSpec: 21/21.
+- git diff --check: passed.
+
+No fidelity gain is claimed from these miniature-lexicon controls. Dictionary
+conflicts, missing noun evidence, source category offering, seen-pair evidence,
+lemma fidelity and bounded search can independently prevent real-input gains.
+Full gates and fresh unchanged-gold fidelity remain coordinator requirements;
+any newly wrong selected reading blocks landing. Reviewer inspected live source
+without a blocker; final committed-source review requested after these checks.

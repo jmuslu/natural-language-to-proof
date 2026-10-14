@@ -6,13 +6,14 @@
 -- with the same feature unification, the same learned unary type-change
 -- inventory, the same frequency supertagger and log-probability scores — but
 -- each chart item is a /sign/: category, lambda term, provenance tree, score.
--- Meanings come only from "NL2Proof.Semantics.CCGSem".
+-- Ordinary meanings come from "NL2Proof.Semantics.CCGSem"; the bounded
+-- nominal pair below carries explicit, occurrence-certified internal meanings.
 --
 -- What is packed and what is not, stated because it is the ambiguity
 -- discipline:
 --
 -- * Two items with the same category, pending conditional obligations,
---   occurrence-bound relative certificates, pending coordinator and
+--   occurrence-bound relative/nominal certificates, pending coordinator and
 --   equivalent meaning — equal up to alpha-renaming and associativity,
 --   commutativity and idempotence of @&@ ('simplifyConj', 'canonicalAC'), all
 --   sound — are one item — spurious ambiguity, which changes nothing above it. The
@@ -42,6 +43,11 @@ module NL2Proof.Syntax.CCGSemParse
   , fusedTransition
   , fusedUnaryAllowed
   , fusedRootAllowed
+  , NominalCertificate(..)
+  , NominalRole(..)
+  , nominalTransition
+  , nominalUnaryAllowed
+  , nominalRootAllowed
   , packCell
   , SemParse(..)
   , semParse
@@ -440,6 +446,44 @@ lexicalSigns m i w
 -- Chart
 --------------------------------------------------------------------------------
 
+-- | The positive universal nominal fragment keeps its obligation to root.
+-- Ordinary noun/subject capabilities may be dropped on unrelated routes;
+-- paired nominal roles must never be silently dropped.
+data NominalCertificate = NominalCertificate
+  { ncSource :: SourceId
+  , ncCopulaIndex :: Int
+  , ncArticleIndex :: Int
+  , ncCopulaSpan :: Span
+  , ncArticleSpan :: Span
+  , ncCopulaWord :: String
+  , ncArticleWord :: String
+  , ncCopulaCategory :: CCat
+  , ncArticleCategory :: CCat
+  } deriving (Eq, Ord)
+
+data NominalRole
+  = NominalPlain
+  | NominalNoun Prov CCat
+  | NominalUniversalDeterminer Prov CCat
+  | NominalUniversalSubject Prov CCat Prov CCat
+  | NominalArticle NominalCertificate
+  | NominalPredicate NominalCertificate Prov CCat
+  | NominalCopula NominalCertificate
+  | NominalPending NominalCertificate Prov CCat
+  | NominalComplete NominalCertificate Prov Prov
+  deriving (Eq, Ord)
+
+nominalN, nominalNP, nominalArticleSource, nominalCopulaSource,
+  nominalArticleInternal, nominalCopulaInternal, nominalVP, nominalS :: CCat
+nominalN = CAtom "N" []
+nominalNP = CAtom "NP" [Feat "nb"]
+nominalArticleSource = CSlash Fwd nominalNP nominalN []
+nominalS = CAtom "S" [Feat "dcl"]
+nominalVP = CSlash Bwd nominalS (CAtom "NP" []) []
+nominalCopulaSource = CSlash Fwd nominalVP (CAtom "NP" []) []
+nominalArticleInternal = CSlash Fwd nominalN nominalN []
+nominalCopulaInternal = CSlash Fwd nominalVP nominalN []
+
 -- | A same-category coordinate chain, certified by chart rules rather than by
 -- inspecting logical terms. Nothing means comma edges have no overt operator.
 -- Explicit incompatible subtrees remain atomic members with their provenance.
@@ -498,6 +542,8 @@ data SSign = SSign
     -- ^ Only coordination/punctuation carry a list across their own boundary.
   , ssFused :: FusedRole
     -- ^ Pending local restriction certificate; part of the packing identity.
+  , ssNominal :: NominalRole
+    -- ^ Local nominal capability or mandatory root-bound obligation.
   , ssNotes :: [(Stipulation, Prov)]
     -- ^ Stipulations used anywhere in the derivation, with where.
   }
@@ -514,8 +560,8 @@ data SemParse = SemParse
     -- ^ Sentence-wide safety decisions, including a quote rejected entirely.
   }
 
-key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool, Maybe CoordList, FusedRole)
-key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s, ssList s, ssFused s)
+key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool, Maybe CoordList, FusedRole, NominalRole)
+key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s, ssList s, ssFused s, ssNominal s)
 
 -- | Pack by 'key' (keep the best score; earlier wins ties) and keep the beam.
 packCell :: Int -> [SSign] -> [SSign]
@@ -551,18 +597,56 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       , (rc, rs) <- offeredTags m False (tokText relToken), rc == sourceRelCat
       , let certificate = FusedCertificate src i (i+1) (tokSpan headToken)
               (tokSpan relToken) (tokText headToken) (tokText relToken) hc rc ]
-    annotated =
+    fusedAnnotated =
       [ [(l,FusedPlain) | l <- original] ++ concat
           [ [(LexSign fusedHeadCat headEntry hs, FusedHead certificate) | i == fcHeadIndex certificate]
             ++ [(LexSign fusedRelCat relEntry rs, FusedRelOp certificate) | i == fcRelativeIndex certificate]
           | (certificate,hs,rs,headEntry,relEntry) <- fusedPairs ]
       | (i, original) <- zip [0..] ordinary ]
-    lexs = map (map fst) annotated
+    nominalPairs =
+      [ (certificate,cs,as)
+      | (i,(copula,article)) <- zip [0..] (zip toks (drop 1 toks))
+      , map toLower (tokText copula) == "is"
+      , map toLower (tokText article) `elem` ["a","an"]
+      , (cc,cs) <- offeredTags m (i==0) (tokText copula), cc == nominalCopulaSource
+      , (ac,as) <- offeredTags m False (tokText article), ac == nominalArticleSource
+      , let certificate = NominalCertificate src i (i+1) (tokSpan copula)
+               (tokSpan article) (tokText copula) (tokText article) cc ac ]
+    annotated =
+      [ [(l,f,nominalCapability i t l) | (l,f) <- original] ++ concat
+          [ [(LexSign nominalCopulaInternal (LexTerm nominalCopulaMeaning
+                  "licensed nominal predication" (Just nominalReanalysis)) cs,
+                  FusedPlain,NominalCopula certificate) | i==ncCopulaIndex certificate]
+            ++ [(LexSign nominalArticleInternal (LexTerm nominalArticleMeaning
+                  "licensed predicative article" (Just nominalReanalysis)) as,
+                  FusedPlain,NominalArticle certificate) | i==ncArticleIndex certificate]
+          | (certificate,cs,as) <- nominalPairs ]
+      | (i,(t,original)) <- zip [0..] (zip toks fusedAnnotated) ]
+    nominalCapability i t l
+      | lxCat l == nominalN, nameStatus m (i==0) (tokText t) == NotName
+      , let ps = map fst (posCounts (smPOS m) (lookupForm m (i==0) (tokText t)))
+      , any (`elem` ["NN","NNS"]) ps
+      , not (any (`elem` ["JJ","JJR","JJS","NNP","NNPS"]) ps)
+      = NominalNoun pv (lxCat l)
+      | lxCat l == nominalArticleSource
+      , map toLower (tokText t) `elem` ["every","each"]
+      = NominalUniversalDeterminer pv (lxCat l)
+      | otherwise = NominalPlain
+      where pv = ProvLex src (tokSpan t) (tokText t)
+    lexs = map (map (\(l,_,_) -> l)) annotated
 
     -- Sound category overapproximation of the two licensed semantic steps.
     -- Ordinary pairs are untouched; pending semantic roles are checked later.
     categoryPairAt i k left right = seenPair m left right || any mapsSource fusedPairs
+      || any mapsNominal nominalPairs
       where
+        mapsNominal (certificate,_,_) =
+          (i==ncArticleIndex certificate && k==i+1
+           && left==nominalArticleInternal && right==nominalN
+           && sourcePair m (ncArticleCategory certificate) nominalN)
+          || (i==ncCopulaIndex certificate && k==i+1
+              && left==nominalCopulaInternal && right==nominalN
+              && sourcePair m (ncCopulaCategory certificate) nominalNP)
         mapsSource (certificate,_,_,_,_) =
           (i == fcRelativeIndex certificate && k == i+1
            && left == fusedRelCat && right == fusedVPCat
@@ -628,16 +712,16 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
 
     usefulAt ij c = c `Set.member` M.findWithDefault Set.empty ij useful
 
-    mkLeaf t (LexSign c it s, fused) =
+    mkLeaf t (LexSign c it s, fused, nominal) =
       let pv = ProvLex src (tokSpan t) (tokText t)
       in case it of
            LexTerm tm _ st ->
              -- The role belongs to the closed lexical entry, not a search for
              -- an if token anywhere in a completed constituent.
-             SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False Nothing fused
+             SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False Nothing fused nominal
                ([ (x, pv) | Just x <- [st] ] ++ fusedNotes fused pv)
            LexStructural _ ->
-             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False Nothing FusedPlain []
+             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False Nothing FusedPlain NominalPlain []
 
     table :: ML.Map (Int, Int) [SSign]
     table = ML.fromList
@@ -657,7 +741,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
           , not (null outs)
           , l <- ls
           , r <- rs
-          , fusedSeenPair m l r
+          , nominalSeenPair m l r
           , (comb, out) <- outs
           , Just p <- [semCombine comb out l r]
           ]
@@ -693,11 +777,11 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
     isTypeRaise _                                = False
 
     unaries x
-      | ssCoord x /= Nothing || ssStructural x /= Nothing || pendingReflexive x || not (fusedUnaryAllowed x) = []
+      | ssCoord x /= Nothing || ssStructural x /= Nothing || pendingReflexive x || not (fusedUnaryAllowed x) || not (nominalUnaryAllowed x) = []
       | otherwise =
           [ SSign to (finish (f (ssSem x))) pv (ssScore x - smUnaryPenalty m) Nothing Nothing
                   (pendingConditional to [x])
-                  (pendingConditional to [x] && (ssConditionalRaised x || isTypeRaise to)) Nothing FusedPlain
+                  (pendingConditional to [x] && (ssConditionalRaised x || isTypeRaise to)) Nothing FusedPlain NominalPlain
                   (ssNotes x ++ [ (st, pv) | Just st <- [mst] ]
                     ++ [(raisingNote, pv) | isTypeRaise to])
           | (fr, to) <- meaningful
@@ -716,7 +800,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
                    -- A root asserts: an embedded clause (S[em], a proposition)
                    -- standing alone is not a sentence meaning.
                    , semTy (ssCat s) == Just TyT
-                   , ssCoord s == Nothing, ssStructural s == Nothing, fusedRootAllowed s ]
+                   , ssCoord s == Nothing, ssStructural s == Nothing, fusedRootAllowed s, nominalRootAllowed s ]
           byMeaning = M.fromListWith (\new old -> if ssScore new > ssScore old then new else old)
                         [ (canonicalAC (ssSem s), s) | s <- rs ]
       in sortBy (comparing (Down . ssScore)) (M.elems byMeaning)
@@ -793,6 +877,7 @@ semCombine :: Combinator -> CCat -> SSign -> SSign -> Maybe SSign
 semCombine comb0 out0 l r
   | any pendingReflexive [l, r], not localBinding = Nothing
   | otherwise = do
+      nominal <- nominalTransition comb0 out0 l r
       role <- fusedTransition comb0 out0 l r
       result <- sem comb0 out0 >>= emGuard
       let discharged = case (ssFused l, ssFused r, role) of
@@ -801,7 +886,7 @@ semCombine comb0 out0 l r
                  "quantified head consumes its own relative restriction"
                  [] "paired input occurrences and source categories agree", ssProv result)]
             _ -> []
-      pure result { ssFused = role, ssNotes = ssNotes result ++ discharged }
+      pure result { ssFused = role, ssNominal = nominal, ssNotes = ssNotes result ++ discharged }
   where
     localBinding = comb0 == BwdApp && not (pendingReflexive l)
       && pendingReflexive r && plain l && plain r
@@ -841,7 +926,7 @@ semCombine comb0 out0 l r
     notes = ssNotes l ++ ssNotes r
     mk comb out tm coord = SSign out (finish tm) (pv comb) (ssScore l + ssScore r) coord Nothing
       (pendingConditional out [l, r])
-      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) Nothing FusedPlain notes
+      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) Nothing FusedPlain NominalPlain notes
 
     sem comb out = case comb of
       -- 'applyIntensional' is 'App' unless the functor declares an
@@ -886,6 +971,96 @@ semCombine comb0 out0 l r
 sourcePair :: SemModel -> CCat -> CCat -> Bool
 sourcePair model left right = not (smSeenRules model)
   || (eraseFeatures left, eraseFeatures right) `Set.member` smSeen model
+
+nominalCopulaMeaning, nominalArticleMeaning :: Term
+nominalCopulaMeaning = Lam "P" tyPred1 (Lam "Q" tyGQ (App (Var "Q") (Var "P")))
+nominalArticleMeaning = Lam "P" tyPred1 (Var "P")
+
+nominalReanalysis :: Stipulation
+nominalReanalysis = Stipulation "nominal-universal-reanalysis"
+  "paired article supplies a lexical property to universal-subject predication"
+  ["ordinary existential argument article"]
+  "source nominal copula/article categories and occurrence certificate; root-only direct applications"
+
+nominalActive :: NominalRole -> Bool
+nominalActive role = case role of
+  NominalPlain -> False
+  NominalNoun _ _ -> False
+  NominalUniversalDeterminer _ _ -> False
+  NominalUniversalSubject _ _ _ _ -> False
+  _ -> True
+
+nominalUnaryAllowed :: SSign -> Bool
+nominalUnaryAllowed = not . nominalActive . ssNominal
+
+nominalRootAllowed :: SSign -> Bool
+nominalRootAllowed sign = case ssNominal sign of
+  NominalComplete _ _ _ -> ssCat sign == nominalS
+  role -> not (nominalActive role)
+
+nominalSeenPair :: SemModel -> SSign -> SSign -> Bool
+nominalSeenPair model left right = case (ssNominal left,ssNominal right) of
+  (NominalArticle c,NominalNoun _ _) ->
+    sourcePair model (ncArticleCategory c) nominalN
+  (NominalCopula c,NominalPredicate d _ _) -> c==d
+    && sourcePair model (ncCopulaCategory c) nominalNP
+  _ -> fusedSeenPair model left right
+
+-- Semantic roles are checked independently of the category prepass. These
+-- helpers do not authenticate fabricated public SSign constructors: lexical
+-- minting above is the trusted source of roles in the actual chart.
+nominalTransition :: Combinator -> CCat -> SSign -> SSign -> Maybe NominalRole
+nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
+  (NominalUniversalDeterminer dp dc,NominalNoun np nc)
+    | comb==FwdApp, out==nominalNP, dc==nominalArticleSource, nc==nominalN
+    , ssCat left==dc, ssCat right==nc, ssProv left==dp, ssProv right==np
+    , lexical dp, lexical np, clean left, clean right
+    -> Just (NominalUniversalSubject dp dc np nc)
+  (NominalArticle c,NominalNoun np nc)
+    | comb==FwdApp, out==nominalN, valid c, clean left, clean right
+    , ssCat left==nominalArticleInternal, ssCat right==nominalN, nc==nominalN
+    , ssProv left==articleLeaf c, ssProv right==np, lexical np
+    , after c (ncArticleSpan c) np
+    -> Just (NominalPredicate c np nc)
+  (NominalCopula c,NominalPredicate d np nc)
+    | comb==FwdApp, out==nominalVP, c==d, valid c, clean left, clean right
+    , ssCat left==nominalCopulaInternal, ssCat right==nominalN, nc==nominalN
+    , ssProv left==copulaLeaf c
+    , ssProv right==provRule "FwdApp" [articleLeaf c,np]
+    -> Just (NominalPending c np nc)
+  (NominalUniversalSubject dp dc np nc,NominalPending c complement cc)
+    | comb==BwdApp, out==nominalS, valid c, clean left, clean right
+    , ssCat left==nominalNP, ssCat right==nominalVP
+    , dc==nominalArticleSource, nc==nominalN, cc==nominalN
+    , ssProv left==provRule "FwdApp" [dp,np]
+    , ssProv right==provRule "FwdApp" [copulaLeaf c,provRule "FwdApp" [articleLeaf c,complement]]
+    , provSources (ssProv left)==[ncSource c]
+    , maybe False ((<=spanStart (ncCopulaSpan c)) . spanEnd) (provSpan (ssProv left))
+    -> Just (NominalComplete c (ssProv left) complement)
+  (role@(NominalComplete _ _ _),NominalPlain)
+    | comb==PunctRight, out==nominalS, ssCat left==nominalS
+    , ssStructural right==Just ".", ssCat right==CAtom "." [], lexical (ssProv right)
+    , ssFused left==FusedPlain, ssFused right==FusedPlain
+    -> Just role
+  (a,b) | not (nominalActive a || nominalActive b) -> Just NominalPlain
+  _ -> Nothing
+  where
+    clean sign = ssCoord sign==Nothing && ssStructural sign==Nothing
+      && ssFused sign==FusedPlain && not (ssOpenConditional sign)
+      && ssList sign==Nothing && coherent sign
+    coherent sign = case semTy (ssCat sign) of
+      Just ty -> typeOf [] (ssSem sign)==Right ty
+      _ -> False
+    lexical (ProvLex _ _ _) = True
+    lexical _ = False
+    articleLeaf c = ProvLex (ncSource c) (ncArticleSpan c) (ncArticleWord c)
+    copulaLeaf c = ProvLex (ncSource c) (ncCopulaSpan c) (ncCopulaWord c)
+    after c sp pv = provSources pv==[ncSource c]
+      && maybe False ((>=spanEnd sp) . spanStart) (provSpan pv)
+    valid c = ncArticleIndex c==ncCopulaIndex c+1 && ncCopulaIndex c>=0
+      && ncCopulaCategory c==nominalCopulaSource && ncArticleCategory c==nominalArticleSource
+      && map toLower (ncCopulaWord c)=="is" && map toLower (ncArticleWord c) `elem` ["a","an"]
+      && spanEnd (ncCopulaSpan c)<=spanStart (ncArticleSpan c)
 
 fusedSeenPair :: SemModel -> SSign -> SSign -> Bool
 fusedSeenPair model left right = case (ssFused left, ssFused right) of
