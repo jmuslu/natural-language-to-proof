@@ -1,6 +1,6 @@
 # Research state
 
-- last pushed: c3eef35
+- last pushed: e55770f
 
 Original ASTRA_GOAL remains active; linguistic-design-first overrides phase order. B–H unfinished. **No new model/LLM/answer-benchmark launches** until representative ProverQA >=90% exact/near-zero wrong; gate CLOSED. Local independent fidelity/Explain diagnostics allowed. Owner full-access/no-approval continuation, saved usage resets and useful parallelism authorization persist here and ASTRA_GOAL. Shell works; never supply sandbox_permissions. After this refresh list_agents actually showed root+8 running; not all32 slots tested. Work only astra/research/root and isolated astra/<name> specialist worktrees. No main/tags/rawdata/secrets. Explicit staging, all gates per push, trailer Co-Authored-By: Codex Astra.
 
@@ -60,3 +60,5 @@ Helpers research/runs/integrate-reviewed.py and source-trial.py enforce pin/path
 - after202-followups driver ended on transient origin500 after local490d3e2; retry push succeeded, nominal-property-plan cleaned. Resuming remaining reviewed-followups-queue.py with ancestryskip and between-branch hold marker support. No tests/source failure.
 
 - Active serial integration: explain-replay-interface (95a89d5), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/explain-replay-interface; committing/pushing now.
+
+- Active serial integration: particle-next-design (2993c8f), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/particle-next-design; committing/pushing now.
