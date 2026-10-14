@@ -41,3 +41,17 @@ pending focused Explain. Second: POS/category-licensed lemma identity, has→hav
 and plural common nouns, preserving name/adj forms. Counts only set priority;
 no recovery gains predicted from unrepresentative85controls. Each proposal has
 three authored expectations, DRS/status, current-source evidence and pinned sources.
+
+2026-10-14 reviewer follow-up: corrected actual a:NP[nb]/N in proposal; broad noun
+morphology remains deferred. Added standalone HasLemmaProposalSpec.hs and proposed
+one-entry has→have mapping in own proposal; no production/cabal edits. Explicitly
+states CCGSem receives word/category, not POS: this is existing category-gated
+normalization with POS evidence upstream, not a newly implemented POS selector.
+Prediction before run:12 checks,5 FAIL (verbLemma, reportingLemma, finite has,
+base-category has, existential composition),7 PASS (base have, names/nouns/adj
+boundaries, auxiliary absence, type). Command: runghc -isrc -itest
+test/HasLemmaProposalSpec.hs. No licensed corpus or model is loaded.
+Result: expected red exit1,7/12 PASS and exactly5 FAIL, each due to ha instead of
+have. This is test-first proposal evidence, not an integrated release regression.
+No broad noun-morphology change is smuggled into the requested minimal production
+mapping. Reviewer should approve that mapping before coordinator implementation.

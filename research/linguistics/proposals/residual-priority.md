@@ -124,7 +124,7 @@ and `glass`, names such as `James`, and verb/adjective homographs are essential
 counterexamples to a universal remove-s rule. Ambiguous status may require
 multiple explicitly labelled readings; a POS majority is evidence, not truth.
 
-Unit2 derivation for `Mira has a kite`: `a:NP/N` applies to `kite:N`, then
+Unit2 derivation for `Mira has a kite`: `a:NP[nb]/N` applies to `kite:N`, then
 `has:(S[dcl]\NP)/NP` applies to the object and the result to Mira. Unit4 result
 `[x | kite(x),have(Mira,x)]`, with both conditions Asserted. The auxiliary use
 `has left` has a different category and cannot be assigned possessive have.
@@ -179,3 +179,34 @@ by wrong alternatives; run all gates before coordinator integration/push. Preser
 no-parse for unanalysed constructions rather than expanding a permissive lexical
 fallback. These two fixes are priorities, not substitutes for the residual-frame
 and independent-gold obligations or permission to reopen model benchmarks.
+
+
+## Bounded has→have implementation request
+
+Broad noun morphology above remains a design proposal and is **deferred** pending
+separate rule review. The immediately testable repair is just the missing reviewed
+present-tense irregular: add `("have", ["has"])` to `verbLemma`'s existing
+`inflections` table in CCGSem.hs. Do not modify `lemma3sg`, nouns, adjectives,
+name handling or category selection. This lexical-key repair is shared with
+`reportingLemma` exactly as existing irregular verbs already are.
+
+```diff
+         , ("go", ["goes", "went", "gone"]), ("do", ["does", "did", "done"])
++        , ("have", ["has"])
+```
+
+The actual semantic API receives word and category, not POS. Category-based
+`predName` calls `verbLemma` for verbal templates and preserves adjective forms;
+N and proper-name paths do not call it. POS evidence belongs upstream in lexical
+category/name selection. Consequently this tiny change is **category-gated at its
+meaning call sites**, not a new POS disambiguator or guarantee that every offered
+verbal category is correct. Tests include real singular-s nouns, a proper name,
+and synthetic has-as-N/has-as-adjective controls to expose accidental global
+normalization. The synthetic controls are API boundary tests, not English analyses.
+
+`test/HasLemmaProposalSpec.hs` is standalone test-first evidence, with no corpus
+loads. Its existential example checks composition with the actual closed
+`a:NP[nb]/N`, while the auxiliary-category control ensures no possessive-transitive
+meaning is invented for a perfect auxiliary. Preservation of absence is not a
+claim to have implemented perfect aspect. The coordinator owns production edit,
+reviewed test-suite registration, full fidelity and release gates.
