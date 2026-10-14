@@ -75,3 +75,17 @@ These must be preserved by coordinator before worktree cleanup. Source hashes in
 the report describe the worktree at observation; the binary hash identifies the
 actual compiled parser. This is a frozen-foundation baseline, not proof that later
 unmerged proposed repairs have these results. Only notes changed after observing.
+
+Bare-plural/name follow-up (read-only analysis, no fresh parser launch): inspected
+sealed trace plus current root nameStatus/lexicalSigns/unarySem/openTemplate.
+Trace proves unseen initial NameOrOther, selected rigid name fromN, and existing
+generic alternative. First case has exactly1.0 name/generic score gap, matching
+free lexical name lift versus penalized generic unary. Nominal predicates remain
+plural in both alternatives. Proposal `proposals/bare-plural-names.md` separates
+candidate evidence, structural cost parity, actual lexical disambiguation,
+unknown morphology and generic force; preserves NNP/NNPS and Legend ambiguity.
+Prediction before static review: proposal and notes only will be staged; no gold
+or shared source changes, and sealed caches remain unchanged. Reviewer requested.
+Static checks passed: all sealed manifest hashes match, gold is unchanged since
+77e9338, and all three name/generic score gaps independently recompute to1.0.
+No semantic code edited; proposal awaits independent review before implementation.
