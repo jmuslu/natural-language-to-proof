@@ -1,6 +1,6 @@
 # Research state
 
-last pushed: 3d763e3; reviewed either source and results committed on astra/research.
+last pushed: 036602b; reviewed either source and results committed on astra/research.
 
 Original ASTRA_GOAL remains active; linguistic design first overrides phase order.
 No new model/LLM/answer benchmarks until representative ProverQA >=90% exact and
@@ -75,3 +75,5 @@ Old source audit notes preserved; assembled either-result-audits7ba0976 pending
 aggregate reviewer approval. Retain old worktrees until auditnotes integrated.
 Serial reviewed-followups session91268 active, logfile reviewed-followups-resumed.log;
 prover-panel-contract pushed3d763e3, currently something-origin-plan gates.
+
+- Active serial integration: gold-construction-matrix (fbf436e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/gold-construction-matrix; committing/pushing now.
