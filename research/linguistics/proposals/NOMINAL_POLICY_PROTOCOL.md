@@ -1,9 +1,11 @@
 # Explicit nominal policy in fidelity observations and replay
 
-Proposal only, against accepted research2d1cae6. Nominal v2 sourcea4846ca has
+Original proposal against accepted research2d1cae6, now implemented as an isolated
+review candidate after coordinator authorization. Nominal v2 sourcea4846ca has
 separate reviewer approval for a default-preserving trial; it does not activate
-the unknown interpretation by default. No exporter, scorer or verifier changes
-are included here. The original v2 document's absent-constructor discussion is
+the unknown interpretation by default. Candidate changes are exporter configuration
+and response metadata, producer invocation/report validation, and replay binding;
+semantic scoring and gold interpretation remain unchanged. The original v2 document's absent-constructor discussion is
 historical: typed constructors and direct tests now exist. Manually constructed
 packing controls establish identity preservation, not proof that lexical
 provenance was honestly minted; actual miniature parsing controls independently
@@ -15,12 +17,12 @@ Use one small JSON `execution` object in every exporter response, producer repor
 and verified replay manifest:
 
 ```json
-{"schema":1,"parser":"default","nominal_nouns":"known-only"}
+{"schema":"nominal-policy-v1","parser":"default","nominal_nouns":"known-only"}
 ```
 
 Allowed parser values are the existing `default`, `pos`, `hand`. Allowed nominal
 values are exactly `known-only`, `context-unknown`, `not-applicable`. Schema is
-an integer1, never a Boolean. Exact keys and enum values are validated. Hand must
+the exact string nominal-policy-v1, never a number or Boolean. Exact keys and enum values are validated. Hand must
 use not-applicable; default/pos must use either known-only or context-unknown.
 This front-end field prevents claiming a hand or POS observation as the default
 CCG parser. It is not a hash or evidence of authentic execution.
@@ -79,8 +81,8 @@ The independent synthetic file test_nominal_policy_protocol.py exercises known
 positive, enabled manifest, mixed echoes, report relabeling, missing echoes,
 unknown enum, Boolean schema, front-end mismatch and invalid hand/unknown pairing.
 Rejection cases run normal Python and python -O; no asserts implement validation.
-It is intentionally red on the old verifier and is not a registered acceptance
-suite until implementation lands. Reuses only synthetic integrity fixture setup,
+It was intentionally red on the old verifier; expanded implementation controls
+now exercise that contract without adding a registered Cabal suite. Reuses only synthetic integrity fixture setup,
 not its verification algorithm; all expected mode relations are independently
 stated here.
 
@@ -89,11 +91,21 @@ errors before loading; actual exporter echoes on successful and error responses;
 scorer explicit flag propagation and rejection before scoring; expected_execution
 mismatch; historical unrecorded labeling and rejection of explicit requested
 mode; default/pos allowed combinations; null/extra-key protocol rejection. Test
-exporter request-only validation remains intact. These are pending obligations,
-not claimed tested by the nine replay controls.
+exporter request-only validation remains intact. The implementation adds these as separate controls rather than claiming they
+were tested by the original nine replay cases. Actual exporter tests run only
+when NOMINAL_PROTOCOL_EXPORTER names the built candidate; hand success/errors
+and invalid flags require no corpus. Valid default/POS invocation is checked
+with subprocess mocks; no CCG model is loaded by this worker.
 
 After separately approved implementation and default gates, coordinator may
 perform a separately sealed enabled fidelity measurement. Record both policy and
 all-retained/selected meaning outcomes; keep panels and denominators separate.
 No model training, answer benchmark, fresh corpus load or measurement is
 authorized by this proposal or performed by this worker.
+
+
+Implementation review corrected the execution version encoding before release:
+the shared Haskell JNum serializer emits1.0, so integer-only schema1 would reject
+actual exporter JSON. Reviewer approved an exact tagged schema string instead.
+Top-level observation/report schema remains unchanged; only the new execution
+object uses nominal-policy-v1. Numeric1/1.0, Boolean, null and unknown tags fail.

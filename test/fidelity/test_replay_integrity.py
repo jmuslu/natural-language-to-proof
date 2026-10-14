@@ -225,7 +225,9 @@ class ReplaySealIntegrity(unittest.TestCase):
         import fidelity
         (self.gold_dir/'Export.hs').write_text('-- synthetic export fixture')
         (self.gold_dir/'run.py').write_text('# synthetic launcher fixture')
-        result=SimpleNamespace(stdout=''.join(json.dumps(x['response'])+'\n' for x in self.observations),stderr='')
+        responses=[dict(x['response'], execution={'schema':'nominal-policy-v1','parser':'hand','nominal_nouns':'not-applicable'})
+                   for x in self.observations]
+        result=SimpleNamespace(stdout=''.join(json.dumps(x)+'\n' for x in responses),stderr='')
         output=self.current/'produced.json'
         argv=['fidelity','--cases',str(self.gold_path),'--binary',str(self.binary),
               '--parser','hand','--output',str(output)]
