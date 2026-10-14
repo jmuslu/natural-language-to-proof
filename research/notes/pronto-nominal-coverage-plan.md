@@ -33,3 +33,9 @@ Validation planned before commit: reproduce output byte-for-byte, run the same
 conservation and fail-closed controls under python -O, check document links and
 explicit owned staging; request independent reviewer. Sourcefrozen nominal v1
 and its167 preflight remain untouched. No parser was run for this task.
+
+Validation outcome: normal and python -O aggregate runs produced byte-identical
+JSON; conservation and authored fail-closed controls passed in both modes.
+All local proposal links resolve and git diff --check passed. Explicit staging
+included only the four owned artifacts. Independent review requested on3a1e472;
+no approval is inferred while that review is pending.
