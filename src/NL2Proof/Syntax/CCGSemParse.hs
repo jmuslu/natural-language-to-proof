@@ -11,7 +11,8 @@
 -- What is packed and what is not, stated because it is the ambiguity
 -- discipline:
 --
--- * Two items with the same category, the same pending coordinator and
+-- * Two items with the same category, pending conditional obligations,
+--   pending coordinator and
 --   equivalent meaning — equal up to alpha-renaming and associativity,
 --   commutativity and idempotence of @&@ ('simplifyConj', 'canonicalAC'), all
 --   sound — are one item — spurious ambiguity, which changes nothing above it. The
@@ -421,6 +422,13 @@ data SSign = SSign
     -- conjunct, and the string is the coordinator word.
   , ssStructural :: Maybe String
     -- ^ The word, if this item is a bare coordinator or punctuation mark.
+  , ssOpenConditional :: Bool
+    -- ^ A closed conditional introducer still waiting to form a complete
+    -- sentence. Cleared at S, retained through functor composition/raising.
+    -- Only clause-modifier comma coordination consults this obligation.
+  , ssConditionalRaised :: Bool
+    -- ^ The pending role has passed through an actual unary type-raising step.
+    -- An isomorphic lexical category alone does not license a raised guard.
   , ssNotes :: [(Stipulation, Prov)]
     -- ^ Stipulations used anywhere in the derivation, with where.
   }
@@ -437,8 +445,8 @@ data SemParse = SemParse
     -- ^ Sentence-wide safety decisions, including a quote rejected entirely.
   }
 
-key :: SSign -> (CCat, Term, Maybe String, Maybe String)
-key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s)
+key :: SSign -> (CCat, Term, Maybe String, Maybe String, Bool, Bool)
+key s = (ssCat s, canonicalAC (ssSem s), ssCoord s, ssStructural s, ssOpenConditional s, ssConditionalRaised s)
 
 -- | Pack by 'key' (keep the best score; earlier wins ties) and keep the beam.
 packCell :: Int -> [SSign] -> [SSign]
@@ -525,10 +533,13 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
     mkLeaf t (LexSign c it s) =
       let pv = ProvLex src (tokSpan t) (tokText t)
       in case it of
-           LexTerm tm _ st ->
-             SSign c (finish tm) pv s Nothing Nothing [ (x, pv) | Just x <- [st] ]
+           LexTerm tm gloss st ->
+             -- The role belongs to the closed lexical entry, not a search for
+             -- an if token anywhere in a completed constituent.
+             SSign c (finish tm) pv s Nothing Nothing (gloss == "conditional") False
+               [ (x, pv) | Just x <- [st] ]
            LexStructural _ ->
-             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) []
+             SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False []
 
     table :: ML.Map (Int, Int) [SSign]
     table = ML.fromList
@@ -586,6 +597,8 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       | ssCoord x /= Nothing || ssStructural x /= Nothing = []
       | otherwise =
           [ SSign to (finish (f (ssSem x))) pv (ssScore x - smUnaryPenalty m) Nothing Nothing
+                  (pendingConditional to [x])
+                  (pendingConditional to [x] && (ssConditionalRaised x || isTypeRaise to))
                   (ssNotes x ++ [ (st, pv) | Just st <- [mst] ]
                     ++ [(raisingNote, pv) | isTypeRaise to])
           | (fr, to) <- meaningful
@@ -690,7 +703,9 @@ semCombine comb0 out0 l r = sem comb0 out0 >>= emGuard
     plain x = ssCoord x == Nothing && ssStructural x == Nothing
     pv comb = provRule (show comb) [ssProv l, ssProv r]
     notes = ssNotes l ++ ssNotes r
-    mk comb out tm coord = SSign out (finish tm) (pv comb) (ssScore l + ssScore r) coord Nothing notes
+    mk comb out tm coord = SSign out (finish tm) (pv comb) (ssScore l + ssScore r) coord Nothing
+      (pendingConditional out [l, r])
+      (pendingConditional out [l, r] && any ssConditionalRaised [l, r]) notes
 
     sem comb out = case comb of
       -- 'applyIntensional' is 'App' unless the functor declares an
@@ -706,6 +721,7 @@ semCombine comb0 out0 l r = sem comb0 out0 >>= emGuard
             Just (mk comb out (ssSem r) (Just w))
       CoordApply
         | plain l, Just w <- ssCoord r, Just op <- coordinatorOp w
+        , not (w == "," && any pendingModifier [l, r])
         , Just ty <- semTy out, Just tm <- coordTerm op ty (ssSem l) (ssSem r) ->
             Just (mk comb out tm Nothing)
       PunctRight
@@ -726,6 +742,35 @@ semCombine comb0 out0 l r = sem comb0 out0 >>= emGuard
 
     compose comb out f g (Just zTy) = Just (mk comb out (composeTerm zTy f g) Nothing)
     compose _ _ _ _ Nothing = Nothing
+
+-- | A complete sentence discharges all conditional obligations contained in it.
+-- In particular, embedding/raising that sentence must not poison surrounding
+-- comma coordination. On functors retain the obligation through application,
+-- composition and unary type raising; counting applications would wrongly
+-- consume it when a raised sign merely receives its continuation.
+pendingConditional :: CCat -> [SSign] -> Bool
+pendingConditional (CAtom "S" _) _ = False
+pendingConditional _ signs = any ssOpenConditional signs
+
+-- | The bounded guard covers coordination of sentence modifiers that mistakes a conditional boundary
+-- for pointwise conjunction of antecedent/consequent operators. Other functor
+-- categories and explicit and/or coordination keep their existing behavior.
+-- Recognize licensed type-raising wrappers too: raising the two modifiers must
+-- not provide a route around their boundary obligation.
+pendingModifier :: SSign -> Bool
+pendingModifier sign = ssOpenConditional sign
+  && (plainClauseModifier (ssCat sign)
+      || ssConditionalRaised sign && clauseModifier (ssCat sign))
+
+plainClauseModifier :: CCat -> Bool
+plainClauseModifier (CSlash _ (CAtom "S" _) (CAtom "S" _) _) = True
+plainClauseModifier _ = False
+
+clauseModifier :: CCat -> Bool
+clauseModifier (CSlash _ (CAtom "S" _) (CAtom "S" _) _) = True
+clauseModifier (CSlash d t (CSlash d' t' inner _) _)
+  | d /= d', unifiable t t' = clauseModifier inner
+clauseModifier _ = False
 
 -- | Does a category mention an embedded clause @S[em]@?
 mentionsEm :: CCat -> Bool
