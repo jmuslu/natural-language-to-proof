@@ -1039,3 +1039,5 @@ These reviewed lessons expand the cards above with categories, derivations, type
 - [Relatives and coordination (C6, C8)](sections/design-relatives-coordination.md)
 
 - [Particles and reflexives (C9–C10)](sections/design-particles-reflexives.md)
+
+- [Passives, modals and punctuation (C11–C12)](sections/design-passives-modals-punctuation.md)
