@@ -45,6 +45,7 @@ module NL2Proof.Semantics.CCGSem
   , openTemplate
   , openTemplateWith
   , nameItem
+  , restrictedPronounEntries
   , lemma3sg
   , verbLemma
     -- * Sortal predicates
@@ -199,6 +200,23 @@ localReflexive = Lam "R" (tyGQ ~> tyGQ ~> TyT) (Lam "S" tyGQ
   (App (Var "S") (Lam "x" TyE
     (App (App (Var "R") (liftE x_)) (liftE x_)))))
 
+-- | Meanings for a paired, subject-relative quantified-pronoun construction.
+-- These are not ordinary closed-table categories: the parser must certify the
+-- offered NP head and subject-relative origins before assigning NP/N and N/VP.
+-- Something is deliberately absent until its domain/sortal policy is resolved.
+restrictedPronounEntries :: String -> Maybe (LexItem, LexItem)
+restrictedPronounEntries word = do
+  headTerm <- case map toLower word of
+    "everything" -> Just detAll
+    "someone" -> Just (Lam "P" tyPred1 (Lam "Q" tyPred1
+      (TExists "x" TyE (TAnd (App (pred1 sortalPerson) x_)
+        (TAnd (App p_ x_) (App q_ x_))))))
+    _ -> Nothing
+  let relative = Lam "V" (tyGQ ~> TyT) (Lam "x" TyE
+        (App (Var "V") (liftE x_)))
+  pure (LexTerm headTerm "restricted quantified-pronoun head" Nothing,
+        LexTerm relative "subject relative as restriction property" Nothing)
+
 -- | The closed-class table: @(word, category, entry)@. Lower-case keys. The
 -- pronoun entries take the token position, hence the function.
 closedTable :: Int -> [(String, CCat, LexItem)]
@@ -215,6 +233,9 @@ closedTable i =
      | c <- map cat ["(S\\NP)\\(S\\NP)", "(S\\NP)/(S\\NP)", "(S[adj]\\NP)/(S[adj]\\NP)"] ]
   ++ [ ("if", cat "(S/S)/S[dcl]", LexTerm ifTerm "conditional" Nothing)
      , ("then", cat "S/S", LexTerm sIdentity "conditional consequent marker" Nothing)
+     , ("everything", cat "NP", LexTerm
+          (Lam "Q" tyPred1 (TForall "x" TyE (App q_ x_)))
+          "unrestricted universal pronoun" Nothing)
      , ("something", cat "NP", LexTerm (indefinite sortalThing) "indefinite pronoun (thing)" Nothing)
      , ("someone", cat "NP", LexTerm (indefinite sortalPerson) "indefinite pronoun (person)" Nothing)
      , ("things", cat "N", LexTerm (sortalNoun sortalThing) "sortal noun (thing)" Nothing)
@@ -404,7 +425,7 @@ closedClassWords :: [String]
 closedClassWords =
   [ "the", "all", "every", "each", "a", "an", "some", "no", "is", "are", "does", "do", "not", "if"
   , "himself", "herself", "itself", "themselves", "myself", "yourself"
-  , "yourselves", "ourselves", "oneself", "then", "something", "someone", "things", "people", "and", "or", "it"
+  , "yourselves", "ourselves", "oneself", "then", "everything", "something", "someone", "things", "people", "and", "or", "it"
   , "they", "did", "that", "which", "who" ]
 
 isClosedClass :: String -> Bool
