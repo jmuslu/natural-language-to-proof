@@ -286,6 +286,12 @@ atoms. Test shared versus separate determiners and collective near-neighbors.
 
 ### C7. Inclusive disjunction, exclusive alternatives and neither/nor
 
+**Implemented optional boundary:** `surface-inclusive-v1` licenses directly paired
+VP either/or with actual offered categories and occurrence-bound evidence. Default
+behavior is unchanged. The [paired result](EITHER_POLICY_RESULT.md) records three
+sole-exact gains, one wrong-to-abstention change, and no new wrong readings on
+the frozen208 diagnostic. This does not certify XOR or unrestricted names.
+
 **Forms:** Pronto `P or Q or R`; ProverQA sentence/VP either-or; FOLIO neither-nor.
 Like conjunction, `or:conj` operates on matched categories. VP alternatives share
 the subject: `λV W Q.Q(λx.V(lift(x))∨W(lift(x)))`. A correlative *either*

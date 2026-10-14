@@ -31,46 +31,53 @@ import NL2Proof.Verify.Reported
 main :: IO ()
 main = do
   args <- getArgs
-  let nominalFlags = filter (`elem` ["--nominal-nouns=known-only", "--nominal-nouns=context-unknown"]) args
-  if length args /= length (nub args) || length nominalFlags > 1
+  let eitherFlags = filter (`elem` ["--either-policy=legacy-disabled", "--either-policy=surface-inclusive-v1"]) args
+      nominalFlags = filter (`elem` ["--nominal-nouns=known-only", "--nominal-nouns=context-unknown"]) args
+  if length args /= length (nub args) || length nominalFlags > 1 || length eitherFlags > 1
     then die "duplicate or conflicting options" else pure ()
-  if any (`notElem` ["--hand", "--pos-backoff", "--nominal-nouns=known-only", "--nominal-nouns=context-unknown"]) args
-    then die "usage: nl2proof-fidelity-json [--hand | --pos-backoff] [--nominal-nouns=known-only|context-unknown]"
+  if any (`notElem` ["--hand", "--pos-backoff", "--nominal-nouns=known-only", "--nominal-nouns=context-unknown", "--either-policy=legacy-disabled", "--either-policy=surface-inclusive-v1"]) args
+    then die "usage: nl2proof-fidelity-json [--hand | --pos-backoff] [--nominal-nouns=known-only|context-unknown] [--either-policy=legacy-disabled|surface-inclusive-v1]"
     else pure ()
   if "--hand" `elem` args && "--pos-backoff" `elem` args
     then die "hand and POS modes are separate front ends"
     else pure ()
   if "--hand" `elem` args && not (null nominalFlags)
     then die "hand parser does not accept nominal policy" else pure ()
-  let policy = if "--nominal-nouns=context-unknown" `elem` args then ContextUnknownNouns else KnownNounsOnly
+  if "--hand" `elem` args && not (null eitherFlags)
+    then die "hand parser does not accept either policy" else pure ()
+  let execution = if null eitherFlags then ImplicitLegacy else ExplicitPolicy
+      eitherPolicy = if "--either-policy=surface-inclusive-v1" `elem` args then EitherSurfaceInclusiveV1 else EitherLegacyDisabled
+      policy = if "--nominal-nouns=context-unknown" `elem` args then ContextUnknownNouns else KnownNounsOnly
   choice <- if "--hand" `elem` args then pure (HandLexicon attitudeLexicon) else do
     dir <- ccgbankDataDir
     hPutStrLn stderr "loading CCGbank parser model for meaning fidelity"
     (model,trainingCount) <- loadSemModel dir
     _ <- evaluate (M.size (tmWord (smTags model)))
     if trainingCount == 0 then die "no CCGbank training trees found" else pure ()
-    pure (CCGBankParser model {smPOSBackoff="--pos-backoff" `elem` args, smNominalPolicy=policy})
-  loop choice
+    pure (CCGBankParser model {smPOSBackoff="--pos-backoff" `elem` args, smNominalPolicy=policy, smEitherPolicy=eitherPolicy})
+  loop execution choice
   where die message = hPutStrLn stderr message >> exitFailure
 
-loop :: ParserChoice -> IO ()
-loop choice = do
+data EitherExecution = ImplicitLegacy | ExplicitPolicy
+
+loop :: EitherExecution -> ParserChoice -> IO ()
+loop execution choice = do
   eof <- isEOF
   if eof then pure () else do
     line <- getLine
     let parsed = parseJSON line
         ident = either (const JNull) (maybe JNull id . field "id") parsed
-        errorJSON message = JObj [("id",ident),("error",JStr message),("execution",executionJSON choice)]
-        rendered = renderJSON (either errorJSON id (parsed >>= observe choice))
+        errorJSON message = JObj [("id",ident),("error",JStr message),("execution",executionJSON execution choice)]
+        rendered = renderJSON (either errorJSON id (parsed >>= observe execution choice))
     forced <- try (evaluate (length rendered)) :: IO (Either SomeException Int)
     case forced of
       Left err -> putStrLn (renderJSON (errorJSON (show err)))
       Right _ -> putStrLn rendered
     hFlush stdout
-    loop choice
+    loop execution choice
 
-observe :: ParserChoice -> JValue -> Either String JValue
-observe choice request = do
+observe :: EitherExecution -> ParserChoice -> JValue -> Either String JValue
+observe execution choice request = do
   fields <- maybe (Left "request must be an object") Right (obj request)
   let keys = map fst fields
   if length keys /= length (nub keys) || any (`notElem` ["id","text"]) keys
@@ -84,7 +91,7 @@ observe choice request = do
       nTyped = length (filter (isJust . srForm) sentences)
       nDRS = length (filter (isJust . srDRS) sentences)
   pure $ JObj
-    [ ("schema",JNum 1), ("id",JStr ident), ("execution",executionJSON choice)
+    [ ("schema",JNum 1), ("id",JStr ident), ("execution",executionJSON execution choice)
     , ("sentence_count",count (length sentences))
     , ("parsed_sentences",count nParsed), ("typed_sentences",count nTyped)
     , ("drs_sentences",count nDRS)
@@ -96,9 +103,17 @@ observe choice request = do
     ]
   where required key = maybe (Left (key ++ " must be a string")) Right (field key request >>= str)
 
-executionJSON :: ParserChoice -> JValue
-executionJSON choice = JObj [("schema",JStr "nominal-policy-v1"),("parser",JStr parser),("nominal_nouns",JStr policy)]
+executionJSON :: EitherExecution -> ParserChoice -> JValue
+executionJSON execution choice = JObj ([("schema",JStr schema),("parser",JStr parser),("nominal_nouns",JStr policy)] ++ extra)
   where
+    (schema,extra) = case execution of
+      ImplicitLegacy -> ("nominal-policy-v1",[])
+      ExplicitPolicy -> ("parser-policy-v2",[("either_policy",JStr eitherPolicy)])
+    eitherPolicy = case choice of
+      HandLexicon _ -> "legacy-disabled"
+      CCGBankParser model -> case smEitherPolicy model of
+        EitherLegacyDisabled -> "legacy-disabled"
+        EitherSurfaceInclusiveV1 -> "surface-inclusive-v1"
     (parser,policy) = case choice of
       HandLexicon _ -> ("hand","not-applicable")
       CCGBankParser model -> (if smPOSBackoff model then "pos" else "default",
@@ -108,7 +123,7 @@ count :: Int -> JValue
 count = JNum . fromIntegral
 
 readingJSON :: Int -> Int -> ReadingResult -> JValue
-readingJSON sentence index reading = JObj
+readingJSON sentence index reading = JObj $
   [ ("sentence_id",count sentence), ("index",count index)
   , ("typed",JBool (isJust (rrForm reading)))
   , ("category",JStr (show (sCat (rrSign reading))))
@@ -116,7 +131,10 @@ readingJSON sentence index reading = JObj
   , ("score",maybe JNull JNum (rrScore reading))
   , ("meaning",maybe JNull meaningJSON (rrDRS reading))
   , ("trace",traceJSON (rrTrace reading))
-  ]
+  ] ++ case rrOriginFailure reading of
+    Nothing -> []
+    Just failure -> [("origin_failure",JObj
+      [("kind",JStr "origin-lowering-failure"),("detail",JStr (show failure))])]
 
 meaningJSON :: DRS -> JValue
 meaningJSON drs = JObj

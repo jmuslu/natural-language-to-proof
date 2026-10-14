@@ -47,6 +47,7 @@ library
                       NL2Proof.Syntax.CCGLexicon
                       NL2Proof.Syntax.CCGSemParse
                       NL2Proof.Semantics.CCGSem
+                      NL2Proof.Semantics.OrOccurrence
                       NL2Proof.DRT.Types
                       NL2Proof.DRT.Build
                       NL2Proof.DRT.Canonical
@@ -517,6 +518,56 @@ test-suite nominal-negation-origin
     type:             exitcode-stdio-1.0
     hs-source-dirs:   test
     main-is:          NominalNegationOriginSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Independent optional either scope/origin controls.
+test-suite either-transport-kernel
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          EitherTransportKernelSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Independent optional either scope/origin controls.
+test-suite coordination-layout
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          CoordinationLayoutSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Independent optional either scope/origin controls.
+test-suite either-chart
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          EitherChartSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof, process
+
+-- Independent optional either scope/origin controls.
+test-suite either-carrier
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          EitherCarrierSpec.hs
+    other-modules:    Harness
+    default-language: Haskell2010
+    build-depends:    base, containers, nl2proof
+
+-- Independent optional either scope/origin controls.
+test-suite either-scope-integration
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          EitherScopeIntegrationSpec.hs
     other-modules:    Harness
     default-language: Haskell2010
     build-depends:    base, containers, nl2proof

@@ -382,7 +382,7 @@ Roughly 10 weeks at 6–8 hours a week. Each unit ends with a "predict by hand, 
   - type raising is `λf. f a`.
   Given licensed lexical meanings and valid guarded transitions, these operations compose the meanings. Successful typing alone does not establish fidelity.
 - **Closed-class vs. open-class words.**
-  - Closed-class words carry the logic as hand-written λ-terms: *the, every, no, not, if, that, and, or*. Ordinary *either* remains an unresolved lexical interface.
+  - Closed-class words carry the logic as hand-written λ-terms: *the, every, no, not, if, that, and, or*. Default *either* remains unresolved. Explicit `surface-inclusive-v1` supports bounded directly paired VP either/or with source-bound occurrence evidence; it does not infer XOR. See [paired results](research/linguistics/EITHER_POLICY_RESULT.md).
   - Open-class templates are constrained by category, POS, lexical identity, features and construction state.
   - That's why CCGSem keys closed-class entries on the pair (word, category).
 - **Where meaning gets lost:** punctuation rules, unary rules, multi-word expressions, and words used in categories the templates never anticipated.

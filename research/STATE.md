@@ -1,64 +1,60 @@
 # Research state
 
-- last pushed: e55770f
+Last pushed: 7677a43; pending reviewed source merge b92f219 on astra/research.
 
-Original ASTRA_GOAL remains active; linguistic-design-first overrides phase order. B–H unfinished. **No new model/LLM/answer-benchmark launches** until representative ProverQA >=90% exact/near-zero wrong; gate CLOSED. Local independent fidelity/Explain diagnostics allowed. Owner full-access/no-approval continuation, saved usage resets and useful parallelism authorization persist here and ASTRA_GOAL. Shell works; never supply sandbox_permissions. After this refresh list_agents actually showed root+8 running; not all32 slots tested. Work only astra/research/root and isolated astra/<name> specialist worktrees. No main/tags/rawdata/secrets. Explicit staging, all gates per push, trailer Co-Authored-By: Codex Astra.
+Original ASTRA_GOAL remains active; linguistic design first overrides phase order.
+No new model/LLM/answer benchmarks until representative ProverQA >=90% exact and
+near-zero wrong. Gate CLOSED. Local independent fidelity/Explain audits allowed.
+Owner authorizes full access/no prompts and saved usage resets across restarts.
+Shell verified working; never supply sandbox_permissions. Actual list_agents on
+this refresh observed root plus eight running specialists; not all32 slots tested.
+Root alone STATE/LOG/cabal/integration; workers own separate astra branches/worktrees.
+Never main/tags/raw datasets/secrets. Explicit staging and all gates before push.
 
 ## Next three actions
 
-1. **Active root serial integration: research/runs/gold202-queue.py/log, session16026.** Four independently reviewed gold branches: proofwriter-definite-gold674afe4, prover-conditional-gold57bf9c1, prover-universal-gold104429b, folio-source-goldafdc71b. One merge/allgates/replay/hand/commit/push/archive/remove each. Do NOT start another root merge until complete. Membership extends explicitly per branch, sealed202 observations stay unchanged. Last pushed source cc0a2cb canonical gold admission; subsequent queue commits recorded in log/git.
-2. After queue success, reviewed-followups-queue.py is PREPARED NOT STARTED: nominal-negation-evidence98373b6, nominal-property-plana6c128e, explain-replay-interface95a89d5, particle-next-design2993c8f, prover-panel-contract37b9776, something-origin-planaf00f69, gold-construction-matrixfbf436e, unknown-name-policy38d164f, either-occurrence-designf440c1b. All independently reviewed; source unchanged. Root unstaged NOMINAL_NEGATION_RESULT/FINDINGS Dave-gate corrections await review and explicit staging with nominal-negation-evidence (helper extra mapping). Do not stage these in earlier gold commits.
-3. Continue coherent optional either implementation below. No unused kernel/helper landing. Review complete vertical source and freeze independent gold/predictions before measurement; default must remain byte-for-byte stable. Active failures require truthful origin diagnostic, no type-failure laundering or rescuing missing evidence. No benchmark/model run authorized by design or diagnostics.
+1. Final independent prose approval, explicitly stage and commit current either
+   source merge plus cabal/result/learner docs/STATE/LOG; push origin astra/research.
+   Source/default and optional results already independently approved. No source
+   changes after gates. Default all208 observations byte-identical accepted
+   baseline d3e34d6a;70 exact/36 strictwrong/101 no-parse/1 incomplete. Explicit
+   disabled identical except execution metadata. Enabled73/35/99/1: Nathalia,
+   Mira,Noel sole-exact gains; full bird wrong→no-parse;204 complete records
+   unchanged, no new wrong ANYcontract, no exact regressions or origin failures.
+   Evidence research/runs/either-integration-default and either-policy-*.
+2. Archive ignored worker evidence and remove integrated worktrees only after
+   owned-file/commit verification. Workers resumed notes-only cached-result
+   audits; obtain their final commits before cleanup. Preserve reviewer worktree.
+3. Resume held reviewed-followups-queue.py (remove hold-followups marker only
+   after current merge committed/pushed). Merge one at a time, all gates/replay.
+   Remaining: prover-panel-contract37b9776, something-origin-planaf00f69,
+   gold-construction-matrixfbf436e, unknown-name-policy38d164f,
+   either-occurrence-designf440c1b. Later approved docs plural-modifier-audit,
+   fidelity-order-audit,name-policy-consistency; inspect current heads/reviews.
 
-## Accepted source and evidence
+## Validated release evidence
 
-- cc0a2cb/5c187c9 canonical gold admission: canonical first-reference numbering and unique declarations only at gold admission, never observation/scorer changes.31 Haskell suites1970 checks;111 Python passes/no skips/xfails; build/oracle/Explain/hand4 pass. Independent review733bdb0. Fresh190 all full retained objects/status/selection unchanged65exact32wrong92no-parse1incomplete. Binarydcba130c and observations136c351e identical previous source. Cache research/runs/gold-canonical-integration. Serial hand binary points here.
-- fcd813e nominal negation17a17f9+prereg0613299: actual closed-not origin, bounded is/not/a-an certificate/BwdXComp with noun/name/source/packing/root guards. Default known-only19063/32/94/1→65/32/92/1, only Colin-not-bird/Nora-not-dancer sole-exact;188othersfullobjectsunchanged. Optional68/32/89/1→73/32/84/1 adds Sam/Polly/Dave;185othersunchanged. No trace-only/hardstop/newwrong. Default provisional3-gain prediction missed Dave. No universalnegative190 gold row; independent tests only. Adalynn/Bodhi remainno-parseboth. Reviews133444c/30210f2/9f017b5.
-- Bounded lexical evidence98373b6 reviewedf3ac5c7: DaveNNP11; ostrich absentnoun evidence establishes necessary knownnoun gate; Sam/rompus and Polly/dumpus same. Adalynn/Bodhi nameevidence absent. All4global sourcepairs present, not per-span/offered-category proof. Loaded2000paths1875read125missing, no fullcorpusabsence claim. NominalNegationEvidence tool/proposal/notes and ignored evidence preserved on cleanup.
-- Frozen190 SHA ee8f3aef38b6925cc626da95d2bf65e6b3a7eb9baa342a5d021ca9cc8c23e564,190IDs188texts. Sealed default nominal-negation-integration and optional nominal-negation-context-unknown; all ordered2000inputs unchanged. Original replay source was190; now202 baseline below, explicit membership is authoritative.
-- Fresh frozen202 research/runs/expanded202-baseline approvedfe4bcc2; SHA4746a3dc5e1af9d00aaad59034f08438da5e54547c8e040ba6a3063f6f4493f8,202IDs200texts. Same known-onlybinary, source/input beforeafter identical, seal complete.69exact36wrong96no-parse1incomplete. Original190 complete retained objects/status/selected unchanged. New12: PWdefinite3exact; ProverexplicitXOR4no-parse; Proveruniversal2wrong; FOLIONo1exact2wrong. FOLIOwrong2 ONLY list-conjunct order, correct scope/claims; athletic horses order+horses/horse; full bird genuine spurious either restrictor/both tail. Output-level first differences, not proved earliest chart cause. Mixed-contract counts NOT representative acceptance. Proverstarter10/24 unchanged, gateclosed.
-- Replay research/runs/integration-fidelity/replay.py now expanded202-baseline, exact dataset-membership.json stagedgoldbytes/source/binary/fullfrozenresponse coverage/execution bound, contract panels separate. After every source change fresh producer and advance replay+hand pointer. Actual protocol tests use NOMINAL_PROTOCOL_EXPORTER, never accept skips. Legacy caches explicitly unrecorded.
-- All7 learner sections C1–C13 and STUDY_PLAN correction merged/pushed through579db46; DESIGN links sections with checkpoint caveat. Inventory ProverQA/PW110/Pronto/FOLIO and design deliverables complete, coverage/gold gaps honest. Earlier accepted source d83adaa(protocol),1b9fc27(names),fedfbfd(nominalv2),f8871d5(Everyone),169c761(nounlemma),59955b6(particles),a09c0aa(nominalv1),7641b51(tokenizer). Rejected broadnominalc2bff11 quarantined; never reactivate.
+All36 Haskell suites/2138checks,131 Python/no skips or xfails, build,oracle,
+Explain,hand4,privatecarrier17 and real Explain policy controls PASS.
+Default session69235 and optional sessions38275/10027 complete; no producer active.
+Binary21c2c992bb7b141a9529c3ea2631f5d665cde99a9f333719ce961b64f279dcf9.
+Frozen208 IDs206texts SHA1639b17ef41c4b905a10b1bdd7160adb1b415aca36c29f10d6254bca723fdb89.
+All2000 ordered training input hashes unchanged,1875 readable125 missing.
+Review source dc84e7a,default9b9174e,disabledde35fcc,enabledcdbb96d.
+Replay helper now either-integration-default, verified either-release replay;
+serial helper hand binary advanced likewise. Both actual exporter envs required.
+No scoring/gold changes. Existing capitalization name heuristics retained;
+corpus export does not expose full COr provenance tree. Origin proof supported
+by separate reviewed source/synthetic tests. Explain replay plan still deferred.
 
-## Specialists and pending coherent either implementation
+## Preservation and memory
 
-All workers use full-access shell/own worktrees and branch commits; root alone STATE/LOG/cabal/integration. No worker corpus loads authorized; use caches/corpus-free actual API controls.
-
-- design_names: either-chart-impl owns CCGSemParse.hs,newEitherChartSpec,notes and mechanical appendNothing positionalSSign fixtures only. Reviewed lexicalcertificate7c9b137: exact private offered origins/featurecategories/Pending→EitherLeft→directCoordApply contiguoussource binding, complete packing/root guards. API EitherPolicy EitherLegacyDisabled/EitherSurfaceInclusiveV1; smEitherPolicy; ssOrState opaque accessor. Coordinates kernel assembly/carrier.
-- design_relatives: either-carrier-impl owns Pipeline.hs, Build.hs explicit occurrence-aware entry sharing existing lowering, Trace.hs one OriginLoweringFailure constructor, newtests/notes. Reviewed carrier8d72070: Legacy+enabledOrdinary preserve rootFor score/notes exactly; Active samecandidate score/notes/evidence, orderedfailures, allandonly OR provenance consumed. No duplicate lowerer, rrForm retained when originfailure/DRSabsent.
-- design_quantifiers: either-protocol-impl owns test/fidelity/Export.hs,run.py,fidelity.py,replay_integrity.py,newtests/notes. Gold-admission5c dependencycherry-picked. Reviewed plana6c97e8: omittedflag exact nominal-policy-v1; explicitdisabled/enabled parser-policy-v2; handv2invalid, nominalindependent, report/replayallfrozenresponses bound. Until actual APIs available enabled fails explicitly beforeload, no echo pretending support. Existing aggregate typed1/drs0 is type_failure; preserve metric but diagnostic truthfully originfailure.
-- design_operators: either-transport-kernel owns new OrOccurrence module/test/notes; source9f1a90d, actualGQwrappertestsb7cf68a, checklistaudit359f50b, newassembleEvidencea58756344pass awaitingreview. Shared actual Term traversal, complete OR path map, no passive recapture/mode downgrade, child snapshot/prefix/collision checks. No source wiring by this worker.
-- design_particles: coordination-layout owns sharedcoordTerm refactor063f4c7 approved isolated (112oldoutputsidentical,24newtests), plus EitherScopeIntegrationSpec cee17ca9actualconstructor/kernel tests. Extending chart/lowering tests when APIs compile. ActualVPtypeGQ→t/sharedsubjectaboveOR, not pointwiseVP witnessduplication. No unused helper landing.
-- gold_coverage: either-inclusive-gold81703a1 independent3authored directpositive surface-inclusive-v1 controls approved beforeobservation; boundaryaudite13692e approved. OUTSIDE202, noobservations. Existing7nestedoperator controls remain obligations; explicitXOR cannot be relabeledinclusive. Need freeze before newsource measurement.
-- inventory_pronto: folio-passive-gold8cac3c4 sourceaudit approved; now authorized1unchangedsource +2authored sameexplicit bibliographic-author contract. One clean title/bytext repeated3records is ONE independent source; past/generic remainblocked. No fixture yet at snapshot; review beforefreeze.
-- review: own review worktree latestfe4bcc2 ornewer, wake followup_task foractualreviews (send_message doesnotwakecompleted). Keep alive until work done; do notcleanup prematurely. All concrete eitherdesigns approved, actualcoherent runtime source NOT yetapproved.
-
-## Operations and preservation
-
-Host15GiB; measured Explain163072KiB85.21s, largestreader298240KiB6m22s impliesfloor(10GBdecimal/peak)=32. Conservative globalcap3 retained using scripts/with-ccgbank-slot.py and ~/astra-wt/.ccgbank-slots; all loaders/readers wrapper required. Rootgates only currently; no benchmark/models.
-
-Helpers research/runs/integrate-reviewed.py and source-trial.py enforce pin/pathallowlist, gates, explicitstage thenpush; source-trial nevercommits. Gold202 helper explicit memberships; allfuturegates mustsucceed. Cleanup archivesignoredresearch/runs and dirty/untracked byteverified beforegitworktreeremove; neverremoveunmergedworktree. Root has original dirty unrelated bench/reasoning/{report.py,solver.py,test_report.py,test_solver.py,llm.py,test_llm.py},research/SEAMS.md,research/{plot-risk-coverage.py,requirements-figures.txt}. Preserve all; no stash/reset-all/add-all. Snapshotarchives under ignoredresearch/runs/worktree-transfer,worktree-archives,worktree-evidence. Previousstates state-before-learner-refresh.md and state-before-202-refresh.md retained.
-
-- Active serial integration: prover-universal-gold (104429b), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/prover-universal-gold; committing/pushing now.
-
-- Active independent known-only208 diagnostic: research/runs/baseline208.py and expanded208-baseline, alongside serial202goldqueue. Freeze independently approved208IDs206texts SHA1639b17ef41c4b905a10b1bdd7160adb1b415aca36c29f10d6254bca723fdb89; exact202+3authoredinclusiveOR+3declaredcontextpassive. No source edits/newmodel/benchmark. Review results before membership expansion.
-
-- Active serial integration: folio-source-gold (afdc71b), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/folio-source-gold; committing/pushing now.
-
-- Scheduled after202-followups.py waits successful gold202queue, then reviewed208gold2branches (e13692e,56fb675) and nine reviewed followups, each fullgates/replay/push/cleanup. DO NOT start competing merge.208baseline reviewedcomplete70/36/101/1, all202entireobjectsunchanged. Source208cache selected only after202queuecomplete.
-
-- Active serial integration: either-inclusive-gold (e13692e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/either-inclusive-gold; committing/pushing now.
-
-- Active serial integration: folio-passive-gold (56fb675), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/folio-passive-gold; committing/pushing now.
-
-- Gold202queue completed/pushed78760a5. Active after202-followups.py session23033/log now208gold admissions then nine docs;5453a9a inclusivegold pushed. Read current log for exact activebranch, no competing root merge. FUTURE plural-modifier-audita9a5948 and fidelity-order-audit25867c5 independently reviewed docs not yet scheduled.
-
-- Active serial integration: nominal-negation-evidence (98373b6), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/nominal-negation-evidence; committing/pushing now.
-
-- Active serial integration: nominal-property-plan (a6c128e), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/nominal-property-plan; committing/pushing now.
-
-- after202-followups driver ended on transient origin500 after local490d3e2; retry push succeeded, nominal-property-plan cleaned. Resuming remaining reviewed-followups-queue.py with ancestryskip and between-branch hold marker support. No tests/source failure.
-
-- Active serial integration: explain-replay-interface (95a89d5), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/explain-replay-interface; committing/pushing now.
-
-- Active serial integration: particle-next-design (2993c8f), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/particle-next-design; committing/pushing now.
+Global loader/reader token cap3, scripts/with-ccgbank-slot.py,
+~/astra-wt/.ccgbank-slots. First Explain163072KiB; largestreader298240KiB
+(floor10GB/peak32); conservative3 retained. Latest optionalpeak177280KiB.
+Preserve original dirty bench/reasoning/{report.py,solver.py,test_report.py,
+test_solver.py,llm.py,test_llm.py},research/SEAMS.md,
+research/{plot-risk-coverage.py,requirements-figures.txt}. No stash/reset/add-all.
+State history in ignored research/runs/state-before-either-release.md;
+worktree evidence archives retained. Original B–H unfinished. Inventories and
+CONSTRUCTIONS/DESIGN delivered; further construction fidelity work remains.

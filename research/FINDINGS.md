@@ -32,6 +32,14 @@ contracts and do not estimate population fidelity. The six newest controls add
 one exact unmarked OR; paired either and declared-context passive controls do
 not parse under the unchanged default.
 
+The coherent [optional either result](linguistics/EITHER_POLICY_RESULT.md) keeps
+all208 default observations byte-identical. Explicit surface-inclusive-v1 gives
+73 exact,35 strict wrong,99 no-parse and one incomplete: three sole-exact gains
+and one wrong-to-abstention change, with204 complete responses unchanged and no
+new wrong result under any contract. All36 Haskell suites (2,138 checks),131
+Python checks, oracle/Explain/hand controls pass. This bounded optional capability
+retains existing name heuristics and does not open the benchmark/model gate.
+
 [The paired nominal-policy result](linguistics/NOMINAL_POLICY_RESULT.md) compares
 the earlier protocol binary on that frozen190-case panel. The optional context-unknown policy
 repairs five previously unparsed classifications, giving68/32/89/1 without a

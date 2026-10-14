@@ -22,7 +22,7 @@ sign :: String -> Term -> Prov -> SSign
 sign category meaning provenance = SSign
  { ssCat=cc category, ssSem=meaning, ssProv=provenance, ssScore=0
  , ssCoord=Nothing, ssStructural=Nothing, ssOpenConditional=False
- , ssConditionalRaised=False, ssList=Nothing, ssFused=FusedPlain, ssNotes=[] }
+ , ssConditionalRaised=False, ssList=Nothing, ssFused=FusedPlain, ssOrState=Nothing,ssNotes=[] }
 marker :: SSign
 marker = (sign "conj" (Con "but" TyT) (leaf 20 "but")) {ssStructural=Just "but"}
 join :: String -> SSign -> SSign -> Maybe SSign

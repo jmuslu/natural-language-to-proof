@@ -2881,3 +2881,39 @@ Result explain-replay-interface: all merged-result gates passed,scorer contracts
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/particle-next-design; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/particle-next-design.
 
 Result particle-next-design: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+Coordinator source assembly: astra/either-integration a77fdc8 is a local unreleased integration branch, merging protocol d2df79e and exact approved test/design bytes froma587563/6b22096/95646ec/a6c97e8/8d72070/7c9b137/4e4b5ef. No source bytes changed in assembly. Reviewer requires terminal-period hardening and Explain optin handling before aggregate source approval. Root docs reached7677a43 and cleanly held before prover-panel-contract; no active root merge or producer. Full root cabal registration/gates remain pending.
+
+### 2026-10-14 — source trial either-integration (b92f219)
+
+Prediction: Omitted either flag must preserve nominal-policy-v1 and all208 complete default responses exactly. Explicit disabled/enabled modes remain unmeasured by this default trial; actual certificate categories may be unavailable. No exact regression/new wrong or provenance loss allowed; independent complete-result review before paired optional diagnostics. Frozen208 cases and separate semantic contracts retained; previous accepted binary expanded208-baseline. Commands: merge --no-ff --no-commit astra/either-integration; register none; cabal build all; cabal test all; oracle; token-wrapped Explain and fresh208; scorer contracts; hand4. Evidence research/runs/either-integration-default. Independent result review before commit/push; no model/answerbenchmark.
+
+Default coherent either trial complete: all36 Haskell suites2138checks,131 Python checks without skips/xfails, oracle/Explain/hand4/privatecarrier17/Explain-policy controls pass. All208 complete observation records BYTE-IDENTICAL to accepted baseline (SHA d3e34d6a53a6b20f315536a189dfed5c54e52bbd1dd86733f1d563c56fd3cea8),70/36/101/1. Current source replay verified; independent results review pending.
+
+Optional comparison driver hardening before launch: explicit require failures (not Python assert), verify_replay unique fullcoverage/config/hash checks on current and historical cc0a2cb source snapshots, historical producer seal verification, exact default whole-object equality, strict no-overwrite, known-only208 only; dead context-unknown branches removed. `python3 -O research/runs/either-policy-trial.py legacy-disabled --preflight-only` checks guards without model load. Any newly wrong result under ANY contract must be enumerated as a hard-stop for coverage expansion/acceptance claims, including incompatible historical exclusive contracts; never silently exempted, relabeled or pooled away. A contract mismatch does not authorize benchmark use or gate relaxation. Optional trial still awaits independent default-result/driver approval.
+
+Independent reviewer approved default208 result and hardened-O preflight. Candidate binary21c2c992, all208observationbytes identicald3e34d6a. Authorized bounded explicit legacy-disabled THEN surface-inclusive-v1 diagnostics only, not release. Starting exact command `python3 research/runs/either-policy-trial.py legacy-disabled`; prediction same outcomes/fullreadingobjects as implicitdefault, only declaredv2execution metadata differs. Sharedtoken, measuredRSS, all2000inputs/source bound. Enabled will wait verified disabled result; anynewwrong ANYcontract remains expansionhardstop.
+
+Explicit legacy-disabled v2 completed: seal/input/source/config verification passed,70/36/101/1. All208 entire response objects equal implicitdefault after removing ONLY top-level execution metadata; comparison-default.json records zerochanges. Proceeding approved sequential `python3 research/runs/either-policy-trial.py surface-inclusive-v1` under fixed preregistration; allnewwrong acrossanycontract enumerated, no acceptanceclaim.
+
+
+### 2026-10-14 — optional either paired result and release
+
+Restart shell full-access verified; list_agents actually observed root plus eight
+running specialists performing independent cached-result audits in own worktrees.
+Enabled command completed with73exact/35strictwrong/99no-parse/1incomplete.
+All208 full responses compared against disabled, excluding execution metadata
+only: Nathalia/Mira/Noel no-parse→sole-exact inclusiveOR; full bird wrong→no-parse;
+204 unchanged. No new wrong under ANYcontract, exact regression, trace-only
+change or origin failure. This is three exact gains and one abstention, not a
+universal-meaning repair. Existing unknown-name heuristics remain. Corpus export
+cannot prove complete COr origin trees; separate synthetic/source controls do.
+Independent review cdbb96d confirms seals/results. Prediction of default invariance
+held; optional success was explicitly uncertain until actual offered categories.
+Default all36suites2138checks,131Python(no skips/xfails),build/oracle/Explain/hand4/
+privatecarrier17/Explain-policy checks passed. No source edits after these gates.
+Optional disabled peak169728KiB; enabled177280KiB, below previous298240KiB max;
+shared conservative cap3 retained. No new model or answer-benchmark launches.
+Advanced replay/hand helper pointers to new default; verified full source/binary/
+gold/config/index-bound replay `python3 research/runs/integration-fidelity/replay.py
+either-release`. All case contracts remain separate; representative gate CLOSED.

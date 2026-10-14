@@ -98,6 +98,8 @@ data DiagKind
     NoParse
   | -- | A term failed the semantic type check.
     TypeCheckFailure
+  | -- | A typed reading could not lower its occurrence-local operator evidence.
+    OriginLoweringFailure
   deriving (Eq, Ord, Show)
 
 data Diagnostic = Diagnostic

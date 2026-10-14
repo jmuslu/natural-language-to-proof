@@ -24,6 +24,7 @@
 module NL2Proof.Pipeline
   ( -- * Results
     ReadingResult(..)
+  , OriginFailure(..)
   , SentenceResult(..)
   , PipelineResult(..)
     -- * Running
@@ -39,6 +40,7 @@ module NL2Proof.Pipeline
   , renderSentenceResult
   ) where
 
+import Data.Char (toLower)
 import Data.List (find, intercalate, nub, sort)
 import qualified Data.Map as M
 
@@ -69,7 +71,17 @@ data ReadingResult = ReadingResult
   , rrDRS   :: Maybe DRS
   , rrScore :: Maybe Double
   , rrTrace :: Trace
+  , rrOriginFailure :: Maybe OriginFailure
   }
+
+-- | A typed semantic reading is retained even when its origin-aware DRS fails.
+data OriginFailure
+  = ChartOriginFailure OrCarrierFailure
+  | LoweringOriginFailure OrLoweringFailure
+  | OriginSnapshotMismatch
+  | InvalidOriginSource [Int]
+  | ReusedOriginMarker [Int] [Int]
+  deriving (Eq, Show)
 
 data SentenceResult = SentenceResult
   { srSentence :: Sentence
@@ -224,7 +236,7 @@ processHand lexicon src sent =
           , beNotes = const mempty
           , beScore = const Nothing
           }
-        src sent (null unknown) parses
+        src sent (null unknown) (map legacyCandidate parses)
 
 -- | The CCGbank path: case-preserving tokens with punctuation, the semantic
 -- chart, then the shared back end. Root candidates are distinct meanings, best
@@ -301,7 +313,7 @@ processCCG model src sent =
                 (maybe [] ssNotes (rootFor sg))
           , beScore = fmap ssScore . rootFor
           }
-        src sent (null unknown) parses
+        src sent (null unknown) (zipWith (ccgCandidateFor model) roots parses)
 
 unknownWord :: SourceId -> String -> Token -> Trace
 unknownWord src msg t =
@@ -325,10 +337,36 @@ data BackEnd = BackEnd
   , beScore     :: Sign -> Maybe Double
   }
 
--- | Selection, verification and translation: shared by both front ends.
-backEnd :: BackEnd -> SourceId -> Sentence -> Bool -> [Sign] -> (Maybe Sign, Maybe Term, Maybe DRS, [ReadingResult], Trace)
-backEnd be src sent wordsCovered parses = (chosen, form, drs, readings, parseTrace <> typeTrace)
+-- Exact root-owned active payload. Nothing deliberately keeps legacy callbacks
+-- for disabled and enabled Ordinary candidates, including their rootFor policy.
+data BackendCandidate = BackendCandidate
+  { bcSign :: Sign
+  , bcActive :: Maybe (Double, Trace, Either OrCarrierFailure (Term, M.Map [Int] OrOrigin))
+  }
+legacyCandidate :: Sign -> BackendCandidate
+legacyCandidate sg = BackendCandidate sg Nothing
+
+ccgCandidateFor :: SemModel -> SSign -> Sign -> BackendCandidate
+ccgCandidateFor model root sg
+  | smEitherPolicy model == EitherLegacyDisabled = legacyCandidate sg
+  | otherwise = case pairedOrOrigins root of
+      Right Nothing -> legacyCandidate sg
+      Left failure -> active (Left failure)
+      Right (Just payload) -> active (Right payload)
   where
+    active payload = BackendCandidate sg (Just (ssScore root, rootNotes root, payload))
+rootNotes :: SSign -> Trace
+rootNotes root = foldMap
+  (\(st,p) -> note Decision
+    { decKind=stKind st, decChoice=stChoice st
+    , decAlternatives=stAlternatives st, decWhy=stWhy st, decProv=p })
+  (ssNotes root)
+
+-- | Selection, verification and translation: shared by both front ends.
+backEnd :: BackEnd -> SourceId -> Sentence -> Bool -> [BackendCandidate] -> (Maybe Sign, Maybe Term, Maybe DRS, [ReadingResult], Trace)
+backEnd be src sent wordsCovered candidates = (chosen, form, drs, readings, parseTrace <> typeTrace)
+  where
+    parses = map bcSign candidates
     sentProvFallback =
       provRule "sentence" [ProvLex src (sentSpan sent) (sentText sent)]
 
@@ -370,13 +408,20 @@ backEnd be src sent wordsCovered parses = (chosen, form, drs, readings, parseTra
     -- Translation is independent of selection. Keeping it lazy means ordinary
     -- callers still pay only for the selected reading; all-reading consumers
     -- request every candidate through exactly the same operations.
-    readings = map translate parses
+    readings = map translate candidates
     (form, drs, typeTrace) = case readings of
       [] -> (Nothing, Nothing, mempty)
       first:_ -> (rrForm first, rrDRS first, rrTrace first)
 
-    translate sg =
-      let result f d tr = ReadingResult sg f d (beScore be sg) tr
+    translate candidate =
+      let sg = bcSign candidate
+          score = case bcActive candidate of
+            Nothing -> beScore be sg
+            Just (sc,_,_) -> Just sc
+          notes = case bcActive candidate of
+            Nothing -> beNotes be sg
+            Just (_,tr,_) -> tr
+          result f d tr = ReadingResult sg f d score tr Nothing
           failure message = result Nothing Nothing $ flag Diagnostic
             { diagKind = TypeCheckFailure
             , diagMsg = message
@@ -386,12 +431,50 @@ backEnd be src sent wordsCovered parses = (chosen, form, drs, readings, parseTra
         Right ty
           | ty == catTy (sCat sg) ->
               let nf = normalize (sSem sg)
-                  (box, postTrace) = bePostDRS be sg (toDRS (beProvIndex be sg) (sProv sg) nf)
-              in result (Just nf) (Just box) (beNotes be sg <> postTrace)
+                  lowered = case bcActive candidate of
+                    Nothing -> Right (toDRS (beProvIndex be sg) (sProv sg) nf)
+                    Just (_,_,payload) -> lowerActive src sent (beProvIndex be sg) (sProv sg) nf payload
+              in case lowered of
+                   Right raw -> let (box,postTrace)=bePostDRS be sg raw
+                                in result (Just nf) (Just box) (notes <> postTrace)
+                   Left err -> (result (Just nf) Nothing (notes <> flag Diagnostic
+                     {diagKind=OriginLoweringFailure,diagMsg=show err,diagProv=sProv sg}))
+                     {rrOriginFailure=Just err}
         Right ty -> failure
           ("meaning has type " ++ show ty ++ " but category "
             ++ show (sCat sg) ++ " demands " ++ show (catTy (sCat sg)))
         Left err -> failure (renderTypeError err)
+
+-- Source validation examines only supplied origins against the original tokens;
+-- it never scans the sentence to discover an either for a semantic formula.
+lowerActive :: SourceId -> Sentence -> ProvIndex -> Prov -> Term
+            -> Either OrCarrierFailure (Term,M.Map [Int] OrOrigin)
+            -> Either OriginFailure DRS
+lowerActive src sent idx fallback nf payload = do
+  (snapshot,origins) <- either (Left . ChartOriginFailure) Right payload
+  if snapshot == nf then Right () else Left OriginSnapshotMismatch
+  _ <- foldl check (Right M.empty) (M.toAscList origins)
+  let provenance origin = case ooEitherProv origin of
+        Nothing -> provRule "or-occurrence" [ooOrProv origin]
+        Just marker -> provRule "paired-or-occurrence" [marker,ooOrProv origin]
+  either (Left . LoweringOriginFailure) Right
+    (toDRSWithOrOrigins idx fallback nf (M.map provenance origins))
+  where
+    tokens = casedTokens (spanStart (sentSpan sent)) (sentText sent)
+    valid word (ProvLex source span surface) =
+      source == src && map toLower surface == word &&
+      any (\t -> tokSpan t == span && tokText t == surface) tokens
+    valid _ _ = False
+    check previous (path,origin) = do
+      used <- previous
+      if valid "or" (ooOrProv origin) then Right () else Left (InvalidOriginSource path)
+      case ooEitherProv origin of
+        Nothing -> Right used
+        Just marker
+          | not (valid "either" marker) -> Left (InvalidOriginSource path)
+          | otherwise -> case M.lookup marker used of
+              Just earlier -> Left (ReusedOriginMarker earlier path)
+              Nothing -> Right (M.insert marker path used)
 
 --------------------------------------------------------------------------------
 -- Ambiguity detection

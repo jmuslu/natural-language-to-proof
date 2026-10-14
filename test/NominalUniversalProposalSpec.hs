@@ -75,7 +75,7 @@ sign category term origin role = SSign
  {ssCat=cc category,ssSem=term,ssProv=origin,ssScore=0
  ,ssCoord=Nothing,ssStructural=Nothing,ssOpenConditional=False
  ,ssConditionalRaised=False,ssList=Nothing,ssFused=FusedPlain
- ,ssNominal=role,ssNotes=[]}
+ ,ssNominal=role,ssOrState=Nothing,ssNotes=[]}
 article, noun, copula, predicateSign, pending, subjectNoun, determiner, subject, complete :: SSign
 article=sign "N/N" (Lam "P" tyPred1 (Var "P")) (leaf (Span 13 14) "a") (NominalArticle cert)
 noun=sign "N" (pred1 "animal") origin (NominalNoun (known origin (cc "N")))
