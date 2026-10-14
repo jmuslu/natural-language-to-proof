@@ -109,6 +109,17 @@ Additional proposed requirements:
    indirectly. No descriptive/equative complement, relative, coordination,
    report, generic N→NP or discourse-propagation extension follows.
 
+**Unresolved identity enforcement boundary.** The current `lift(Zorlan)` and
+`DConst "Zorlan"` have no document namespace. Keeping a private HypothesizedName
+origin does not stop identical raw-label constants from fusing across documents.
+The source-local identity controls below therefore require either enforced
+single-document isolation all the way through export, graph admission and
+reasoning, or a separately reviewed namespaced identity representation. Neither
+is implemented or established by this proposal. A caller assertion in metadata
+without downstream isolation is insufficient. Do not enable this option in a
+multi-document graph until that representation/admission boundary is resolved;
+do not claim present raw-label constants satisfy the proposed identity scope.
+
 This is more than a parser boolean: invocation, response, report, replay and
 selected claim provenance need the contract identity and policy. Do not silently
 mark the resulting claim as ordinary dictionary-backed English, Reported or

@@ -21,3 +21,9 @@ can be tested by mirroring a proposed predicate. The prospective control matrix
 requires independently minted origins when/if an API is authorized. Existing
 nominal/name suites remain untouched. Validation: git diff --check; explicit
 stage only these two docs, independent review requested before integration.
+
+Reviewer correction: current raw-label DConst has no document namespace;
+private origin metadata does not enforce source-local identity. Proposal now
+requires enforced single-document isolation through export/admission/reasoning,
+or a separately reviewed namespace representation. Both remain unresolved;
+no current implementation or source-local guarantee is claimed.
