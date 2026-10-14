@@ -45,6 +45,10 @@ module NL2Proof.Syntax.CCGSemParse
   , fusedRootAllowed
   , NominalCertificate(..)
   , NominalRole(..)
+  , NominalNounPolicy(..)
+  , NominalNounOrigin(..)
+  , NounAdmission(..)
+  , UnknownNominalContext(..)
   , nominalTransition
   , nominalUnaryAllowed
   , nominalRootAllowed
@@ -56,7 +60,7 @@ module NL2Proof.Syntax.CCGSemParse
 
 import Control.Exception (IOException, try)
 import Control.Monad (foldM)
-import Data.Char (isUpper, toLower)
+import Data.Char (isAlpha, isLower, isUpper, toLower)
 import Data.List (foldl', isPrefixOf, sortBy)
 -- Strict maps for counting; the chart table must be the lazy map (it is
 -- defined by self-reference, as in "NL2Proof.Syntax.CCGParse").
@@ -87,7 +91,9 @@ import NL2Proof.Trace
 
 -- | Everything the parser learned from CCGbank, plus its search parameters.
 data SemModel = SemModel
-  { smTags         :: TagModel
+  { smNominalPolicy :: NominalNounPolicy
+    -- ^ Explicit opt-in for context-licensed unknown nouns; default keeps v1.
+  , smTags         :: TagModel
   , smPOS          :: POSModel
   , smRules        :: Rules
   , smBeta         :: Double  -- ^ supertagger β-beam (relative to the top tag)
@@ -153,7 +159,7 @@ data SemModel = SemModel
 -- and adjective lists keep the cheaper search.
 defaultSemModel :: TagModel -> POSModel -> Rules -> Set.Set (CCat, CCat) -> SemModel
 defaultSemModel tm pm rs seen =
-  SemModel tm pm rs 0.01 20 40 1.0 20 True False seen True
+  SemModel KnownNounsOnly tm pm rs 0.01 20 40 1.0 20 True False seen True
     (M.fromList (tmPrior tm)) (fromIntegral (sum (map snd (tmPrior tm))))
     (Set.fromList [ reportingLemma w | (w, cs) <- M.toList (tmWord tm), any (thatClauseCat . fst) cs ])
     False
@@ -461,16 +467,35 @@ data NominalCertificate = NominalCertificate
   , ncArticleCategory :: CCat
   } deriving (Eq, Ord)
 
+-- A model policy, not a per-sign permission to ignore lexical evidence.
+data NominalNounPolicy = KnownNounsOnly | ContextUnknownNouns deriving (Eq, Ord, Show)
+
+data UnknownNominalContext
+  = DirectUniversalSubject Prov CCat
+  | PairedNominalComplement NominalCertificate
+  deriving (Eq, Ord)
+
+data NounAdmission
+  = DictionaryCommonNoun
+  | ContextLicensedUnknown UnknownNominalContext
+  deriving (Eq, Ord)
+
+data NominalNounOrigin = NominalNounOrigin
+  { nnoProv :: Prov
+  , nnoCategory :: CCat
+  , nnoAdmission :: NounAdmission
+  } deriving (Eq, Ord)
+
 data NominalRole
   = NominalPlain
-  | NominalNoun Prov CCat
+  | NominalNoun NominalNounOrigin
   | NominalUniversalDeterminer Prov CCat
-  | NominalUniversalSubject Prov CCat Prov CCat
+  | NominalUniversalSubject Prov CCat NominalNounOrigin
   | NominalArticle NominalCertificate
-  | NominalPredicate NominalCertificate Prov CCat
+  | NominalPredicate NominalCertificate NominalNounOrigin
   | NominalCopula NominalCertificate
-  | NominalPending NominalCertificate Prov CCat
-  | NominalComplete NominalCertificate Prov Prov
+  | NominalPending NominalCertificate NominalNounOrigin
+  | NominalComplete NominalCertificate Prov NominalNounOrigin NominalNounOrigin
   deriving (Eq, Ord)
 
 nominalN, nominalNP, nominalArticleSource, nominalCopulaSource,
@@ -624,15 +649,32 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
       | (i,(t,original)) <- zip [0..] (zip toks fusedAnnotated) ]
     nominalCapability i t l
       | lxCat l == nominalN, nameStatus m (i==0) (tokText t) == NotName
-      , let ps = map fst (posCounts (smPOS m) (lookupForm m (i==0) (tokText t)))
       , any (`elem` ["NN","NNS"]) ps
       , not (any (`elem` ["JJ","JJR","JJS","NNP","NNPS"]) ps)
-      = NominalNoun pv (lxCat l)
+      = NominalNoun (NominalNounOrigin pv (lxCat l) DictionaryCommonNoun)
+      | smNominalPolicy m == ContextUnknownNouns
+      , lxCat l == nominalN, nameStatus m (i==0) (tokText t) == NotName
+      , null ps, not (null word), all (\c -> isAlpha c && isLower c) word
+      , not (isClosedClass word)
+      , [context] <- Set.toList (Set.fromList (unknownContexts i))
+      = NominalNoun (NominalNounOrigin pv (lxCat l) (ContextLicensedUnknown context))
       | lxCat l == nominalArticleSource
       , map toLower (tokText t) `elem` ["every","each"]
       = NominalUniversalDeterminer pv (lxCat l)
       | otherwise = NominalPlain
-      where pv = ProvLex src (tokSpan t) (tokText t)
+      where
+        pv = ProvLex src (tokSpan t) (tokText t)
+        word = tokText t
+        ps = map fst (posCounts (smPOS m) (lookupForm m (i==0) word))
+    -- Context hypotheses refer to actual adjacent lexical occurrences. Their
+    -- selected operands are checked again when the capability is consumed.
+    unknownContexts i =
+      [ DirectUniversalSubject (ProvLex src (tokSpan t) (tokText t)) (lxCat det)
+      | i > 0, let t = toks !! (i-1)
+      , map toLower (tokText t) `elem` ["every","each"]
+      , det <- ordinary !! (i-1), lxCat det == nominalArticleSource ]
+      ++ [ PairedNominalComplement certificate
+         | (certificate,_,_) <- nominalPairs, i == ncArticleIndex certificate + 1 ]
     lexs = map (map (\(l,_,_) -> l)) annotated
 
     -- Sound category overapproximation of the two licensed semantic steps.
@@ -719,7 +761,7 @@ semParse m src toks = SemParse roots lexs maxCats (quoteTrace <> relativeTrace)
              -- The role belongs to the closed lexical entry, not a search for
              -- an if token anywhere in a completed constituent.
              SSign c (finish tm) pv s Nothing Nothing (isConditionalIntroducer (tokText t) c) False Nothing fused nominal
-               ([ (x, pv) | Just x <- [st] ] ++ fusedNotes fused pv)
+               ([ (x, pv) | Just x <- [st] ] ++ fusedNotes fused pv ++ nominalOriginNotes nominal pv)
            LexStructural _ ->
              SSign c (Con (tokText t) TyT) pv s Nothing (Just (tokText t)) False False Nothing FusedPlain NominalPlain []
 
@@ -982,12 +1024,25 @@ nominalReanalysis = Stipulation "nominal-universal-reanalysis"
   ["ordinary existential argument article"]
   "source nominal copula/article categories and occurrence certificate; root-only direct applications"
 
+-- Only inferred lexical choices add this note; ordinary paths may discard an
+-- optional capability, but cannot erase a mandatory pending construction role.
+nominalOriginNotes :: NominalRole -> Prov -> [(Stipulation,Prov)]
+nominalOriginNotes (NominalNoun origin) pv = case nnoAdmission origin of
+  DictionaryCommonNoun -> []
+  ContextLicensedUnknown context -> [(Stipulation "context-unknown-noun"
+    "direct offered N interpreted as a common-noun property under ContextUnknownNouns"
+    ["KnownNounsOnly: no nominal capability without dictionary NN/NNS"]
+    ("no POS evidence; lowercase alphabetic non-name; " ++ case context of
+      DirectUniversalSubject _ _ -> "direct Every/each lexical determiner context"
+      PairedNominalComplement _ -> "occurrence-bound is+a/an nominal complement"),pv)]
+nominalOriginNotes _ _ = []
+
 nominalActive :: NominalRole -> Bool
 nominalActive role = case role of
   NominalPlain -> False
-  NominalNoun _ _ -> False
+  NominalNoun _ -> False
   NominalUniversalDeterminer _ _ -> False
-  NominalUniversalSubject _ _ _ _ -> False
+  NominalUniversalSubject _ _ _ -> False
   _ -> True
 
 nominalUnaryAllowed :: SSign -> Bool
@@ -995,14 +1050,14 @@ nominalUnaryAllowed = not . nominalActive . ssNominal
 
 nominalRootAllowed :: SSign -> Bool
 nominalRootAllowed sign = case ssNominal sign of
-  NominalComplete _ _ _ -> ssCat sign == nominalS
+  NominalComplete _ _ _ _ -> ssCat sign == nominalS
   role -> not (nominalActive role)
 
 nominalSeenPair :: SemModel -> SSign -> SSign -> Bool
 nominalSeenPair model left right = case (ssNominal left,ssNominal right) of
-  (NominalArticle c,NominalNoun _ _) ->
+  (NominalArticle c,NominalNoun _) ->
     sourcePair model (ncArticleCategory c) nominalN
-  (NominalCopula c,NominalPredicate d _ _) -> c==d
+  (NominalCopula c,NominalPredicate d _) -> c==d
     && sourcePair model (ncCopulaCategory c) nominalNP
   _ -> fusedSeenPair model left right
 
@@ -1011,33 +1066,41 @@ nominalSeenPair model left right = case (ssNominal left,ssNominal right) of
 -- minting above is the trusted source of roles in the actual chart.
 nominalTransition :: Combinator -> CCat -> SSign -> SSign -> Maybe NominalRole
 nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
-  (NominalUniversalDeterminer dp dc,NominalNoun np nc)
-    | comb==FwdApp, out==nominalNP, dc==nominalArticleSource, nc==nominalN
+  (NominalUniversalDeterminer dp dc,NominalNoun origin)
+    | let np=nnoProv origin; nc=nnoCategory origin
+    , comb==FwdApp, out==nominalNP, dc==nominalArticleSource, nc==nominalN
     , ssCat left==dc, ssCat right==nc, ssProv left==dp, ssProv right==np
     , lexical dp, lexical np, clean left, clean right
-    -> Just (NominalUniversalSubject dp dc np nc)
-  (NominalArticle c,NominalNoun np nc)
-    | comb==FwdApp, out==nominalN, valid c, clean left, clean right
+    , subjectOrigin dp dc origin
+    -> Just (NominalUniversalSubject dp dc origin)
+  (NominalArticle c,NominalNoun origin)
+    | let np=nnoProv origin; nc=nnoCategory origin
+    , comb==FwdApp, out==nominalN, valid c, clean left, clean right
     , ssCat left==nominalArticleInternal, ssCat right==nominalN, nc==nominalN
     , ssProv left==articleLeaf c, ssProv right==np, lexical np
-    , after c (ncArticleSpan c) np
-    -> Just (NominalPredicate c np nc)
-  (NominalCopula c,NominalPredicate d np nc)
-    | comb==FwdApp, out==nominalVP, c==d, valid c, clean left, clean right
+    , after c (ncArticleSpan c) np, complementOrigin c origin
+    -> Just (NominalPredicate c origin)
+  (NominalCopula c,NominalPredicate d origin)
+    | let np=nnoProv origin; nc=nnoCategory origin
+    , comb==FwdApp, out==nominalVP, c==d, valid c, clean left, clean right
     , ssCat left==nominalCopulaInternal, ssCat right==nominalN, nc==nominalN
     , ssProv left==copulaLeaf c
     , ssProv right==provRule "FwdApp" [articleLeaf c,np]
-    -> Just (NominalPending c np nc)
-  (NominalUniversalSubject dp dc np nc,NominalPending c complement cc)
-    | comb==BwdApp, out==nominalS, valid c, clean left, clean right
+    , complementOrigin c origin
+    -> Just (NominalPending c origin)
+  (NominalUniversalSubject dp dc subject,NominalPending c complement)
+    | let np=nnoProv subject; nc=nnoCategory subject
+          cp=nnoProv complement; cc=nnoCategory complement
+    , comb==BwdApp, out==nominalS, valid c, clean left, clean right
     , ssCat left==nominalNP, ssCat right==nominalVP
     , dc==nominalArticleSource, nc==nominalN, cc==nominalN
     , ssProv left==provRule "FwdApp" [dp,np]
-    , ssProv right==provRule "FwdApp" [copulaLeaf c,provRule "FwdApp" [articleLeaf c,complement]]
+    , ssProv right==provRule "FwdApp" [copulaLeaf c,provRule "FwdApp" [articleLeaf c,cp]]
     , provSources (ssProv left)==[ncSource c]
     , maybe False ((<=spanStart (ncCopulaSpan c)) . spanEnd) (provSpan (ssProv left))
-    -> Just (NominalComplete c (ssProv left) complement)
-  (role@(NominalComplete _ _ _),NominalPlain)
+    , subjectOrigin dp dc subject, complementOrigin c complement
+    -> Just (NominalComplete c (ssProv left) subject complement)
+  (role@(NominalComplete _ _ _ _),NominalPlain)
     | comb==PunctRight, out==nominalS, ssCat left==nominalS
     , ssStructural right==Just ".", ssCat right==CAtom "." [], lexical (ssProv right)
     , ssFused left==FusedPlain, ssFused right==FusedPlain
@@ -1045,6 +1108,19 @@ nominalTransition comb out left right = case (ssNominal left,ssNominal right) of
   (a,b) | not (nominalActive a || nominalActive b) -> Just NominalPlain
   _ -> Nothing
   where
+    subjectOrigin dp dc origin = case nnoAdmission origin of
+      DictionaryCommonNoun -> True
+      ContextLicensedUnknown (DirectUniversalSubject ep ec) -> dp==ep && dc==ec
+        && provSources dp==provSources (nnoProv origin)
+        && case (provSpan dp,provSpan (nnoProv origin)) of
+             (Just d,Just n) -> spanEnd d<=spanStart n
+             _ -> False
+      _ -> False
+    complementOrigin c origin = case nnoAdmission origin of
+      DictionaryCommonNoun -> True
+      ContextLicensedUnknown (PairedNominalComplement d) -> c==d
+        && after c (ncArticleSpan c) (nnoProv origin)
+      _ -> False
     clean sign = ssCoord sign==Nothing && ssStructural sign==Nothing
       && ssFused sign==FusedPlain && not (ssOpenConditional sign)
       && ssList sign==Nothing && coherent sign

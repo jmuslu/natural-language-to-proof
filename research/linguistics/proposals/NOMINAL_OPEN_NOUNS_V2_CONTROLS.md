@@ -1,8 +1,10 @@
-# Frozen-v1 acceptance controls for proposed unknown nominal v2
+# Unknown nominal v2: independent controls and explicit policy
 
-This is a test/design artifact only. It preserves `8e2a6ad` v1 source and its
-approved rejection of unknown POS; it does not authorize a v2 production change
-before the coordinator's v1 gates. The prior design is `38b260d`.
+The original red-control sections below describe the pre-implementation design.
+After v1 passed its gates and was pushed as `a09c0aa`, the coordinator authorized
+the bounded implementation on this branch. The default policy remains v1
+`KnownNounsOnly`; `ContextUnknownNouns` is an explicit model-level opt-in.
+The prior design is `38b260d`; no population fidelity result is claimed here.
 
 The new standalone `test/NominalOpenNounV2Spec.hs` uses a miniature tag dictionary
 with source categories supplied explicitly, not inferred by observing parser
@@ -130,8 +132,9 @@ Every consuming transition validates the origin context against its actual
 operands and lexical spans/source IDs. An unknown subject license cannot be
 reused as a predicate license, or vice versa; a complement license cannot move
 to another copula/article pair. Known-vs-inferred and distinct-context payloads
-remain in Eq/Ord packing identity automatically through NominalRole. No role is
-erased to Plain to escape validation. Existing all-sign fields and unrelated
+remain in Eq/Ord packing identity automatically through NominalRole. No mandatory construction role is
+erased to Plain to escape validation. Optional lexical noun/determiner/subject
+capabilities may still follow unrelated ordinary routes, as in v1. Existing all-sign fields and unrelated
 combinators need no new boolean; existing full-root and active-role guards remain.
 
 Add one logged decision for the inferred lexical reading with its source N,
@@ -172,3 +175,27 @@ implementation must report these inferred-origin cases separately and pass
 selected/all-retained reading fidelity, not count the existence of a typed
 candidate as success. This remains a proposal pending v1 gates and reviewer
 approval of the concrete v2 changes.
+
+
+## Implemented candidate and separate measurement proposal
+
+The candidate introduces the typed policy/origin interface above and preserves
+both noun origins through completion and packing. Direct controls now exercise
+the formerly missing API: 58 assertions pass, including explicit default-policy
+rejection, selected/all-retained meanings, cross-context/source/pair rejection,
+known/inferred packing at each stage, and inferred-choice explanations. The
+existing v1 suite retains every expectation; only constructor payloads change
+mechanically to `DictionaryCommonNoun`. Its 59 assertions pass.
+
+No exporter, scorer, CLI, gold or runtime dataset is modified. A **separate,
+not implemented** measurement interface is proposed for review: add an explicit
+exporter option `--nominal-context-unknown` that sets exactly
+`smNominalPolicy = ContextUnknownNouns` after model loading. Omission retains
+KnownNounsOnly; an incompatible hand-parser invocation should fail explicitly.
+The exporter response and run manifest must record the selected policy, and
+replay integrity must bind that mode along with the binary/source/case hashes.
+The scorer's experiment-mode plumbing needs independent review; do not infer
+mode from successful outputs, gold labels or cached results. Parser requests
+remain sentence-only. Compare separately sealed v1/v2 panels without pooling
+policy modes or claiming typed coverage as exact fidelity. This proposal does
+not authorize corpus loading or fresh measurement on the worker branch.

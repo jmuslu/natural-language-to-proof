@@ -46,3 +46,28 @@ payload inside existing NominalRole, carrying known/inferred subject/complement
 contexts through completion and existing packing. No added all-sign boolean,
 source implementation, fake POS, Q unwrapping or altered old negative assertion.
 Future origin-sum tests are explicitly pending API introduction, not claimed run.
+
+V1 accepted/pushed a09c0aa; coordinator authorized implementation. Merged current
+research into this branch preserving controls. New typed-origin adversarial
+controls authored before production changes, plus explicit KnownNounsOnly
+retention. Prediction: compiling against v1 fails on absent policy/origin API;
+previous42-run remains semantic red evidence. Implementation may mechanically
+adapt old test constructors but may not alter old assertions or unknown-v1 veto.
+
+
+Typed API controls failed compilation against v1 as predicted (absent
+smNominalPolicy/nnoAdmission), retaining the earlier semantic 27/42 red result.
+Implemented the reviewed optional model policy and typed noun origins; no
+Export/scorer/CLI/gold changes. Final direct v2 result: 58/58 PASS. Existing
+v1 constructor payloads adapted mechanically, with all 59 assertions unchanged
+and passing. Default KnownNounsOnly retains the old unknown-POS rejection.
+Cross-context/source/pair guards, all-stage packing and two inferred lexical
+explanations are now checked. Full cabal test all --offline is running as a
+compatibility check; no corpus/model processes are launched. This note records
+that ongoing run, not a retroactive prediction.
+
+Full `cabal test all --offline --test-show-details=direct` completed exit 0:
+all 23 registered suites PASS. Ignored log:
+research/runs/nominal-v2/all-tests.log. `git diff --check` clean. The separate
+v2 standalone suite is not added to coordinator-owned cabal configuration.
+Candidate remains opt-in only; no source-loading or population fidelity claim.

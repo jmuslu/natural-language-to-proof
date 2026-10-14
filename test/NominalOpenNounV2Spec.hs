@@ -7,6 +7,7 @@ import Harness
 import NL2Proof.DRT.Canonical
 import NL2Proof.Pipeline
 import NL2Proof.Provenance
+import NL2Proof.Semantics.CCGSem (stKind)
 import NL2Proof.Semantics.Lambda
 import NL2Proof.Syntax.CCGBank (parseCCGCat)
 import NL2Proof.Syntax.CCGRules (Combinator(..))
@@ -19,7 +20,7 @@ import NL2Proof.Verify.Reported (splitClaims)
 
 cc = either error id . parseCCGCat
 base :: SemModel
-base = (defaultSemModel tags poses (Rules [] []) Set.empty) {smAlpha=0,smSeenRules=False}
+base = (defaultSemModel tags poses (Rules [] []) Set.empty) {smAlpha=0,smSeenRules=False,smNominalPolicy=ContextUnknownNouns}
  where
   fixed=[("every","NP[nb]/N","DT"),("each","NP[nb]/N","DT"),
          ("is","(S[dcl]\\NP)/NP","VBZ"),("a","NP[nb]/N","DT"),
@@ -60,7 +61,7 @@ sign category meaning provenance role=SSign
  ,ssFused=FusedPlain,ssNominal=role,ssNotes=[]}
 article=sign "N/N" (Lam "P" tyPred1 (Var "P"))
  (ProvLex (SourceId "v2-origin") (Span 13 14) "a") (NominalArticle certificate)
-noun=sign "N" (pred1 "blicket") origin (NominalNoun origin (cc "N"))
+noun=sign "N" (pred1 "blicket") origin (NominalNoun (NominalNounOrigin origin (cc "N") DictionaryCommonNoun))
 safety =
  [expect "same property without lexical origin capability is not unwrapped" $
     nominalTransition FwdApp (cc "N") article (noun {ssNominal=NominalPlain})==Nothing
@@ -117,4 +118,68 @@ main=runChecks "open-nominal-v2 independent red proposal"
              && null(posCounts (smPOS priorOnly) w)
              && any ((==cc "N") . fst) (offeredTags priorOnly False w)) ["dax","blicket"])]
  ++classificationWith priorOnly "Every dax is a blicket." "dax" "blicket"
- ++safety)
+ ++[expect "explicit v1 policy still rejects missing POS"
+       (not(newRoute (base {smNominalPolicy=KnownNounsOnly}) "Every dax is a blicket."))]
+ ++[expect "completed unknown route retains both noun admission origins"
+       (any inferredComplete (roots base "Every dax is a blicket."))
+   ,expect "unknown lexical choices are logged at both occurrences"
+       (any ((==2) . length . filter ((=="context-unknown-noun") . stKind . fst) . ssNotes)
+         (roots base "Every dax is a blicket."))
+   ,expect "known nouns do not claim unknown lexical evidence"
+       (all (null . filter ((=="context-unknown-noun") . stKind . fst) . ssNotes)
+         (roots base "Every cat is an animal."))]
+ ++typedOriginChecks ++safety)
+
+inferredComplete s=case ssNominal s of
+ NominalComplete _ _ a b -> inferred a && inferred b
+ _ -> False
+ where inferred origin=case nnoAdmission origin of ContextLicensedUnknown{}->True;_->False
+
+-- Typed evidence is independent of the property lambda, never recovered from Q.
+typedOriginChecks :: [Check]
+typedOriginChecks =
+ let known=NominalNounOrigin origin (cc "N") DictionaryCommonNoun
+     inferred=known {nnoAdmission=ContextLicensedUnknown (PairedNominalComplement certificate)}
+     wrongPair=inferred {nnoAdmission=ContextLicensedUnknown
+         (PairedNominalComplement (certificate {ncCopulaIndex=7,ncArticleIndex=8}))}
+     dp=ProvLex (SourceId "v2-origin") (Span 0 5) "Every"
+     subjectEvidence=known {nnoAdmission=ContextLicensedUnknown (DirectUniversalSubject dp (cc "NP[nb]/N"))}
+     det=sign "NP[nb]/N"
+          (Lam "N" tyPred1 (Lam "P" tyPred1 (TForall "x" TyE
+            (TImp (App (Var "N") (Var "x")) (App (Var "P") (Var "x"))))))
+          dp (NominalUniversalDeterminer dp (cc "NP[nb]/N"))
+     asN o=noun {ssNominal=NominalNoun o}
+     pProv=provRule "FwdApp" [ssProv article,origin]
+     predSign o=sign "N" (pred1 "blicket") pProv (NominalPredicate certificate o)
+     copProv=ProvLex (SourceId "v2-origin") (Span 10 12) "is"
+     copula=sign "(S[dcl]\\NP)/N"
+          (Lam "P" tyPred1 (Lam "Q" tyGQ (App (Var "Q") (Var "P"))))
+          copProv (NominalCopula certificate)
+     pendingProv=provRule "FwdApp" [copProv,pProv]
+     pending o=sign "S[dcl]\\NP" (Lam "Q" tyGQ (App (Var "Q") (pred1 "blicket")))
+          pendingProv (NominalPending certificate o)
+     subject o=sign "NP[nb]" (Lam "P" tyPred1 (App (Var "P") (entity "fixture")))
+          dp (NominalUniversalSubject dp (cc "NP[nb]/N") o)
+     completed o=sign "S[dcl]" (App (pred1 "quiet") (entity "fixture"))
+          pProv (NominalComplete certificate dp known o)
+ in [expect "matching inferred complement context captures lexical P"
+        (nominalTransition FwdApp (cc "N") article (asN inferred)==Just (NominalPredicate certificate inferred))
+    ,expect "wrong paired context rejects same lexical P"
+        (nominalTransition FwdApp (cc "N") article (asN wrongPair)==Nothing)
+    ,expect "subject license cannot be reused by paired article"
+        (nominalTransition FwdApp (cc "N") article (asN subjectEvidence)==Nothing)
+    ,expect "complement context cannot mint direct universal subject"
+        (case nominalTransition FwdApp (cc "NP[nb]") det (asN inferred) of
+           Just NominalUniversalSubject{} -> False;_ -> True)
+    ,expect "subject with mismatched determiner occurrence cannot mint capability"
+        (let mismatch=subjectEvidence {nnoAdmission=ContextLicensedUnknown
+                (DirectUniversalSubject (ProvLex (SourceId "elsewhere") (Span 0 5) "Every") (cc "NP[nb]/N"))}
+         in case nominalTransition FwdApp (cc "NP[nb]") det (asN mismatch) of
+              Just NominalUniversalSubject{} -> False;_ -> True)
+    ,expect "copula rechecks retained inferred complement certificate"
+        (nominalTransition FwdApp (cc "S[dcl]\\NP") copula (predSign wrongPair)==Nothing)
+    ,expect "copula preserves the actual inferred origin through pending"
+        (nominalTransition FwdApp (cc "S[dcl]\\NP") copula (predSign inferred)==Just (NominalPending certificate inferred))]
+    ++ [expectEq ("packing preserves known/inferred origin at "++name) 2
+         (length(packCell 20 [make known,make inferred]))
+       |(name,make)<-[("noun",asN),("subject",subject),("predicate",predSign),("pending",pending),("complete",completed)]]
