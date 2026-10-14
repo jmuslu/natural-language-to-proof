@@ -21,8 +21,10 @@ specified independently in preorder, including nested OR/NOT and repeated atoms.
 Either markers target only the scoped OR. Indefinite antecedent references remain
 accessible to consequent pronouns; names introduce no synthetic existential.
 Noun heads precede modifiers. No no-determiner occurs (global no=negexists policy
-is unchanged). Copular nominals are direct predicates; expert researcher is read
-as researcher plus expert under the declared extensional diagnostic fragment.
+is unchanged). Copular nominals are direct predicates. Reviewer rejected plain expert(x)
+for the subsective expert researcher source. The diagnostic now explicitly adapts
+that source to tall researcher, an intersective modifier; the original subsective
+construction remains unresolved and outside this diagnostic set.
 
 Selection leaves modal/temporal, not-necessarily-both, causality, events, particles,
 and discourse anaphora outside this small representable diagnostic set. In
@@ -39,5 +41,14 @@ Repeat result: `validate_case` passes all ten rows, two per construction family;
 IDs unique and every OR has a valid complete marker path. Expected claims were
 specified as independent ordered lists, not derived with claimsOfDRS or by
 walking the DRS. The schema check does not certify lexical or pragmatic choices;
-review must assess expert researcher, participial determined as a dispositional
-adjective, and the declared coordination bracketing. No parser run occurred.
+review must assess participial determined as a dispositional adjective and the
+declared coordination bracketing. No parser run occurred.
+
+Reviewer correction before repeat schema validation: changed expert researcher
+to explicitly adapted tall researcher, preserving conditional/OR/pronoun shape
+without conflating subsectivity with intersection. Counts now six exact sentences
+and four disclosed adaptations. Localized Goofy/Cupcake notes. Prediction: all ten
+schemas and source/adaptation references remain valid; no parser measurement.
+Result: ten schemas and ten input-only source locators pass; all six exact cases
+match their source text. Four adaptations have explicit rationale. No source
+labels/proofs or parser outputs were read during this correction.
