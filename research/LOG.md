@@ -2443,3 +2443,15 @@ Result nominal-envelope: all merged-result gates passed,scorer contracts (counts
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/abbreviation-design; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/abbreviation-design.
 
 Result abbreviation-design: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — serial integration prover-occurrence-strata (698a187)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/prover-occurrence-strata; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/prover-occurrence-strata.
+
+### 2026-10-14 — continuation runtime and nominal preflight
+
+Read STATE then ASTRA_GOAL; full-access shell commands succeed without sandbox overrides. Runtime list_agents confirms root plus eight simultaneously running specialists after followup_task restarts. New tasks use isolated branches/worktrees and disjoint proposal/test/notes ownership. No configuration-cap inference. Existing serial docs/gold queue continues; no second coordinator merge.
+
+Nominal-universal8e2a6ad authorized preflight completed89.03s: all167 statuses and selected meanings unchanged (49exact26wrong91no-parse1incomplete), zero coverage gain. Candidate source and binary manifests checked by worker; independent reviewer verifying evidence before root merged-result trial. Source remains frozen. No model or answer-benchmark launches.
+
+Result prover-occurrence-strata: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
