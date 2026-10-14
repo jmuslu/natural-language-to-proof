@@ -1,5 +1,22 @@
 # Everyone N-origin proposal
 
+## Current status after accepted NP release
+
+The historical premise below is superseded by accepted Everyone NP release
+f8871d5: all six authored strict-person controls and one source relative became
+exact. No remaining accepted example has demonstrated that an original bare-N-only
+offer is the next blocker. The synthetic N-only fixtures demonstrate a proposed
+capability, not present need. Implementation is **DEFERRED**, with no source
+authorization. Preserve this proposal and its historical predictions/results;
+do not infer that its original baseline describes the accepted parser.
+
+Reviewer also requires any future justified origin work to reuse the private
+lexicalChoices origin architecture, rather than the proposed parallel public
+LexSign field. A newly identified original-N-only case and review are prerequisites
+to revisiting that API. No source, tests or gold changed in this status update.
+
+## Historical proposal and observations
+
 Created isolated astra/everyone-n-origin from currentresearch2d1cae6, preserving
 NP-only branch ecd75dd. Shell works; STATE then GOAL read. No production source
 or existing gold edited. First-step source still awaits coordinator trial; second
