@@ -1,0 +1,12 @@
+Bob says that the cat is not red.
+Bob likes and Anne hates the cat.
+The cat is round.
+The cat is kind.
+Every cat that is red is big.
+The cat is red. It is big.
+Bob knows that the cat is red.
+Bob added that the cat is red.
+Bob likes the cat and the dog.
+The cat is red, boasted Bob.
+Bob sees that the cat is red.
+:q

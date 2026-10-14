@@ -36,3 +36,7 @@ __pycache__/
 
 # Claude Code local state (agent worktrees, settings)
 .claude/
+
+# Autonomous research: local logs, raw runs, and isolated tool environments
+research/runs/
+research/.venv/
