@@ -32,3 +32,12 @@ and scope/semantic suites remain passing; any difference is investigated as a
 regression, not silently relabeled. Command: cabal test all --offline
 --test-show-details=direct; log research/runs/composition-features/tests.log.
 Build/test currently running while source candidate is sent for review.
+
+Full local corpus-free suite completed PASS: all17 suites,1270 checks
+(1246 counted via suite summaries plus24 quantifier checks whose test prints
+individual PASS lines). Standalone composition16/16 PASS remains additional.
+Reviewer approved all4 concrete call orientations and retained whole-category
+specialize guard. Fused specialist independently reports prospective combined
+fixture89/89 PASS versus its unchanged standalone3 failures; that is cross-branch
+compatibility evidence, not our own corpus or production integration result.
+Root still must run merged gates and fresh frozen-gold fidelity before push.
