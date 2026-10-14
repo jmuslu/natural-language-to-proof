@@ -1,7 +1,7 @@
 # Research state
 
 - Original ASTRA_GOAL active. OWNER linguistic-design-first redirect overrides phase order. Saved usage resets/full-access/no-approval continuation authorized here and ASTRA_GOAL. Shells work; eight actual specialist tasks accepted in isolated worktrees, no claim32 exercised.
-- Branch astra/research, last pushed: 01786b6. Accepted core872f082 removes3wrong FOLIOnegative-relative readings to no-parse, no exact regressions. Accepted fused c409f22 passes89focusedcontrols but changes no status/selectedmeaning in154gold. Accepted reflexive61f52d8 improves7wrong→exact. CONSTRUCTIONS/DESIGN delivered and updated; all gold extensions integrated serially with gates.
+- Branch astra/research, last pushed: 183f0ec. Accepted core872f082 removes3wrong FOLIOnegative-relative readings to no-parse, no exact regressions. Accepted fused c409f22 passes89focusedcontrols but changes no status/selectedmeaning in154gold. Accepted reflexive61f52d8 improves7wrong→exact. CONSTRUCTIONS/DESIGN delivered and updated; all gold extensions integrated serially with gates.
 - Next three actions: (1) finish replay integrity hardening, independently review it, then complete pending modifier-order merge; (2) resume serial approved docs queue with gates per merge; (3) freeze/review expanded independent gold and trial tokenizer/nominal-universal candidates after source review, fresh fidelity and gates.
 - Last source accepted8086f08 coordination; newest pushed docs2a0df16 linguistic-findings, preceded65e2823 semanticcontracts and1eb363e contractreporting. Modifier-order all gates nowpassed; hardened actual154 replay normal/-O preserves all case objects. Completing merge then replayverifier026c173 branch integration before docsqueue resumes. research/runs/docs-queue.log.
 - Audit5894cd0 found6 synthetic integrity holes in ignoredreplayhelper (observations/duplicates/frozen cases/-O assertions); actual154cache verified consistent, no actualcorruption claim. Worker fidelity-seal-audit implements portable verifier+producerhash under review. Rootreplay nowdelegates reviewed verifier026c173 (temporary ignoredcopy untilbranchmerge); original saved replay-before-hardening.py. Never label oldobservations producersealed; retrospectiveaudit only.
@@ -30,3 +30,7 @@
 - New source candidates in ownworktrees: token-boundaries37controls and source reviewed trial, fulltestsongoing; nominal-universal-trial17cb295 redplan0/9 then concreteguardreview beforeimplementation. New inputstrata698a187 reviewapproved: easy2029/500 medium4867/500 hard8949/500.
 
 - Active serial integration: fidelity-seal-audit (026c173), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/fidelity-seal-audit; committing/pushing now.
+
+- Replayhardening183f0ec pushed allgates77Python75pass2xfail. Expanded167 reviewedf599b96: original154 unchanged, additions2exact+11noparse. Currentcache expanded-gold167/fresh.json withproducerobservationdigest; current requested14fixtures still154 untileachnewgoldmerge. Resume driver docs-queue-resume.py/log serial13approvedbranches then source token821ea12/nominal8e2a6ad. No pendingrootmerge beforedriverlaunch.
+
+- Active serial integration: name-ambiguity (bd30b1d), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/name-ambiguity; committing/pushing now.
