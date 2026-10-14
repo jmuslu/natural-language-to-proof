@@ -1031,3 +1031,5 @@ record their stated checkpoints; this result supplies the newer bounded evidence
 These reviewed lessons expand the cards above with categories, derivations, typed meanings, DRS and claim scope, current divergences, and Boxer/ccg2lambda comparisons. Proposed rules remain distinct from accepted behavior. Each lesson records its stated evidence checkpoint; subsequent optional noun-policy measurements are reported in [the paired result](NOMINAL_POLICY_RESULT.md), without changing the default policy.
 
 - [Names and nominal predication (C1–C2)](sections/design-names-nominals.md)
+
+- [Quantifiers and determiners (C3)](sections/design-quantifiers.md)
