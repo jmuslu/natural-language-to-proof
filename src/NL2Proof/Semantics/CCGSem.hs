@@ -57,6 +57,9 @@ module NL2Proof.Semantics.CCGSem
   , composeTerm
   , coordinatorOp
   , coordTerm
+  , CoordOp(..)
+  , CoordLayout(..)
+  , coordTermLocated
   , unarySem
   ) where
 
@@ -594,9 +597,44 @@ coordinatorOp w = case map toLower w of
 -- not round/, two existentials where the sentence has one. Lowering the
 -- subject to an entity variable keeps one.
 coordTerm :: (Term -> Term -> Term) -> Ty -> Term -> Term -> Maybe Term
-coordTerm op ty0 a b = go ty0 (0 :: Int) []
+coordTerm op ty0 a b = fst <$> coordConstruct combine ty0 a b
+  where combine (left, _) (right, _) = (op left right, [])
+
+-- | The located API deliberately permits only operators whose binary node
+-- and child positions are known. The arbitrary callback API above is unchanged.
+data CoordOp = CoordAnd | CoordOr deriving (Eq, Ord, Show)
+
+-- | Structural addresses in the returned, PRE-normalization term. Unary
+-- children use 0; binary children use 0/1 (App function/argument, connective
+-- left/right). These are compatible with OrOccurrence.Path = [Int], without
+-- introducing a dependency on the optional occurrence-transport kernel.
+-- The child paths locate the ORIGINAL supplied terms, beneath their generated
+-- applications, not merely the applied conjuncts. No lexical license is implied.
+data CoordLayout = CoordLayout
+  { clTerm :: Term
+  , clOperatorPath :: [Int]
+  , clLeftPath :: [Int]
+  , clRightPath :: [Int]
+  } deriving (Eq, Show)
+
+coordTermLocated :: CoordOp -> Ty -> Term -> Term -> Maybe CoordLayout
+coordTermLocated choice ty a b = do
+  (term, paths) <- coordConstruct combine ty a b
+  case paths of
+    [operatorPath, leftPath, rightPath] ->
+      Just (CoordLayout term operatorPath leftPath rightPath)
+    _ -> Nothing
   where
-    go TyT _ args = Just (wrap args (op (applyAll a args) (applyAll b args)))
+    op = case choice of CoordAnd -> TAnd; CoordOr -> TOr
+    combine (left, lp) (right, rp) = (op left right, [[], 0:lp, 1:rp])
+
+-- Shared actual constructor path for both APIs. Metadata travels alongside
+-- each constructor when it is built; it is never recovered by formula search.
+coordConstruct :: ((Term, [Int]) -> (Term, [Int]) -> (Term, [[Int]]))
+               -> Ty -> Term -> Term -> Maybe (Term, [[Int]])
+coordConstruct combine ty0 a b = go ty0 (0 :: Int) []
+  where
+    go TyT _ args = Just (wrap args (combine (applyAll a args) (applyAll b args)))
     go (TyFun d r) n args = go r (n + 1) (args ++ [(n, d)])
     go TyE _ _ = Nothing
     go TyS _ _ = Nothing
@@ -604,17 +642,21 @@ coordTerm op ty0 a b = go ty0 (0 :: Int) []
     argVar n = "c" ++ show n
     entVar n = "e" ++ show n
 
-    applyAll f args =
-      apply f [ if d == tyGQ then liftE (Var (entVar n)) else Var (argVar n)
-              | (n, d) <- args ]
+    applyAll f args = foldl applyOne (f, [])
+      [ if d == tyGQ then liftE (Var (entVar n)) else Var (argVar n)
+      | (n, d) <- args ]
+    applyOne (f, paths) x = (App f x, 0:paths)
 
     wrap args body =
       let scoped = foldr (\(n, d) acc ->
                             if d == tyGQ
-                              then App (Var (argVar n)) (Lam (entVar n) TyE acc)
+                              then scope n acc
                               else acc)
                          body args
-      in foldr (\(n, d) acc -> Lam (argVar n) d acc) scoped args
+      in foldr (\(n, d) (term, paths) ->
+                   (Lam (argVar n) d term, map (0:) paths)) scoped args
+    scope n (term, paths) =
+      (App (Var (argVar n)) (Lam (entVar n) TyE term), map ([1,0]++) paths)
 
 -- | Meaning of a unary type-change @from -> to@, when its shape fixes one.
 --
