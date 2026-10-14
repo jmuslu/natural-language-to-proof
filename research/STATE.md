@@ -30,3 +30,5 @@
 - Active serial integration: design-operators (e4dceb6), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-operators; committing/pushing now.
 
 - Active serial integration: design-relatives (4d3e569), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-relatives; committing/pushing now.
+
+- Active serial integration: design-particles (6142c34), preserve dirty work; all gates/fidelity passed in research/runs/serial-merges/design-particles; committing/pushing now.
