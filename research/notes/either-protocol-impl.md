@@ -98,3 +98,10 @@ unusable until coordinator registration, so actual module probes explicitly use
 GHC -package-env - with local src/test paths (global containers only); hiding an
 installed package inside cabal exec was insufficient. Optimized focused suite
 20/20 PASS (/tmp/either-vertical-optimized-final2.log), no skips/expected failures.
+Full Python suite131/131 PASS with both exporter variables pointed to the
+source-built actual binary (/tmp/either-vertical-all-final2.log), no skips or
+expected failures. Coordinator requested internal ExplicitLegacy rename to
+ExplicitPolicy because both explicit modes now use it; this is wire-neutral.
+Rename-focused20/20 PASS (/tmp/either-vertical-rename.log). Names hardening
+checkpoint e6408b0 now cherry-picked unchanged as7d7a4a5; final direct build and
+focused wire regression rerun follows that exact dependency.

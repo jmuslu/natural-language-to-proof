@@ -186,7 +186,7 @@ class ActualExporterEitherProtocol(unittest.TestCase):
         # attempted; malformed request rejection must precede model access.
         default='(CCGBankParser (SemModel {smPOSBackoff=False,smNominalPolicy=KnownNounsOnly,smEitherPolicy=EitherLegacyDisabled}))'
         pos='(CCGBankParser (SemModel {smPOSBackoff=True,smNominalPolicy=ContextUnknownNouns,smEitherPolicy=EitherLegacyDisabled}))'
-        expression='do { mapM_ (putStrLn . renderJSON) [executionJSON ExplicitLegacy '+default+', executionJSON ExplicitLegacy '+pos+']; loop ExplicitLegacy '+default+' }'
+        expression='do { mapM_ (putStrLn . renderJSON) [executionJSON ExplicitPolicy '+default+', executionJSON ExplicitPolicy '+pos+']; loop ExplicitPolicy '+default+' }'
         root=Path(__file__).resolve().parents[2]
         result=subprocess.run(['ghc','-package-env','-','-isrc',
             'test/fidelity/Export.hs','-e',expression],cwd=root,
@@ -216,7 +216,7 @@ class ActualExporterEitherProtocol(unittest.TestCase):
                 ':module *Main *NL2Proof.Pipeline *EitherFixture',
                 'let emit value = putStrLn ("PROBE:" ++ renderJSON value)',
                 'let choice = CCGBankParser fixtureModel',
-                'emit (either (error . show) id (observe ExplicitLegacy choice (JObj [("id",JStr "ok"),("text",JStr fixtureText)])))',
+                'emit (either (error . show) id (observe ExplicitPolicy choice (JObj [("id",JStr "ok"),("text",JStr fixtureText)])))',
                 'let rootSign = head fixtureRoots',
                 'let sentence = Sentence (Span 0 (length fixtureText)) fixtureText',
                 'let backend = BackEnd "test-order" (const M.empty) (\\_ d -> (d,mempty)) (const mempty) (const (Just (-999)))',
@@ -224,7 +224,7 @@ class ActualExporterEitherProtocol(unittest.TestCase):
                 'let stale = rootSign {ssSem=TAnd (ssSem rootSign) (App (pred1 "calm") (entity "Bob")),ssScore=7}',
                 'let (_,_,_,readings,_) = backEnd backend fixtureSource sentence True [mk stale,mk rootSign]',
                 'mapM_ (emit . uncurry (readingJSON 0)) (zip [0..] readings)',
-                'loop ExplicitLegacy choice',
+                'loop ExplicitPolicy choice',
                 '{"id":"bad","text":"Bob is red.","gold":true}',
             ])+'\n'
             result=subprocess.run(['ghci','-package-env','-','-v0','-isrc','-itest'],

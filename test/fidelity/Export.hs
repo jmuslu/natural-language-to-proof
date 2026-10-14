@@ -45,7 +45,7 @@ main = do
     then die "hand parser does not accept nominal policy" else pure ()
   if "--hand" `elem` args && not (null eitherFlags)
     then die "hand parser does not accept either policy" else pure ()
-  let execution = if null eitherFlags then ImplicitLegacy else ExplicitLegacy
+  let execution = if null eitherFlags then ImplicitLegacy else ExplicitPolicy
       eitherPolicy = if "--either-policy=surface-inclusive-v1" `elem` args then EitherSurfaceInclusiveV1 else EitherLegacyDisabled
       policy = if "--nominal-nouns=context-unknown" `elem` args then ContextUnknownNouns else KnownNounsOnly
   choice <- if "--hand" `elem` args then pure (HandLexicon attitudeLexicon) else do
@@ -58,7 +58,7 @@ main = do
   loop execution choice
   where die message = hPutStrLn stderr message >> exitFailure
 
-data EitherExecution = ImplicitLegacy | ExplicitLegacy
+data EitherExecution = ImplicitLegacy | ExplicitPolicy
 
 loop :: EitherExecution -> ParserChoice -> IO ()
 loop execution choice = do
@@ -108,7 +108,7 @@ executionJSON execution choice = JObj ([("schema",JStr schema),("parser",JStr pa
   where
     (schema,extra) = case execution of
       ImplicitLegacy -> ("nominal-policy-v1",[])
-      ExplicitLegacy -> ("parser-policy-v2",[("either_policy",JStr eitherPolicy)])
+      ExplicitPolicy -> ("parser-policy-v2",[("either_policy",JStr eitherPolicy)])
     eitherPolicy = case choice of
       HandLexicon _ -> "legacy-disabled"
       CCGBankParser model -> case smEitherPolicy model of
