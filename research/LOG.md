@@ -2339,3 +2339,17 @@ Result coordination4c37c66: all21 Haskell suites1538 checks; build/oracle/Explai
 Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/fidelity-contract-reporting; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/fidelity-contract-reporting.
 
 Result fidelity-contract-reporting: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
+
+### 2026-10-14 — next narrow nominal investigation prediction
+
+Worker nominal-universal-trial will first test explicit Every/each + lexical noun subjects and positive a/an + lexical noun predicates without name/bare-generic admission. Prediction: current grammar fails independently authored direct property predication; a provenance-bound captured noun property may repair this fragment without equative existential witnesses. Review concrete transitions before worker implementation; root fresh fidelity and all gates remain mandatory. No model/answerbenchmark launch.
+
+### 2026-10-14 — serial integration semantic-contract-panels (743ef4f)
+
+Reviewer-approved branch only; overlapping untracked artifacts preserved under ignored integration-preserved. Prediction: unchanged production semantics preserve current fixed-input parser observations; gold representation corrections may change exact score and are identified by fixture hashes. Commands: git merge --no-ff --no-commit astra/semantic-contract-panels; cabal build all; cabal test all; scripts/check-oracle-boundary.sh; token-wrapped scripts/check-explain.sh;scorer contracts (counts and explicit expected failures in contracts.log); sealed source/binary-checked replay; live hand4. Logs research/runs/serial-merges/semantic-contract-panels.
+
+### 2026-10-14 — independent positive nominal gold baseline
+
+Gold678571e authored and independently reviewed (notes4f91b06) before observation: three exact ProverQA English occupational/status predications under explicit present-context extensional contract. Prediction: accepted coordination binary lacks faithful nominal copula, so no new exact results expected; score all3 outcomes without weakening meanings. Command: token-wrapped fidelity runner on workerproverqa-positive-nominals.jsonl with frozen research/runs/coordination-integration/fidelity-candidate, output positive-nominals-baseline/report.json. This is local construction fidelity, not an answerbenchmark or model launch.
+
+Result semantic-contract-panels: all merged-result gates passed,scorer contracts (counts and explicit expected failures in contracts.log), sealed fidelity replay and4/4 live hand controls. No model or answer benchmark launch; gate remains unmet.
