@@ -21,6 +21,17 @@ become sole-exact readings, while every other retained reading is unchanged.
 These mixed-contract totals do not certify a representative acceptance panel.
 The ProverQA starter remains10/24; the >=90% gate stays closed.
 
+The later independently frozen208-case diagnostic uses that same accepted
+known-only source and adds18 reviewed controls. It records70 exact,36 strict
+wrong-but-typed,101 no-parse and one incomplete outcome, with every earlier190
+response unchanged. Two added FOLIO failures differ only in conjunction order;
+they do not demonstrate incorrect negation or claim scope. The fuller ProverQA
+transitive disjunction has a genuine meaning error, including spurious either
+and both predicates. These structural diagnostic counts retain separate
+contracts and do not estimate population fidelity. The six newest controls add
+one exact unmarked OR; paired either and declared-context passive controls do
+not parse under the unchanged default.
+
 [The paired nominal-policy result](linguistics/NOMINAL_POLICY_RESULT.md) compares
 the earlier protocol binary on that frozen190-case panel. The optional context-unknown policy
 repairs five previously unparsed classifications, giving68/32/89/1 without a
@@ -33,8 +44,10 @@ POS evidence in the measured snapshot.
 The [subsequent bounded negation result](linguistics/NOMINAL_NEGATION_RESULT.md)
 gains five more exact cases against that same optional-policy baseline, giving
 73/32/84/1; all other185 complete retained-reading objects remain unchanged.
-Dave improves only under the optional policy; its precise dictionary eligibility
-is under a separately declared evidence audit. These five are distinct from the
+Dave improves only under the optional policy. A subsequent bounded lexical
+audit identifies a necessary known-noun admission barrier: Dave has NNP evidence
+but ostrich has no noun evidence in the loaded snapshot. Sam/rompus and
+Polly/dumpus share this barrier; this is not proof of all chart conditions. These five are distinct from the
 five earlier optional-policy gains. No default activation follows.
 
 The accepted implementation deliberately uses bounded, occurrence-checked

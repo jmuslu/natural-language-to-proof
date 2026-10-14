@@ -33,9 +33,12 @@ Preexisting optional gains are not counted as gains from negation. The default
 policy remains `known-only`.
 
 The provisional default prediction was three gains; Dave remained no-parse.
-Its optional-policy gain establishes policy dependence, but does not by itself
-identify its complete lexical/source-pair eligibility. A separately predicted,
-bounded evidence audit investigates that remaining gate. Adalynn and Bodhi
+Its optional-policy gain establishes policy dependence. The subsequent
+[bounded lexical audit](proposals/nominal-negation-evidence.md) identifies a
+necessary default admission blocker: Dave has positive proper-name POS evidence,
+but ostrich has no noun evidence in the loaded snapshot. Sam/rompus and
+Polly/dumpus have the same noun-evidence barrier. This does not establish every
+chart or offered-category condition, or rule out additional independent blockers. Adalynn and Bodhi
 remain no-parse under both policies. These are limitations, not permission to
 relax name or noun guards.
 
