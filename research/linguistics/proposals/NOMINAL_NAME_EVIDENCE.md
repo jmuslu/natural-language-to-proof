@@ -1,10 +1,11 @@
 # Name evidence audit and structural origin recipe
 
-Design-only follow-up to `NOMINAL_NAME_LICENSING.md` (`c77ad00`). No CCGbank
-load, source edit or model/benchmark run was performed. Working base is
-`990760f`; nominal-v1 integration remains independently gated.
+Follow-up to `NOMINAL_NAME_LICENSING.md` (`c77ad00`). Initial cache audit
+was design-only; the authorized streaming follow-up below now recovers actual
+dictionary evidence. No production source edit, full model load or benchmark
+run was performed. Working base is `990760f`; nominal-v1 remains gated.
 
-## Audit result: unknown, not ineligible
+## Initial cache-only audit: unknown, not ineligible
 
 | Written form | Sealed lexical evidence | c77ad00 dictionary criterion |
 | --- | --- | --- |
@@ -122,3 +123,47 @@ its source category; arbitrary unary N→NP must not forge that origin. A wrong
 source/model/token occurrence must fail. Finally test complete root versus
 embedded/negated/relative uses through actual chart transitions. c77ad00's
 remaining controls apply. No executable source tests are claimed in this audit.
+
+## Authorized streaming result supersedes cache-only uncertainty
+
+`research/tools/NominalNameEvidence.hs` now implements the bounded extractor.
+It imports the actual partition and accepted-line parsing functions, retains
+only six keys, and passed 16 independent synthetic controls before the scan.
+It creates no SemModel or English chart. Dataset reads were explicitly
+reauthorized; the completed scan used the shared CCGbank token wrapper.
+
+| Written/effective key | Unpruned POS | Unpruned categories | Lowercase evidence | c77ad00 dictionary predicate on observed inputs |
+| --- | --- | --- | --- | --- |
+| Abraham | NNP:4 | N:2, N/N:2 | None | Pass |
+| Alyssa | None | None | None | Fail: lacks positive dictionary evidence |
+| Amiyah | None | None | None | Fail: lacks positive dictionary evidence |
+
+The scenario is explicitly `initial=True, truecase=True`. These are selected
+audit parameters matching the inspected default loader clients, not newly
+observed runtime flags. All lowercase tag keys are absent, so effective forms
+remain written forms. By actual nameStatus logic Abraham is dictionary-backed
+NameOnly, while Alyssa and Amiyah are initial NameOrOther casing alternatives.
+The observed Abraham N category and sealed N→NP display support investigating
+the existing name repair route; N/N alone would not supply this certificate.
+Do not infer a runtime typed origin object from that display.
+
+The scan read 1875 files, recorded 125 missing candidate paths, and found zero
+unreadable/changed files. It accepted 39604 trees (matching the prior sealed
+loader total), rejected zero lines, and skipped 39604 ID/blank lines. Both this
+extractor and loadSemModel enumerate 2000 candidate paths and skip absent files;
+thus these are counts for the observed loader inputs. The matching total is
+corroboration, not proof that the licensed installation is complete. The 125
+missing paths prevent an unconditional complete-corpus absence or unopposed
+claim. Abraham's pass is conditional on this observed dictionary; the other
+two lack the required positive support in it. No count is a universal English
+name classification.
+
+No full-clause eligibility is established: complement lexical-N certification,
+structural subject origin and root-envelope gates still apply. In particular,
+this result does not predict a recovered Abraham gold sentence and cannot
+justify fabricating name certificates for Alyssa or Amiyah. It supports a
+bounded structural-origin experiment for dictionary-backed names only.
+
+Execution command, source/output/ordered-manifest digests and resource results
+are recorded in `research/notes/nominal-name-evidence.md`. No raw training lines,
+bulk dictionary or complete path manifest are committed.
