@@ -81,3 +81,50 @@ source/binary/gold claims; document those residual trust assumptions separately.
 No need to expose raw/licensed data to hash it. This audit does not authorize a
 fresh corpus load; coordinator may repair tooling and preserve the legacy cache
 as diagnostically useful but not falsely fully sealed historical evidence.
+
+## Reviewed hardening implementation
+
+Root authorized portable verifier after review; original6-failure evidence above
+is preserved. No actual historical report/observation was edited. New
+`replay_integrity.verify_replay(root, report_path, datasets, *, required_sources=None,
+retrospective_seal=None, helper_paths=())` returns verified snapshot `cases`,
+`observations`, and `manifest`. The caller scores only those returned snapshots,
+not files reread later. Dataset mapping is explicit and mandatory; missing paths
+fail. Full frozen coverage remains mandatory even for a selected current subset.
+
+Default source inventory is every current src/**/*.hs plus Export.hs and must
+exactly match producer parser-source membership, catching added/deleted paths.
+An explicit required_sources override is recorded as narrower caller-selected
+scope, never silently represented as default verification. Every producer digest
+has a checked lowercase64hex shape; every current parser digest must agree.
+Python assert is absent. Report/observation/case bytes are hashed before JSON
+loading; duplicate IDs, wrong texts, response-ID mismatch and duplicate dataset
+paths fail before scoring. Metadata never enters parser requests.
+
+`audit_legacy_seal(root,report_path,audit_note)` returns, but does not write, a
+retrospective record. It requires a nonempty independent-audit note; caller must
+retain that audit evidence and explicitly write/select the record. Verification
+never invokes it automatically. The seal binds current report/frozen-case/
+observation bytes, timestamp and `producer_binding:false`; it does not claim
+original producer binding. Missing producer digest without this separately
+supplied labeled record fails. New producer reports add observations_sha256 in
+fidelity.py immediately after writing observation bytes; no scoring code changes.
+
+Replay manifest includes producer report hash, observation and frozen-case
+hashes, binary hash, complete recorded and verified parser-source hashes,
+current gold path/hash/ordered IDs/contracts, selected and frozen membership,
+and hashes of verifier/current scorer plus explicitly supplied wrapper paths.
+Callers must pass their local helper in helper_paths and retain the manifest
+with replay results. Semantic-policy coherence and acceptance sampling remain
+separate reviewed obligations, not self-certified by these hashes.
+
+Validation predictions before implementation were the same original tamper
+rejections plus positive legitimate rescoring/subset paths. Initial hardening21
+controls pass; expanded24 controls pass, including mocked producer execution
+(the subprocess is mocked, no parser launched), cross-dataset ID duplication
+and missing audit note. Final digest-shape negative raises suite to25. Existing
+fidelity contract18 and edge11 tests pass. No corpus/model runs, no sourcecache
+regeneration, no changes to observed semantic scoring or historical results.
+
+Final validation result: all25 replay integrity tests PASS, including subprocess
+runs under Python -O and rejection of malformed recorded scorer digests.

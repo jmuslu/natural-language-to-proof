@@ -357,7 +357,8 @@ def main():
                 binary=str(binary),binary_sha256=binary_hash,wall_seconds=elapsed,
                 source_sha256={path:file_hash(ROOT/path) for path in source_paths},
                 source_hash_interpretation='Observed at evaluation; these hashes may differ from the compiled source snapshot. The executable SHA256 identifies the parser actually run.',
-                observations=str(observations_path),summary=summarize(evaluated),cases_results=evaluated,
+                observations=str(observations_path),observations_sha256=file_hash(observations_path),
+                summary=summarize(evaluated),cases_results=evaluated,
                 interpretation='Manual structural meaning gold, never solver-answer gold. Selected exactness is primary; any-reading exactness is a sentence-only diagnostic within returned candidates. Scope, order, duplicates and claim commitment are preserved.')
     args.output.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
     print(json.dumps(report['summary'],indent=2))
