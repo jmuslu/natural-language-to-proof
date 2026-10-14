@@ -62,3 +62,37 @@ and checks all expected outputs plus process/errors. No new public API created.
 Run `python3 test/run-either-carrier-checks.py`. The ignored transcript is only
 supplementary evidence; reproduction no longer depends on an ignored script.
 Chart hardening/exporter completion still required before combined approval.
+
+## Explain optional policy CLI
+
+Root assigned tools/Explain.hs and test/run-either-explain-checks.py only for the
+next step. Exporter worker confirmed exact naming and rejecting --hand with ANY
+explicit either policy, including legacy-disabled. Implemented Maybe policy
+option for duplicate detection, validation before load, configureModel applied to
+actual smEitherPolicy, and opt-in report header derived from actual model. No
+nominal policy broadening or semantic replay/witness change. Selected typed origin
+failure now renders as origin lowering rather than silently showing no failures.
+
+Before validation: omitted/explicitdisabled ordinary reports predicted byteequal;
+opt-in miniature actual Pipeline meaning inclusive, all stage-specific reports
+visibly identify actual model policy; bogus/duplicate/hand policy combinations
+must exit before loading. Tests use real GHC module context and a temporary compiled
+CLI, no source rewrite, models/corpus or benchmark loads.
+
+Integrated chart hardening e6408b0 unchanged as f2cdabd. Carrier public17/17 and
+private17/17 pass again. Explain's actual parser/model/report controls pass with
+six compiled-CLI rejections before loading; CLI subprocesses also set CCGBANK_DIR
+to a nonexistent temporary location as a regression safeguard. Added actual
+backend stale-snapshot rendering control: take a chart-minted root, mutate its
+term, run private ccgCandidateFor/backEnd, project those genuine outputs into the
+sentence result, then call actual explainSentence. This checks typed form retained,
+DRS absent, origin-lowering stage/reason emitted, and no false type-check wording.
+No diagnostic or ReadingResult is manually fabricated. The preexisting Explain
+compatible-reconstruction/raw-provenance behavior is unchanged; this CLI does not
+claim a newly captured original derivation witness.
+
+Final expanded Explain controls pass: all9 actual module observations, including
+five origin-failure rendering assertions, plus6 compiled CLI rejection cases.
+Run `python3 test/run-either-explain-checks.py`. No CCGbank loaded. Names worker
+reports one additional terminal-period transport fix pending; this candidate does
+not constitute final combined chart acceptance.

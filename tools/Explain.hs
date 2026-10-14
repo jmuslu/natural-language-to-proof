@@ -73,18 +73,20 @@ data Opts = Opts
   , oStage :: Maybe Stage
   , oHand  :: Bool
   , oPOSBackoff :: Bool
+  , oEitherPolicy :: Maybe EitherPolicy
   , oText  :: [String]
   }
 
 usage :: String
 usage = unlines
-  [ "usage: nl2proof-explain [--all-readings] [--stage=tags|deriv|lambda|drs|claims] [--hand] [--pos-backoff] [TEXT]"
+  [ "usage: nl2proof-explain [--all-readings] [--stage=tags|deriv|lambda|drs|claims] [--hand] [--pos-backoff] [--either-policy=POLICY] [TEXT]"
   , ""
   , "  TEXT            a sentence or short text; omitted: interactive REPL (:q quits)"
   , "  --all-readings  every reading (and every candidate supertag), selected one marked"
   , "  --stage=S       only one section: tags, deriv, lambda, drs or claims"
   , "  --hand          hand-written fragment lexicon (attitudeLexicon) instead of CCGbank"
   , "  --pos-backoff   experimental POS-dictionary lexical backoff (CCGbank only)"
+  , "  --either-policy=legacy-disabled|surface-inclusive-v1 (CCGbank only; default disabled)"
   , ""
   , "CCGbank: $CCGBANK_DIR, else ~/ccgbank/ccgbank_1_1/data (sections 02-21)."
   , "REPL commands: :q quit, :all toggle --all-readings, :stage=S or :stage=all, :help"
@@ -101,19 +103,34 @@ parseStage s = case s of
   _        -> Nothing
 
 parseOpts :: [String] -> Either String Opts
-parseOpts = go (Opts False Nothing False False [])
+parseOpts = go (Opts False Nothing False False Nothing [])
   where
-    go o [] = Right o { oText = reverse (oText o) }
+    go o []
+      | oHand o, Just _ <- oEitherPolicy o = Left "--either-policy is incompatible with --hand"
+      | otherwise = Right o { oText = reverse (oText o) }
     go o (a : as)
       | a == "--all-readings" = go o { oAll = True } as
       | a == "--hand" = go o { oHand = True } as
       | a == "--pos-backoff" = go o { oPOSBackoff = True } as
+      | "--either-policy=" `isPrefixOf` a = case oEitherPolicy o of
+          Just _ -> Left "duplicate --either-policy"
+          Nothing -> case drop 16 a of
+            "legacy-disabled" -> go o { oEitherPolicy = Just EitherLegacyDisabled } as
+            "surface-inclusive-v1" -> go o { oEitherPolicy = Just EitherSurfaceInclusiveV1 } as
+            value -> Left ("unknown either policy: " ++ value)
       | "--stage=" `isPrefixOf` a = case parseStage (drop 8 a) of
           Just st -> go o { oStage = st } as
           Nothing -> Left ("unknown stage: " ++ drop 8 a)
       | a == "--help" || a == "-h" = Left ""
       | "--" `isPrefixOf` a = Left ("unknown flag: " ++ a)
       | otherwise = go o { oText = a : oText o } as
+
+-- Shared by the real CLI and corpus-free option/configuration controls.
+configureModel :: Opts -> SemModel -> SemModel
+configureModel opts model = model
+  { smPOSBackoff = oPOSBackoff opts
+  , smEitherPolicy = maybe EitherLegacyDisabled id (oEitherPolicy opts)
+  }
 
 --------------------------------------------------------------------------------
 -- Main
@@ -142,7 +159,7 @@ main = do
           exitFailure
         hPutStrLn stderr (printf "  %d trees, %d word forms, loaded in %.1fs"
           ntrees (M.size (tmWord (smTags m))) (t1 - t0))
-        pure (CCGBankParser m { smPOSBackoff = oPOSBackoff opts })
+        pure (CCGBankParser (configureModel opts m))
   if null (oText opts)
     then repl choice opts
     else explainSafe choice opts (unwords (oText opts))
@@ -191,8 +208,13 @@ header :: String -> String
 header t = "== " ++ t ++ " " ++ replicate (max 3 (72 - length t)) '='
 
 explain :: ParserChoice -> Opts -> String -> String
-explain choice o text = unlines (concat (perSentence ++ [discourseDRS, claims, failures]))
+explain choice o text = unlines (executionLines ++ concat (perSentence ++ [discourseDRS, claims, failures]))
   where
+    -- Identify the actual parser, never a requested option that was not applied.
+    executionLines = case choice of
+      CCGBankParser model | smEitherPolicy model == EitherSurfaceInclusiveV1 ->
+        [header "EXECUTION POLICY", "  either-policy: surface-inclusive-v1 (optional inclusive construction)"]
+      _ -> []
     pr = runPipelineWith choice (SourceId "input") text
     srs = prSentences pr
     multi = length srs > 1
@@ -449,6 +471,10 @@ explainSentence choice o r = SentenceExplain
       | meaningFailed =
           [ "  stage: meaning -- the selected derivation's term does not have its category's type" ]
             ++ [ "  " ++ l | d <- traceDiagnostics (srTrace r), diagKind d == TypeCheckFailure
+                           , l <- lines (renderDiagnostic d) ]
+      | any ((== OriginLoweringFailure) . diagKind) (traceDiagnostics (srTrace r)) =
+          [ "  stage: origin lowering -- typed selected reading has no DRS" ]
+            ++ [ "  " ++ l | d <- traceDiagnostics (srTrace r), diagKind d == OriginLoweringFailure
                            , l <- lines (renderDiagnostic d) ]
       | nReadings > 1 =
           [ "  ambiguity: " ++ show nReadings ++ " readings with distinct meanings; reading 1 selected by "
