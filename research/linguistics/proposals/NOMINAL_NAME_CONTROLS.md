@@ -1,10 +1,10 @@
 # Typed lexical origin for bounded nominal name subjects
 
-Concrete API proposal and independent red controls only. Production source is
-unchanged; frozen nominal-v1 (`8e2a6ad`) is read-only and must pass coordinator
-integration gates before this extension is considered. This follows reviewed
-c77ad00 and the actual dictionary audit7d85eb1, not a request to reopen the old
-unrestricted nominal candidate.
+Isolated implementation candidate with independent controls. This follows
+reviewed c77ad00, dictionary audit7d85eb1, accepted nominal-v1 and the explicit
+frozen v2 dependency a4846ca. Root must land v2 and pass fresh source/fidelity
+gates before this dependent name candidate can land. The old unrestricted
+nominal candidate remains rejected.
 
 ## Evidence and scope
 
@@ -45,7 +45,8 @@ NameLexOrigin = {
 }
 ```
 
-These names are proposed API, not present exports. DictionaryEvidence records
+The sketch names correspond to the implemented NameLexOrigin fields; no
+separate general DictionaryEvidence framework is introduced. Evidence records
 the complete inspected written/effective/lowercase counts and immutable model
 identity; its checked form can be opaque to callers. The actual name branch
 creates `RigidNameChoice` *beside* its existing `nameItem w` call, using the same
@@ -62,16 +63,15 @@ nominal-specific subject payload without general per-sign metadata:
 ```
 BoundNameOrigin = { source, tokenIndex, tokenSpan, writtenForm, lexicalOrigin }
 NominalRole += NominalNameSubject BoundNameOrigin
-NominalSubjectOrigin = UniversalOrigin ... | NamedOrigin BoundNameOrigin
-NominalComplete certificate subjectOrigin complementOrigin
+NominalNamedComplete certificate BoundNameOrigin NominalNounOrigin
+-- Existing universal NominalComplete remains unchanged.
 ```
 
-A named Complete must retain the NamedOrigin payload, not just collapse it to
-`ssProv subject`; otherwise origin evidence is erased before root/packing.
-The universal constructor can retain all its existing evidence via the typed
-sum. This is the only proposed widening of the completion payload. The
-coordinator should review exact compatibility with the final landed v1 API
-rather than assuming this sketch matches a not-yet-landed source revision.
+The named completion retains the full bound origin, not just `ssProv subject`.
+The separate NominalNamedComplete variant avoids migrating v2's typed universal
+completion again. Both are mandatory-active and use the same full-root and final
+period guards. Name capability is minted only immediately before an actual
+licensed is+a/an pair, so unrelated lexical packing remains unchanged.
 
 ## Required transitions
 
@@ -112,10 +112,10 @@ unknown initial capital, unknown plural-looking form, bare generic plural,
 NNPS, expletive NP, root fragments, unsupported reporting/negation, absent
 equative fallback and both ordinary article/object meanings.
 
-The green boundary checks are not proof that the future certificate works:
-v1 currently rejects all named nominal routes. They become regression controls
-when positives turn green. These tests do not yet exercise a nonexistent typed
-origin API. Before implementation approval, add actual internal tests for:
+The initial green boundary checks alone were insufficient because v1 rejected
+all named nominal routes. The six positives now pass. Added
+`test/NominalNameOriginSpec.hs` obtains origins from actual lexical/chart roots
+and exercises the following internal attacks:
 
 - same category, exact term and rendered notes with distinct lexical origins;
 - rejected foreign source, shifted span/index, or mismatched written token;
@@ -124,7 +124,18 @@ origin API. Before implementation approval, add actual internal tests for:
 - changing one POS count to a rare contrary tag changes admission, without
   changing ordinary name semantics elsewhere.
 
-Do not replace these with tests of a duplicated Boolean policy or manually
-fabricate a certificate and describe it as lexical integration. Default test
-execution intentionally includes six known reds; it is not a registered green
-release suite. No source changes, corpus load or gain estimate are included.
+The tests recover minted origins before making adversarial copies, rather than
+calling a duplicated Boolean policy and claiming lexical integration. Synthetic
+public SSign constructors still cannot authenticate wholly fabricated external
+proof objects; the actual chart's lexical branch is the trusted minting boundary.
+The foreign-source/span tests exercise inconsistent reuse across that boundary.
+
+Current focused results:27/27 public controls and46/46 origin controls pass.
+The public suite includes KnownNounsOnly versus ContextUnknownNouns interaction:
+known name plus licensed unknown complement can compose only under the latter,
+and that noun policy never admits an unknown name. A192-combination lexicalSigns
+snapshot is byte-identical before/after, including order, notes, scores and
+meanings; --lexical-snapshot reproduces it. The typed source-origin alternatives
+remain distinct through packCell; final roots still deduplicate by meaning
+*after* mandatory checks, as before. No corpus load or gain estimate is included.
+Both new test suites remain standalone because coordinator owns cabal wiring.

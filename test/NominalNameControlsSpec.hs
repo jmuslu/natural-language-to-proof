@@ -1,4 +1,4 @@
--- Independent future acceptance controls. Default includes known reds on v1.
+-- Independent acceptance controls, originally six known reds on v1.
 -- No corpus load. Run against frozen v1 via its src directory on -i path.
 module Main (main) where
 import qualified Data.Map.Strict as M
@@ -88,8 +88,35 @@ boundaries=
   POSModel ps=smPOS m
   contraryLower=m {smTruecase=False, smPOS=POSModel(M.insert "ari" (M.singleton "NN" 1) ps)}
 
+
+policyChecks :: [Check]
+policyChecks=
+ [blocked "known-name capability does not relax KnownNounsOnly complement" known "Ari is an animal."
+ ,expectEq "known name and independently context-licensed noun compose without Q inversion"
+   (Just(Canonical [] [CanPred "animal" [CConstT "Ari"]]))
+   (canonicalize <$> srDRS(sentence context "Ari is an animal."))
+ ,blocked "ContextUnknownNouns does not admit an unknown name" unknown "Ari is an animal."]
+ where
+  initial=model "NP" [("NNP",4)]
+  POSModel ps=smPOS initial
+  known=initial {smPOS=POSModel(M.delete "animal" ps)}
+  context=known {smNominalPolicy=ContextUnknownNouns}
+  POSModel cp=smPOS context
+  unknown=context {smPOS=POSModel(M.delete "Ari" cp)}
+
+-- Reproducible public-lexical projection snapshot; compare before/after source
+-- revisions to verify original order, meaning, score and note text byte-for-byte.
+lexicalSnapshot :: IO ()
+lexicalSnapshot=mapM_ print
+ [(category,ps,i,w,[(lxCat l,lxItem l,lxScore l)|l<-lexicalSigns (model category ps) i w])
+ | category<-["N","NP","NP[nb]","NP[expl]"]
+ , ps<-[[("NNP",4)],[("NNP",100),("NN",1)],[],[("NN",1)]]
+ , i<-[0,1],w<-["Ari","animal","is","an",".","Unknown"]]
+
 main :: IO ()
 main=do
  args<-getArgs
- runChecks "nominal name independent controls"
-   (case args of ["--boundaries"]->boundaries;["--positive"]->positive;_->positive++boundaries)
+ case args of
+  ["--lexical-snapshot"]->lexicalSnapshot
+  _->runChecks "nominal name independent controls"
+    (case args of ["--boundaries"]->boundaries++policyChecks;["--positive"]->positive;_->positive++boundaries++policyChecks)
