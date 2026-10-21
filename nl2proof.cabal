@@ -261,7 +261,7 @@ test-suite nl2proof-assertion-test
 executable nl2proof-explain
     -- Study/debugging view of one sentence (or a short text): tokens and
     -- supertags, the derivation with every rule and category, lambda terms and
-    -- types, the DRS, and the claim split, side by side. No arguments: a REPL
+    -- types, the DRS, the claim split and the support graph, side by side. No arguments: a REPL
     -- that loads the CCGbank model once. Reads $CCGBANK_DIR (not in the repo).
     import:           warnings
     hs-source-dirs:   tools

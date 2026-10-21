@@ -16,6 +16,7 @@ Every exercise below ends with "predict by hand, then run the system, then diff"
 4. **DRS**: the box, with negation, `=>`, `OR`, attitude (`K:`) and `PRESUPPOSED:` sub-boxes nested.
 5. **CLAIMS**: `splitClaims` grouped into Asserted, Reported (with source chain), Presupposed and Embedded.
 6. **FAILURES / NOTES**: which stage failed (lexicon, parse or meaning) and why, the number of readings if the parse is ambiguous, and every logged decision.
+7. **SUPPORT GRAPH**: the evidence view of the whole text (Unit 7). Each admitted claim is a `Genealogy` node with its source sentence (`s1`, `s2`, ...; reports add `speaker:` sources and the `say(Bob)` chain), its evidence class (asserted-unconfirmed, reported, presupposed, oracle-confirmed) and its support: the minimal sets of sources (the antichain of `research/STRENGTH.md`), plus the token-level environments (`sets`). Rules detach by `Fusion.detachable` as graph justifications, so "The cat is red. If the cat is red then Bob is happy." derives `happy(Bob)` with support `{s1, s2}`. GROUNDED means some support set is oracle-confirmed evidence only; WEAK means every set needs unconfirmed, reported or presupposed evidence. A sentence that does not parse is listed as UNPARSED and the graph is built from the rest (marked partial).
 
 Compatible replay is constrained by recorded provenance and the root meaning; it is not necessarily the original lexical derivation. On fallback, raw provenance and Pipeline formula/DRS/claims remain available, but leaf-term tables may be empty. Parser diagnostics and replay failures do not alone establish the first linguistic mismatch against independent gold.
 
@@ -32,14 +33,40 @@ cabal run -v0 nl2proof-explain -- "Bob says that the cat is not red."
 cabal run -v0 nl2proof-explain -- --stage=claims "Bob knows that the cat is red."
 cabal run -v0 nl2proof-explain -- --all-readings "All cold, green things are quiet."
 cabal run -v0 nl2proof-explain -- --hand "John says that Mary does not smile."
+cabal run -v0 nl2proof-explain -- --stage=graph --oracle=confirm-asserted --retract=s1 "The cat is red. If the cat is red then Bob is happy."
 cabal run -v0 nl2proof-explain            # REPL: loads the lexicon once, one text per line, :q quits
 ```
 
-- `--stage=tags|deriv|lambda|drs|claims` prints one section only.
+- `--stage=tags|deriv|lambda|drs|claims|graph` prints one section only.
 - `--all-readings` prints every reading (the selected one is marked `[SELECTED]`) and every candidate supertag (`*` marks the choice in its compatible reconstruction; `---` lines are tags the tagger offered that have no meaning).
 - `--hand` uses the hand-written fragment lexicon (`attitudeLexicon`: John, Mary, student, smiles, says, knows, ...) instead of CCGbank. It starts instantly, so it is the quickest way to check a Unit 1 or Unit 3 derivation.
 - `--pos-backoff` enables experimental POS-dictionary noun/adjective backoff, off by default. Selected entries log a `pos-backoff` decision; the ranking score is not evidence strength.
-- In the REPL, `:all` toggles `--all-readings`, `:stage=deriv` (or `:stage=all`) changes the section, `:help` lists the commands.
+- `--either-policy=legacy-disabled|surface-inclusive-v1` and `--nominal-policy=known-only|context-unknown` select parser policies (CCGbank only, rejected with `--hand`). The defaults, `legacy-disabled` and `known-only`, are the ordinary behaviour; a non-default policy is announced in an `EXECUTION POLICY` header. `context-unknown` lets an unknown lower-case word read as a common noun where the context licenses it (`smNominalPolicy = ContextUnknownNouns`).
+- `--oracle=none|confirm-asserted` picks section 7's oracle. The default `none` grounds nothing. `confirm-asserted` is an in-process test oracle offered every top-level asserted claim through the ordinary `Oracle.confirm`, so it never confirms a report, a presupposition, embedded content or an open (context-bound) condition. Use it to watch grounding happen, not as evidence about the world.
+- `--retract=sN` (repeatable) withdraws sentence N as a source (`Genealogy.withdrawSource`) and prints the graph again, marking each claim LOST SUPPORT, LOST GROUNDING (still supported) or SURVIVED (independent support).
+- In the REPL, `:all` toggles `--all-readings`, `:stage=deriv` (or `:stage=all`) changes the section, `:oracle confirm-asserted` (or `:oracle none`) sets the oracle, `:retract 2` adds a withdrawal (`:retract none` clears them), `:help` lists the commands.
+
+Section 7 for a report plus a direct assertion, with the test oracle and `s1` withdrawn (`--hand --stage=graph --oracle=confirm-asserted --retract=s1 "Mary smiles. John says that Mary smiles."`, abridged). Withdrawing the oracle-confirmed assertion leaves the report: `smile(mary)` is still supported, but only as hearsay.
+
+```
+  admitted claims:
+    n0  smile(mary)   [GROUNDED]
+          evidence  s1 asserted-unconfirmed
+          evidence  s1 oracle-confirmed (explain-test)
+          evidence  s2 reported, source chain say(john)
+          support   {s1} | {s2, speaker:john}
+          sets      {n0:oracle@s1} | {n0:asserted@s1} | {n0:reported@s2}
+    n1  say(john, [ | smile(mary)])   [GROUNDED]
+  ...
+  -- after withdrawing s1 (Genealogy.withdrawSource)
+  lost all support:               (none)
+  lost grounding:                 n0 smile(mary)
+  survived (independent support): n0 smile(mary)
+  admitted claims:
+    n0  smile(mary)   [WEAK]  <- LOST GROUNDING (still supported)
+          support   {s2, speaker:john}
+          sets      {n0:reported@s2}
+```
 
 The CCGbank lexicon is read from `$CCGBANK_DIR`, else `~/ccgbank/ccgbank_1_1/data`. Loading sections 02-21 (39,604 trees) takes about 80 seconds, so for more than one sentence use the REPL. `scripts/check-explain.sh` is the smoke test.
 
@@ -521,6 +548,7 @@ Your informal vocabulary maps onto established formalisms. Pick one formalism fo
 2. Add the cycle A⇒B, B⇒A with no other support. Under JTMS rules, are A and B IN? (They should be OUT.) Then read `Genealogy.hs` and check that it agrees.
 3. In one paragraph, state which semiring nl2proof uses today and whether Fusion actually obeys its laws.
 4. `--stage=claims` on "Alice says that Bob believes that the cat is red." shows the source chain a hearsay strength would attach to.
+5. Predict section 7 for "If the cat is red then Bob is happy. Bob is happy. The cat is red." with `--stage=graph --oracle=confirm-asserted`, then again with `--retract=s2`: which support set of `happy(Bob)` survives, and is it still grounded?
 
 **You've got it when:** "fuse strongly vs. linger" is a definition you could put in the README, not a metaphor.
 

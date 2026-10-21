@@ -56,7 +56,7 @@ Explained in `research/STRENGTH.md`.
 |---|---|---|
 | `src/NL2Proof/Bench/Export.hs`, `Bench/JSON.hs`, `tools/ParseJSON.hs` | +344 | Export parses as JSON for the Python solvers and the fidelity scorer |
 | `tools/RetractionBench.hs` | +195 | Driver for the retraction benchmark (Phase F) |
-| `tools/Explain.hs` | +50 / −37 | `--pos-backoff` and `--either-policy` flags |
+| `tools/Explain.hs` | +50 / −37, then the support-graph section | `--pos-backoff`, `--either-policy` and `--nominal-policy` flags; section 7 (`--stage=graph`), the support graph built with the existing Genealogy/Fusion APIs, with `--oracle=none\|confirm-asserted` (in-process test oracle through `Oracle.confirm`) and repeatable `--retract=sN` (`Genealogy.withdrawSource`); REPL `:oracle` and `:retract`. Checked by `scripts/check-explain.sh` (hand lexicon and a miniature CCGbank model, no corpus needed) |
 | `nl2proof.cabal` | +305 | Registers about 25 new test suites |
 | `scripts/with-ccgbank-slot.py` | +35 | Lock that limits concurrent CCGbank loads (only needed for parallel agents) |
 

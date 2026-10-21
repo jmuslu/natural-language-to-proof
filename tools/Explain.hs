@@ -7,7 +7,7 @@
 -- > nl2proof-explain --all-readings --stage=deriv --hand "..."
 --
 -- Sections: 1 tokens + supertags, 2 derivation, 3 lambda, 4 DRS, 5 claims,
--- 6 failures / notes.
+-- 6 failures / notes, 7 support graph.
 --
 -- Nothing here decides anything. The selected reading, its normal form, its
 -- DRS and the trace come from 'runPipelineWith' unchanged. The one thing the
@@ -18,6 +18,13 @@
 -- 'coordTerm', 'applyIntensional'), and keeps a replay only if it ends in
 -- exactly the parser's root meaning. If no replay matches, it says so and
 -- prints the raw provenance tree instead.
+--
+-- Section 7 is the evidence view of the whole text: every admitted claim as a
+-- node of a 'G.Genealogy' (through the typed admission functions), detachment
+-- justifications licensed by 'F.detachable', and the support labels and
+-- source withdrawals the library computes. The tool adds no support rule of
+-- its own; it only relabels each provenance leaf with its sentence number, so
+-- that a sentence is a withdrawable source.
 module Main (main) where
 
 import Control.Exception (SomeException, evaluate, try)
@@ -32,7 +39,7 @@ import System.IO (hFlush, hPutStrLn, isEOF, stderr, stdout)
 import Text.Printf (printf)
 
 import NL2Proof.DRT.Build
-import NL2Proof.DRT.Canonical (renderCanonCond)
+import NL2Proof.DRT.Canonical (CanonCond(..), Canonical(..), renderCanonCond)
 import NL2Proof.DRT.Types
 import NL2Proof.Pipeline
 import NL2Proof.Provenance
@@ -50,14 +57,17 @@ import NL2Proof.Syntax.Category (catTy)
 import NL2Proof.Syntax.Lexicon (Entry(..), Lexicon, attitudeLexicon, lookupWord)
 import NL2Proof.Syntax.Tokenize
 import NL2Proof.Trace
+import qualified NL2Proof.Fusion as F
+import qualified NL2Proof.Genealogy as G
 import NL2Proof.Verify.ClaimKind (claimCond)
+import NL2Proof.Verify.Oracle (Confirmed, Oracle(..), Verdict(Unknown), confirm)
 import NL2Proof.Verify.Reported
 
 --------------------------------------------------------------------------------
 -- Options
 --------------------------------------------------------------------------------
 
-data Stage = STags | SDeriv | SLambda | SDrs | SClaims
+data Stage = STags | SDeriv | SLambda | SDrs | SClaims | SGraph
   deriving (Eq, Show)
 
 stageName :: Stage -> String
@@ -67,6 +77,31 @@ stageName st = case st of
   SLambda -> "lambda"
   SDrs -> "drs"
   SClaims -> "claims"
+  SGraph -> "graph"
+
+-- | Which oracle section 7 consults. 'OracleNone' grounds nothing.
+-- 'OracleConfirmAsserted' is an in-process test oracle that covers and holds
+-- every condition; it is offered only top-level asserted claims, through
+-- 'confirm', which itself abstains on open (context-bound) conditions.
+data OracleMode = OracleNone | OracleConfirmAsserted
+  deriving (Eq, Show)
+
+oracleModeName :: OracleMode -> String
+oracleModeName m = case m of
+  OracleNone -> "none"
+  OracleConfirmAsserted -> "confirm-asserted"
+
+parseOracleMode :: String -> Maybe OracleMode
+parseOracleMode s = case s of
+  "none" -> Just OracleNone
+  "confirm-asserted" -> Just OracleConfirmAsserted
+  _ -> Nothing
+
+-- | "s3" or "3" -> 3 (sentences are numbered from 1).
+parseSentenceNo :: String -> Maybe Int
+parseSentenceNo s = case dropWhile (== 's') (take 1 s) ++ drop 1 s of
+  ds | not (null ds), all (`elem` ['0' .. '9']) ds, length ds < 7, read ds > (0 :: Int) -> Just (read ds)
+  _ -> Nothing
 
 data Opts = Opts
   { oAll   :: Bool
@@ -74,22 +109,31 @@ data Opts = Opts
   , oHand  :: Bool
   , oPOSBackoff :: Bool
   , oEitherPolicy :: Maybe EitherPolicy
+  , oNominalPolicy :: Maybe NominalNounPolicy
+  , oOracle :: Maybe OracleMode
+  , oRetract :: [Int]
   , oText  :: [String]
   }
 
 usage :: String
 usage = unlines
-  [ "usage: nl2proof-explain [--all-readings] [--stage=tags|deriv|lambda|drs|claims] [--hand] [--pos-backoff] [--either-policy=POLICY] [TEXT]"
+  [ "usage: nl2proof-explain [--all-readings] [--stage=tags|deriv|lambda|drs|claims|graph] [--hand] [--pos-backoff] [--either-policy=POLICY] [--nominal-policy=POLICY] [--oracle=MODE] [--retract=sN ...] [TEXT]"
   , ""
   , "  TEXT            a sentence or short text; omitted: interactive REPL (:q quits)"
   , "  --all-readings  every reading (and every candidate supertag), selected one marked"
-  , "  --stage=S       only one section: tags, deriv, lambda, drs or claims"
+  , "  --stage=S       only one section: tags, deriv, lambda, drs, claims or graph"
   , "  --hand          hand-written fragment lexicon (attitudeLexicon) instead of CCGbank"
   , "  --pos-backoff   experimental POS-dictionary lexical backoff (CCGbank only)"
   , "  --either-policy=legacy-disabled|surface-inclusive-v1 (CCGbank only; default disabled)"
+  , "  --nominal-policy=known-only|context-unknown (CCGbank only; default known-only)"
+  , "  --oracle=none|confirm-asserted  section 7 oracle (default none: nothing is grounded);"
+  , "                  confirm-asserted confirms every closed top-level asserted claim"
+  , "  --retract=sN    section 7: withdraw sentence N as a source and show the graph again"
+  , "                  (repeatable)"
   , ""
   , "CCGbank: $CCGBANK_DIR, else ~/ccgbank/ccgbank_1_1/data (sections 02-21)."
-  , "REPL commands: :q quit, :all toggle --all-readings, :stage=S or :stage=all, :help"
+  , "REPL commands: :q quit, :all toggle --all-readings, :stage=S or :stage=all,"
+  , "  :oracle=MODE (or :oracle MODE), :retract N (adds sN), :retract none, :help"
   ]
 
 parseStage :: String -> Maybe (Maybe Stage)
@@ -99,15 +143,17 @@ parseStage s = case s of
   "lambda" -> Just (Just SLambda)
   "drs"    -> Just (Just SDrs)
   "claims" -> Just (Just SClaims)
+  "graph"  -> Just (Just SGraph)
   "all"    -> Just Nothing
   _        -> Nothing
 
 parseOpts :: [String] -> Either String Opts
-parseOpts = go (Opts False Nothing False False Nothing [])
+parseOpts = go (Opts False Nothing False False Nothing Nothing Nothing [] [])
   where
     go o []
       | oHand o, Just _ <- oEitherPolicy o = Left "--either-policy is incompatible with --hand"
-      | otherwise = Right o { oText = reverse (oText o) }
+      | oHand o, Just _ <- oNominalPolicy o = Left "--nominal-policy is incompatible with --hand"
+      | otherwise = Right o { oText = reverse (oText o), oRetract = reverse (oRetract o) }
     go o (a : as)
       | a == "--all-readings" = go o { oAll = True } as
       | a == "--hand" = go o { oHand = True } as
@@ -118,6 +164,21 @@ parseOpts = go (Opts False Nothing False False Nothing [])
             "legacy-disabled" -> go o { oEitherPolicy = Just EitherLegacyDisabled } as
             "surface-inclusive-v1" -> go o { oEitherPolicy = Just EitherSurfaceInclusiveV1 } as
             value -> Left ("unknown either policy: " ++ value)
+      | "--nominal-policy=" `isPrefixOf` a = case oNominalPolicy o of
+          Just _ -> Left "duplicate --nominal-policy"
+          Nothing -> case drop 17 a of
+            "known-only" -> go o { oNominalPolicy = Just KnownNounsOnly } as
+            "context-unknown" -> go o { oNominalPolicy = Just ContextUnknownNouns } as
+            value -> Left ("unknown nominal policy: " ++ value)
+      | "--oracle=" `isPrefixOf` a = case oOracle o of
+          Just _ -> Left "duplicate --oracle"
+          Nothing -> case parseOracleMode (drop 9 a) of
+            Just m -> go o { oOracle = Just m } as
+            Nothing -> Left ("unknown oracle mode: " ++ drop 9 a)
+      | "--retract=" `isPrefixOf` a = case parseSentenceNo (drop 10 a) of
+          Just k | k `elem` oRetract o -> Left ("duplicate --retract=s" ++ show k)
+                 | otherwise -> go o { oRetract = k : oRetract o } as
+          Nothing -> Left ("--retract expects a sentence number such as s2, not: " ++ drop 10 a)
       | "--stage=" `isPrefixOf` a = case parseStage (drop 8 a) of
           Just st -> go o { oStage = st } as
           Nothing -> Left ("unknown stage: " ++ drop 8 a)
@@ -130,6 +191,7 @@ configureModel :: Opts -> SemModel -> SemModel
 configureModel opts model = model
   { smPOSBackoff = oPOSBackoff opts
   , smEitherPolicy = maybe EitherLegacyDisabled id (oEitherPolicy opts)
+  , smNominalPolicy = maybe KnownNounsOnly id (oNominalPolicy opts)
   }
 
 --------------------------------------------------------------------------------
@@ -184,6 +246,16 @@ repl choice = loop
           _ | ":stage=" `isPrefixOf` l -> case parseStage (drop 7 l) of
                 Just st -> putStrLn ("stage " ++ maybe "all" stageName st) >> loop o { oStage = st }
                 Nothing -> putStrLn ("unknown stage: " ++ drop 7 l) >> loop o
+            | ":oracle" `isPrefixOf` l -> case parseOracleMode (trim (drop 1 (dropWhile (\c -> c /= '=' && c /= ' ') l))) of
+                Just m -> putStrLn ("oracle " ++ oracleModeName m) >> loop o { oOracle = Just m }
+                Nothing -> putStrLn "usage: :oracle none|confirm-asserted" >> loop o
+            | ":retract" `isPrefixOf` l -> case trim (drop 8 l) of
+                v | v `elem` ["none", "clear"] -> putStrLn "retract: none" >> loop o { oRetract = [] }
+                v | Just k <- parseSentenceNo v -> do
+                      let rs = nub (oRetract o ++ [k])
+                      putStrLn ("retract: " ++ unwords [ 's' : show r | r <- rs ])
+                      loop o { oRetract = rs }
+                _ -> putStrLn "usage: :retract N (withdraw sentence N; repeatable) or :retract none" >> loop o
             | null l -> loop o
             | otherwise -> explainSafe choice o l >> putStrLn "" >> loop o
     trim = reverse . dropWhile isSpace . reverse . dropWhile isSpace
@@ -208,13 +280,18 @@ header :: String -> String
 header t = "== " ++ t ++ " " ++ replicate (max 3 (72 - length t)) '='
 
 explain :: ParserChoice -> Opts -> String -> String
-explain choice o text = unlines (executionLines ++ concat (perSentence ++ [discourseDRS, claims, failures]))
+explain choice o text = unlines (executionLines ++ concat (perSentence ++ [discourseDRS, claims, failures, graph]))
   where
     -- Identify the actual parser, never a requested option that was not applied.
     executionLines = case choice of
-      CCGBankParser model | smEitherPolicy model == EitherSurfaceInclusiveV1 ->
-        [header "EXECUTION POLICY", "  either-policy: surface-inclusive-v1 (optional inclusive construction)"]
+      CCGBankParser model
+        | not (null (policyLines model)) -> header "EXECUTION POLICY" : policyLines model
       _ -> []
+    policyLines model =
+      [ "  either-policy: surface-inclusive-v1 (optional inclusive construction)"
+      | smEitherPolicy model == EitherSurfaceInclusiveV1 ]
+      ++ [ "  nominal-policy: context-unknown (context-licensed unknown common nouns)"
+         | smNominalPolicy model == ContextUnknownNouns ]
     pr = runPipelineWith choice (SourceId "input") text
     srs = prSentences pr
     multi = length srs > 1
@@ -222,7 +299,7 @@ explain choice o text = unlines (executionLines ++ concat (perSentence ++ [disco
     want st = maybe True (== st) (oStage o)
 
     perSentence =
-      [ (if multi then ["", "### sentence " ++ show k ++ "/" ++ show (length srs) ++ ": "
+      [ (if multi && oStage o /= Just SGraph then ["", "### sentence " ++ show k ++ "/" ++ show (length srs) ++ ": "
                           ++ show (sentText (srSentence r))] else [])
           ++ seTags x ++ seDeriv x ++ seLambda x ++ seDRS x
       | (k, r, x) <- zip3 [1 :: Int ..] srs xs ]
@@ -258,6 +335,11 @@ explain choice o text = unlines (executionLines ++ concat (perSentence ++ [disco
              ["", header "6. FAILURES / NOTES"]
                ++ (if null fs then ["  failures: none (lexicon, parse and meaning all succeeded)"] else fs)
                ++ (if null ns || oStage o /= Nothing then [] else "  notes (logged decisions and diagnostics):" : ns)
+
+    graph
+      | not (want SGraph) || null srs = []
+      | otherwise = "" : header "7. SUPPORT GRAPH (Genealogy support labels, Fusion.detachable)"
+                       : supportGraphLines o pr
 
 --------------------------------------------------------------------------------
 -- One sentence
@@ -684,6 +766,245 @@ shortSource s
   | "proper name" `isPrefixOf` s = "[name]"
   | "open-class" `isPrefixOf` s = "[open template]"
   | otherwise = "[hand]"
+
+--------------------------------------------------------------------------------
+-- 7. Support graph
+--------------------------------------------------------------------------------
+
+-- | The in-process test oracle behind @--oracle=confirm-asserted@. It covers
+-- and confirms whatever it is asked; what keeps the result honest is what it
+-- is asked and how: only top-level asserted claims are offered, through
+-- 'confirm', whose coverage check abstains on open (context-bound)
+-- conditions. Reported, presupposed and embedded content cannot be offered to
+-- it at all ('confirm' rejects those claim kinds at compile time).
+testOracle :: Oracle
+testOracle = Oracle
+  { oracleName = "explain-test"
+  , oracleDomain = "every closed top-level asserted claim of the input (a test oracle, not a source of truth)"
+  , oracleCovers = const True
+  , oracleHolds = const True
+  }
+
+sentenceSource :: Int -> SourceId
+sentenceSource k = SourceId ('s' : show k)
+
+-- | Relabel every provenance leaf with the sentence whose span covers it, so
+-- that each sentence is a separate withdrawable source. A leaf outside every
+-- sentence keeps its source.
+relabelProv :: [(Int, Span)] -> Prov -> Prov
+relabelProv spans = go
+  where
+    go p = case p of
+      ProvLex src sp w -> ProvLex (case [ k | (k, s) <- spans, spanCovers s sp ] of
+                                     (k : _) -> sentenceSource k
+                                     [] -> src) sp w
+      ProvRule r ks -> ProvRule r (map go ks)
+
+relabelDRS :: (Prov -> Prov) -> DRS -> DRS
+relabelDRS f (DRS us cs) = DRS [ (r, f p) | (r, p) <- us ] (map cond cs)
+  where
+    box = relabelDRS f
+    cond c = case c of
+      CPred n ts p -> CPred n ts (f p)
+      CEq a b p -> CEq a b (f p)
+      CNot d p -> CNot (box d) (f p)
+      CImp a b p -> CImp (box a) (box b) (f p)
+      COr a b p -> COr (box a) (box b) (f p)
+      CAtt v hs d p -> CAtt v hs (box d) (f p)
+      CPresup d p -> CPresup (box d) (f p)
+
+detachRule :: String
+detachRule = "modus ponens, Fusion.detachable"
+
+-- | Section 7. Claims come from 'splitClaims' on the discourse DRS (the same
+-- split as section 5); each distinct claim is one node, and repeated
+-- admissions of it are alternative evidence at that node. Rules detach by
+-- 'F.detachable' over all admitted claims, as 'G.derivation' justifications
+-- from the rule node and its antecedent nodes; 'G.supportLabels' then decides
+-- every label and 'G.withdrawSource' every retraction.
+supportGraphLines :: Opts -> PipelineResult -> [String]
+supportGraphLines o pr =
+  [ "  legend: GROUNDED = some support set is oracle-confirmed evidence only; WEAK = supported, but every set needs unconfirmed, reported or presupposed evidence"
+  , "  oracle: " ++ oracleLine ]
+  ++ [ "  sentences (each is a source):" ]
+  ++ [ "    " ++ padR 4 ('s' : show k) ++ show (sentText (srSentence r))
+         ++ (if srDRS r == Nothing then "   UNPARSED (no DRS; see section 6)" else "")
+     | (k, r) <- zip [1 :: Int ..] srs ]
+  ++ [ "  partial: " ++ show (length unparsed) ++ " sentence(s) unparsed; their claims are missing, so the conclusions below are partial"
+     | not (null unparsed) ]
+  ++ graphBody graph0 [] Nothing
+  ++ [ "  embedded mentions (inside ~, =>, OR; never evidence by themselves): "
+         ++ intercalate ", " (nub [ renderCanonCond (claimCond e) | e <- es ])
+     | not (null es) ]
+  ++ certifiedLines []
+  ++ retractionLines
+  where
+    srs = prSentences pr
+    nSent = length srs
+    spans = [ (k, sentSpan (srSentence r)) | (k, r) <- zip [1 :: Int ..] srs ]
+    unparsed = [ k | (k, r) <- zip [1 :: Int ..] srs, srDRS r == Nothing ]
+    (as, rs, ps, es) = splitClaims (relabelDRS (relabelProv spans) (dscDRS (prDiscourse pr)))
+    mode = maybe OracleNone id (oOracle o)
+
+    oracleLine = case mode of
+      OracleNone -> "none -- no claim is offered to an oracle, so nothing is grounded (try --oracle=confirm-asserted)"
+      OracleConfirmAsserted ->
+        "confirm-asserted -- test oracle '" ++ oracleName testOracle ++ "' via Oracle.confirm: "
+          ++ show (length tokens) ++ " of " ++ show (length as) ++ " top-level asserted claim(s) confirmed"
+          ++ (if length tokens < length as then " (the rest are open, context-bound conditions: confirm abstains)" else "")
+
+    -- One node per distinct claim, numbered in order of first admission.
+    admittedClaims = nub ([ claimCond c | (c, _) <- as ] ++ map reportedContent rs
+                           ++ map (claimCond . presupposedClaim') ps)
+    idOf = M.fromList (zip admittedClaims (map G.NodeId [0 ..]))
+    nid c = M.findWithDefault (G.NodeId (-1)) c idOf
+
+    tokens :: [(CanonCond, Confirmed, [SourceId])]
+    tokens = [ (claimCond c, t, provSources p)
+             | mode == OracleConfirmAsserted, (c, p) <- as, Just t <- [confirm testOracle c] ]
+
+    admitted = foldl (flip ($)) G.emptyGenealogy $
+         [ G.addAssertedNode (nid (claimCond c)) p c | (c, p) <- as ]
+      ++ [ G.addConfirmedNode (nid (claimCond cl)) p t
+         | mode == OracleConfirmAsserted, (cl, p) <- as, Just t <- [confirm testOracle cl] ]
+      ++ [ G.addReportedNode (nid (reportedContent r)) r | r <- rs ]
+      ++ [ G.addPresupposedNode (nid (claimCond (presupposedClaim' x))) x | x <- ps ]
+
+    graph0 = detachAll admitted (length admittedClaims)
+
+    -- Add one detachment justification at a time until none is new. Every
+    -- detached condition is a subcondition of an existing claim, so this ends.
+    detachAll g next =
+      let claimIds = M.fromList [ (G.nodeClaim n, G.nodeId n) | n <- M.elems (G.gNodes g) ]
+          pending = [ (c, ants)
+                  | n <- M.elems (G.gNodes g), rule@(CanImp a _) <- [G.nodeClaim n]
+                  , c <- F.detachable (M.keys claimIds) rule
+                  , Just antes <- [mapM (`M.lookup` claimIds) (canonConds a)]
+                  , let ants = G.nodeId n : antes
+                  , case M.lookup c claimIds of
+                      Just t -> G.derivation t detachRule ants `notElem` G.gJusts g
+                      Nothing -> True ]
+          provOf ants = provRule "detachment" [ G.nodeProv n | a <- ants, Just n <- [G.nodeAt g a] ]
+      in case pending of
+           [] -> g
+           ((c, ants) : _) -> case M.lookup c claimIds of
+             Just t -> detachAll (G.addJustification (G.derivation t detachRule ants) g) next
+             Nothing ->
+               let t = G.NodeId next
+               in detachAll (G.addJustification (G.derivation t detachRule ants)
+                               (G.addNode (G.Node t c (provOf ants)) Unknown g)) (next + 1)
+
+    derivedOnly g = [ n | n <- M.elems (G.gNodes g), G.nodeClaim n `notElem` admittedClaims ]
+    admittedNodes g = [ n | n <- M.elems (G.gNodes g), G.nodeClaim n `elem` admittedClaims ]
+
+    -- The node list, once for the text and once after withdrawal (marks).
+    graphBody g withdrawn marks =
+      (if null (admittedNodes g) then ["  admitted claims: (none)"]
+       else "  admitted claims:" : concatMap (nodeLines g withdrawn marks True) (admittedNodes g))
+      ++ (if null (derivedOnly g) then ["  derived by detachment: (none)"]
+          else ("  derived by detachment (" ++ detachRule ++ "):") : concatMap (nodeLines g withdrawn marks False) (derivedOnly g))
+
+    nodeLines g withdrawn marks isAdmitted n =
+      [ "    " ++ padR 4 (show i) ++ renderCanonCond (G.nodeClaim n) ++ "   [" ++ status ++ "]"
+          ++ maybe "" (\f -> f i) marks ]
+      ++ [ "          evidence  " ++ e | isAdmitted, e <- evidenceOf withdrawn (G.nodeClaim n) ]
+      ++ [ "          also derived from " ++ ants | isAdmitted, ants <- derivs ]
+      ++ [ "          from      " ++ ants | not isAdmitted, ants <- derivs ]
+      ++ [ "          support   " ++ renderSourceSets envs
+         , "          sets      " ++ renderEnvs envs ]
+      where
+        i = G.nodeId n
+        envs = supportEnvironments (G.supportOf g i)
+        status
+          | G.isGrounded g i = "GROUNDED"
+          | not (null envs) = "WEAK"
+          | otherwise = "UNSUPPORTED"
+        derivs = [ intercalate " + " (map (renderNodeRef g) (G.jAntecedents j))
+                 | j <- G.justificationsFor g i, not (null (G.jAntecedents j)) ]
+
+    -- What was admitted at a node, from the admission inputs themselves.
+    evidenceOf withdrawn c =
+      [ ev (provSources p) "asserted-unconfirmed" | (cl, p) <- as, claimCond cl == c ]
+      ++ [ ev srcs ("oracle-confirmed (" ++ oracleName testOracle ++ ")") | (c', _, srcs) <- tokens, c' == c ]
+      ++ [ ev (provSources (reportedProv r)) ("reported, source chain "
+             ++ intercalate " > " (map renderAttribution (reportedChain r)))
+         | r <- rs, reportedContent r == c ]
+      ++ [ ev (provSources (presupposedProv x)) "presupposed"
+         | x <- ps, claimCond (presupposedClaim' x) == c ]
+      where
+        ev srcs what = sentencesOf srcs ++ " " ++ what
+          ++ (if any (`elem` map sentenceSource withdrawn) srcs then "   (withdrawn)" else "")
+
+    sentencesOf srcs = case [ s | s@(SourceId ('s' : d : _)) <- srcs, d `elem` ['0' .. '9'] ] of
+      [] -> "(no sentence source)"
+      ss -> intercalate "+" (map show (nub ss))
+
+    renderNodeRef g a = show a ++ maybe "" (\n -> case G.nodeClaim n of
+                                                    CanImp _ _ -> " (rule)"
+                                                    _ -> "") (G.nodeAt g a)
+
+    renderSourceSets envs = case supportEnvironments (supportFromEnvironments (map (concatMap G.evidenceSources) envs)) of
+      [] -> "(none: no sufficient set of sources)"
+      sets -> intercalate " | " [ "{" ++ intercalate ", " (map show ss) ++ "}" | ss <- sets ]
+
+    renderEnvs envs
+      | null envs = "(none)"
+      | otherwise = intercalate " | " [ "{" ++ intercalate ", " (map renderToken env) ++ "}" | env <- envs ]
+    renderToken e = show (G.evidenceNode e) ++ ":" ++ classShort (G.evidenceClass e) ++ "@" ++ sentencesOf (G.evidenceSources e)
+    classShort k = case k of
+      G.OracleConfirmed _ -> "oracle"
+      G.AssertedUnconfirmed -> "asserted"
+      G.ReportedEvidence _ -> "reported"
+      G.PresupposedEvidence -> "presupposed"
+      G.LLMTranslatedEvidence _ -> "translated"
+
+    -- Fusion's certified view: the oracle's Confirmed tokens (those whose
+    -- sources are not withdrawn), fused and closed by detachment. Printed as a
+    -- cross-check: its claims should be exactly the graph's grounded ones.
+    certifiedLines withdrawn
+      | mode /= OracleConfirmAsserted = []
+      | otherwise =
+          [ "  certified base (Fusion.fuse over the Confirmed tokens, closed by Fusion.entailedWithSupport):" ]
+          ++ (if M.null entailed then ["    (empty)"] else
+               [ "    " ++ renderCanonCond c ++ (if F.fusedContains fused c then "   confirmed" else "   entailed")
+               | c <- M.keys entailed ])
+          ++ [ "  NOTE: Fusion and the graph disagree on: " ++ intercalate ", " (map renderCanonCond diff)
+             | not (null diff) ]
+      where
+        fused = F.fuse [ t | (_, t, srcs) <- tokens, not (any (`elem` map sentenceSource withdrawn) srcs) ]
+        entailed = F.entailedWithSupport fused
+        g = if null withdrawn then graph0 else graphR
+        groundedClaims = [ G.nodeClaim n | n <- M.elems (G.gNodes g), G.isGrounded g (G.nodeId n) ]
+        diff = [ c | c <- nub (groundedClaims ++ M.keys entailed)
+                   , (c `elem` groundedClaims) /= M.member c entailed ]
+
+    -- Retraction ------------------------------------------------------------
+    (valid, missing) = (filter (<= nSent) (oRetract o), filter (> nSent) (oRetract o))
+    (graphR, changes) = foldl step (graph0, []) valid
+      where step (g, cs) k = let (g', ch) = G.withdrawSource (sentenceSource k) g in (g', cs ++ [ch])
+    lostSupport = nub (concatMap G.scLostSupport changes)
+    lostGround = nub (concatMap G.scLostGrounding changes)
+    survived = [ i | i <- nub (concatMap G.scSurvived changes), i `notElem` lostSupport
+                   , not (null (supportEnvironments (G.supportOf graphR i))) ]
+    retractionLines
+      | null (oRetract o) = []
+      | otherwise =
+          [ "", "  -- after withdrawing " ++ intercalate ", " (map (show . sentenceSource) (oRetract o))
+                  ++ " (Genealogy.withdrawSource)" ]
+          ++ [ "  " ++ show (sentenceSource k) ++ ": no such sentence (the text has " ++ show nSent ++ "); nothing withdrawn"
+             | k <- missing ]
+          ++ [ "  lost all support:               " ++ refs lostSupport
+             , "  lost grounding:                 " ++ refs lostGround
+             , "  survived (independent support): " ++ refs survived ]
+          ++ graphBody graphR valid (Just mark)
+          ++ certifiedLines valid
+    refs [] = "(none)"
+    refs is = intercalate ", " [ show i ++ " " ++ maybe "?" (renderCanonCond . G.nodeClaim) (G.nodeAt graph0 i) | i <- is ]
+    mark i
+      | i `elem` lostSupport = "  <- LOST SUPPORT"
+      | i `elem` lostGround = "  <- LOST GROUNDING (still supported)"
+      | i `elem` survived = "  <- SURVIVED (independent support)"
+      | otherwise = ""
 
 --------------------------------------------------------------------------------
 -- Pretty-printing
